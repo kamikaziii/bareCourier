@@ -4,6 +4,8 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
+	import * as m from '$lib/paraglide/messages.js';
+	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -30,15 +32,15 @@
 		}
 
 		// Redirect will happen via layout auth state change
-		goto('/');
+		goto(localizeHref('/'));
 	}
 </script>
 
 <div class="flex min-h-screen items-center justify-center bg-background p-4">
 	<Card.Root class="w-full max-w-md">
 		<Card.Header class="text-center">
-			<Card.Title class="text-2xl">bareCourier</Card.Title>
-			<Card.Description>Sign in to manage your deliveries</Card.Description>
+			<Card.Title class="text-2xl">{m.app_name()}</Card.Title>
+			<Card.Description>{m.auth_sign_in_subtitle()}</Card.Description>
 		</Card.Header>
 		<Card.Content>
 			<form onsubmit={handleLogin} class="space-y-4">
@@ -49,11 +51,11 @@
 				{/if}
 
 				<div class="space-y-2">
-					<Label for="email">Email</Label>
+					<Label for="email">{m.auth_email()}</Label>
 					<Input
 						id="email"
 						type="email"
-						placeholder="you@example.com"
+						placeholder={m.auth_email_placeholder()}
 						bind:value={email}
 						required
 						disabled={loading}
@@ -61,11 +63,11 @@
 				</div>
 
 				<div class="space-y-2">
-					<Label for="password">Password</Label>
+					<Label for="password">{m.auth_password()}</Label>
 					<Input
 						id="password"
 						type="password"
-						placeholder="Your password"
+						placeholder={m.auth_password_placeholder()}
 						bind:value={password}
 						required
 						disabled={loading}
@@ -73,7 +75,7 @@
 				</div>
 
 				<Button type="submit" class="w-full" disabled={loading}>
-					{loading ? 'Signing in...' : 'Sign in'}
+					{loading ? m.auth_signing_in() : m.auth_sign_in()}
 				</Button>
 			</form>
 		</Card.Content>

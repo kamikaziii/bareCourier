@@ -9,7 +9,7 @@ Initial MVP – Solo courier operation (single admin)
 ### Target Users
 
 - Solo courier / shipper (admin)
-- Dental lab clients (external users)
+- Business clients (external users)
 
 ### Project Goal
 
@@ -31,7 +31,7 @@ This system prioritizes **simplicity, speed, and reliability** over advanced fea
 - Full access to all data
 - Responsible for service execution and billing
 
-### 1.2 Client (Dental Lab)
+### 1.2 Client (Business)
 
 - External users
 - Can only view and create their own services
@@ -43,7 +43,7 @@ This system prioritizes **simplicity, speed, and reliability** over advanced fea
 
 ### 2.1 Client
 
-Represents a dental lab.
+Represents a business client.
 
 **Fields:**
 
@@ -183,7 +183,7 @@ No pricing logic is included in the system.
 
 **Form fields:**
 
-- Pickup location (pre-filled with client lab)
+- Pickup location (pre-filled with client address)
 - Delivery location
 - Optional note
 
@@ -265,7 +265,7 @@ No pricing logic is included in the system.
 
 This system is designed to be:
 
-> “A shared digital clipboard between a courier and dental labs”
+> "A shared digital clipboard between a courier and their clients"
 
 If a feature adds complexity without reducing daily workload, it should not be implemented.
 

@@ -3,6 +3,8 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
+	import * as m from '$lib/paraglide/messages.js';
+	import { getLocale } from '$lib/paraglide/runtime.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -114,20 +116,28 @@
 			return true;
 		})
 	);
+
+	function getStatusLabel(status: string): string {
+		return status === 'pending' ? m.status_pending() : m.status_delivered();
+	}
+
+	function formatDate(dateStr: string): string {
+		return new Date(dateStr).toLocaleDateString(getLocale());
+	}
 </script>
 
 <div class="space-y-6">
 	<div class="flex items-center justify-between">
-		<h1 class="text-2xl font-bold">All Services</h1>
+		<h1 class="text-2xl font-bold">{m.services_title()}</h1>
 		<Button onclick={() => (showForm = !showForm)}>
-			{showForm ? 'Cancel' : 'New Service'}
+			{showForm ? m.services_cancel() : m.services_new()}
 		</Button>
 	</div>
 
 	{#if showForm}
 		<Card.Root>
 			<Card.Header>
-				<Card.Title>Create Service</Card.Title>
+				<Card.Title>{m.services_create()}</Card.Title>
 			</Card.Header>
 			<Card.Content>
 				<form onsubmit={handleCreateService} class="space-y-4">
@@ -138,7 +148,7 @@
 					{/if}
 
 					<div class="space-y-2">
-						<Label for="client">Client *</Label>
+						<Label for="client">{m.form_client()} *</Label>
 						<select
 							id="client"
 							bind:value={selectedClientId}
@@ -147,7 +157,7 @@
 							disabled={formLoading}
 							class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
 						>
-							<option value="">Select a client</option>
+							<option value="">{m.form_select_client()}</option>
 							{#each clients as client}
 								<option value={client.id}>{client.name}</option>
 							{/each}
@@ -156,7 +166,7 @@
 
 					<div class="grid gap-4 md:grid-cols-2">
 						<div class="space-y-2">
-							<Label for="pickup">Pickup Location *</Label>
+							<Label for="pickup">{m.form_pickup_location()} *</Label>
 							<Input
 								id="pickup"
 								type="text"
@@ -166,7 +176,7 @@
 							/>
 						</div>
 						<div class="space-y-2">
-							<Label for="delivery">Delivery Location *</Label>
+							<Label for="delivery">{m.form_delivery_location()} *</Label>
 							<Input
 								id="delivery"
 								type="text"
@@ -178,7 +188,7 @@
 					</div>
 
 					<div class="space-y-2">
-						<Label for="notes">Notes</Label>
+						<Label for="notes">{m.form_notes()}</Label>
 						<Input
 							id="notes"
 							type="text"
@@ -188,7 +198,7 @@
 					</div>
 
 					<Button type="submit" disabled={formLoading}>
-						{formLoading ? 'Creating...' : 'Create Service'}
+						{formLoading ? m.services_creating() : m.services_create()}
 					</Button>
 				</form>
 			</Card.Content>
@@ -200,7 +210,7 @@
 		<div class="flex-1 min-w-[200px]">
 			<Input
 				type="search"
-				placeholder="Search..."
+				placeholder={m.services_search()}
 				bind:value={searchQuery}
 			/>
 		</div>
@@ -208,15 +218,15 @@
 			bind:value={statusFilter}
 			class="h-10 rounded-md border border-input bg-background px-3 text-sm"
 		>
-			<option value="all">All Status</option>
-			<option value="pending">Pending</option>
-			<option value="delivered">Delivered</option>
+			<option value="all">{m.services_all_status()}</option>
+			<option value="pending">{m.status_pending()}</option>
+			<option value="delivered">{m.status_delivered()}</option>
 		</select>
 		<select
 			bind:value={clientFilter}
 			class="h-10 rounded-md border border-input bg-background px-3 text-sm"
 		>
-			<option value="all">All Clients</option>
+			<option value="all">{m.services_all_clients()}</option>
 			{#each clients as client}
 				<option value={client.id}>{client.name}</option>
 			{/each}
@@ -226,16 +236,16 @@
 	<!-- Services List -->
 	<div class="space-y-3">
 		{#if loading}
-			<p class="text-center text-muted-foreground py-8">Loading...</p>
+			<p class="text-center text-muted-foreground py-8">{m.loading()}</p>
 		{:else if filteredServices.length === 0}
 			<Card.Root>
 				<Card.Content class="py-8 text-center text-muted-foreground">
-					No services found
+					{m.services_no_results()}
 				</Card.Content>
 			</Card.Root>
 		{:else}
 			<p class="text-sm text-muted-foreground">
-				Showing {filteredServices.length} service{filteredServices.length === 1 ? '' : 's'}
+				{m.services_showing({ count: filteredServices.length })}
 			</p>
 			{#each filteredServices as service}
 				<Card.Root class="overflow-hidden">
@@ -252,11 +262,11 @@
 							<div class="min-w-0 flex-1">
 								<div class="flex items-center justify-between gap-2">
 									<p class="font-medium truncate">
-										{service.profiles?.name || 'Unknown'}
+										{service.profiles?.name || m.unknown_client()}
 									</p>
 									<div class="flex items-center gap-2">
 										<span class="text-xs text-muted-foreground">
-											{new Date(service.created_at).toLocaleDateString()}
+											{formatDate(service.created_at)}
 										</span>
 										<span
 											class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium {service.status ===
@@ -264,7 +274,7 @@
 												? 'bg-blue-500/10 text-blue-500'
 												: 'bg-green-500/10 text-green-500'}"
 										>
-											{service.status}
+											{getStatusLabel(service.status)}
 										</span>
 									</div>
 								</div>

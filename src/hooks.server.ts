@@ -1,8 +1,23 @@
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
 import { createServerClient } from '@supabase/ssr';
+import { sequence } from '@sveltejs/kit/hooks';
 import type { Handle } from '@sveltejs/kit';
+import { paraglideMiddleware } from '$lib/paraglide/server.js';
 
-export const handle: Handle = async ({ event, resolve }) => {
+// Paraglide handle - MUST be first to set locale context
+const i18nHandle: Handle = ({ event, resolve }) =>
+	paraglideMiddleware(event.request, ({ request: localizedRequest, locale }) => {
+		event.request = localizedRequest;
+		return resolve(event, {
+			transformPageChunk: ({ html }) =>
+				html
+					.replace('%paraglide.lang%', locale)
+					.replace('%paraglide.dir%', 'ltr')
+		});
+	});
+
+// Supabase handle
+const supabaseHandle: Handle = async ({ event, resolve }) => {
 	event.locals.supabase = createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
 		cookies: {
 			getAll: () => event.cookies.getAll(),
@@ -40,3 +55,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 		}
 	});
 };
+
+// Combine handles - i18n FIRST, then supabase
+export const handle = sequence(i18nHandle, supabaseHandle);

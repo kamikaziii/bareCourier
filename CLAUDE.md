@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-bareCourier is a PWA for a solo dental lab courier to manage pickups/deliveries. Two user roles: **courier** (admin) and **client** (dental labs).
+bareCourier is a PWA for a solo courier to manage pickups/deliveries. Two user roles: **courier** (admin) and **client** (businesses).
 
 **Tech Stack**: SvelteKit 2.50+ | Svelte 5 (runes) | Tailwind CSS v4 | shadcn-svelte | Supabase | Vercel
 

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { useRegisterSW } from 'virtual:pwa-register/svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import * as m from '$lib/paraglide/messages.js';
 
 	const {
 		needRefresh,
@@ -33,15 +34,15 @@
 		role="alert"
 	>
 		{#if $offlineReady}
-			<p class="mb-3 text-sm">App ready to work offline</p>
+			<p class="mb-3 text-sm">{m.pwa_offline_ready()}</p>
 		{:else}
-			<p class="mb-3 text-sm">New content available, click refresh to update.</p>
+			<p class="mb-3 text-sm">{m.pwa_update_available()}</p>
 		{/if}
 		<div class="flex gap-2">
 			{#if $needRefresh}
-				<Button size="sm" onclick={() => updateServiceWorker(true)}>Refresh</Button>
+				<Button size="sm" onclick={() => updateServiceWorker(true)}>{m.pwa_refresh()}</Button>
 			{/if}
-			<Button size="sm" variant="outline" onclick={close}>Close</Button>
+			<Button size="sm" variant="outline" onclick={close}>{m.pwa_close()}</Button>
 		</div>
 	</div>
 {/if}

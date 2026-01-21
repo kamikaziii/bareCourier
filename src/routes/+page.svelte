@@ -1,11 +1,10 @@
 <script lang="ts">
-	// This page should never render - server always redirects
-	// Keeping minimal content as fallback
+	import * as m from '$lib/paraglide/messages.js';
 </script>
 
 <div class="flex min-h-screen items-center justify-center bg-background">
 	<div class="text-center">
-		<h1 class="text-4xl font-bold text-foreground">bareCourier</h1>
-		<p class="mt-2 text-muted-foreground">Redirecting...</p>
+		<h1 class="text-4xl font-bold text-foreground">{m.app_name()}</h1>
+		<p class="mt-2 text-muted-foreground">{m.redirecting()}</p>
 	</div>
 </div>

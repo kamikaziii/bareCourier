@@ -1,12 +1,12 @@
 # bareCourier
 
-A simple PWA for a solo dental lab courier to manage pickups and deliveries, replacing paper-based tracking.
+A simple PWA for a solo courier to manage pickups and deliveries, replacing paper-based tracking.
 
 ## Features
 
 - **Courier Dashboard**: View today's services, quick filters (today/tomorrow/all), one-tap status toggle
 - **Service Management**: Create, view, and update pickup/delivery jobs
-- **Client Management**: Add and manage dental lab clients
+- **Client Management**: Add and manage clients
 - **Monthly Reports**: Filter by client/date/status, export to CSV
 - **Client Portal**: Clients can view their services and create new requests
 - **PWA Support**: Install on mobile devices for native-like experience
@@ -115,7 +115,7 @@ bareCourier/
 - Toggle service status (pending → delivered)
 - Generate reports and export CSV
 
-### Client (Dental Lab)
+### Client
 - View their own services
 - Create new pickup/delivery requests
 - Pre-filled pickup location from profile
@@ -129,7 +129,7 @@ bareCourier/
 | role | text | 'courier' or 'client' |
 | name | text | Display name |
 | phone | text | Contact number |
-| default_pickup_location | text | Client's lab address |
+| default_pickup_location | text | Client's default address |
 | active | boolean | Account status |
 | created_at | timestamptz | Creation timestamp |
 

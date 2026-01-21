@@ -3,6 +3,8 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
+	import * as m from '$lib/paraglide/messages.js';
+	import { getLocale } from '$lib/paraglide/runtime.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -77,16 +79,37 @@
 		delivered: filteredServices.filter((s) => s.status === 'delivered').length
 	});
 
+	function getStatusLabel(status: string): string {
+		return status === 'pending' ? m.status_pending() : m.status_delivered();
+	}
+
+	function formatDate(dateStr: string): string {
+		return new Date(dateStr).toLocaleDateString(getLocale());
+	}
+
+	function formatDateTime(dateStr: string): string {
+		return new Date(dateStr).toLocaleString(getLocale());
+	}
+
 	function exportCSV() {
-		const headers = ['Date', 'Client', 'Pickup', 'Delivery', 'Status', 'Notes', 'Delivered At'];
+		const locale = getLocale();
+		const headers = [
+			m.reports_table_date(),
+			m.reports_table_client(),
+			m.form_pickup_location(),
+			m.form_delivery_location(),
+			m.reports_status(),
+			m.form_notes(),
+			m.status_delivered()
+		];
 		const rows = filteredServices.map((s) => [
-			new Date(s.created_at).toLocaleDateString(),
-			s.profiles?.name || 'Unknown',
+			new Date(s.created_at).toLocaleDateString(locale),
+			s.profiles?.name || m.unknown_client(),
 			s.pickup_location,
 			s.delivery_location,
-			s.status,
+			getStatusLabel(s.status),
 			s.notes || '',
-			s.delivered_at ? new Date(s.delivered_at).toLocaleString() : ''
+			s.delivered_at ? new Date(s.delivered_at).toLocaleString(locale) : ''
 		]);
 
 		const csvContent = [
@@ -104,9 +127,9 @@
 
 <div class="space-y-6">
 	<div class="flex items-center justify-between">
-		<h1 class="text-2xl font-bold">Reports</h1>
+		<h1 class="text-2xl font-bold">{m.reports_title()}</h1>
 		<Button onclick={exportCSV} disabled={filteredServices.length === 0}>
-			Export CSV
+			{m.reports_export_csv()}
 		</Button>
 	</div>
 
@@ -115,7 +138,7 @@
 		<Card.Content class="pt-6">
 			<div class="grid gap-4 md:grid-cols-4">
 				<div class="space-y-2">
-					<Label for="start">Start Date</Label>
+					<Label for="start">{m.reports_start_date()}</Label>
 					<Input
 						id="start"
 						type="date"
@@ -123,7 +146,7 @@
 					/>
 				</div>
 				<div class="space-y-2">
-					<Label for="end">End Date</Label>
+					<Label for="end">{m.reports_end_date()}</Label>
 					<Input
 						id="end"
 						type="date"
@@ -131,28 +154,28 @@
 					/>
 				</div>
 				<div class="space-y-2">
-					<Label for="client">Client</Label>
+					<Label for="client">{m.reports_client()}</Label>
 					<select
 						id="client"
 						bind:value={clientFilter}
 						class="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
 					>
-						<option value="all">All Clients</option>
+						<option value="all">{m.services_all_clients()}</option>
 						{#each clients as client}
 							<option value={client.id}>{client.name}</option>
 						{/each}
 					</select>
 				</div>
 				<div class="space-y-2">
-					<Label for="status">Status</Label>
+					<Label for="status">{m.reports_status()}</Label>
 					<select
 						id="status"
 						bind:value={statusFilter}
 						class="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
 					>
-						<option value="all">All</option>
-						<option value="pending">Pending</option>
-						<option value="delivered">Delivered</option>
+						<option value="all">{m.dashboard_all()}</option>
+						<option value="pending">{m.status_pending()}</option>
+						<option value="delivered">{m.status_delivered()}</option>
 					</select>
 				</div>
 			</div>
@@ -164,19 +187,19 @@
 		<Card.Root>
 			<Card.Content class="p-6 text-center">
 				<p class="text-3xl font-bold">{summary.total}</p>
-				<p class="text-sm text-muted-foreground">Total Services</p>
+				<p class="text-sm text-muted-foreground">{m.reports_total()}</p>
 			</Card.Content>
 		</Card.Root>
 		<Card.Root>
 			<Card.Content class="p-6 text-center">
 				<p class="text-3xl font-bold text-blue-500">{summary.pending}</p>
-				<p class="text-sm text-muted-foreground">Pending</p>
+				<p class="text-sm text-muted-foreground">{m.status_pending()}</p>
 			</Card.Content>
 		</Card.Root>
 		<Card.Root>
 			<Card.Content class="p-6 text-center">
 				<p class="text-3xl font-bold text-green-500">{summary.delivered}</p>
-				<p class="text-sm text-muted-foreground">Delivered</p>
+				<p class="text-sm text-muted-foreground">{m.status_delivered()}</p>
 			</Card.Content>
 		</Card.Root>
 	</div>
@@ -185,28 +208,28 @@
 	<Card.Root>
 		<Card.Content class="p-0">
 			{#if loading}
-				<p class="text-center text-muted-foreground py-8">Loading...</p>
+				<p class="text-center text-muted-foreground py-8">{m.loading()}</p>
 			{:else if filteredServices.length === 0}
-				<p class="text-center text-muted-foreground py-8">No services found for this period</p>
+				<p class="text-center text-muted-foreground py-8">{m.reports_no_results()}</p>
 			{:else}
 				<div class="overflow-x-auto">
 					<table class="w-full">
 						<thead>
 							<tr class="border-b bg-muted/50">
-								<th class="px-4 py-3 text-left text-sm font-medium">Date</th>
-								<th class="px-4 py-3 text-left text-sm font-medium">Client</th>
-								<th class="px-4 py-3 text-left text-sm font-medium">Route</th>
-								<th class="px-4 py-3 text-left text-sm font-medium">Status</th>
+								<th class="px-4 py-3 text-left text-sm font-medium">{m.reports_table_date()}</th>
+								<th class="px-4 py-3 text-left text-sm font-medium">{m.reports_table_client()}</th>
+								<th class="px-4 py-3 text-left text-sm font-medium">{m.reports_table_route()}</th>
+								<th class="px-4 py-3 text-left text-sm font-medium">{m.reports_status()}</th>
 							</tr>
 						</thead>
 						<tbody>
 							{#each filteredServices as service}
 								<tr class="border-b">
 									<td class="px-4 py-3 text-sm">
-										{new Date(service.created_at).toLocaleDateString()}
+										{formatDate(service.created_at)}
 									</td>
 									<td class="px-4 py-3 text-sm font-medium">
-										{service.profiles?.name || 'Unknown'}
+										{service.profiles?.name || m.unknown_client()}
 									</td>
 									<td class="px-4 py-3 text-sm text-muted-foreground">
 										{service.pickup_location} &rarr; {service.delivery_location}
@@ -218,7 +241,7 @@
 												? 'bg-blue-500/10 text-blue-500'
 												: 'bg-green-500/10 text-green-500'}"
 										>
-											{service.status}
+											{getStatusLabel(service.status)}
 										</span>
 									</td>
 								</tr>

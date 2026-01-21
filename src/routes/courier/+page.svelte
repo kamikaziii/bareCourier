@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
+	import * as m from '$lib/paraglide/messages.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -54,11 +55,15 @@
 
 	const pendingCount = $derived(services.filter((s) => s.status === 'pending').length);
 	const deliveredCount = $derived(services.filter((s) => s.status === 'delivered').length);
+
+	function getStatusLabel(status: string): string {
+		return status === 'pending' ? m.status_pending() : m.status_delivered();
+	}
 </script>
 
 <div class="space-y-6">
 	<div class="flex items-center justify-between">
-		<h1 class="text-2xl font-bold">Dashboard</h1>
+		<h1 class="text-2xl font-bold">{m.dashboard_title()}</h1>
 	</div>
 
 	<!-- Stats -->
@@ -70,7 +75,7 @@
 				</div>
 				<div>
 					<p class="text-2xl font-bold">{pendingCount}</p>
-					<p class="text-sm text-muted-foreground">Pending</p>
+					<p class="text-sm text-muted-foreground">{m.status_pending()}</p>
 				</div>
 			</Card.Content>
 		</Card.Root>
@@ -81,7 +86,7 @@
 				</div>
 				<div>
 					<p class="text-2xl font-bold">{deliveredCount}</p>
-					<p class="text-sm text-muted-foreground">Delivered</p>
+					<p class="text-sm text-muted-foreground">{m.status_delivered()}</p>
 				</div>
 			</Card.Content>
 		</Card.Root>
@@ -94,32 +99,32 @@
 			size="sm"
 			onclick={() => (filter = 'today')}
 		>
-			Today
+			{m.dashboard_today()}
 		</Button>
 		<Button
 			variant={filter === 'tomorrow' ? 'default' : 'outline'}
 			size="sm"
 			onclick={() => (filter = 'tomorrow')}
 		>
-			Tomorrow
+			{m.dashboard_tomorrow()}
 		</Button>
 		<Button
 			variant={filter === 'all' ? 'default' : 'outline'}
 			size="sm"
 			onclick={() => (filter = 'all')}
 		>
-			All
+			{m.dashboard_all()}
 		</Button>
 	</div>
 
 	<!-- Services List -->
 	<div class="space-y-3">
 		{#if loading}
-			<p class="text-center text-muted-foreground py-8">Loading...</p>
+			<p class="text-center text-muted-foreground py-8">{m.loading()}</p>
 		{:else if services.length === 0}
 			<Card.Root>
 				<Card.Content class="py-8 text-center text-muted-foreground">
-					No services found for this period
+					{m.dashboard_no_services()}
 				</Card.Content>
 			</Card.Root>
 		{:else}
@@ -138,7 +143,7 @@
 							<div class="min-w-0 flex-1">
 								<div class="flex items-center justify-between gap-2">
 									<p class="font-medium truncate">
-										{service.profiles?.name || 'Unknown Client'}
+										{service.profiles?.name || m.unknown_client()}
 									</p>
 									<span
 										class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium {service.status ===
@@ -146,7 +151,7 @@
 											? 'bg-blue-500/10 text-blue-500'
 											: 'bg-green-500/10 text-green-500'}"
 									>
-										{service.status}
+										{getStatusLabel(service.status)}
 									</span>
 								</div>
 								<p class="text-sm text-muted-foreground truncate">

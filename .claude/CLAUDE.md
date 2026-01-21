@@ -2,7 +2,7 @@
 
 ## Overview
 
-bareCourier is a PWA for a solo dental lab courier to manage pickups and deliveries, replacing paper-based tracking. Simple, mobile-first, two user roles: **courier** (admin) and **client** (dental labs).
+bareCourier is a PWA for a solo courier to manage pickups and deliveries, replacing paper-based tracking. Simple, mobile-first, two user roles: **courier** (admin) and **client** (businesses).
 
 ## Tech Stack
 

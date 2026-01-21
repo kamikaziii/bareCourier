@@ -2,7 +2,7 @@
 
 ## Overview
 
-A simple PWA for a solo dental lab courier to manage pickups/deliveries and replace paper tracking.
+A simple PWA for a solo courier to manage pickups/deliveries and replace paper tracking.
 
 ---
 
@@ -15,7 +15,8 @@ A simple PWA for a solo dental lab courier to manage pickups/deliveries and repl
 - [x] Phase 4: Client Features
 - [x] **Security Review & Fixes** (Post Phase 4)
 - [x] Phase 5: PWA & Polish
-- [ ] Phase 6: Deployment
+- [x] Phase 6: Internationalization (i18n)
+- [ ] Phase 7: Deployment
 
 ---
 
@@ -64,7 +65,7 @@ profiles (
   role text NOT NULL CHECK (role IN ('courier', 'client')),
   name text NOT NULL,
   phone text,
-  default_pickup_location text,  -- Client's lab address (auto-fill)
+  default_pickup_location text,  -- Client's default address (auto-fill)
   active boolean DEFAULT true,
   created_at timestamptz DEFAULT now()
 )
@@ -218,7 +219,17 @@ bareCourier/
 - [ ] Test PWA install flow on mobile
 - [ ] Mobile-first UI refinements (if needed)
 
-### Phase 6: Deployment
+### Phase 6: Internationalization (i18n)
+- [x] **Paraglide JS 2.0**: Installed and configured for URL-based routing
+- [x] **Languages**: Portuguese (pt-PT) as default, English (en) with /en/ prefix
+- [x] **Message files**: Created messages/pt-PT.json and messages/en.json
+- [x] **SSR Integration**: Paraglide middleware integrated with Supabase hooks
+- [x] **Language Switcher**: Added to courier and client layouts
+- [x] **SEO**: hreflang tags for all routes
+- [x] **PWA**: Manifest updated for Portuguese default
+- [x] **Generic App**: Removed industry-specific references
+
+### Phase 7: Deployment
 - [ ] Deploy to Vercel
 - [ ] Configure custom domain (if needed)
 - [ ] Test end-to-end flow
@@ -249,7 +260,6 @@ bareCourier/
 - ❌ Pricing/invoicing logic
 - ❌ GPS/maps
 - ❌ Route optimization
-- ❌ Multi-language
 
 ## Verification Plan
 

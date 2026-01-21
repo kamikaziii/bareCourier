@@ -1,8 +1,8 @@
 # bareCourier
 
-> A PWA for a solo dental lab courier to manage pickups and deliveries.
+> A PWA for a solo courier to manage pickups and deliveries.
 
-bareCourier is a mobile-first web application built with SvelteKit, Svelte 5, Tailwind CSS v4, and Supabase. It replaces paper-based tracking for a dental lab courier service with digital service management.
+bareCourier is a mobile-first web application built with SvelteKit, Svelte 5, Tailwind CSS v4, and Supabase. It replaces paper-based tracking for a courier service with digital service management.
 
 ## Documentation
 
@@ -24,7 +24,7 @@ bareCourier is a mobile-first web application built with SvelteKit, Svelte 5, Ta
 
 ## Key Features
 
-- Two user roles: courier (admin) and client (dental labs)
+- Two user roles: courier (admin) and client (businesses)
 - Service status tracking: pending (blue) → delivered (green)
 - One-tap status toggle for quick updates
 - Monthly reports with CSV export

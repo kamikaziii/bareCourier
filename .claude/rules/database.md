@@ -11,7 +11,7 @@ profiles (
   role text NOT NULL CHECK (role IN ('courier', 'client')),
   name text NOT NULL,
   phone text,
-  default_pickup_location text,  -- Client's default lab address
+  default_pickup_location text,  -- Client's default address
   active boolean DEFAULT true,
   created_at timestamptz DEFAULT now()
 )

@@ -3,6 +3,7 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
+	import * as m from '$lib/paraglide/messages.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -44,7 +45,7 @@
 		const accessToken = sessionData.session?.access_token;
 
 		if (!accessToken) {
-			formError = 'Session expired. Please log in again.';
+			formError = m.session_expired();
 			formLoading = false;
 			return;
 		}
@@ -71,12 +72,12 @@
 		const result = await response.json();
 
 		if (!response.ok) {
-			formError = result.error || 'Failed to create client';
+			formError = result.error || m.error_create_client_failed();
 			formLoading = false;
 			return;
 		}
 
-		formSuccess = 'Client created successfully! They can now log in.';
+		formSuccess = m.clients_success();
 		formLoading = false;
 
 		// Reset form
@@ -108,17 +109,17 @@
 
 <div class="space-y-6">
 	<div class="flex items-center justify-between">
-		<h1 class="text-2xl font-bold">Clients</h1>
+		<h1 class="text-2xl font-bold">{m.clients_title()}</h1>
 		<Button onclick={() => (showForm = !showForm)}>
-			{showForm ? 'Cancel' : 'Add Client'}
+			{showForm ? m.services_cancel() : m.clients_add()}
 		</Button>
 	</div>
 
 	{#if showForm}
 		<Card.Root>
 			<Card.Header>
-				<Card.Title>Add New Client</Card.Title>
-				<Card.Description>Create a new client account</Card.Description>
+				<Card.Title>{m.clients_add_form_title()}</Card.Title>
+				<Card.Description>{m.clients_add_form_subtitle()}</Card.Description>
 			</Card.Header>
 			<Card.Content>
 				<form onsubmit={handleCreateClient} class="space-y-4">
@@ -135,7 +136,7 @@
 
 					<div class="grid gap-4 md:grid-cols-2">
 						<div class="space-y-2">
-							<Label for="email">Email *</Label>
+							<Label for="email">{m.auth_email()} *</Label>
 							<Input
 								id="email"
 								type="email"
@@ -145,7 +146,7 @@
 							/>
 						</div>
 						<div class="space-y-2">
-							<Label for="password">Password *</Label>
+							<Label for="password">{m.auth_password()} *</Label>
 							<Input
 								id="password"
 								type="password"
@@ -156,7 +157,7 @@
 							/>
 						</div>
 						<div class="space-y-2">
-							<Label for="name">Name *</Label>
+							<Label for="name">{m.form_name()} *</Label>
 							<Input
 								id="name"
 								type="text"
@@ -166,7 +167,7 @@
 							/>
 						</div>
 						<div class="space-y-2">
-							<Label for="phone">Phone</Label>
+							<Label for="phone">{m.form_phone()}</Label>
 							<Input
 								id="phone"
 								type="tel"
@@ -175,11 +176,11 @@
 							/>
 						</div>
 						<div class="space-y-2 md:col-span-2">
-							<Label for="pickup">Default Pickup Location</Label>
+							<Label for="pickup">{m.form_pickup_location()}</Label>
 							<Input
 								id="pickup"
 								type="text"
-								placeholder="Client's lab address"
+								placeholder={m.clients_default_location()}
 								bind:value={defaultPickupLocation}
 								disabled={formLoading}
 							/>
@@ -187,7 +188,7 @@
 					</div>
 
 					<Button type="submit" disabled={formLoading}>
-						{formLoading ? 'Creating...' : 'Create Client'}
+						{formLoading ? m.clients_creating() : m.clients_create()}
 					</Button>
 				</form>
 			</Card.Content>
@@ -196,13 +197,13 @@
 
 	<!-- Active Clients -->
 	<div class="space-y-3">
-		<h2 class="text-lg font-semibold">Active Clients ({activeClients.length})</h2>
+		<h2 class="text-lg font-semibold">{m.clients_active()} ({activeClients.length})</h2>
 		{#if loading}
-			<p class="text-center text-muted-foreground py-4">Loading...</p>
+			<p class="text-center text-muted-foreground py-4">{m.loading()}</p>
 		{:else if activeClients.length === 0}
 			<Card.Root>
 				<Card.Content class="py-8 text-center text-muted-foreground">
-					No active clients
+					{m.clients_no_active()}
 				</Card.Content>
 			</Card.Root>
 		{:else}
@@ -212,14 +213,14 @@
 						<div>
 							<p class="font-medium">{client.name}</p>
 							<p class="text-sm text-muted-foreground">
-								{client.phone || 'No phone'}
+								{client.phone || m.clients_no_phone()}
 								{#if client.default_pickup_location}
 									&middot; {client.default_pickup_location}
 								{/if}
 							</p>
 						</div>
 						<Button variant="ghost" size="sm" onclick={() => toggleClientActive(client)}>
-							Deactivate
+							{m.clients_deactivate()}
 						</Button>
 					</Card.Content>
 				</Card.Root>
@@ -230,16 +231,16 @@
 	<!-- Inactive Clients -->
 	{#if inactiveClients.length > 0}
 		<div class="space-y-3">
-			<h2 class="text-lg font-semibold text-muted-foreground">Inactive ({inactiveClients.length})</h2>
+			<h2 class="text-lg font-semibold text-muted-foreground">{m.clients_inactive()} ({inactiveClients.length})</h2>
 			{#each inactiveClients as client}
 				<Card.Root class="opacity-60">
 					<Card.Content class="flex items-center justify-between p-4">
 						<div>
 							<p class="font-medium">{client.name}</p>
-							<p class="text-sm text-muted-foreground">{client.phone || 'No phone'}</p>
+							<p class="text-sm text-muted-foreground">{client.phone || m.clients_no_phone()}</p>
 						</div>
 						<Button variant="ghost" size="sm" onclick={() => toggleClientActive(client)}>
-							Reactivate
+							{m.clients_reactivate()}
 						</Button>
 					</Card.Content>
 				</Card.Root>
