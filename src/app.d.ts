@@ -1,4 +1,7 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
+/// <reference types="vite-plugin-pwa/svelte" />
+/// <reference types="vite-plugin-pwa/info" />
+
 import type { SupabaseClient, Session, User } from '@supabase/supabase-js';
 import type { Database } from '$lib/database.types';
 

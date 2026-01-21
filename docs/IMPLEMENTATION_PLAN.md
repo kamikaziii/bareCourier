@@ -13,7 +13,8 @@ A simple PWA for a solo dental lab courier to manage pickups/deliveries and repl
 - [x] Phase 2: Authentication & Database
 - [x] Phase 3: Courier Features
 - [x] Phase 4: Client Features
-- [ ] Phase 5: PWA & Polish
+- [x] **Security Review & Fixes** (Post Phase 4)
+- [x] Phase 5: PWA & Polish
 - [ ] Phase 6: Deployment
 
 ---
@@ -125,11 +126,22 @@ bareCourier/
 │   ├── app.html
 │   └── service-worker.ts
 ├── static/
-│   ├── manifest.json
-│   └── icons/
+│   ├── manifest.webmanifest      # PWA manifest
+│   ├── favicon.ico               # Multi-resolution favicon
+│   ├── favicon.svg               # SVG favicon
+│   ├── pwa-64x64.png             # Small PWA icon
+│   ├── pwa-192x192.png           # Standard PWA icon
+│   ├── pwa-512x512.png           # Large PWA icon
+│   ├── maskable-icon-512x512.png # Maskable icon for Android
+│   ├── apple-touch-icon-180x180.png
+│   └── images/                   # Splash screens + logo source
+│       ├── logo-1024.png         # Source logo
+│       └── apple-splash-*.png    # iOS splash screens (19 sizes)
 ├── supabase/
 │   └── migrations/
-│       └── 001_initial_schema.sql
+│       ├── 001_initial_schema.sql
+│       ├── 002_fix_rls_policies_performance.sql
+│       └── 003_cleanup_duplicate_rls_policies.sql
 ├── svelte.config.js
 ├── vite.config.ts
 ├── tailwind.config.js
@@ -171,11 +183,40 @@ bareCourier/
 - [x] **Create service** - Simple form with pickup (pre-filled) + delivery location
 - [x] **Service history** - List of all their past services
 
+### Security Review & Fixes (Post Phase 4)
+- [x] **RLS Performance**: Fixed all policies to use `(select auth.uid())` instead of `auth.uid()`
+- [x] **Multiple Permissive Policies**: Consolidated duplicate policies into single unified policies
+- [x] **Client Layout Security**: Added null profile check to prevent unauthorized access
+- [x] **Client Layout Active Check**: Added active status check to prevent deactivated clients from accessing
+- [x] **Client Creation**: Replaced `signUp()` with Edge Function using admin API (no confirmation emails)
+- [x] **Home Page Redirect**: Moved from client-side `onMount` to server-side `+page.server.ts`
+- [x] **Security Advisors**: Verified 0 security lints after fixes
+
+### Second Review (Additional Fixes)
+- [x] **Reports Page State Init**: Fixed $effect to direct state initialization (Svelte 5 best practice)
+- [x] **PWA Icons**: Created icons directory with README (icons need to be generated)
+- [x] **Edge Function Security**: Verified proper authorization flow with JWT validation
+- [x] **Supabase SSR**: Verified hooks.server.ts follows latest @supabase/ssr patterns
+- [x] **Svelte 5 Patterns**: All components use correct runes syntax ($state, $derived, $effect, $props)
+- [x] **TypeScript Check**: 0 errors, 1 informational warning (expected)
+
 ### Phase 5: PWA & Polish
-- [ ] Configure manifest.json with icons
+- [x] **PWA Asset Generator**: Installed @vite-pwa/assets-generator + sharp
+- [x] **Source Logo**: Created 1024x1024 PNG from favicon.svg
+- [x] **PWA Icons**: Generated all sizes (64x64, 192x192, 512x512, maskable)
+- [x] **Apple Touch Icon**: Generated 180x180 for iOS
+- [x] **iOS Splash Screens**: Generated 19 sizes for all iPhone/iPad models
+- [x] **Favicons**: Generated favicon.ico + PNG variants
+- [x] **Web App Manifest**: Created manifest.webmanifest with app shortcuts
+- [x] **Apple Meta Tags**: Added apple-mobile-web-app-* tags for iOS
+- [x] **PWA Install Prompt**: Added beforeinstallprompt handler in app.html
+- [x] **Custom Service Worker**: Created with Supabase-aware caching strategies
+  - NetworkOnly for Supabase Auth (never cache)
+  - NetworkFirst for Supabase Data (cache fallback for offline)
+  - Precache for static assets via workbox
+- [x] **Vite Config**: Updated to use injectManifest strategy
 - [ ] Test PWA install flow on mobile
-- [ ] Mobile-first UI refinements
-- [ ] Error handling and loading states
+- [ ] Mobile-first UI refinements (if needed)
 
 ### Phase 6: Deployment
 - [ ] Deploy to Vercel

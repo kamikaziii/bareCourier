@@ -19,10 +19,11 @@ bareCourier is a PWA for a solo dental lab courier to manage pickups and deliver
 ## Quick Commands
 
 ```bash
-pnpm run dev      # Start dev server (localhost:5173)
-pnpm run build    # Production build
-pnpm run check    # TypeScript + Svelte check
-pnpm run preview  # Preview production build
+pnpm run dev              # Start dev server (localhost:5173)
+pnpm run build            # Production build
+pnpm run check            # TypeScript + Svelte check
+pnpm run preview          # Preview production build
+pnpm run generate-pwa-assets  # Regenerate PWA icons/splash screens
 ```
 
 ## Project Structure
@@ -43,8 +44,17 @@ src/
 │   └── client/            # Client-only routes (auth guarded)
 │       ├── +page.svelte   # Client dashboard
 │       └── new/           # Create service request
+├── service-worker.ts      # Custom SW with Supabase caching
 ├── hooks.server.ts        # Supabase SSR auth
+├── app.html               # PWA meta tags + splash screen links
 └── app.css                # Tailwind v4 theme (OKLCH colors)
+static/
+├── manifest.webmanifest   # PWA manifest with shortcuts
+├── favicon.ico            # Multi-resolution favicon
+├── pwa-*.png              # PWA icons (64, 192, 512)
+├── maskable-icon-512x512.png
+├── apple-touch-icon-180x180.png
+└── images/                # Splash screens + logo source
 ```
 
 ## Architecture Rules

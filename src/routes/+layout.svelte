@@ -2,7 +2,9 @@
 	import '../app.css';
 	import { invalidate } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 	import type { LayoutData } from './$types';
+	import ReloadPrompt from '$lib/components/ReloadPrompt.svelte';
 
 	let { data, children }: { data: LayoutData; children: any } = $props();
 
@@ -20,3 +22,7 @@
 </script>
 
 {@render children()}
+
+{#if browser}
+	<ReloadPrompt />
+{/if}

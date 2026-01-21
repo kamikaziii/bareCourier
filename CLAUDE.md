@@ -11,10 +11,11 @@ bareCourier is a PWA for a solo dental lab courier to manage pickups/deliveries.
 ## Commands
 
 ```bash
-pnpm run dev      # Dev server at localhost:5173
-pnpm run build    # Production build
-pnpm run check    # TypeScript + Svelte check
-pnpm run preview  # Preview production build
+pnpm run dev              # Dev server at localhost:5173
+pnpm run build            # Production build
+pnpm run check            # TypeScript + Svelte check
+pnpm run preview          # Preview production build
+pnpm run generate-pwa-assets  # Regenerate PWA icons/splash screens
 ```
 
 ```bash

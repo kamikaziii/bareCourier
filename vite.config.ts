@@ -9,36 +9,42 @@ export default defineConfig({
 		sveltekit(),
 		SvelteKitPWA({
 			registerType: 'prompt',
-			manifest: {
-				name: 'bareCourier',
-				short_name: 'bareCourier',
-				description: 'Dental lab courier management',
-				theme_color: '#3b82f6',
-				background_color: '#ffffff',
-				display: 'standalone',
-				scope: '/',
-				start_url: '/',
-				icons: [
-					{
-						src: '/icons/pwa-192x192.png',
-						sizes: '192x192',
-						type: 'image/png'
-					},
-					{
-						src: '/icons/pwa-512x512.png',
-						sizes: '512x512',
-						type: 'image/png'
-					},
-					{
-						src: '/icons/pwa-512x512.png',
-						sizes: '512x512',
-						type: 'image/png',
-						purpose: 'maskable'
-					}
-				]
-			},
+			manifest: false,
 			workbox: {
-				globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}']
+				globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+				globIgnores: ['**/apple-splash-*.png'],
+				runtimeCaching: [
+					{
+						// Supabase Auth - NetworkOnly (never cache)
+						urlPattern: /^https:\/\/.*\.supabase\.co\/auth\/.*/i,
+						handler: 'NetworkOnly',
+						options: {
+							cacheName: 'supabase-auth'
+						}
+					},
+					{
+						// Supabase REST API - NetworkFirst with cache fallback
+						urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
+						handler: 'NetworkFirst',
+						options: {
+							cacheName: 'supabase-data',
+							networkTimeoutSeconds: 10,
+							expiration: {
+								maxEntries: 100,
+								maxAgeSeconds: 60 * 60 * 24 // 24 hours
+							},
+							cacheableResponse: {
+								statuses: [0, 200]
+							}
+						}
+					}
+				],
+				skipWaiting: false,
+				clientsClaim: true
+			},
+			devOptions: {
+				enabled: true,
+				type: 'module'
 			}
 		})
 	]

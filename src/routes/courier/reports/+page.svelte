@@ -14,18 +14,17 @@
 	// Filters
 	let clientFilter = $state<string>('all');
 	let statusFilter = $state<'all' | 'pending' | 'delivered'>('all');
-	let startDate = $state('');
-	let endDate = $state('');
 
 	// Set default date range to current month
 	const now = new Date();
 	const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 	const lastOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-	$effect(() => {
-		startDate = firstOfMonth.toISOString().split('T')[0];
-		endDate = lastOfMonth.toISOString().split('T')[0];
-	});
+	// Initialize dates directly instead of using $effect
+	const initialStartDate = firstOfMonth.toISOString().split('T')[0];
+	const initialEndDate = lastOfMonth.toISOString().split('T')[0];
+	let startDate = $state(initialStartDate);
+	let endDate = $state(initialEndDate);
 
 	async function loadData() {
 		loading = true;

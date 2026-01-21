@@ -39,38 +39,44 @@
 		formError = '';
 		formSuccess = '';
 
-		// Create user via Supabase Auth admin API
-		// Note: This requires the courier to be logged in and use edge function or service role
-		// For simplicity, we'll use signUp which sends a confirmation email
-		const { data: authData, error: authError } = await data.supabase.auth.signUp({
-			email,
-			password,
-			options: {
-				data: {
-					name,
-					role: 'client'
-				}
-			}
-		});
+		// Get session token for edge function auth
+		const { data: sessionData } = await data.supabase.auth.getSession();
+		const accessToken = sessionData.session?.access_token;
 
-		if (authError) {
-			formError = authError.message;
+		if (!accessToken) {
+			formError = 'Session expired. Please log in again.';
 			formLoading = false;
 			return;
 		}
 
-		// Update the profile with additional info if user was created
-		if (authData.user) {
-			await data.supabase
-				.from('profiles')
-				.update({
+		// Call edge function to create client (uses admin API, no confirmation email)
+		const response = await fetch(
+			`${import.meta.env.PUBLIC_SUPABASE_URL}/functions/v1/create-client`,
+			{
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${accessToken}`
+				},
+				body: JSON.stringify({
+					email,
+					password,
+					name,
 					phone: phone || null,
 					default_pickup_location: defaultPickupLocation || null
 				})
-				.eq('id', authData.user.id);
+			}
+		);
+
+		const result = await response.json();
+
+		if (!response.ok) {
+			formError = result.error || 'Failed to create client';
+			formLoading = false;
+			return;
 		}
 
-		formSuccess = 'Client created! They will receive a confirmation email.';
+		formSuccess = 'Client created successfully! They can now log in.';
 		formLoading = false;
 
 		// Reset form

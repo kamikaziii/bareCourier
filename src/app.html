@@ -2,11 +2,154 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 		<meta name="theme-color" content="#3b82f6" />
-		<link rel="manifest" href="/manifest.json" />
-		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-		<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+
+		<!-- PWA Meta Tags -->
+		<meta name="mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+		<meta name="apple-mobile-web-app-title" content="bareCourier" />
+		<meta name="description" content="Dental lab courier pickup and delivery management - track services, manage clients, and generate reports" />
+
+		<!-- PWA Install Prompt Handler (must be inline in head) -->
+		<script>
+			window.addEventListener('beforeinstallprompt', function (e) {
+				e.preventDefault();
+				window.__pwaInstallPrompt = e;
+				window.dispatchEvent(new CustomEvent('pwa-install-available'));
+			});
+			window.addEventListener('appinstalled', function () {
+				window.__pwaInstallPrompt = null;
+				window.dispatchEvent(new CustomEvent('pwa-installed'));
+			});
+		</script>
+
+		<!-- Favicons -->
+		<link rel="icon" type="image/x-icon" href="/favicon.ico" />
+		<link rel="icon" type="image/png" sizes="64x64" href="/pwa-64x64.png" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png" />
+
+		<!-- Web App Manifest -->
+		<link rel="manifest" href="/manifest.webmanifest" />
+
+		<!-- iOS Splash Screens - Portrait -->
+		<!-- iPad Pro 12.9" (1024x1366 @2x) -->
+		<link
+			rel="apple-touch-startup-image"
+			media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+			href="/images/apple-splash-portrait-2048x2732.png"
+		/>
+		<!-- iPad Pro 11" (834x1194 @2x) -->
+		<link
+			rel="apple-touch-startup-image"
+			media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+			href="/images/apple-splash-portrait-1668x2388.png"
+		/>
+		<!-- iPad Air 10.9" (820x1180 @2x) -->
+		<link
+			rel="apple-touch-startup-image"
+			media="screen and (device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+			href="/images/apple-splash-portrait-1640x2360.png"
+		/>
+		<!-- iPad 10.2" (810x1080 @2x) -->
+		<link
+			rel="apple-touch-startup-image"
+			media="screen and (device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+			href="/images/apple-splash-portrait-1620x2160.png"
+		/>
+		<!-- iPad Pro 10.5" (834x1112 @2x) -->
+		<link
+			rel="apple-touch-startup-image"
+			media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+			href="/images/apple-splash-portrait-1668x2224.png"
+		/>
+		<!-- iPad 9.7" (768x1024 @2x) -->
+		<link
+			rel="apple-touch-startup-image"
+			media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+			href="/images/apple-splash-portrait-1536x2048.png"
+		/>
+		<!-- iPad mini (744x1133 @2x) -->
+		<link
+			rel="apple-touch-startup-image"
+			media="screen and (device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+			href="/images/apple-splash-portrait-1488x2266.png"
+		/>
+		<!-- iPhone 16 Pro Max (440x956 @3x) -->
+		<link
+			rel="apple-touch-startup-image"
+			media="screen and (device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+			href="/images/apple-splash-portrait-1320x2868.png"
+		/>
+		<!-- iPhone 16 Pro (402x874 @3x) -->
+		<link
+			rel="apple-touch-startup-image"
+			media="screen and (device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+			href="/images/apple-splash-portrait-1206x2622.png"
+		/>
+		<!-- iPhone 16 Plus, 15 Plus, 14 Pro Max (430x932 @3x) -->
+		<link
+			rel="apple-touch-startup-image"
+			media="screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+			href="/images/apple-splash-portrait-1290x2796.png"
+		/>
+		<!-- iPhone 16, 15 Pro, 15 (393x852 @3x) -->
+		<link
+			rel="apple-touch-startup-image"
+			media="screen and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+			href="/images/apple-splash-portrait-1179x2556.png"
+		/>
+		<!-- iPhone 14, 13, 12 (390x844 @3x) -->
+		<link
+			rel="apple-touch-startup-image"
+			media="screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+			href="/images/apple-splash-portrait-1170x2532.png"
+		/>
+		<!-- iPhone 14 Plus, 13 Pro Max, 12 Pro Max (428x926 @3x) -->
+		<link
+			rel="apple-touch-startup-image"
+			media="screen and (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+			href="/images/apple-splash-portrait-1284x2778.png"
+		/>
+		<!-- iPhone 13 mini, 12 mini, X, XS, 11 Pro (375x812 @3x) -->
+		<link
+			rel="apple-touch-startup-image"
+			media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+			href="/images/apple-splash-portrait-1125x2436.png"
+		/>
+		<!-- iPhone XR, 11 (414x896 @2x) -->
+		<link
+			rel="apple-touch-startup-image"
+			media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+			href="/images/apple-splash-portrait-828x1792.png"
+		/>
+		<!-- iPhone XS Max, 11 Pro Max (414x896 @3x) -->
+		<link
+			rel="apple-touch-startup-image"
+			media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+			href="/images/apple-splash-portrait-1242x2688.png"
+		/>
+		<!-- iPhone 8 Plus (414x736 @3x) -->
+		<link
+			rel="apple-touch-startup-image"
+			media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+			href="/images/apple-splash-portrait-1242x2208.png"
+		/>
+		<!-- iPhone 8, SE (375x667 @2x) -->
+		<link
+			rel="apple-touch-startup-image"
+			media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+			href="/images/apple-splash-portrait-750x1334.png"
+		/>
+		<!-- iPhone SE (320x568 @2x) -->
+		<link
+			rel="apple-touch-startup-image"
+			media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+			href="/images/apple-splash-portrait-640x1136.png"
+		/>
+
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

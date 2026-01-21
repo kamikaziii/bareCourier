@@ -35,25 +35,23 @@ services (
 
 ## Row Level Security (RLS)
 
+All policies use `(select auth.uid())` for optimal performance (prevents re-evaluation per row).
+
 ### profiles table
 
 | Policy | Operation | Rule |
 |--------|-----------|------|
-| Courier can read all | SELECT | `role = 'courier'` |
-| Users can read own | SELECT | `id = auth.uid()` |
-| Courier can create | INSERT | Courier creates client profiles |
-| Courier can update all | UPDATE | `role = 'courier'` |
-| Users can update own | UPDATE | `id = auth.uid()` |
+| profiles_select | SELECT | Own profile OR courier can read all |
+| profiles_insert | INSERT | Courier only (creates client profiles) |
+| profiles_update | UPDATE | Own profile OR courier can update all |
 
 ### services table
 
 | Policy | Operation | Rule |
 |--------|-----------|------|
-| Courier can read all | SELECT | `role = 'courier'` |
-| Clients can read own | SELECT | `client_id = auth.uid()` |
-| Clients can create own | INSERT | `client_id = auth.uid()` |
-| Courier can create any | INSERT | `role = 'courier'` |
-| Courier can update any | UPDATE | `role = 'courier'` |
+| services_select | SELECT | Own services OR courier can read all |
+| services_insert | INSERT | Own services OR courier can create any |
+| services_update | UPDATE | Courier only |
 
 ## Query Patterns
 
