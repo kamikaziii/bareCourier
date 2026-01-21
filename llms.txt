@@ -1,0 +1,57 @@
+# bareCourier
+
+> A PWA for a solo dental lab courier to manage pickups and deliveries.
+
+bareCourier is a mobile-first web application built with SvelteKit, Svelte 5, Tailwind CSS v4, and Supabase. It replaces paper-based tracking for a dental lab courier service with digital service management.
+
+## Documentation
+
+- [README](README.md): Project overview, setup, and usage
+- [Implementation Plan](docs/IMPLEMENTATION_PLAN.md): Development roadmap and status
+- [AI Context](.claude/CLAUDE.md): Project context for AI assistants
+- [Architecture Rules](.claude/rules/architecture.md): Component and routing patterns
+- [Code Style](.claude/rules/code-style.md): TypeScript, Svelte 5, and Tailwind conventions
+- [Database Rules](.claude/rules/database.md): Schema, RLS policies, and query patterns
+
+## Tech Stack
+
+- Framework: SvelteKit 2.50+ with Svelte 5 (runes syntax)
+- Styling: Tailwind CSS v4 with @tailwindcss/vite plugin
+- Components: shadcn-svelte (new-york style, OKLCH colors)
+- Backend: Supabase (Auth + Postgres + Row Level Security)
+- PWA: @vite-pwa/sveltekit
+- Deployment: Vercel with adapter-vercel
+
+## Key Features
+
+- Two user roles: courier (admin) and client (dental labs)
+- Service status tracking: pending (blue) → delivered (green)
+- One-tap status toggle for quick updates
+- Monthly reports with CSV export
+- Client self-service portal for new requests
+- Mobile-first responsive design
+
+## Database Tables
+
+### profiles
+User profiles extending Supabase auth.users with role, name, phone, default_pickup_location, active status.
+
+### services
+Pickup/delivery jobs with client_id, pickup_location, delivery_location, status, notes, created_at, delivered_at.
+
+## Source Code
+
+- Routes: src/routes/ (login/, courier/, client/)
+- Components: src/lib/components/ui/ (shadcn-svelte)
+- Types: src/lib/database.types.ts
+- Auth: src/hooks.server.ts (Supabase SSR)
+- Migrations: supabase/migrations/
+
+## Commands
+
+```
+pnpm run dev      # Development server
+pnpm run build    # Production build
+pnpm run check    # TypeScript check
+pnpm run preview  # Preview build
+```
