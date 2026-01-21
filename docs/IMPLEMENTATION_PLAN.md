@@ -9,7 +9,7 @@ A simple PWA for a solo dental lab courier to manage pickups/deliveries and repl
 ## Status
 
 - [x] Phase 0: Project Initialization
-- [ ] Phase 1: Project Setup
+- [x] Phase 1: Project Setup
 - [ ] Phase 2: Authentication & Database
 - [ ] Phase 3: Courier Features
 - [ ] Phase 4: Client Features
@@ -146,15 +146,15 @@ bareCourier/
 - [x] Create GitHub issue with full implementation plan
 
 ### Phase 1: Project Setup
-- [ ] Create SvelteKit project with Svelte 5
-- [ ] Configure Tailwind v4 + shadcn-svelte
-- [ ] Set up @vite-pwa/sveltekit
-- [ ] Create Supabase project and configure env vars
-- [ ] Initialize Vercel project
+- [x] Create SvelteKit project with Svelte 5
+- [x] Configure Tailwind v4 + shadcn-svelte
+- [x] Set up @vite-pwa/sveltekit
+- [x] Create Supabase client and configure env vars
+- [x] Configure Vercel adapter
 
 ### Phase 2: Authentication & Database
-- [ ] Create database schema (profiles, services tables)
-- [ ] Configure Row Level Security policies
+- [x] Create database schema (profiles, services tables)
+- [x] Configure Row Level Security policies
 - [ ] Implement login page
 - [ ] Create auth store and guards
 - [ ] Build profile creation for courier to add clients
