@@ -10,9 +10,9 @@ A simple PWA for a solo dental lab courier to manage pickups/deliveries and repl
 
 - [x] Phase 0: Project Initialization
 - [x] Phase 1: Project Setup
-- [ ] Phase 2: Authentication & Database
-- [ ] Phase 3: Courier Features
-- [ ] Phase 4: Client Features
+- [x] Phase 2: Authentication & Database
+- [x] Phase 3: Courier Features
+- [x] Phase 4: Client Features
 - [ ] Phase 5: PWA & Polish
 - [ ] Phase 6: Deployment
 
@@ -155,21 +155,21 @@ bareCourier/
 ### Phase 2: Authentication & Database
 - [x] Create database schema (profiles, services tables)
 - [x] Configure Row Level Security policies
-- [ ] Implement login page
-- [ ] Create auth store and guards
-- [ ] Build profile creation for courier to add clients
+- [x] Implement login page
+- [x] Create auth store and guards
+- [x] Build profile creation for courier to add clients
 
 ### Phase 3: Courier Features
-- [ ] **Dashboard** - Today's services with status indicators
-- [ ] **Service list** - All services with filters (client, date, status)
-- [ ] **Status toggle** - Mark services as delivered (Blue → Green)
-- [ ] **Client management** - Create/view/deactivate clients
-- [ ] **Monthly reports** - Filter by client + date range, export CSV
+- [x] **Dashboard** - Today's services with status indicators
+- [x] **Service list** - All services with filters (client, date, status)
+- [x] **Status toggle** - Mark services as delivered (Blue → Green)
+- [x] **Client management** - Create/view/deactivate clients
+- [x] **Monthly reports** - Filter by client + date range, export CSV
 
 ### Phase 4: Client Features
-- [ ] **Client dashboard** - View their services and statuses
-- [ ] **Create service** - Simple form with pickup (pre-filled) + delivery location
-- [ ] **Service history** - List of all their past services
+- [x] **Client dashboard** - View their services and statuses
+- [x] **Create service** - Simple form with pickup (pre-filled) + delivery location
+- [x] **Service history** - List of all their past services
 
 ### Phase 5: PWA & Polish
 - [ ] Configure manifest.json with icons

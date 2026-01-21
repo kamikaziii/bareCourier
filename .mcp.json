@@ -17,7 +17,7 @@
     },
     "supabase": {
       "type": "http",
-      "url": ""
+      "url": "https://mcp.supabase.com/mcp?project_ref=kwqrvhbzxncaatxwmaky"
     },
     "context7": {
       "type": "stdio",
