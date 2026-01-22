@@ -3,8 +3,9 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
 	import * as m from '$lib/paraglide/messages.js';
-	import { getLocale } from '$lib/paraglide/runtime.js';
+	import { getLocale, localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -34,6 +35,7 @@
 			data.supabase
 				.from('services')
 				.select('*, profiles!client_id(id, name, default_pickup_location)')
+				.is('deleted_at', null)
 				.order('created_at', { ascending: false }),
 			data.supabase
 				.from('profiles')
@@ -46,20 +48,6 @@
 		services = servicesResult.data || [];
 		clients = clientsResult.data || [];
 		loading = false;
-	}
-
-	async function toggleStatus(service: any) {
-		const newStatus = service.status === 'pending' ? 'delivered' : 'pending';
-		const updates: any = { status: newStatus };
-
-		if (newStatus === 'delivered') {
-			updates.delivered_at = new Date().toISOString();
-		} else {
-			updates.delivered_at = null;
-		}
-
-		await data.supabase.from('services').update(updates).eq('id', service.id);
-		await loadData();
 	}
 
 	async function handleCreateService(e: Event) {
@@ -158,7 +146,7 @@
 							class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
 						>
 							<option value="">{m.form_select_client()}</option>
-							{#each clients as client}
+							{#each clients as client (client.id)}
 								<option value={client.id}>{client.name}</option>
 							{/each}
 						</select>
@@ -227,7 +215,7 @@
 			class="h-10 rounded-md border border-input bg-background px-3 text-sm"
 		>
 			<option value="all">{m.services_all_clients()}</option>
-			{#each clients as client}
+			{#each clients as client (client.id)}
 				<option value={client.id}>{client.name}</option>
 			{/each}
 		</select>
@@ -247,12 +235,9 @@
 			<p class="text-sm text-muted-foreground">
 				{m.services_showing({ count: filteredServices.length })}
 			</p>
-			{#each filteredServices as service}
-				<Card.Root class="overflow-hidden">
-					<button
-						class="w-full text-left"
-						onclick={() => toggleStatus(service)}
-					>
+			{#each filteredServices as service (service.id)}
+				<a href={localizeHref(`/courier/services/${service.id}`)} class="block">
+					<Card.Root class="overflow-hidden transition-colors hover:bg-muted/50">
 						<Card.Content class="flex items-start gap-4 p-4">
 							<div
 								class="mt-1 size-4 shrink-0 rounded-full {service.status === 'pending'
@@ -268,26 +253,26 @@
 										<span class="text-xs text-muted-foreground">
 											{formatDate(service.created_at)}
 										</span>
-										<span
-											class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium {service.status ===
-											'pending'
-												? 'bg-blue-500/10 text-blue-500'
-												: 'bg-green-500/10 text-green-500'}"
+										<Badge
+											variant="outline"
+											class={service.status === 'pending'
+												? 'border-blue-500 text-blue-500'
+												: 'border-green-500 text-green-500'}
 										>
 											{getStatusLabel(service.status)}
-										</span>
+										</Badge>
 									</div>
 								</div>
 								<p class="text-sm text-muted-foreground truncate">
 									{service.pickup_location} &rarr; {service.delivery_location}
 								</p>
 								{#if service.notes}
-									<p class="mt-1 text-sm text-muted-foreground">{service.notes}</p>
+									<p class="mt-1 text-sm text-muted-foreground truncate">{service.notes}</p>
 								{/if}
 							</div>
 						</Card.Content>
-					</button>
-				</Card.Root>
+					</Card.Root>
+				</a>
 			{/each}
 		{/if}
 	</div>

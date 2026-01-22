@@ -20,6 +20,7 @@
 
 	"status_pending": "Pendente",
 	"status_delivered": "Entregue",
+	"status_active": "Ativo",
 
 	"dashboard_title": "Painel",
 	"dashboard_today": "Hoje",
@@ -92,10 +93,134 @@
 	"pwa_close": "Fechar",
 
 	"loading": "A carregar...",
+	"saving": "A guardar...",
 	"redirecting": "A redirecionar...",
 	"session_expired": "Sessão expirada. Por favor, inicie sessão novamente.",
 	"unknown_client": "Cliente desconhecido",
 	"form_name": "Nome",
 	"form_phone": "Telefone",
-	"error_create_client_failed": "Falha ao criar cliente"
+	"error_create_client_failed": "Falha ao criar cliente",
+
+	"action_edit": "Editar",
+	"action_delete": "Eliminar",
+	"action_cancel": "Cancelar",
+	"action_confirm": "Confirmar",
+	"action_save": "Guardar",
+
+	"service_details": "Detalhes do Serviço",
+	"edit_service": "Editar Serviço",
+	"edit_service_desc": "Atualizar as informações do serviço",
+	"mark_delivered": "Marcar Entregue",
+	"mark_pending": "Marcar Pendente",
+	"created_at": "Criado em {date}",
+	"view_client_profile": "Ver perfil do cliente",
+
+	"tab_details": "Detalhes",
+	"tab_history": "Histórico",
+	"tab_info": "Informação",
+	"tab_services": "Serviços",
+
+	"client_info": "Informação do Cliente",
+	"contact_info": "Informação de Contacto",
+	"locations": "Localizações",
+	"timestamps": "Datas e Horas",
+	"default_location": "Localização Padrão",
+	"account_info": "Informação da Conta",
+
+	"label_created": "Criado",
+	"label_updated": "Atualizado",
+	"label_delivered": "Entregue",
+	"label_status": "Estado",
+	"label_member_since": "Membro desde",
+
+	"status_history": "Histórico de Estados",
+	"no_status_history": "Ainda não há alterações de estado registadas",
+
+	"stats_total": "Total",
+
+	"confirm_status_change": "Confirmar Alteração de Estado",
+	"confirm_mark_delivered": "Tem a certeza que quer marcar este serviço como entregue?",
+	"confirm_mark_pending": "Tem a certeza que quer marcar este serviço como pendente?",
+	"confirm_delete_service": "Eliminar Serviço",
+	"confirm_delete_service_desc": "Tem a certeza que quer eliminar este serviço? Esta ação não pode ser revertida.",
+
+	"edit_client": "Editar Cliente",
+	"edit_client_desc": "Atualizar as informações do cliente",
+	"confirm_deactivate_client": "Desativar Cliente",
+	"confirm_deactivate_client_desc": "Clientes desativados não podem iniciar sessão nem criar novos pedidos de serviço.",
+	"confirm_reactivate_client": "Reativar Cliente",
+	"confirm_reactivate_client_desc": "Reativar permitirá que este cliente inicie sessão e crie pedidos de serviço novamente.",
+
+	"notifications": "Notificações",
+	"mark_all_read": "Marcar todas como lidas",
+	"no_notifications": "Sem notificações",
+
+	"time_just_now": "Agora mesmo",
+	"time_minutes_ago": "Há {count}m",
+	"time_hours_ago": "Há {count}h",
+	"time_days_ago": "Há {count}d",
+
+	"schedule_title": "Agendamento",
+	"schedule_date": "Data",
+	"schedule_time_slot": "Período",
+	"schedule_time": "Hora específica",
+	"schedule_select_date": "Selecionar data",
+	"schedule_optional": "Agendamento (opcional)",
+
+	"time_slot_morning": "Manhã (8h-12h)",
+	"time_slot_afternoon": "Tarde (12h-18h)",
+	"time_slot_evening": "Noite (18h-21h)",
+	"time_slot_specific": "Hora específica",
+
+	"request_status_pending": "Pendente",
+	"request_status_accepted": "Aceite",
+	"request_status_rejected": "Rejeitado",
+	"request_status_suggested": "Alternativa sugerida",
+
+	"requests_title": "Pedidos Pendentes",
+	"requests_no_pending": "Sem pedidos pendentes",
+	"requests_accept": "Aceitar",
+	"requests_reject": "Rejeitar",
+	"requests_suggest": "Sugerir Alternativa",
+	"requests_rejection_reason": "Motivo da rejeição",
+	"requests_rejection_placeholder": "Ex: Não disponível nessa data",
+	"requests_suggested_date": "Data sugerida",
+	"requests_suggested_time": "Período sugerido",
+	"requests_confirm_accept": "Confirmar Aceitação",
+	"requests_confirm_accept_desc": "Aceitar este pedido com a data/hora solicitada?",
+	"requests_confirm_reject": "Confirmar Rejeição",
+	"requests_confirm_reject_desc": "O cliente será notificado da rejeição.",
+	"requests_confirm_suggest": "Enviar Sugestão",
+	"requests_confirm_suggest_desc": "O cliente será notificado e pode aceitar ou recusar.",
+	"requests_requested_schedule": "Solicitado",
+	"requests_scheduled": "Agendado",
+
+	"calendar_title": "Calendário",
+	"calendar_no_services": "Sem serviços neste dia",
+	"calendar_services_count": "{count} serviços",
+	"calendar_view_day": "Ver dia",
+
+	"nav_requests": "Pedidos",
+	"nav_calendar": "Calendário",
+
+	"map_get_directions": "Obter direções",
+	"map_distance": "Distância: {km} km",
+	"map_calculating": "A calcular distância...",
+	"map_route": "Rota",
+
+	"address_search": "Pesquisar morada...",
+	"address_searching": "A pesquisar...",
+	"address_no_results": "Sem resultados",
+	"address_use_this": "Usar esta morada",
+
+	"client_suggestions_pending": "Ação Necessária",
+	"client_suggestions_description": "O estafeta sugeriu novas datas para os seguintes serviços. Por favor responda.",
+	"client_respond_to_suggestion": "Responder à Sugestão",
+	"client_suggestion_response_desc": "O estafeta propôs uma data alternativa para o seu serviço.",
+	"client_your_request": "O seu pedido original",
+	"client_courier_suggests": "Data sugerida pelo estafeta",
+
+	"action_respond": "Responder",
+	"action_accept": "Aceitar",
+	"action_decline": "Recusar"
 }

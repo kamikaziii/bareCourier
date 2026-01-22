@@ -1,10 +1,14 @@
 <script lang="ts">
+	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
 	import * as m from '$lib/paraglide/messages.js';
+	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData } from './$types';
+	import { ChevronRight } from '@lucide/svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -52,7 +56,7 @@
 
 		// Call edge function to create client (uses admin API, no confirmation email)
 		const response = await fetch(
-			`${import.meta.env.PUBLIC_SUPABASE_URL}/functions/v1/create-client`,
+			`${PUBLIC_SUPABASE_URL}/functions/v1/create-client`,
 			{
 				method: 'POST',
 				headers: {
@@ -207,23 +211,23 @@
 				</Card.Content>
 			</Card.Root>
 		{:else}
-			{#each activeClients as client}
-				<Card.Root>
-					<Card.Content class="flex items-center justify-between p-4">
-						<div>
-							<p class="font-medium">{client.name}</p>
-							<p class="text-sm text-muted-foreground">
-								{client.phone || m.clients_no_phone()}
-								{#if client.default_pickup_location}
-									&middot; {client.default_pickup_location}
-								{/if}
-							</p>
-						</div>
-						<Button variant="ghost" size="sm" onclick={() => toggleClientActive(client)}>
-							{m.clients_deactivate()}
-						</Button>
-					</Card.Content>
-				</Card.Root>
+			{#each activeClients as client (client.id)}
+				<a href={localizeHref(`/courier/clients/${client.id}`)} class="block">
+					<Card.Root class="transition-colors hover:bg-muted/50">
+						<Card.Content class="flex items-center justify-between p-4">
+							<div class="min-w-0 flex-1">
+								<p class="font-medium">{client.name}</p>
+								<p class="text-sm text-muted-foreground truncate">
+									{client.phone || m.clients_no_phone()}
+									{#if client.default_pickup_location}
+										&middot; {client.default_pickup_location}
+									{/if}
+								</p>
+							</div>
+							<ChevronRight class="size-5 text-muted-foreground" />
+						</Card.Content>
+					</Card.Root>
+				</a>
 			{/each}
 		{/if}
 	</div>
@@ -232,18 +236,21 @@
 	{#if inactiveClients.length > 0}
 		<div class="space-y-3">
 			<h2 class="text-lg font-semibold text-muted-foreground">{m.clients_inactive()} ({inactiveClients.length})</h2>
-			{#each inactiveClients as client}
-				<Card.Root class="opacity-60">
-					<Card.Content class="flex items-center justify-between p-4">
-						<div>
-							<p class="font-medium">{client.name}</p>
-							<p class="text-sm text-muted-foreground">{client.phone || m.clients_no_phone()}</p>
-						</div>
-						<Button variant="ghost" size="sm" onclick={() => toggleClientActive(client)}>
-							{m.clients_reactivate()}
-						</Button>
-					</Card.Content>
-				</Card.Root>
+			{#each inactiveClients as client (client.id)}
+				<a href={localizeHref(`/courier/clients/${client.id}`)} class="block">
+					<Card.Root class="opacity-60 transition-colors hover:bg-muted/50">
+						<Card.Content class="flex items-center justify-between p-4">
+							<div class="min-w-0 flex-1">
+								<div class="flex items-center gap-2">
+									<p class="font-medium">{client.name}</p>
+									<Badge variant="secondary">{m.clients_inactive()}</Badge>
+								</div>
+								<p class="text-sm text-muted-foreground">{client.phone || m.clients_no_phone()}</p>
+							</div>
+							<ChevronRight class="size-5 text-muted-foreground" />
+						</Card.Content>
+					</Card.Root>
+				</a>
 			{/each}
 		</div>
 	{/if}

@@ -20,4 +20,18 @@ declare global {
 	}
 }
 
+// Declare environment variables for TypeScript
+declare module '$env/static/public' {
+	export const PUBLIC_SUPABASE_URL: string;
+	export const PUBLIC_SUPABASE_ANON_KEY: string;
+	export const PUBLIC_MAPBOX_TOKEN: string;
+	export const PUBLIC_OPENROUTESERVICE_KEY: string;
+	export const PUBLIC_VAPID_PUBLIC_KEY: string;
+}
+
+// Workbox types for service worker
+declare const self: ServiceWorkerGlobalScope & {
+	__WB_MANIFEST: Array<{ url: string; revision: string | null }>;
+};
+
 export {};

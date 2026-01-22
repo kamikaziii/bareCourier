@@ -128,7 +128,7 @@
 				</Card.Content>
 			</Card.Root>
 		{:else}
-			{#each services as service}
+			{#each services as service (service.id)}
 				<Card.Root class="overflow-hidden">
 					<button
 						class="w-full text-left"

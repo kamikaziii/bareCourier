@@ -8,6 +8,7 @@ A simple PWA for a solo courier to manage pickups/deliveries and replace paper t
 
 ## Status
 
+### MVP (Completed)
 - [x] Phase 0: Project Initialization
 - [x] Phase 1: Project Setup
 - [x] Phase 2: Authentication & Database
@@ -17,6 +18,12 @@ A simple PWA for a solo courier to manage pickups/deliveries and replace paper t
 - [x] Phase 5: PWA & Polish
 - [x] Phase 6: Internationalization (i18n)
 - [ ] Phase 7: Deployment
+
+### Feature Enhancement (In Progress)
+- [x] **Phase 1: Core UX Improvements + Full CRUD** (2025-01-21)
+- [x] **Phase 1 Security Fixes** (2025-01-21) - Applied `013_fix_phase1_security_issues.sql`
+- [x] **Phase 2: Scheduling + Maps + Notifications** (2025-01-21)
+- [ ] Phase 3: Billing Tracking + Analytics
 
 ---
 
@@ -274,15 +281,159 @@ bareCourier/
 
 ```bash
 # Development
-npm run dev
+pnpm run dev
 
 # Build
-npm run build
+pnpm run build
 
 # Preview production build
-npm run preview
+pnpm run preview
 
-# Supabase local dev
-npx supabase start
-npx supabase db push
+# TypeScript check
+pnpm run check
+
+# Add shadcn-svelte component
+pnpm dlx shadcn-svelte@latest add [component] --yes
+
+# Generate PWA assets
+pnpm run generate-pwa-assets
 ```
+
+---
+
+## Feature Enhancement Plan
+
+Transform bareCourier from MVP to production-ready courier management system.
+
+### Phase 1: Core UX Improvements + Full CRUD ✅ (Completed 2025-01-21)
+
+#### Database Migrations Applied
+- `009_add_service_soft_delete.sql` - Added `deleted_at`, `updated_at` columns
+- `010_create_service_status_history.sql` - Status change tracking
+- `011_create_notifications_table.sql` - In-app notifications with triggers
+- `012_fix_function_search_paths.sql` - Security fix for function search paths
+
+#### New Routes
+| Route | Purpose |
+|-------|---------|
+| `/courier/services/[id]` | Service detail with history |
+| `/courier/services/[id]/edit` | Edit service form |
+| `/courier/clients/[id]` | Client detail with stats |
+| `/courier/clients/[id]/edit` | Edit client form |
+| `/client/services/[id]` | Client service detail view |
+
+#### Features Implemented
+- **Service Detail Page**: Full info, status history, timestamps, notes
+- **Edit/Delete Services**: Proper forms with confirmation dialogs
+- **Client Detail Page**: Profile info, service history, statistics
+- **Edit/Archive Clients**: Modify or deactivate clients
+- **Status Change UX**: Proper buttons with confirmation (not card click)
+- **In-App Notifications**: Real-time notifications for status changes and new requests
+- **Soft Delete**: Services are soft-deleted for audit trail
+
+#### New Components Added
+- Dialog, Alert Dialog, Dropdown Menu, Tabs, Badge, Separator
+- NotificationBell component with real-time updates
+
+#### i18n Strings Added
+- ~50 new translation keys in PT and EN
+
+### Phase 1 Security Fixes ✅ (Completed 2025-01-21)
+
+#### Database Migration Applied
+- `013_fix_phase1_security_issues.sql`
+
+#### Fixes Implemented
+1. **RLS Policy Fix**: `services_update` now checks `deleted_at IS NULL` to prevent updating soft-deleted services
+2. **RLS Policy Fix**: Removed overly permissive `notifications_insert` policy (triggers use SECURITY DEFINER)
+3. **Function Security**: `update_updated_at_column()` now uses SECURITY DEFINER with empty search_path
+4. **Database Constraint**: Added CHECK constraint on `notifications.type` column
+5. **Input Validation**: Status values validated before database update
+6. **Role Verification**: All courier actions verify user role at application level (defense-in-depth)
+7. **Error Feedback**: UI components now display action errors to users
+
+#### Files Modified
+- `src/routes/courier/services/[id]/+page.server.ts` - Input validation + role verification
+- `src/routes/courier/services/[id]/edit/+page.server.ts` - Role verification
+- `src/routes/courier/clients/[id]/+page.server.ts` - Role verification
+- `src/routes/courier/clients/[id]/edit/+page.server.ts` - Role verification
+- `src/routes/courier/services/[id]/+page.svelte` - Error feedback in dialogs
+- `src/routes/courier/clients/[id]/+page.svelte` - Error feedback in dialogs
+
+### Phase 2: Scheduling + Maps + Notifications ✅ (Completed 2025-01-21)
+
+#### Database Migrations Applied
+- `014_add_scheduling_fields.sql` - Added scheduling fields (requested/scheduled date, time slots, request status)
+- `015_add_location_coordinates.sql` - Added coordinate fields (pickup/delivery lat/lng, distance_km)
+- `016_create_push_subscriptions.sql` - Created push_subscriptions table for PWA notifications
+
+#### New Routes
+| Route | Purpose |
+|-------|---------|
+| `/courier/requests` | Pending service requests approval workflow |
+| `/courier/calendar` | Calendar view with monthly services |
+
+#### Features Implemented
+- **SchedulePicker Component**: Date and time slot selection using shadcn calendar
+- **Client Service Form**: Updated with optional scheduling (date + time slot)
+- **Request Approval Workflow**: Accept/Reject/Suggest alternative actions
+- **AddressInput Component**: Mapbox Geocoding API autocomplete (ready for integration)
+- **RouteMap Component**: Mapbox GL JS map with pickup/delivery markers and route display
+- **Calendar View**: Monthly calendar with service dots, day detail view
+- **Push Notification Service**: Subscription management with VAPID keys
+- **Custom Service Worker**: Workbox-based with push notification handling
+- **Email Notification Edge Function**: `send-notification` for Resend integration
+
+#### New Components Added
+- Calendar, Popover (shadcn-svelte)
+- SchedulePicker, AddressInput, RouteMap (custom)
+
+#### New Services Created
+- `src/lib/services/geocoding.ts` - Mapbox Geocoding API
+- `src/lib/services/distance.ts` - OpenRouteService distance calculation
+- `src/lib/services/push.ts` - Web Push subscription management
+
+#### Environment Variables Required
+```
+PUBLIC_MAPBOX_TOKEN=pk.xxx
+PUBLIC_OPENROUTESERVICE_KEY=xxx
+PUBLIC_VAPID_PUBLIC_KEY=xxx
+RESEND_API_KEY=re_xxx (in Supabase secrets)
+```
+
+#### i18n Strings Added
+- ~40 new translation keys for scheduling, calendar, maps, requests
+
+### Phase 3: Billing Tracking + Analytics (Pending)
+
+#### Database Changes Required
+```sql
+-- Pricing configuration
+CREATE TABLE client_pricing (...);
+CREATE TABLE pricing_zones (...);
+CREATE TABLE urgency_fees (...);
+
+-- Pricing fields on services
+ALTER TABLE services ADD COLUMN urgency_fee_id uuid;
+ALTER TABLE services ADD COLUMN calculated_price decimal(10,2);
+```
+
+#### Features Planned
+- Per-client pricing configuration (per_km, zone, flat_plus_km)
+- Billing summary dashboard for Moloni invoice creation
+- CSV export for billing periods
+- Analytics dashboard with Chart.js
+- Client billing portal (view km totals, estimated costs)
+- Settings pages for courier and client
+
+### External Services Required
+
+| Service | Purpose | Cost |
+|---------|---------|------|
+| **Mapbox** | Maps display, geocoding | Free (50k requests/month) |
+| **OpenRouteService** | Distance calculation | Free (2,000 requests/day) |
+| **Resend** | Email notifications | Free (3,000 emails/month) |
+| **Web Push** | Push notifications | Free (self-hosted with VAPID) |
+| **Moloni** | Invoicing (external) | Already in use |
+
+**Note**: Google Maps API NOT used - $200/month credit was removed in March 2025

@@ -1,0 +1,124 @@
+<script lang="ts">
+	import { enhance } from '$app/forms';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import * as Card from '$lib/components/ui/card/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import { Label } from '$lib/components/ui/label/index.js';
+	import * as m from '$lib/paraglide/messages.js';
+	import { localizeHref } from '$lib/paraglide/runtime.js';
+	import type { PageData, ActionData } from './$types';
+	import { ArrowLeft } from '@lucide/svelte';
+
+	let { data, form }: { data: PageData; form: ActionData } = $props();
+
+	let loading = $state(false);
+	let clientId = $state(data.service.client_id);
+	let pickupLocation = $state(data.service.pickup_location);
+	let deliveryLocation = $state(data.service.delivery_location);
+	let notes = $state(data.service.notes || '');
+
+	function handleClientChange() {
+		const client = data.clients.find((c) => c.id === clientId);
+		if (client?.default_pickup_location && !pickupLocation) {
+			pickupLocation = client.default_pickup_location;
+		}
+	}
+</script>
+
+<div class="space-y-6">
+	<!-- Header -->
+	<div class="flex items-center gap-3">
+		<Button variant="ghost" size="sm" href={localizeHref(`/courier/services/${data.service.id}`)}>
+			<ArrowLeft class="size-4" />
+		</Button>
+		<h1 class="text-2xl font-bold">{m.edit_service()}</h1>
+	</div>
+
+	<Card.Root>
+		<Card.Header>
+			<Card.Title>{m.service_details()}</Card.Title>
+			<Card.Description>{m.edit_service_desc()}</Card.Description>
+		</Card.Header>
+		<Card.Content>
+			<form
+				method="POST"
+				use:enhance={() => {
+					loading = true;
+					return async ({ update }) => {
+						loading = false;
+						await update();
+					};
+				}}
+				class="space-y-4"
+			>
+				{#if form?.error}
+					<div class="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+						{form.error}
+					</div>
+				{/if}
+
+				<div class="space-y-2">
+					<Label for="client">{m.form_client()} *</Label>
+					<select
+						id="client"
+						name="client_id"
+						bind:value={clientId}
+						onchange={handleClientChange}
+						required
+						disabled={loading}
+						class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+					>
+						<option value="">{m.form_select_client()}</option>
+						{#each data.clients as client (client.id)}
+							<option value={client.id}>{client.name}</option>
+						{/each}
+					</select>
+				</div>
+
+				<div class="grid gap-4 md:grid-cols-2">
+					<div class="space-y-2">
+						<Label for="pickup">{m.form_pickup_location()} *</Label>
+						<Input
+							id="pickup"
+							name="pickup_location"
+							type="text"
+							bind:value={pickupLocation}
+							required
+							disabled={loading}
+						/>
+					</div>
+					<div class="space-y-2">
+						<Label for="delivery">{m.form_delivery_location()} *</Label>
+						<Input
+							id="delivery"
+							name="delivery_location"
+							type="text"
+							bind:value={deliveryLocation}
+							required
+							disabled={loading}
+						/>
+					</div>
+				</div>
+
+				<div class="space-y-2">
+					<Label for="notes">{m.form_notes_optional()}</Label>
+					<Input id="notes" name="notes" type="text" bind:value={notes} disabled={loading} />
+				</div>
+
+				<div class="flex gap-3 pt-4">
+					<Button type="submit" disabled={loading}>
+						{loading ? m.saving() : m.action_save()}
+					</Button>
+					<Button
+						type="button"
+						variant="outline"
+						href={localizeHref(`/courier/services/${data.service.id}`)}
+						disabled={loading}
+					>
+						{m.action_cancel()}
+					</Button>
+				</div>
+			</form>
+		</Card.Content>
+	</Card.Root>
+</div>

@@ -1,12 +1,34 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// NOTE: This function uses verify_jwt: false (set in Supabase Dashboard or config.toml)
+//
+// Why? Supabase is deprecating the verify_jwt flag in favor of manual JWT validation.
+// The old verify_jwt check is incompatible with Supabase's new asymmetric JWT signing keys.
+// See: https://supabase.com/docs/guides/functions/auth
+//
+// We validate the JWT ourselves using getUser() which uses the modern validation path.
+// This is Supabase's recommended approach for Edge Functions.
+
+// Allowed origins for CORS
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "https://barecourier.vercel.app",
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("Origin") || "";
+  const allowedOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  };
+}
 
 Deno.serve(async (req: Request) => {
+  const corsHeaders = getCorsHeaders(req);
+
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -31,15 +53,16 @@ Deno.serve(async (req: Request) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    // Verify the caller is a courier
+    // Verify the caller using modern JWT validation (recommended by Supabase)
     const { data: { user }, error: userError } = await userClient.auth.getUser();
     if (userError || !user) {
       return new Response(
-        JSON.stringify({ error: "Invalid user" }),
+        JSON.stringify({ error: "Invalid or expired session" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    // Verify caller is a courier
     const { data: profile, error: profileError } = await userClient
       .from("profiles")
       .select("role")
@@ -53,7 +76,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Parse request body
+    // Parse and validate request body
     const { email, password, name, phone, default_pickup_location } = await req.json();
 
     if (!email || !password || !name) {
@@ -63,20 +86,16 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Create admin client with service role key
+    // Create client user with admin API (no confirmation email)
     const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Create the user using admin API (no confirmation email)
     const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
       email,
       password,
-      email_confirm: true, // Auto-confirm the email
-      user_metadata: {
-        name,
-        role: "client",
-      },
+      email_confirm: true,
+      user_metadata: { name, role: "client" },
     });
 
     if (authError) {
@@ -86,7 +105,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Update the profile with additional fields (trigger creates basic profile)
+    // Update profile with additional fields (trigger creates basic profile)
     if (authData.user) {
       const { error: updateError } = await adminClient
         .from("profiles")
@@ -104,10 +123,7 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         success: true,
-        user: {
-          id: authData.user?.id,
-          email: authData.user?.email
-        }
+        user: { id: authData.user?.id, email: authData.user?.email }
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

@@ -1,0 +1,165 @@
+import type { Actions } from './$types';
+import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
+
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+// Helper to notify courier
+async function notifyCourier(
+	supabase: SupabaseClient,
+	session: { access_token: string },
+	serviceId: string,
+	subject: string,
+	message: string
+) {
+	try {
+		// Get the courier (there's only one)
+		const { data: courierData } = await supabase
+			.from('profiles')
+			.select('id')
+			.eq('role', 'courier')
+			.single();
+
+		if (!courierData) return;
+
+		await fetch(`${PUBLIC_SUPABASE_URL}/functions/v1/send-notification`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${session.access_token}`,
+				'apikey': PUBLIC_SUPABASE_ANON_KEY
+			},
+			body: JSON.stringify({
+				type: 'both',
+				user_id: courierData.id,
+				subject,
+				message,
+				service_id: serviceId,
+				url: `/courier/services/${serviceId}`
+			})
+		});
+	} catch (error) {
+		console.error('Notification error:', error);
+	}
+}
+
+export const actions: Actions = {
+	acceptSuggestion: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const formData = await request.formData();
+		const serviceId = formData.get('service_id') as string;
+
+		if (!serviceId) {
+			return { success: false, error: 'Service ID required' };
+		}
+
+		// Get the service and verify ownership
+		const { data: serviceData } = await supabase
+			.from('services')
+			.select('client_id, suggested_date, suggested_time_slot')
+			.eq('id', serviceId)
+			.single();
+
+		if (!serviceData) {
+			return { success: false, error: 'Service not found' };
+		}
+
+		const service = serviceData as {
+			client_id: string;
+			suggested_date: string | null;
+			suggested_time_slot: string | null;
+		};
+
+		if (service.client_id !== user.id) {
+			return { success: false, error: 'Unauthorized' };
+		}
+
+		// Accept the suggestion - copy suggested to scheduled and mark as accepted
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error: updateError } = await (supabase as any)
+			.from('services')
+			.update({
+				request_status: 'accepted',
+				scheduled_date: service.suggested_date,
+				scheduled_time_slot: service.suggested_time_slot,
+				suggested_date: null,
+				suggested_time_slot: null
+			})
+			.eq('id', serviceId);
+
+		if (updateError) {
+			return { success: false, error: updateError.message };
+		}
+
+		// Notify courier
+		await notifyCourier(
+			supabase,
+			session,
+			serviceId,
+			'Sugestão Aceite',
+			'O cliente aceitou a data sugerida para o serviço.'
+		);
+
+		return { success: true };
+	},
+
+	declineSuggestion: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const formData = await request.formData();
+		const serviceId = formData.get('service_id') as string;
+
+		if (!serviceId) {
+			return { success: false, error: 'Service ID required' };
+		}
+
+		// Get the service and verify ownership
+		const { data: serviceData } = await supabase
+			.from('services')
+			.select('client_id')
+			.eq('id', serviceId)
+			.single();
+
+		if (!serviceData) {
+			return { success: false, error: 'Service not found' };
+		}
+
+		const service = serviceData as { client_id: string };
+
+		if (service.client_id !== user.id) {
+			return { success: false, error: 'Unauthorized' };
+		}
+
+		// Decline the suggestion - set back to pending for courier to review
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error: updateError } = await (supabase as any)
+			.from('services')
+			.update({
+				request_status: 'pending',
+				suggested_date: null,
+				suggested_time_slot: null
+			})
+			.eq('id', serviceId);
+
+		if (updateError) {
+			return { success: false, error: updateError.message };
+		}
+
+		// Notify courier
+		await notifyCourier(
+			supabase,
+			session,
+			serviceId,
+			'Sugestão Recusada',
+			'O cliente recusou a data sugerida. O pedido está novamente pendente.'
+		);
+
+		return { success: true };
+	}
+};

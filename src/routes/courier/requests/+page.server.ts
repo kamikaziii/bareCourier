@@ -1,0 +1,270 @@
+import { redirect } from '@sveltejs/kit';
+import type { PageServerLoad, Actions } from './$types';
+import type { Service, Profile } from '$lib/database.types';
+import { localizeHref } from '$lib/paraglide/runtime.js';
+import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
+
+// Helper to send notification to client
+async function notifyClient(
+	session: { access_token: string },
+	clientId: string,
+	serviceId: string,
+	subject: string,
+	message: string
+) {
+	try {
+		const response = await fetch(`${PUBLIC_SUPABASE_URL}/functions/v1/send-notification`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${session.access_token}`,
+				'apikey': PUBLIC_SUPABASE_ANON_KEY
+			},
+			body: JSON.stringify({
+				type: 'both',
+				user_id: clientId,
+				subject,
+				message,
+				service_id: serviceId,
+				url: `/client/services/${serviceId}`
+			})
+		});
+
+		if (!response.ok) {
+			console.error('Failed to send notification:', await response.text());
+		}
+	} catch (error) {
+		console.error('Notification error:', error);
+	}
+}
+
+export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
+	const { session } = await safeGetSession();
+	if (!session) {
+		redirect(303, localizeHref('/login'));
+	}
+
+	// Load pending service requests (services with request_status = 'pending')
+	const { data: pendingRequests } = await supabase
+		.from('services')
+		.select('*, profiles!client_id(id, name, phone)')
+		.eq('request_status', 'pending')
+		.is('deleted_at', null)
+		.order('created_at', { ascending: false });
+
+	return {
+		pendingRequests: (pendingRequests || []) as (Service & { profiles: Pick<Profile, 'id' | 'name' | 'phone'> })[]
+	};
+};
+
+export const actions: Actions = {
+	accept: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		// Verify user is courier
+		const { data: profile } = await supabase
+			.from('profiles')
+			.select('role')
+			.eq('id', user.id)
+			.single();
+
+		const userProfile = profile as { role: string } | null;
+		if (userProfile?.role !== 'courier') {
+			return { success: false, error: 'Unauthorized' };
+		}
+
+		const formData = await request.formData();
+		const serviceId = formData.get('service_id') as string;
+
+		if (!serviceId) {
+			return { success: false, error: 'Service ID required' };
+		}
+
+		// Get the service to copy requested schedule to scheduled
+		const { data: serviceData } = await supabase
+			.from('services')
+			.select('client_id, requested_date, requested_time_slot, requested_time')
+			.eq('id', serviceId)
+			.single();
+
+		if (!serviceData) {
+			return { success: false, error: 'Service not found' };
+		}
+
+		const service = serviceData as {
+			client_id: string;
+			requested_date: string | null;
+			requested_time_slot: string | null;
+			requested_time: string | null;
+		};
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error: updateError } = await (supabase as any)
+			.from('services')
+			.update({
+				request_status: 'accepted',
+				scheduled_date: service.requested_date,
+				scheduled_time_slot: service.requested_time_slot,
+				scheduled_time: service.requested_time
+			})
+			.eq('id', serviceId);
+
+		if (updateError) {
+			return { success: false, error: updateError.message };
+		}
+
+		// Notify client
+		await notifyClient(
+			session,
+			service.client_id,
+			serviceId,
+			'Pedido Aceite',
+			'O seu pedido de serviço foi aceite pelo estafeta. Verifique os detalhes na aplicação.'
+		);
+
+		return { success: true };
+	},
+
+	reject: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		// Verify user is courier
+		const { data: profile } = await supabase
+			.from('profiles')
+			.select('role')
+			.eq('id', user.id)
+			.single();
+
+		const userProfile = profile as { role: string } | null;
+		if (userProfile?.role !== 'courier') {
+			return { success: false, error: 'Unauthorized' };
+		}
+
+		const formData = await request.formData();
+		const serviceId = formData.get('service_id') as string;
+		const rejectionReason = formData.get('rejection_reason') as string;
+
+		if (!serviceId) {
+			return { success: false, error: 'Service ID required' };
+		}
+
+		// Get client_id before updating
+		const { data: serviceData } = await supabase
+			.from('services')
+			.select('client_id')
+			.eq('id', serviceId)
+			.single();
+
+		const service = serviceData as { client_id: string } | null;
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error: updateError } = await (supabase as any)
+			.from('services')
+			.update({
+				request_status: 'rejected',
+				rejection_reason: rejectionReason || null
+			})
+			.eq('id', serviceId);
+
+		if (updateError) {
+			return { success: false, error: updateError.message };
+		}
+
+		// Notify client
+		if (service?.client_id) {
+			const reasonText = rejectionReason ? ` Motivo: ${rejectionReason}` : '';
+			await notifyClient(
+				session,
+				service.client_id,
+				serviceId,
+				'Pedido Rejeitado',
+				`O seu pedido de serviço foi rejeitado.${reasonText}`
+			);
+		}
+
+		return { success: true };
+	},
+
+	suggest: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		// Verify user is courier
+		const { data: profile } = await supabase
+			.from('profiles')
+			.select('role')
+			.eq('id', user.id)
+			.single();
+
+		const userProfile = profile as { role: string } | null;
+		if (userProfile?.role !== 'courier') {
+			return { success: false, error: 'Unauthorized' };
+		}
+
+		const formData = await request.formData();
+		const serviceId = formData.get('service_id') as string;
+		const suggestedDate = formData.get('suggested_date') as string;
+		const suggestedTimeSlot = formData.get('suggested_time_slot') as string;
+
+		if (!serviceId) {
+			return { success: false, error: 'Service ID required' };
+		}
+
+		if (!suggestedDate || !suggestedTimeSlot) {
+			return { success: false, error: 'Suggested date and time slot required' };
+		}
+
+		// Get client_id before updating
+		const { data: serviceData } = await supabase
+			.from('services')
+			.select('client_id')
+			.eq('id', serviceId)
+			.single();
+
+		const service = serviceData as { client_id: string } | null;
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error: updateError } = await (supabase as any)
+			.from('services')
+			.update({
+				request_status: 'suggested',
+				suggested_date: suggestedDate,
+				suggested_time_slot: suggestedTimeSlot
+			})
+			.eq('id', serviceId);
+
+		if (updateError) {
+			return { success: false, error: updateError.message };
+		}
+
+		// Notify client
+		if (service?.client_id) {
+			const dateFormatted = new Date(suggestedDate).toLocaleDateString('pt-PT');
+			const slotLabels: Record<string, string> = {
+				morning: 'Manhã',
+				afternoon: 'Tarde',
+				evening: 'Noite',
+				specific: 'Hora específica'
+			};
+			const slotText = slotLabels[suggestedTimeSlot] || suggestedTimeSlot;
+
+			await notifyClient(
+				session,
+				service.client_id,
+				serviceId,
+				'Nova Data Sugerida',
+				`O estafeta sugeriu uma nova data para o seu serviço: ${dateFormatted} (${slotText}). Aceda à aplicação para aceitar ou recusar.`
+			);
+		}
+
+		return { success: true };
+	}
+};

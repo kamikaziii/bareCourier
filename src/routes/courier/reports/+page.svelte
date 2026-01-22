@@ -161,7 +161,7 @@
 						class="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
 					>
 						<option value="all">{m.services_all_clients()}</option>
-						{#each clients as client}
+						{#each clients as client (client.id)}
 							<option value={client.id}>{client.name}</option>
 						{/each}
 					</select>
@@ -223,7 +223,7 @@
 							</tr>
 						</thead>
 						<tbody>
-							{#each filteredServices as service}
+							{#each filteredServices as service (service.id)}
 								<tr class="border-b">
 									<td class="px-4 py-3 text-sm">
 										{formatDate(service.created_at)}
