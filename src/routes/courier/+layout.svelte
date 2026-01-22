@@ -20,7 +20,10 @@
 		{ href: '/courier/requests', label: m.nav_requests() },
 		{ href: '/courier/calendar', label: m.nav_calendar() },
 		{ href: '/courier/clients', label: m.nav_clients() },
-		{ href: '/courier/reports', label: m.nav_reports() }
+		{ href: '/courier/billing', label: m.nav_billing() },
+		{ href: '/courier/analytics', label: m.nav_analytics() },
+		{ href: '/courier/reports', label: m.nav_reports() },
+		{ href: '/courier/settings', label: m.nav_settings() }
 	]);
 
 	const locales = [

@@ -170,7 +170,7 @@
 		bind:this={mapContainer}
 		class="w-full rounded-lg overflow-hidden"
 		style="height: {height}"
-	/>
+	></div>
 
 	{#if distanceKm !== null || (pickupCoords && deliveryCoords)}
 		<div class="flex items-center justify-between">

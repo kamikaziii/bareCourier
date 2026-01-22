@@ -1,5 +1,16 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
+// Phase 3: Price breakdown structure
+export type PriceBreakdown = {
+	base: number;
+	distance: number;
+	urgency: number;
+	total: number;
+	model: 'per_km' | 'zone' | 'flat_plus_km';
+	distance_km: number;
+	error?: string;
+};
+
 export type Database = {
 	public: {
 		Tables: {
@@ -61,6 +72,10 @@ export type Database = {
 					delivery_lat: number | null;
 					delivery_lng: number | null;
 					distance_km: number | null;
+					// Pricing fields (Phase 3)
+					urgency_fee_id: string | null;
+					calculated_price: number | null;
+					price_breakdown: PriceBreakdown | null;
 				};
 				Insert: {
 					id?: string;
@@ -90,6 +105,10 @@ export type Database = {
 					delivery_lat?: number | null;
 					delivery_lng?: number | null;
 					distance_km?: number | null;
+					// Pricing fields (Phase 3)
+					urgency_fee_id?: string | null;
+					calculated_price?: number | null;
+					price_breakdown?: PriceBreakdown | null;
 				};
 				Update: {
 					id?: string;
@@ -119,6 +138,10 @@ export type Database = {
 					delivery_lat?: number | null;
 					delivery_lng?: number | null;
 					distance_km?: number | null;
+					// Pricing fields (Phase 3)
+					urgency_fee_id?: string | null;
+					calculated_price?: number | null;
+					price_breakdown?: PriceBreakdown | null;
 				};
 			};
 			service_status_history: {
@@ -208,6 +231,94 @@ export type Database = {
 					created_at?: string;
 				};
 			};
+			// Phase 3: Billing tables
+			client_pricing: {
+				Row: {
+					id: string;
+					client_id: string;
+					pricing_model: 'per_km' | 'zone' | 'flat_plus_km';
+					base_fee: number;
+					per_km_rate: number;
+					created_at: string;
+					updated_at: string;
+				};
+				Insert: {
+					id?: string;
+					client_id: string;
+					pricing_model?: 'per_km' | 'zone' | 'flat_plus_km';
+					base_fee?: number;
+					per_km_rate?: number;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Update: {
+					id?: string;
+					client_id?: string;
+					pricing_model?: 'per_km' | 'zone' | 'flat_plus_km';
+					base_fee?: number;
+					per_km_rate?: number;
+					created_at?: string;
+					updated_at?: string;
+				};
+			};
+			pricing_zones: {
+				Row: {
+					id: string;
+					client_id: string;
+					min_km: number;
+					max_km: number | null;
+					price: number;
+					created_at: string;
+				};
+				Insert: {
+					id?: string;
+					client_id: string;
+					min_km?: number;
+					max_km?: number | null;
+					price: number;
+					created_at?: string;
+				};
+				Update: {
+					id?: string;
+					client_id?: string;
+					min_km?: number;
+					max_km?: number | null;
+					price?: number;
+					created_at?: string;
+				};
+			};
+			urgency_fees: {
+				Row: {
+					id: string;
+					name: string;
+					description: string | null;
+					multiplier: number;
+					flat_fee: number;
+					active: boolean;
+					sort_order: number;
+					created_at: string;
+				};
+				Insert: {
+					id?: string;
+					name: string;
+					description?: string | null;
+					multiplier?: number;
+					flat_fee?: number;
+					active?: boolean;
+					sort_order?: number;
+					created_at?: string;
+				};
+				Update: {
+					id?: string;
+					name?: string;
+					description?: string | null;
+					multiplier?: number;
+					flat_fee?: number;
+					active?: boolean;
+					sort_order?: number;
+					created_at?: string;
+				};
+			};
 		};
 		Views: {};
 		Functions: {};
@@ -228,3 +339,9 @@ export type TimeSlot = 'morning' | 'afternoon' | 'evening' | 'specific';
 
 // Request status type
 export type RequestStatus = 'pending' | 'accepted' | 'rejected' | 'suggested';
+
+// Phase 3: Billing types
+export type ClientPricing = Database['public']['Tables']['client_pricing']['Row'];
+export type PricingZone = Database['public']['Tables']['pricing_zones']['Row'];
+export type UrgencyFee = Database['public']['Tables']['urgency_fees']['Row'];
+export type PricingModel = 'per_km' | 'zone' | 'flat_plus_km';

@@ -1,0 +1,488 @@
+<script lang="ts">
+	import { enhance } from '$app/forms';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import * as Card from '$lib/components/ui/card/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import { Label } from '$lib/components/ui/label/index.js';
+	import { Separator } from '$lib/components/ui/separator/index.js';
+	import * as m from '$lib/paraglide/messages.js';
+	import { getLocale, localizeHref } from '$lib/paraglide/runtime.js';
+	import type { PageData, ActionData } from './$types';
+	import type { PricingModel } from '$lib/database.types';
+	import { ArrowLeft, Euro, MapPin, Trash2, Plus, FileText } from '@lucide/svelte';
+
+	let { data, form }: { data: PageData; form: ActionData } = $props();
+
+	// State for pricing form
+	let pricingModel = $state<PricingModel>(data.pricing?.pricing_model || 'per_km');
+	let baseFee = $state(data.pricing?.base_fee?.toString() || '0');
+	let perKmRate = $state(data.pricing?.per_km_rate?.toString() || '0');
+
+	// State for zones (for zone pricing)
+	let zones = $state(
+		data.zones.length > 0
+			? data.zones.map((z) => ({ min_km: z.min_km, max_km: z.max_km, price: z.price }))
+			: [
+					{ min_km: 0, max_km: 5, price: 3 },
+					{ min_km: 5, max_km: 10, price: 5 },
+					{ min_km: 10, max_km: 20, price: 8 },
+					{ min_km: 20, max_km: null, price: 12 }
+				]
+	);
+
+	// State for services list
+	let services = $state<any[]>([]);
+	let loadingServices = $state(true);
+	let totalStats = $state({ services: 0, km: 0, revenue: 0 });
+
+	// Date range (default to current month)
+	const now = new Date();
+	const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+	const lastOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+	let startDate = $state(firstOfMonth.toISOString().split('T')[0]);
+	let endDate = $state(lastOfMonth.toISOString().split('T')[0]);
+
+	async function loadServices() {
+		loadingServices = true;
+
+		const endDatePlusOne = new Date(endDate);
+		endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
+
+		const { data: servicesData } = await data.supabase
+			.from('services')
+			.select('*')
+			.eq('client_id', data.client.id)
+			.is('deleted_at', null)
+			.gte('created_at', new Date(startDate).toISOString())
+			.lt('created_at', endDatePlusOne.toISOString())
+			.order('created_at', { ascending: false });
+
+		services = servicesData || [];
+
+		// Calculate totals
+		let totalKm = 0;
+		let totalRevenue = 0;
+		for (const s of services) {
+			totalKm += s.distance_km || 0;
+			totalRevenue += s.calculated_price || 0;
+		}
+
+		totalStats = {
+			services: services.length,
+			km: Math.round(totalKm * 10) / 10,
+			revenue: Math.round(totalRevenue * 100) / 100
+		};
+
+		loadingServices = false;
+	}
+
+	$effect(() => {
+		if (startDate && endDate) {
+			loadServices();
+		}
+	});
+
+	function addZone() {
+		const lastZone = zones[zones.length - 1];
+		const newMinKm = lastZone?.max_km || 0;
+		zones = [...zones, { min_km: newMinKm, max_km: newMinKm + 10, price: 0 }];
+	}
+
+	function removeZone(index: number) {
+		zones = zones.filter((_, i) => i !== index);
+	}
+
+	// Zone validation
+	type ZoneError = { index: number; message: string };
+	let zoneErrors = $state<ZoneError[]>([]);
+
+	function validateZones(): boolean {
+		const errors: ZoneError[] = [];
+
+		// Sort zones by min_km for validation
+		const sortedZones = [...zones].sort((a, b) => a.min_km - b.min_km);
+
+		for (let i = 0; i < sortedZones.length; i++) {
+			const zone = sortedZones[i];
+			const originalIndex = zones.findIndex(
+				(z) => z.min_km === zone.min_km && z.max_km === zone.max_km && z.price === zone.price
+			);
+
+			// Check for negative values
+			if (zone.min_km < 0) {
+				errors.push({ index: originalIndex, message: m.billing_zone_error_negative() });
+			}
+
+			// Check min < max (if max is set)
+			if (zone.max_km !== null && zone.min_km >= zone.max_km) {
+				errors.push({ index: originalIndex, message: m.billing_zone_error_min_max() });
+			}
+
+			// Check for gaps with next zone
+			if (i < sortedZones.length - 1) {
+				const nextZone = sortedZones[i + 1];
+				if (zone.max_km !== null && zone.max_km < nextZone.min_km) {
+					errors.push({ index: originalIndex, message: m.billing_zone_error_gap() });
+				}
+			}
+
+			// Check for overlaps with next zone
+			if (i < sortedZones.length - 1) {
+				const nextZone = sortedZones[i + 1];
+				if (zone.max_km === null || zone.max_km > nextZone.min_km) {
+					errors.push({ index: originalIndex, message: m.billing_zone_error_overlap() });
+				}
+			}
+		}
+
+		// Only one zone can have unlimited max (null)
+		const unlimitedZones = zones.filter((z) => z.max_km === null);
+		if (unlimitedZones.length > 1) {
+			const lastUnlimited = zones.findIndex((z) => z.max_km === null);
+			errors.push({ index: lastUnlimited, message: m.billing_zone_error_multiple_unlimited() });
+		}
+
+		zoneErrors = errors;
+		return errors.length === 0;
+	}
+
+	function getZoneError(index: number): string | undefined {
+		return zoneErrors.find((e) => e.index === index)?.message;
+	}
+
+	function handleZonesSubmit(e: Event) {
+		if (!validateZones()) {
+			e.preventDefault();
+		}
+	}
+
+	function formatCurrency(value: number): string {
+		return new Intl.NumberFormat(getLocale(), {
+			style: 'currency',
+			currency: 'EUR'
+		}).format(value);
+	}
+
+	function formatDate(dateStr: string): string {
+		return new Date(dateStr).toLocaleDateString(getLocale());
+	}
+
+	function exportClientCSV() {
+		const locale = getLocale();
+		const headers = [
+			m.reports_table_date(),
+			m.form_pickup_location(),
+			m.form_delivery_location(),
+			m.billing_distance(),
+			m.billing_price(),
+			m.reports_status()
+		];
+
+		const rows = services.map((s) => [
+			new Date(s.created_at).toLocaleDateString(locale),
+			s.pickup_location,
+			s.delivery_location,
+			(s.distance_km || 0).toFixed(1),
+			(s.calculated_price || 0).toFixed(2),
+			s.status === 'delivered' ? m.status_delivered() : m.status_pending()
+		]);
+
+		// Add totals
+		rows.push(['', '', '', '', '', '']);
+		rows.push([
+			m.billing_total(),
+			'',
+			'',
+			totalStats.km.toFixed(1),
+			totalStats.revenue.toFixed(2),
+			''
+		]);
+
+		const csvContent = [
+			headers.join(','),
+			...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+		].join('\n');
+
+		const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+		const link = document.createElement('a');
+		link.href = URL.createObjectURL(blob);
+		link.download = `billing_${data.client.name.replace(/\s+/g, '_')}_${startDate}_to_${endDate}.csv`;
+		link.click();
+	}
+</script>
+
+<div class="space-y-6">
+	<!-- Header -->
+	<div class="flex items-center gap-3">
+		<Button variant="ghost" size="sm" href={localizeHref('/courier/billing')}>
+			<ArrowLeft class="size-4" />
+		</Button>
+		<div>
+			<h1 class="text-2xl font-bold">{data.client.name}</h1>
+			<p class="text-sm text-muted-foreground">{m.billing_client_detail()}</p>
+		</div>
+	</div>
+
+	{#if form?.error}
+		<div class="rounded-md bg-destructive/10 p-3 text-destructive">
+			{form.error}
+		</div>
+	{/if}
+
+	{#if form?.success}
+		<div class="rounded-md bg-green-500/10 p-3 text-green-600">
+			{m.billing_saved()}
+		</div>
+	{/if}
+
+	<div class="grid gap-6 lg:grid-cols-2">
+		<!-- Pricing Configuration -->
+		<Card.Root>
+			<Card.Header>
+				<Card.Title>{m.billing_pricing_config()}</Card.Title>
+				<Card.Description>{m.billing_pricing_config_desc()}</Card.Description>
+			</Card.Header>
+			<Card.Content>
+				<form method="POST" action="?/savePricing" use:enhance class="space-y-4">
+					<div class="space-y-2">
+						<Label for="pricing_model">{m.billing_pricing_model()}</Label>
+						<select
+							id="pricing_model"
+							name="pricing_model"
+							bind:value={pricingModel}
+							class="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+						>
+							<option value="per_km">{m.billing_model_per_km()}</option>
+							<option value="flat_plus_km">{m.billing_model_flat_plus_km()}</option>
+							<option value="zone">{m.billing_model_zone()}</option>
+						</select>
+					</div>
+
+					{#if pricingModel !== 'zone'}
+						<div class="grid gap-4 md:grid-cols-2">
+							<div class="space-y-2">
+								<Label for="base_fee">{m.billing_base_fee()}</Label>
+								<div class="relative">
+									<Euro class="absolute left-3 top-3 size-4 text-muted-foreground" />
+									<Input
+										id="base_fee"
+										name="base_fee"
+										type="number"
+										step="0.01"
+										min="0"
+										bind:value={baseFee}
+										class="pl-9"
+									/>
+								</div>
+							</div>
+							<div class="space-y-2">
+								<Label for="per_km_rate">{m.billing_per_km_rate()}</Label>
+								<div class="relative">
+									<Euro class="absolute left-3 top-3 size-4 text-muted-foreground" />
+									<Input
+										id="per_km_rate"
+										name="per_km_rate"
+										type="number"
+										step="0.01"
+										min="0"
+										bind:value={perKmRate}
+										class="pl-9"
+									/>
+								</div>
+							</div>
+						</div>
+					{:else}
+						<input type="hidden" name="base_fee" value="0" />
+						<input type="hidden" name="per_km_rate" value="0" />
+					{/if}
+
+					<Button type="submit">{m.action_save()}</Button>
+				</form>
+			</Card.Content>
+		</Card.Root>
+
+		<!-- Zone Pricing (only if zone model selected) -->
+		{#if pricingModel === 'zone'}
+			<Card.Root>
+				<Card.Header>
+					<Card.Title>{m.billing_zones()}</Card.Title>
+					<Card.Description>{m.billing_zones_desc()}</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					<form method="POST" action="?/saveZones" use:enhance onsubmit={handleZonesSubmit} class="space-y-4">
+						<input type="hidden" name="zones" value={JSON.stringify(zones)} />
+
+						{#if zoneErrors.length > 0}
+							<div class="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+								{m.billing_zone_errors()}
+							</div>
+						{/if}
+
+						<div class="space-y-3">
+							{#each zones as zone, index (index)}
+								<div class="space-y-1">
+									<div class="flex items-center gap-2">
+										<Input
+											type="number"
+											step="0.1"
+											min="0"
+											bind:value={zone.min_km}
+											placeholder="Min km"
+											class="w-20 {getZoneError(index) ? 'border-destructive' : ''}"
+										/>
+										<span class="text-muted-foreground">-</span>
+										<Input
+											type="number"
+											step="0.1"
+											min="0"
+											value={zone.max_km ?? ''}
+											onchange={(e) => {
+												const value = e.currentTarget.value;
+												zone.max_km = value ? parseFloat(value) : null;
+											}}
+											placeholder={m.billing_zone_max_placeholder()}
+											class="w-28 {getZoneError(index) ? 'border-destructive' : ''}"
+										/>
+										<span class="text-muted-foreground">km =</span>
+										<div class="relative flex-1">
+											<Euro class="absolute left-3 top-3 size-4 text-muted-foreground" />
+											<Input
+												type="number"
+												step="0.01"
+												min="0"
+												bind:value={zone.price}
+												class="pl-9"
+											/>
+										</div>
+										<Button
+											type="button"
+											variant="ghost"
+											size="icon"
+											onclick={() => removeZone(index)}
+											disabled={zones.length <= 1}
+										>
+											<Trash2 class="size-4" />
+										</Button>
+									</div>
+									{#if getZoneError(index)}
+										<p class="text-xs text-destructive">{getZoneError(index)}</p>
+									{/if}
+								</div>
+							{/each}
+						</div>
+
+						<div class="flex gap-2">
+							<Button type="button" variant="outline" onclick={addZone}>
+								<Plus class="mr-2 size-4" />
+								{m.billing_add_zone()}
+							</Button>
+							<Button type="submit">{m.action_save()}</Button>
+						</div>
+					</form>
+				</Card.Content>
+			</Card.Root>
+		{/if}
+	</div>
+
+	<Separator />
+
+	<!-- Services History -->
+	<div class="space-y-4">
+		<div class="flex items-center justify-between">
+			<h2 class="text-xl font-semibold">{m.billing_services_history()}</h2>
+			<Button variant="outline" onclick={exportClientCSV} disabled={services.length === 0}>
+				<FileText class="mr-2 size-4" />
+				{m.billing_export_csv()}
+			</Button>
+		</div>
+
+		<!-- Date Range -->
+		<Card.Root>
+			<Card.Content class="pt-6">
+				<div class="grid gap-4 md:grid-cols-2">
+					<div class="space-y-2">
+						<Label for="start">{m.reports_start_date()}</Label>
+						<Input id="start" type="date" bind:value={startDate} />
+					</div>
+					<div class="space-y-2">
+						<Label for="end">{m.reports_end_date()}</Label>
+						<Input id="end" type="date" bind:value={endDate} />
+					</div>
+				</div>
+			</Card.Content>
+		</Card.Root>
+
+		<!-- Summary -->
+		<div class="grid gap-4 md:grid-cols-3">
+			<Card.Root>
+				<Card.Content class="p-4 text-center">
+					<p class="text-2xl font-bold">{totalStats.services}</p>
+					<p class="text-sm text-muted-foreground">{m.billing_services()}</p>
+				</Card.Content>
+			</Card.Root>
+			<Card.Root>
+				<Card.Content class="p-4 text-center">
+					<p class="text-2xl font-bold">{totalStats.km} km</p>
+					<p class="text-sm text-muted-foreground">{m.billing_total_km()}</p>
+				</Card.Content>
+			</Card.Root>
+			<Card.Root>
+				<Card.Content class="p-4 text-center">
+					<p class="text-2xl font-bold">{formatCurrency(totalStats.revenue)}</p>
+					<p class="text-sm text-muted-foreground">{m.billing_estimated_cost()}</p>
+				</Card.Content>
+			</Card.Root>
+		</div>
+
+		<!-- Services Table -->
+		<Card.Root>
+			<Card.Content class="p-0">
+				{#if loadingServices}
+					<p class="py-8 text-center text-muted-foreground">{m.loading()}</p>
+				{:else if services.length === 0}
+					<p class="py-8 text-center text-muted-foreground">{m.billing_no_services()}</p>
+				{:else}
+					<div class="overflow-x-auto">
+						<table class="w-full">
+							<thead>
+								<tr class="border-b bg-muted/50">
+									<th class="px-4 py-3 text-left text-sm font-medium">{m.reports_table_date()}</th>
+									<th class="px-4 py-3 text-left text-sm font-medium">{m.reports_table_route()}</th>
+									<th class="px-4 py-3 text-right text-sm font-medium">{m.billing_distance()}</th>
+									<th class="px-4 py-3 text-right text-sm font-medium">{m.billing_price()}</th>
+									<th class="px-4 py-3 text-center text-sm font-medium">{m.reports_status()}</th>
+								</tr>
+							</thead>
+							<tbody>
+								{#each services as service (service.id)}
+									<tr class="border-b">
+										<td class="px-4 py-3 text-sm">{formatDate(service.created_at)}</td>
+										<td class="px-4 py-3 text-sm text-muted-foreground">
+											{service.pickup_location} &rarr; {service.delivery_location}
+										</td>
+										<td class="px-4 py-3 text-right text-sm">
+											{(service.distance_km || 0).toFixed(1)} km
+										</td>
+										<td class="px-4 py-3 text-right text-sm font-medium">
+											{formatCurrency(service.calculated_price || 0)}
+										</td>
+										<td class="px-4 py-3 text-center">
+											<span
+												class="rounded-full px-2 py-0.5 text-xs font-medium {service.status ===
+												'pending'
+													? 'bg-blue-500/10 text-blue-500'
+													: 'bg-green-500/10 text-green-500'}"
+											>
+												{service.status === 'pending' ? m.status_pending() : m.status_delivered()}
+											</span>
+										</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+				{/if}
+			</Card.Content>
+		</Card.Root>
+	</div>
+</div>

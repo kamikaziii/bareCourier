@@ -16,7 +16,9 @@
 
 	const navItems = $derived([
 		{ href: '/client', label: m.nav_my_services() },
-		{ href: '/client/new', label: m.nav_new_request() }
+		{ href: '/client/new', label: m.nav_new_request() },
+		{ href: '/client/billing', label: m.nav_billing() },
+		{ href: '/client/settings', label: m.nav_settings() }
 	]);
 
 	const locales = [

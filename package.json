@@ -42,6 +42,7 @@
 		"@supabase/ssr": "^0.8.0",
 		"@supabase/supabase-js": "^2.91.0",
 		"bits-ui": "^2.15.4",
+		"chart.js": "^4.5.1",
 		"clsx": "^2.1.1",
 		"mapbox-gl": "^3.18.0",
 		"tailwind-merge": "^3.4.0",

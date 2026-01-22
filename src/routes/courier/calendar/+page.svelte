@@ -179,7 +179,7 @@
 											class="size-2 rounded-full {service.status === 'delivered'
 												? 'bg-green-500'
 												: 'bg-blue-500'}"
-										/>
+										></div>
 									{/each}
 									{#if dayServices.length > 3}
 										<span class="text-xs text-muted-foreground">+{dayServices.length - 3}</span>

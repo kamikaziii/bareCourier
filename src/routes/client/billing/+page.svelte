@@ -1,0 +1,267 @@
+<script lang="ts">
+	import * as Card from '$lib/components/ui/card/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import { Label } from '$lib/components/ui/label/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
+	import * as m from '$lib/paraglide/messages.js';
+	import { getLocale } from '$lib/paraglide/runtime.js';
+	import type { PageData } from './$types';
+	import { Euro, MapPin, Package, Receipt } from '@lucide/svelte';
+
+	let { data }: { data: PageData } = $props();
+
+	// Date range (default to current month)
+	const now = new Date();
+	const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+	const lastOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+	let startDate = $state(firstOfMonth.toISOString().split('T')[0]);
+	let endDate = $state(lastOfMonth.toISOString().split('T')[0]);
+
+	// State for billing data
+	let services = $state<any[]>([]);
+	let loading = $state(true);
+	let totals = $state({ services: 0, km: 0, cost: 0 });
+
+	async function loadBillingData() {
+		loading = true;
+
+		const endDatePlusOne = new Date(endDate);
+		endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
+
+		// Explicitly filter by client_id for security (in addition to RLS)
+		const { data: servicesData } = await data.supabase
+			.from('services')
+			.select('id, pickup_location, delivery_location, distance_km, calculated_price, status, created_at')
+			.eq('client_id', data.profile.id)
+			.is('deleted_at', null)
+			.gte('created_at', new Date(startDate).toISOString())
+			.lt('created_at', endDatePlusOne.toISOString())
+			.order('created_at', { ascending: false });
+
+		services = servicesData || [];
+
+		// Calculate totals
+		let totalKm = 0;
+		let totalCost = 0;
+		for (const s of services) {
+			totalKm += s.distance_km || 0;
+			totalCost += s.calculated_price || 0;
+		}
+
+		totals = {
+			services: services.length,
+			km: Math.round(totalKm * 10) / 10,
+			cost: Math.round(totalCost * 100) / 100
+		};
+
+		loading = false;
+	}
+
+	$effect(() => {
+		if (startDate && endDate) {
+			loadBillingData();
+		}
+	});
+
+	function formatCurrency(value: number): string {
+		return new Intl.NumberFormat(getLocale(), {
+			style: 'currency',
+			currency: 'EUR'
+		}).format(value);
+	}
+
+	function formatDate(dateStr: string): string {
+		return new Date(dateStr).toLocaleDateString(getLocale());
+	}
+
+	function getPricingModelLabel(model: string): string {
+		switch (model) {
+			case 'per_km':
+				return m.billing_model_per_km();
+			case 'flat_plus_km':
+				return m.billing_model_flat_plus_km();
+			case 'zone':
+				return m.billing_model_zone();
+			default:
+				return model;
+		}
+	}
+</script>
+
+<div class="space-y-6">
+	<div class="flex items-center gap-2">
+		<Receipt class="size-6" />
+		<h1 class="text-2xl font-bold">{m.client_billing_title()}</h1>
+	</div>
+
+	<!-- Pricing Info -->
+	{#if data.pricing}
+		<Card.Root>
+			<Card.Header>
+				<Card.Title>{m.client_your_pricing()}</Card.Title>
+				<Card.Description>{m.client_pricing_set_by_courier()}</Card.Description>
+			</Card.Header>
+			<Card.Content>
+				<div class="flex flex-wrap gap-4">
+					<div>
+						<p class="text-sm text-muted-foreground">{m.billing_pricing_model()}</p>
+						<Badge variant="secondary">{getPricingModelLabel(data.pricing.pricing_model)}</Badge>
+					</div>
+					{#if data.pricing.pricing_model !== 'zone'}
+						<div>
+							<p class="text-sm text-muted-foreground">{m.billing_base_fee()}</p>
+							<p class="font-medium">{formatCurrency(data.pricing.base_fee)}</p>
+						</div>
+						<div>
+							<p class="text-sm text-muted-foreground">{m.billing_per_km_rate()}</p>
+							<p class="font-medium">{formatCurrency(data.pricing.per_km_rate)}/km</p>
+						</div>
+					{:else if data.zones.length > 0}
+						<div>
+							<p class="text-sm text-muted-foreground">{m.billing_zones()}</p>
+							<div class="mt-1 space-y-1">
+								{#each data.zones as zone (zone.id)}
+									<p class="text-sm">
+										{zone.min_km} - {zone.max_km ?? '∞'} km: {formatCurrency(zone.price)}
+									</p>
+								{/each}
+							</div>
+						</div>
+					{/if}
+				</div>
+			</Card.Content>
+		</Card.Root>
+	{:else}
+		<Card.Root>
+			<Card.Content class="py-8 text-center">
+				<p class="text-muted-foreground">{m.client_no_pricing_configured()}</p>
+			</Card.Content>
+		</Card.Root>
+	{/if}
+
+	<!-- Date Range -->
+	<Card.Root>
+		<Card.Content class="pt-6">
+			<div class="grid gap-4 md:grid-cols-2">
+				<div class="space-y-2">
+					<Label for="start">{m.reports_start_date()}</Label>
+					<Input id="start" type="date" bind:value={startDate} />
+				</div>
+				<div class="space-y-2">
+					<Label for="end">{m.reports_end_date()}</Label>
+					<Input id="end" type="date" bind:value={endDate} />
+				</div>
+			</div>
+		</Card.Content>
+	</Card.Root>
+
+	<!-- Summary Cards -->
+	<div class="grid gap-4 md:grid-cols-3">
+		<Card.Root>
+			<Card.Content class="p-6">
+				<div class="flex items-center gap-4">
+					<div class="rounded-full bg-blue-500/10 p-3">
+						<Package class="size-6 text-blue-500" />
+					</div>
+					<div>
+						<p class="text-2xl font-bold">{totals.services}</p>
+						<p class="text-sm text-muted-foreground">{m.billing_services()}</p>
+					</div>
+				</div>
+			</Card.Content>
+		</Card.Root>
+		<Card.Root>
+			<Card.Content class="p-6">
+				<div class="flex items-center gap-4">
+					<div class="rounded-full bg-green-500/10 p-3">
+						<MapPin class="size-6 text-green-500" />
+					</div>
+					<div>
+						<p class="text-2xl font-bold">{totals.km} km</p>
+						<p class="text-sm text-muted-foreground">{m.billing_total_km()}</p>
+					</div>
+				</div>
+			</Card.Content>
+		</Card.Root>
+		<Card.Root>
+			<Card.Content class="p-6">
+				<div class="flex items-center gap-4">
+					<div class="rounded-full bg-yellow-500/10 p-3">
+						<Euro class="size-6 text-yellow-500" />
+					</div>
+					<div>
+						<p class="text-2xl font-bold">{formatCurrency(totals.cost)}</p>
+						<p class="text-sm text-muted-foreground">{m.client_estimated_cost()}</p>
+					</div>
+				</div>
+			</Card.Content>
+		</Card.Root>
+	</div>
+
+	<!-- Services List -->
+	<Card.Root>
+		<Card.Header>
+			<Card.Title>{m.client_services_this_period()}</Card.Title>
+		</Card.Header>
+		<Card.Content class="p-0">
+			{#if loading}
+				<p class="py-8 text-center text-muted-foreground">{m.loading()}</p>
+			{:else if services.length === 0}
+				<p class="py-8 text-center text-muted-foreground">{m.client_no_services()}</p>
+			{:else}
+				<div class="overflow-x-auto">
+					<table class="w-full">
+						<thead>
+							<tr class="border-b bg-muted/50">
+								<th class="px-4 py-3 text-left text-sm font-medium">{m.reports_table_date()}</th>
+								<th class="px-4 py-3 text-left text-sm font-medium">{m.reports_table_route()}</th>
+								<th class="px-4 py-3 text-right text-sm font-medium">{m.billing_distance()}</th>
+								<th class="px-4 py-3 text-right text-sm font-medium">{m.billing_price()}</th>
+								<th class="px-4 py-3 text-center text-sm font-medium">{m.reports_status()}</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each services as service (service.id)}
+								<tr class="border-b">
+									<td class="px-4 py-3 text-sm">{formatDate(service.created_at)}</td>
+									<td class="px-4 py-3 text-sm text-muted-foreground">
+										{service.pickup_location} &rarr; {service.delivery_location}
+									</td>
+									<td class="px-4 py-3 text-right text-sm">
+										{(service.distance_km || 0).toFixed(1)} km
+									</td>
+									<td class="px-4 py-3 text-right text-sm font-medium">
+										{formatCurrency(service.calculated_price || 0)}
+									</td>
+									<td class="px-4 py-3 text-center">
+										<span
+											class="rounded-full px-2 py-0.5 text-xs font-medium {service.status ===
+											'pending'
+												? 'bg-blue-500/10 text-blue-500'
+												: 'bg-green-500/10 text-green-500'}"
+										>
+											{service.status === 'pending' ? m.status_pending() : m.status_delivered()}
+										</span>
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+						<tfoot>
+							<tr class="border-t bg-muted/50">
+								<td colspan="2" class="px-4 py-3 font-bold">{m.billing_total()}</td>
+								<td class="px-4 py-3 text-right font-bold">{totals.km} km</td>
+								<td class="px-4 py-3 text-right font-bold">{formatCurrency(totals.cost)}</td>
+								<td></td>
+							</tr>
+						</tfoot>
+					</table>
+				</div>
+			{/if}
+		</Card.Content>
+	</Card.Root>
+
+	<p class="text-center text-sm text-muted-foreground">
+		{m.client_billing_note()}
+	</p>
+</div>
