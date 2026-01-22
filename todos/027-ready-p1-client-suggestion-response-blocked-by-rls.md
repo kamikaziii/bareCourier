@@ -1,7 +1,7 @@
 # Client Cannot Accept/Decline Courier Suggestions - RLS Policy Bug
 
 ---
-status: pending
+status: ready
 priority: p1
 issue_id: "027"
 tags: [bug, rls, database, client, critical]
@@ -191,6 +191,7 @@ SELECT * FROM pg_policies WHERE tablename = 'services' AND policyname LIKE '%cli
 |------|--------|-----------|
 | 2026-01-22 | User reported buttons not working | Investigated and found RLS policy blocks client updates |
 | 2026-01-22 | Root cause confirmed | services_update policy only allows is_courier() |
+| 2026-01-22 | Approved during triage | Status changed to ready - CRITICAL BUG - prioritize this one |
 
 ## Resources
 

@@ -50,4 +50,4 @@ If the feature is still wanted, integrate the service properly.
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-22 | Identified by code-simplicity-reviewer | YAGNI - don't build what you don't use |
-| 2026-01-22 | Triage decision: Keep pending | Defer deletion - need to investigate how push notifications are actually implemented in the app |
+| 2026-01-22 | Triage decision: DEFERRED | Need to research how push notifications are implemented before deciding to delete. This file may be related to intended PWA push functionality. |

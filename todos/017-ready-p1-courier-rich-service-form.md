@@ -1,7 +1,7 @@
 # Courier Service Creation Lacks Rich Form Features
 
 ---
-status: pending
+status: ready
 priority: p1
 issue_id: "017"
 tags: [code-review, ux, feature-parity, courier]
@@ -140,6 +140,7 @@ Option 1 - Add rich form features to existing inline form. The form expands when
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-22 | Identified during UX review | Courier form significantly inferior to client form |
+| 2026-01-22 | Approved during triage | Status changed to ready - ready to implement |
 
 ## Resources
 

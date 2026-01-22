@@ -1,7 +1,7 @@
 # Client Cannot Filter or Search Services
 
 ---
-status: pending
+status: ready
 priority: p1
 issue_id: "016"
 tags: [code-review, ux, feature-parity, client]
@@ -130,6 +130,7 @@ Option 1 with elements of Option 2 - Add status filter + search, plus consider d
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-22 | Identified during UX review | Major feature gap - courier has rich filtering, client has none |
+| 2026-01-22 | Approved during triage | Status changed to ready - ready to implement |
 
 ## Resources
 

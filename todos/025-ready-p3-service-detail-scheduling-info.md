@@ -1,7 +1,7 @@
 # Service Detail Pages Missing Scheduling Info Display
 
 ---
-status: pending
+status: ready
 priority: p3
 issue_id: "025"
 tags: [code-review, ux, client]
@@ -163,6 +163,7 @@ function getRequestStatusColor(status: string): string { /* ... */ }
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-22 | Identified during UX review | Detail page missing scheduling info shown on dashboard |
+| 2026-01-22 | Approved during triage | Status changed to ready - ready to implement |
 
 ## Resources
 

@@ -1,7 +1,7 @@
 # Client Pricing Configuration Buried in Billing Section - Poor UX
 
 ---
-status: pending
+status: ready
 priority: p2
 issue_id: "028"
 tags: [code-review, ux, courier, clients, billing]
@@ -309,6 +309,7 @@ Uses existing tables:
 |------|--------|-----------|
 | 2026-01-22 | User reported poor UX | Pricing config completely disconnected from client management |
 | 2026-01-22 | Analyzed current flow | 5+ clicks to configure pricing for new client |
+| 2026-01-22 | Approved during triage | Status changed to ready - implement all 4 options together |
 
 ## Resources
 

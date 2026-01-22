@@ -1,7 +1,7 @@
 # Courier Dashboard Filters by created_at Instead of scheduled_date
 
 ---
-status: pending
+status: ready
 priority: p2
 issue_id: "018"
 tags: [code-review, ux, courier]
@@ -117,6 +117,7 @@ Option 1 - Filter by `scheduled_date` with fallback to `created_at` for unschedu
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-22 | Identified during UX review | Filter by created_at is not operationally useful |
+| 2026-01-22 | Approved during triage | Status changed to ready - ready to implement |
 
 ## Resources
 

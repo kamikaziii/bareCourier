@@ -1,7 +1,7 @@
 # Standardize Date Formatting to Use getLocale()
 
 ---
-status: pending
+status: ready
 priority: p3
 issue_id: "024"
 tags: [code-review, i18n, consistency]
@@ -142,6 +142,7 @@ formatDateLong(date)  // "22 de Janeiro de 2026" or "January 22, 2026"
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-22 | Identified during UX review | Inconsistent locale usage across pages |
+| 2026-01-22 | Approved during triage | Status changed to ready - ready to implement |
 
 ## Resources
 

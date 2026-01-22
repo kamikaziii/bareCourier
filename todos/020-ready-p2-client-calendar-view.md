@@ -1,7 +1,7 @@
 # Client Missing Calendar View
 
 ---
-status: pending
+status: ready
 priority: p2
 issue_id: "020"
 tags: [code-review, ux, feature-parity, client]
@@ -136,6 +136,7 @@ Option 3 initially (quick win), then refine to Option 1 if needed.
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-22 | Identified during UX review | Courier has calendar, client doesn't |
+| 2026-01-22 | Approved during triage | Status changed to ready - ready to implement |
 
 ## Resources
 

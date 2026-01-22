@@ -1,7 +1,7 @@
 # Courier Dashboard Click-to-Toggle is Confusing UX
 
 ---
-status: pending
+status: ready
 priority: p2
 issue_id: "019"
 tags: [code-review, ux, courier]
@@ -126,6 +126,7 @@ Option 1 - Link card to detail page, add explicit toggle button.
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-22 | Identified during UX review | Click-to-toggle is non-standard, confusing |
+| 2026-01-22 | Approved during triage | Status changed to ready - ready to implement |
 
 ## Resources
 

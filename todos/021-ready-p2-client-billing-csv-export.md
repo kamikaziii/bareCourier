@@ -1,7 +1,7 @@
 # Client Billing Missing CSV Export
 
 ---
-status: pending
+status: ready
 priority: p2
 issue_id: "021"
 tags: [code-review, ux, feature-parity, client]
@@ -145,6 +145,7 @@ Option 1 - Add CSV export. This is a straightforward addition with clear busines
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-22 | Identified during UX review | Courier has CSV export, client doesn't |
+| 2026-01-22 | Approved during triage | Status changed to ready - ready to implement |
 
 ## Resources
 

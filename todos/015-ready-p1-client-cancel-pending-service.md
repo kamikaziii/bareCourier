@@ -1,7 +1,7 @@
 # Client Cannot Cancel Pending Service Requests
 
 ---
-status: pending
+status: ready
 priority: p1
 issue_id: "015"
 tags: [code-review, ux, feature-parity, client]
@@ -124,6 +124,7 @@ Option 1 - Cancel only pending (not yet accepted) services. This balances user c
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-22 | Identified during UX review | Client has no way to cancel - critical feature gap |
+| 2026-01-22 | Approved during triage | Status changed to ready - ready to implement |
 
 ## Resources
 

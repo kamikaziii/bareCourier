@@ -1,7 +1,7 @@
 # Settings: Client Has Default Location, Courier Doesn't
 
 ---
-status: pending
+status: ready
 priority: p2
 issue_id: "022"
 tags: [code-review, ux, feature-parity, settings]
@@ -138,6 +138,7 @@ Option 1 - Add default location to courier settings. Even if not immediately use
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-22 | Identified during UX review | Client has default location, courier doesn't - inconsistency |
+| 2026-01-22 | Approved during triage | Status changed to ready - ready to implement |
 
 ## Resources
 
