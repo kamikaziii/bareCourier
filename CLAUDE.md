@@ -82,6 +82,17 @@ import * as Card from '$lib/components/ui/card/index.js';  // Multi-part compone
 - Pending: `bg-blue-500`
 - Delivered: `bg-green-500`
 
+### Custom Components (`src/lib/components/`)
+- `AddressInput.svelte` - Mapbox geocoding autocomplete (debounced)
+- `RouteMap.svelte` - Mapbox map with pickup/delivery route display
+- `SchedulePicker.svelte` - Date picker + time slot selector
+- `NotificationBell.svelte` - Real-time notification dropdown (Supabase subscription)
+
+### External Services (`src/lib/services/`)
+- `distance.ts` - OpenRouteService API + Haversine fallback
+- `geocoding.ts` - Mapbox address search
+- Requires: `PUBLIC_MAPBOX_TOKEN`, `PUBLIC_OPENROUTE_API_KEY`
+
 ## Database Changes
 
 1. Create `supabase/migrations/NNN_description.sql`
@@ -95,3 +106,11 @@ import * as Card from '$lib/components/ui/card/index.js';  // Multi-part compone
 PUBLIC_SUPABASE_URL=https://[project].supabase.co
 PUBLIC_SUPABASE_ANON_KEY=[anon-key]
 ```
+
+## Todo Tracking
+
+File-based system in `todos/` directory:
+- Format: `{id}-{status}-{priority}-{description}.md`
+- Status: `pending` → `ready` → `complete`
+- Priority: `p1` (critical), `p2` (important), `p3` (nice-to-have)
+- Workflow: `/triage` to approve, `/resolve_todo_parallel` to implement

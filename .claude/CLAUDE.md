@@ -131,6 +131,19 @@ PUBLIC_SUPABASE_ANON_KEY=[anon-key]
 4. PWA: Test "Add to Home Screen" on mobile
 5. Reports: Filter + export CSV
 
+## Known UX Patterns & Issues
+
+**Feature Parity Awareness**: Client often has fewer features than courier. When adding courier features, consider if client needs equivalent. Key gaps tracked in `todos/`:
+- Client missing: calendar view, service filtering, CSV export, cancel service
+- Pricing config is separate from client management (see #028)
+
+**Request Status Flow**:
+```
+Client creates → pending → Courier accepts/rejects/suggests
+                              ↓ (if suggested)
+                         Client accepts/declines
+```
+
 ## Implementation Status
 
 See @docs/IMPLEMENTATION_PLAN.md for current progress.

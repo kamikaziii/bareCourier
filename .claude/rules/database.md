@@ -29,7 +29,28 @@ services (
   status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'delivered')),
   notes text,
   created_at timestamptz DEFAULT now(),
-  delivered_at timestamptz  -- Set when status changes to 'delivered'
+  delivered_at timestamptz,
+  deleted_at timestamptz,              -- Soft delete
+  updated_at timestamptz,
+
+  -- Scheduling
+  requested_date date,                 -- Client's requested date
+  requested_time_slot text,            -- morning/afternoon/evening/specific
+  scheduled_date date,                 -- Courier's confirmed date
+  scheduled_time_slot text,
+  request_status text DEFAULT 'pending' CHECK (request_status IN ('pending', 'accepted', 'rejected', 'suggested')),
+  suggested_date date,                 -- Courier's counter-proposal
+  suggested_time_slot text,
+
+  -- Location (GPS)
+  pickup_lat float8, pickup_lng float8,
+  delivery_lat float8, delivery_lng float8,
+  distance_km float8,
+
+  -- Pricing
+  urgency_fee_id uuid REFERENCES urgency_fees(id),
+  calculated_price numeric,
+  price_breakdown jsonb
 )
 ```
 
@@ -52,6 +73,11 @@ All policies use `(select auth.uid())` for optimal performance (prevents re-eval
 | services_select | SELECT | Own services OR courier can read all |
 | services_insert | INSERT | Own services OR courier can create any |
 | services_update | UPDATE | Courier only |
+
+⚠️ **RLS Silent Failure Warning**: When RLS blocks an UPDATE, Supabase returns success with 0 rows affected (no error). Debug with:
+```sql
+SELECT policyname, cmd, qual FROM pg_policies WHERE tablename = 'services';
+```
 
 ## Query Patterns
 
