@@ -169,9 +169,10 @@
 		return new Date(dateStr).toLocaleDateString(getLocale());
 	}
 
-	function handleRecalculate(action: 'recalculateMissing' | 'recalculateAll') {
+	function handleRecalculate() {
 		recalculating = true;
-		return async ({ result }: { result: { type: string; data?: { success?: boolean; recalculated?: number; error?: string } } }) => {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		return async ({ result }: { result: any }) => {
 			recalculating = false;
 			if (result.type === 'success' && result.data?.success) {
 				await loadServices();
@@ -404,14 +405,14 @@
 			<h2 class="text-xl font-semibold">{m.billing_services_history()}</h2>
 			<div class="flex flex-wrap gap-2">
 				{#if missingPriceCount > 0}
-					<form method="POST" action="?/recalculateMissing" use:enhance={handleRecalculate('recalculateMissing')}>
+					<form method="POST" action="?/recalculateMissing" use:enhance={handleRecalculate}>
 						<Button type="submit" variant="outline" size="sm" disabled={recalculating}>
 							<Calculator class="mr-2 size-4" />
 							{m.billing_recalculate_missing()} ({missingPriceCount})
 						</Button>
 					</form>
 				{/if}
-				<form method="POST" action="?/recalculateAll" use:enhance={handleRecalculate('recalculateAll')}>
+				<form method="POST" action="?/recalculateAll" use:enhance={handleRecalculate}>
 					<Button type="submit" variant="outline" size="sm" disabled={recalculating || services.length === 0}>
 						<Calculator class="mr-2 size-4" />
 						{m.billing_recalculate_all()}

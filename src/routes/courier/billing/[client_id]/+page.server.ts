@@ -135,7 +135,8 @@ export const actions: Actions = {
 			.eq('id', user.id)
 			.single();
 
-		if (profile?.role !== 'courier') {
+		const userProfile = profile as { role: string } | null;
+		if (userProfile?.role !== 'courier') {
 			return { success: false, error: 'Unauthorized' };
 		}
 
@@ -195,7 +196,8 @@ export const actions: Actions = {
 			.eq('id', user.id)
 			.single();
 
-		if (profile?.role !== 'courier') {
+		const userProfile = profile as { role: string } | null;
+		if (userProfile?.role !== 'courier') {
 			return { success: false, error: 'Unauthorized' };
 		}
 

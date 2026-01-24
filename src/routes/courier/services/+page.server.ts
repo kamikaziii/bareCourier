@@ -21,7 +21,8 @@ export const actions: Actions = {
 			.eq('id', user.id)
 			.single();
 
-		if (profile?.role !== 'courier') {
+		const userProfile = profile as { role: string } | null;
+		if (userProfile?.role !== 'courier') {
 			return fail(403, { error: 'Unauthorized' });
 		}
 
