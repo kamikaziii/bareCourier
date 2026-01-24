@@ -6,7 +6,15 @@ priority: p3
 issue_id: "009"
 tags: [code-review, simplicity, dead-code]
 dependencies: []
+plan_task: "P4.1"
+plan_status: "POST-PLAN - Decide after P4.1 push notification implementation"
 ---
+
+> **UX PLAN INTEGRATION**: This todo should be **resolved after P4.1** (Push Notification Infrastructure) in the [UX Implementation Plan](../docs/plans/2026-01-23-ux-implementation-plan.md). P4.1 will properly implement push notifications. After P4.1 is complete, either:
+> - **Delete this file** if P4.1 replaces it completely
+> - **Integrate this file** into the new push infrastructure
+>
+> Note: The `push_subscriptions` table already exists and will be used by P4.1.
 
 ## Problem Statement
 

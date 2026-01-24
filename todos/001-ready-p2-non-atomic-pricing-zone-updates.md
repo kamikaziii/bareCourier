@@ -6,7 +6,11 @@ priority: p2
 issue_id: "001"
 tags: [code-review, data-integrity, transaction-safety]
 dependencies: []
+plan_task: "N/A"
+plan_status: "PREREQUISITE - Fix before P2.3 (PricingConfigForm)"
 ---
+
+> **UX PLAN INTEGRATION**: This is a **PREREQUISITE** for the [UX Implementation Plan](../docs/plans/2026-01-23-ux-implementation-plan.md). Fix this data integrity issue **before** implementing P2.3 (PricingConfigForm) to ensure pricing operations are atomic before building extensive pricing UI features.
 
 ## Problem Statement
 

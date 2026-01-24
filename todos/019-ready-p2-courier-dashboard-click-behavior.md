@@ -6,7 +6,11 @@ priority: p2
 issue_id: "019"
 tags: [code-review, ux, courier]
 dependencies: []
+plan_task: "P3.4"
+plan_status: "SUPERSEDED - Will be implemented as part of UX plan"
 ---
+
+> **UX PLAN INTEGRATION**: This feature is task **P3.4** in the [UX Implementation Plan](../docs/plans/2026-01-23-ux-implementation-plan.md). Close this todo when P3.4 is completed.
 
 ## Problem Statement
 

@@ -6,7 +6,11 @@ priority: p3
 issue_id: "013"
 tags: [code-review, security, database]
 dependencies: []
+plan_task: "N/A"
+plan_status: "PREREQUISITE - Fix before new migrations"
 ---
+
+> **UX PLAN INTEGRATION**: This is a **PREREQUISITE** for the [UX Implementation Plan](../docs/plans/2026-01-23-ux-implementation-plan.md). Fix inconsistent search paths **before** applying new migrations (018, 019) to maintain consistency across all database functions.
 
 ## Problem Statement
 

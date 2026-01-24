@@ -5,7 +5,7 @@ status: ready
 priority: p1
 issue_id: "015"
 tags: [code-review, ux, feature-parity, client]
-dependencies: []
+dependencies: ["027"]
 ---
 
 ## Problem Statement
@@ -129,4 +129,5 @@ Option 1 - Cancel only pending (not yet accepted) services. This balances user c
 ## Resources
 
 - Similar pattern: Courier delete in `src/routes/courier/services/[id]/+page.svelte`
-- RLS policies already support client operations on their own services
+- **DEPENDENCY**: Requires #027 RLS fix first - current `services_update` policy only allows courier role
+- RLS policy `018_add_client_update_policy.sql` must be applied before implementing this feature

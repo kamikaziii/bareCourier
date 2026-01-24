@@ -201,7 +201,7 @@ Based on industry research ([Baymard](https://baymard.com/blog/automatic-address
 **Best Practices Applied:**
 1. Helper text **always visible below input** (not in placeholder)
 2. Manual entry **always allowed** as fallback
-3. Max **10 suggestions** shown
+3. Max **5 suggestions** shown (optimal per UX research, matches current `geocoding.ts` default)
 4. **Visual feedback** when suggestion selected
 
 **Helper text states:**
@@ -299,6 +299,19 @@ Urgency fees are configured once, rarely changed. Current placement in Settings 
 
 The courier can choose between two pricing calculation modes:
 
+> **IMPORTANT: Terminology Clarification**
+>
+> This introduces `pricing_mode` on the `profiles` table, which is **different** from the existing `pricing_model` on the `client_pricing` table:
+>
+> | Field | Table | Purpose | Values |
+> |-------|-------|---------|--------|
+> | `pricing_mode` (NEW) | `profiles` | How courier calculates **distance** | `'warehouse'`, `'zone'` |
+> | `pricing_model` (EXISTS) | `client_pricing` | Rate structure for a **client** | `'per_km'`, `'zone'`, `'flat_plus_km'` |
+>
+> Both have `'zone'` as a valid value with **different meanings**:
+> - `pricing_mode = 'zone'`: Use zone-based distance calculation for ALL clients
+> - `pricing_model = 'zone'`: This specific CLIENT uses zone pricing rates
+
 **Option 1: "Always from Warehouse"**
 - Distance calculated from courier's default location (warehouse/base)
 - Includes round-trip consideration in pricing
@@ -318,9 +331,13 @@ The courier can choose between two pricing calculation modes:
 
 **Database:**
 ```sql
+-- Migration: 019_add_pricing_mode_to_profiles.sql
 ALTER TABLE profiles
 ADD COLUMN pricing_mode text DEFAULT 'warehouse'
 CHECK (pricing_mode IN ('warehouse', 'zone'));
+
+COMMENT ON COLUMN profiles.pricing_mode IS
+  'Distance calculation mode for courier pricing. warehouse=from base location, zone=fixed per zone';
 ```
 
 ---
@@ -407,8 +424,13 @@ self.addEventListener('sync', (event) => {
 - `ServiceFilters.svelte` - Reusable filtering component
 
 ### Database Changes
-- No schema changes required
-- RLS policy addition for client cancellation (soft delete)
+
+**New Migrations Required:**
+- `018_add_client_update_policy.sql` - RLS policy for client service updates (cancellation + suggestions)
+- `019_add_pricing_mode_to_profiles.sql` - Pricing calculation mode for courier
+
+**Existing Tables (no changes needed):**
+- `push_subscriptions` - Already exists, no new table needed for notifications
 
 ### External Services
 - Web Push API (already partially implemented)

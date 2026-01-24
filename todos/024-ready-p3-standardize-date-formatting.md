@@ -6,7 +6,11 @@ priority: p3
 issue_id: "024"
 tags: [code-review, i18n, consistency]
 dependencies: []
+plan_task: "N/A"
+plan_status: "POST-PLAN - Polish task for after main implementation"
 ---
+
+> **UX PLAN INTEGRATION**: This is a **POST-PLAN** polish task to be done after the [UX Implementation Plan](../docs/plans/2026-01-23-ux-implementation-plan.md) is complete. The plan introduces many new date displays (Insights page, filters, etc.) so standardizing formatting after all features are implemented ensures consistency across the entire app.
 
 ## Problem Statement
 

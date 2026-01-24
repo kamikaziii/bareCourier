@@ -6,7 +6,11 @@ priority: p2
 issue_id: "018"
 tags: [code-review, ux, courier]
 dependencies: []
+plan_task: "P3.4"
+plan_status: "PARALLEL - Related to P3.4, can be done together"
 ---
+
+> **UX PLAN INTEGRATION**: This todo is related to **P3.4** (Dashboard Click Behavior) in the [UX Implementation Plan](../docs/plans/2026-01-23-ux-implementation-plan.md). When implementing P3.4, also fix the filter logic to use `scheduled_date` instead of `created_at`. These are both dashboard improvements and should be done together.
 
 ## Problem Statement
 

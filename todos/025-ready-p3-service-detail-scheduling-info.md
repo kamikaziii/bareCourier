@@ -6,7 +6,11 @@ priority: p3
 issue_id: "025"
 tags: [code-review, ux, client]
 dependencies: []
+plan_task: "N/A"
+plan_status: "POST-PLAN - Polish task for after Phase 3 (Client Features)"
 ---
+
+> **UX PLAN INTEGRATION**: This is a **POST-PLAN** polish task to be done after Phase 3 (Client Features) of the [UX Implementation Plan](../docs/plans/2026-01-23-ux-implementation-plan.md). P3.1 (Client Cancellation) modifies the client service detail page, so this enhancement should be done after P3.1 is complete to avoid conflicts.
 
 ## Problem Statement
 

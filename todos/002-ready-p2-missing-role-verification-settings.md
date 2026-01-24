@@ -6,7 +6,11 @@ priority: p2
 issue_id: "002"
 tags: [code-review, security, authorization]
 dependencies: []
+plan_task: "N/A"
+plan_status: "PARALLEL - Can be done alongside UX plan"
 ---
+
+> **UX PLAN INTEGRATION**: This is a **PARALLEL** task that can be done independently of the [UX Implementation Plan](../docs/plans/2026-01-23-ux-implementation-plan.md). Security fixes like this should be done as quick wins.
 
 ## Problem Statement
 

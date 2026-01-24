@@ -6,7 +6,11 @@ priority: p2
 issue_id: "028"
 tags: [code-review, ux, courier, clients, billing]
 dependencies: []
+plan_task: "P2.3, P2.4, P2.5, P2.6"
+plan_status: "SUPERSEDED - Will be implemented as part of UX plan"
 ---
+
+> **UX PLAN INTEGRATION**: This feature is comprehensively addressed by tasks **P2.3** (Create PricingConfigForm), **P2.4** (Add Billing Tab to Client Detail), **P2.5** (Add Pricing to Client Creation), and **P2.6** (Add Pricing to Client Edit) in the [UX Implementation Plan](../docs/plans/2026-01-23-ux-implementation-plan.md). The plan makes pricing configuration available everywhere: client detail tab, create form, edit form, and billing page. Close this todo when P2.3-P2.6 are completed.
 
 ## Problem Statement
 

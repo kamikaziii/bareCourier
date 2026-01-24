@@ -1,12 +1,23 @@
 # Client Missing Calendar View
 
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "020"
 tags: [code-review, ux, feature-parity, client]
 dependencies: []
+plan_task: "N/A"
+plan_status: "REJECTED - Design decision: List view sufficient"
+resolution: "Will not implement - see design document"
 ---
+
+> **UX PLAN DECISION**: After UX research and discussion, this feature was **explicitly rejected** in the [UX Design Document](../docs/plans/2026-01-23-ux-redesign.md), Section 4.1:
+>
+> > **Decision**: No - List view is sufficient
+> >
+> > Clients typically have 5-20 services, not 100+. A filtered list with dates is enough. Calendar would be over-engineering.
+>
+> The client navigation will have 4 items (My Services, New Request, Billing, Settings) - no calendar. Instead, **P3.2** (Client Service Filtering) provides date range filtering in the list view.
 
 ## Problem Statement
 

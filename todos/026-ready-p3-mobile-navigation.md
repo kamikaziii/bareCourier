@@ -6,7 +6,11 @@ priority: p3
 issue_id: "026"
 tags: [code-review, ux, mobile, navigation]
 dependencies: ["023"]
+plan_task: "P1.4, P1.5, P1.6"
+plan_status: "SUPERSEDED - Will be implemented as part of UX plan"
 ---
+
+> **UX PLAN INTEGRATION**: This feature is covered by tasks **P1.4** (Create Mobile Bottom Nav Component), **P1.5** (Update Courier Layout), and **P1.6** (Update Client Layout) in the [UX Implementation Plan](../docs/plans/2026-01-23-ux-implementation-plan.md). The plan implements bottom navigation with iOS safe area support. Close this todo when P1.4-P1.6 are completed.
 
 ## Problem Statement
 

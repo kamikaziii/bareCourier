@@ -1,6 +1,7 @@
 # bareCourier UX Redesign - Implementation Plan
 
 **Date**: 2026-01-23
+**Updated**: 2026-01-24 (Post-review fixes applied)
 **Related**: [Design Document](./2026-01-23-ux-redesign.md)
 **Status**: Ready for Implementation
 
@@ -11,6 +12,40 @@
 This plan breaks down the UX redesign into implementable tasks organized by phase. Each task includes dependencies, acceptance criteria, and estimated complexity.
 
 **Complexity Scale**: S (Small, <2h), M (Medium, 2-4h), L (Large, 4-8h), XL (Extra Large, >8h)
+
+---
+
+## Review Notes (2026-01-24)
+
+The following issues were identified and fixed during comprehensive review:
+
+### Terminology Clarification
+
+| Term | Table | Purpose | Values |
+|------|-------|---------|--------|
+| `pricing_mode` (NEW) | `profiles` | How courier calculates **distance** | `'warehouse'`, `'zone'` |
+| `pricing_model` (EXISTS) | `client_pricing` | Rate structure for a **client** | `'per_km'`, `'zone'`, `'flat_plus_km'` |
+
+> **Warning**: Both have `'zone'` as a value but with different meanings. See P5B.1 for details.
+
+### Key Fixes Applied
+
+1. **P1.2**: RLS policy broadened to allow both 'pending' and 'suggested' states (enables #027 AND #015)
+2. **P1.4**: iOS safe area inset handling explicitly documented
+3. **P2.1**: Default tab behavior specified (`?tab=overview`)
+4. **P2.7/P2.8**: Renumbered to correct dependency order
+5. **P2.7**: Address suggestions limit kept at 5 (matches current implementation)
+6. **P4.1**: Removed duplicate table creation (`push_subscriptions` already exists)
+7. **P5.2**: Added Workbox `workbox-background-sync` implementation details
+8. **P5B.1**: Added migration file reference and i18n keys
+9. **P6.2**: Added implementation pattern to avoid SvelteKit conflicts
+
+### Migration Files Required
+
+| Migration | Task | Description |
+|-----------|------|-------------|
+| `018_add_client_update_policy.sql` | P1.2 | RLS policy for client service updates |
+| `019_add_pricing_mode_to_profiles.sql` | P5B.1 | Pricing calculation mode for courier |
 
 ---
 
@@ -39,36 +74,48 @@ This plan breaks down the UX redesign into implementable tasks organized by phas
 
 ---
 
-### P1.2 Fix #027 RLS Bug - Client Suggestions
+### P1.2 Fix #027 RLS Bug - Client Service Updates
 **Complexity**: M
 **Dependencies**: None
 **Files**:
-- Supabase RLS policies
+- `supabase/migrations/018_add_client_update_policy.sql` (new)
 - `src/routes/client/+page.svelte` (verify fix)
 
 **Changes**:
-- Add RLS policy allowing clients to update their own services when responding to suggestions
-- Specifically allow updating `request_status` field
+- Add RLS policy allowing clients to update their own services
+- Allow updates when `request_status` is 'pending' (for cancellation) OR 'suggested' (for accepting/declining)
+- This policy enables both #027 (suggestion response) AND #015 (cancellation)
 
-**SQL**:
+**Migration File**: `supabase/migrations/018_add_client_update_policy.sql`
 ```sql
-CREATE POLICY "clients_can_respond_to_suggestions"
+-- Allow clients to update their own services when:
+-- 1. Responding to courier suggestions (request_status = 'suggested')
+-- 2. Cancelling pending requests (request_status = 'pending')
+CREATE POLICY "clients_can_update_own_services"
 ON services FOR UPDATE
 TO authenticated
 USING (
   client_id = (SELECT auth.uid())
-  AND request_status = 'suggested'
+  AND deleted_at IS NULL
+  AND request_status IN ('pending', 'suggested')  -- Allow both states
 )
 WITH CHECK (
-  request_status IN ('accepted', 'pending')
+  client_id = (SELECT auth.uid())
+  AND deleted_at IS NULL
 );
+
+-- Add comment for documentation
+COMMENT ON POLICY "clients_can_update_own_services" ON services IS
+  'Allows clients to: 1) Accept/decline courier suggestions, 2) Cancel pending requests (soft delete)';
 ```
 
 **Acceptance Criteria**:
 - [ ] Client can click "Accept" on suggested service
 - [ ] Client can click "Decline" on suggested service
+- [ ] Client can cancel pending services (P3.1 dependency)
 - [ ] Status updates correctly in database
 - [ ] No RLS errors in console
+- [ ] Existing courier update functionality unaffected
 
 ---
 
@@ -113,13 +160,29 @@ interface SidebarProps {
 **Files**:
 - `src/lib/components/MobileBottomNav.svelte` (new)
 - `src/lib/components/MoreDrawer.svelte` (new)
+- `src/app.html` (verify viewport meta tag)
 
 **Features**:
 - Fixed to bottom of screen
 - 5 icon+label items for courier
 - 4 items for client (no "More")
 - "More" opens Sheet/drawer with remaining items
-- Safe area padding for notched devices
+- Safe area padding for notched devices (iOS)
+
+**iOS Safe Area Implementation** (required for notch/home indicator):
+```css
+/* Bottom nav must respect safe area */
+.mobile-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+```
+
+**Verify in `app.html`**:
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+```
 
 **Acceptance Criteria**:
 - [ ] Bottom nav visible only on mobile (< 768px)
@@ -127,7 +190,9 @@ interface SidebarProps {
 - [ ] "More" button opens drawer
 - [ ] Drawer contains Clients, Billing, Insights, Settings
 - [ ] Active state on current page
-- [ ] Safe area respected on iOS
+- [ ] `env(safe-area-inset-bottom)` applied to bottom nav
+- [ ] `viewport-fit=cover` present in meta tag
+- [ ] Tested on iPhone X+ simulator/device (no content hidden behind home indicator)
 
 ---
 
@@ -189,8 +254,17 @@ Tabs:
 **Features**:
 - Shared date range picker across tabs
 - Lazy loading for Charts and Data tabs
-- URL state preservation (`?tab=charts`)
+- URL state preservation (`?tab=charts&from=2026-01-01&to=2026-01-31`)
+- Default tab: `overview` when no query param present
 - All existing functionality preserved
+
+**Default Tab Handling**:
+```typescript
+// In +page.ts or +page.svelte
+const validTabs = ['overview', 'charts', 'data'] as const;
+const tabParam = $page.url.searchParams.get('tab');
+const activeTab = validTabs.includes(tabParam as any) ? tabParam : 'overview';
+```
 
 **Acceptance Criteria**:
 - [ ] Three tabs functional
@@ -199,6 +273,8 @@ Tabs:
 - [ ] Data tab shows filterable table + CSV export
 - [ ] Date range persists across tabs
 - [ ] Tab state in URL
+- [ ] Default to 'overview' tab when no `?tab=` param present
+- [ ] Invalid tab values fallback to 'overview'
 
 ---
 
@@ -312,33 +388,14 @@ interface PricingConfigFormProps {
 
 ---
 
-### P2.7 Upgrade Courier Service Form
-**Complexity**: L
-**Dependencies**: P2.8
-**Files**:
-- `src/routes/courier/services/+page.svelte`
-
-**Changes**:
-- Replace plain text inputs with AddressInput components
-- Add RouteMap preview
-- Add distance calculation
-- Add SchedulePicker
-- Save coordinates to database
-
-**Acceptance Criteria**:
-- [ ] Address autocomplete working
-- [ ] Route map shows when both addresses selected
-- [ ] Distance calculated and displayed
-- [ ] Schedule picker available
-- [ ] All data saved to database
-
----
-
-### P2.8 AddressInput Hints (UX Best Practices)
+### P2.7 AddressInput Hints (UX Best Practices)
 **Complexity**: M
 **Dependencies**: None
 **Files**:
 - `src/lib/components/AddressInput.svelte`
+- `src/lib/services/geocoding.ts` (verify limit)
+
+> **Note**: This task was renumbered from P2.8 to P2.7 since it has no dependencies and P2.8 (now Courier Service Form) depends on it. Execute this BEFORE P2.8.
 
 **Research-based requirements** ([Baymard](https://baymard.com/blog/automatic-address-lookup), [IxDF](https://www.interaction-design.org/literature/article/support-users-with-small-clues-in-the-input-hints-design-pattern)):
 
@@ -346,7 +403,7 @@ interface PricingConfigFormProps {
 - Add `showHint` prop (default: true)
 - Track state: `idle` | `typing` | `verified` | `custom`
 - Helper text **always visible below input** (not placeholder)
-- Limit suggestions to **10 items max**
+- Keep current **5 suggestions limit** (optimal per UX research, already set in `geocoding.ts:44`)
 - Brief **green highlight animation** when suggestion selected
 - Show appropriate hint text based on state:
   - Idle: "Start typing for address suggestions with automatic distance calculation"
@@ -356,11 +413,35 @@ interface PricingConfigFormProps {
 **Acceptance Criteria**:
 - [ ] Helper text visible below input at all times
 - [ ] Different hint for each state (idle, verified, custom)
-- [ ] Maximum 10 suggestions displayed
+- [ ] Maximum 5 suggestions displayed (current default, optimal for UX)
 - [ ] Brief highlight animation when suggestion selected
 - [ ] Hint can be hidden via prop
 - [ ] i18n messages for all hint states
-- [ ] Accessible (screen readers announce hints)
+- [ ] Accessible (screen readers announce hints via `aria-live`)
+
+---
+
+### P2.8 Upgrade Courier Service Form
+**Complexity**: L
+**Dependencies**: P2.7 (AddressInput hints must be complete first)
+**Files**:
+- `src/routes/courier/services/+page.svelte`
+
+> **Note**: Renumbered from P2.7. Depends on P2.7 (AddressInput enhancements).
+
+**Changes**:
+- Replace plain text inputs with AddressInput components
+- Add RouteMap preview
+- Add distance calculation
+- Add SchedulePicker
+- Save coordinates to database
+
+**Acceptance Criteria**:
+- [ ] Address autocomplete working with hint states
+- [ ] Route map shows when both addresses selected
+- [ ] Distance calculated and displayed
+- [ ] Schedule picker available
+- [ ] All data saved to database
 
 ---
 
@@ -456,32 +537,34 @@ interface PricingConfigFormProps {
 **Complexity**: L
 **Dependencies**: None
 **Files**:
-- `src/sw.ts` (update)
-- `src/lib/services/push.ts` (new)
+- `src/sw.ts` (already has push handling - verify/extend)
+- `src/lib/services/push.ts` (update existing)
 - `src/routes/api/push/subscribe/+server.ts` (new)
 
 **Changes**:
-- Create VAPID keys
-- Add subscription endpoint
-- Store subscriptions in database
-- Create notification sending function
+- Generate VAPID keys (store in environment variables)
+- Add subscription API endpoint
+- Extend existing push service with send capabilities
+- Create notification sending function for server-side use
 
-**Database**:
-```sql
-CREATE TABLE push_subscriptions (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES auth.users NOT NULL,
-  endpoint text NOT NULL,
-  p256dh text NOT NULL,
-  auth text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
-```
+> **Note**: The `push_subscriptions` table **already exists** in the database. No migration needed for this task.
+
+**Existing Infrastructure** (verified):
+- `push_subscriptions` table: ✅ exists with columns (id, user_id, endpoint, p256dh, auth, created_at)
+- `src/sw.ts` lines 60-104: ✅ push and notificationclick handlers exist
+- `src/lib/services/push.ts`: ✅ exists (extend, don't create new)
+
+**New Work Required**:
+- VAPID key generation and storage
+- Server-side push sending function
+- Subscription management API endpoint
 
 **Acceptance Criteria**:
+- [ ] VAPID keys generated and stored in `.env`
 - [ ] Users can subscribe to push notifications
-- [ ] Subscriptions stored in database
+- [ ] Subscriptions stored in existing `push_subscriptions` table
 - [ ] Push notifications received when app closed
+- [ ] Push notifications clickable (navigate to relevant page)
 
 ---
 
@@ -552,18 +635,63 @@ CREATE TABLE push_subscriptions (
 **Files**:
 - `src/sw.ts`
 - `src/lib/services/sync.ts` (new)
+- `package.json` (add `workbox-background-sync`)
 
-**Changes**:
-- Register sync event in service worker
-- Queue status changes when offline
-- Sync when connection restored
-- Handle conflicts (last-write-wins)
+**Install Dependency**:
+```bash
+pnpm add workbox-background-sync
+```
+
+**Service Worker Implementation** (`src/sw.ts`):
+```typescript
+import { BackgroundSyncPlugin } from 'workbox-background-sync';
+import { registerRoute } from 'workbox-routing';
+import { NetworkOnly } from 'workbox-strategies';
+
+// Queue for status changes (PATCH requests to services)
+const statusSyncPlugin = new BackgroundSyncPlugin('statusChangeQueue', {
+  maxRetentionTime: 24 * 60, // Retry for 24 hours (in minutes)
+  onSync: async ({ queue }) => {
+    let entry;
+    while ((entry = await queue.shiftRequest())) {
+      try {
+        await fetch(entry.request);
+        console.log('Synced:', entry.request.url);
+      } catch (error) {
+        console.error('Sync failed, re-queuing:', error);
+        await queue.unshiftRequest(entry);
+        throw error; // Re-throw to trigger retry
+      }
+    }
+  }
+});
+
+// Register route for service status updates
+registerRoute(
+  ({ url, request }) =>
+    url.pathname.includes('/rest/') &&
+    url.pathname.includes('/services') &&
+    request.method === 'PATCH',
+  new NetworkOnly({
+    plugins: [statusSyncPlugin]
+  }),
+  'PATCH'
+);
+```
+
+**Conflict Resolution Strategy**:
+- Last-write-wins with `updated_at` timestamp comparison
+- If server version is newer, discard queued change and notify user
+- Store original `updated_at` in IndexedDB when queuing
 
 **Acceptance Criteria**:
+- [ ] `workbox-background-sync` installed
 - [ ] Status changes queued when offline
-- [ ] Changes sync when back online
-- [ ] Conflicts resolved correctly
-- [ ] User notified of sync status
+- [ ] Changes sync automatically when back online
+- [ ] Queue persisted in IndexedDB (survives browser restart)
+- [ ] Conflicts resolved with last-write-wins
+- [ ] User notified of sync status (via OfflineIndicator)
+- [ ] Failed syncs retry with exponential backoff (browser-managed)
 
 ---
 
@@ -614,26 +742,64 @@ CREATE TABLE push_subscriptions (
 **Files**:
 - `src/routes/courier/settings/+page.svelte`
 - `src/routes/courier/settings/+page.server.ts`
-- Database migration
+- `supabase/migrations/019_add_pricing_mode_to_profiles.sql` (new)
+- `src/lib/database.types.ts` (update Profile type)
+
+> **IMPORTANT: pricing_mode vs pricing_model Clarification**
+>
+> These are **different concepts**:
+> - `pricing_mode` (NEW, on `profiles` table): How the courier calculates **distance** for pricing
+>   - `'warehouse'`: Distance from courier's base to pickup + pickup to delivery
+>   - `'zone'`: Fixed prices per geographic zone (distance doesn't matter)
+>
+> - `pricing_model` (EXISTING, on `client_pricing` table): The **rate structure** for a specific client
+>   - `'per_km'`: Base + per-kilometer rate
+>   - `'flat_plus_km'`: Flat fee + per-kilometer rate
+>   - `'zone'`: Zone-based fixed prices
+>
+> The `'zone'` value appears in both but has different meanings:
+> - `pricing_mode = 'zone'`: Use zone-based distance calculation for ALL clients
+> - `pricing_model = 'zone'`: This specific CLIENT uses zone pricing
 
 **Changes**:
-- Add "Pricing Calculation Mode" section to settings
+- Add "Distance Calculation Mode" section to settings (courier only)
 - Radio buttons: "Always from Warehouse" vs "Zone-Based"
 - Explanation text for each option
 - Save to profile `pricing_mode` field
 
-**Database Migration**:
+**Migration File**: `supabase/migrations/019_add_pricing_mode_to_profiles.sql`
 ```sql
+-- Add pricing_mode to profiles (for courier only)
+-- This controls HOW distance is calculated, not the rate structure
 ALTER TABLE profiles
 ADD COLUMN pricing_mode text DEFAULT 'warehouse'
 CHECK (pricing_mode IN ('warehouse', 'zone'));
+
+COMMENT ON COLUMN profiles.pricing_mode IS
+  'Distance calculation mode for courier pricing. warehouse=from base location, zone=fixed per zone';
 ```
+
+**Update `database.types.ts`**:
+```typescript
+// Add to Profile Row type
+pricing_mode: 'warehouse' | 'zone' | null;
+```
+
+**i18n Keys Required** (add to i18n section):
+- `settings_pricing_mode` - "Distance Calculation Mode"
+- `settings_pricing_mode_desc` - "How distance is calculated for pricing"
+- `pricing_mode_warehouse` - "Always from Warehouse"
+- `pricing_mode_warehouse_desc` - "Distance from your base location to pickup, plus pickup to delivery"
+- `pricing_mode_zone` - "Zone-Based"
+- `pricing_mode_zone_desc` - "Fixed prices per geographic zone, regardless of actual distance"
 
 **Acceptance Criteria**:
 - [ ] Pricing mode setting visible in courier settings
 - [ ] Can switch between warehouse and zone modes
 - [ ] Setting saved to database
 - [ ] Explanation text helps courier understand difference
+- [ ] i18n messages for PT and EN
+- [ ] Only visible to courier role (not clients)
 
 ---
 
@@ -684,18 +850,75 @@ CHECK (pricing_mode IN ('warehouse', 'zone'));
 **Dependencies**: None
 **Files**:
 - `src/lib/components/PullToRefresh.svelte` (new)
-- List pages
+- List pages (Dashboard, Services, Clients)
 
 **Changes**:
-- Implement pull-to-refresh gesture
-- Refresh data on pull
-- Loading indicator
+- Implement pull-to-refresh gesture with touch events
+- Refresh data on pull using SvelteKit's `invalidateAll()`
+- Loading indicator with visual feedback
+- Prevent conflict with SvelteKit scroll restoration
+
+**Implementation Pattern**:
+```svelte
+<script lang="ts">
+  import { invalidateAll } from '$app/navigation';
+
+  let startY = 0;
+  let pulling = $state(false);
+  let refreshing = $state(false);
+  let pullDistance = $state(0);
+
+  const THRESHOLD = 80; // px to trigger refresh
+
+  function handleTouchStart(e: TouchEvent) {
+    // Only activate when at top of page
+    if (window.scrollY === 0) {
+      startY = e.touches[0].clientY;
+      pulling = true;
+    }
+  }
+
+  function handleTouchMove(e: TouchEvent) {
+    if (!pulling || refreshing) return;
+    pullDistance = Math.min(e.touches[0].clientY - startY, THRESHOLD * 1.5);
+    if (pullDistance > 0) {
+      e.preventDefault(); // Prevent native scroll during pull
+    }
+  }
+
+  async function handleTouchEnd() {
+    if (pullDistance >= THRESHOLD) {
+      refreshing = true;
+      await invalidateAll();
+      refreshing = false;
+    }
+    pulling = false;
+    pullDistance = 0;
+  }
+</script>
+
+<div
+  ontouchstart={handleTouchStart}
+  ontouchmove={handleTouchMove}
+  ontouchend={handleTouchEnd}
+>
+  {#if pullDistance > 0 || refreshing}
+    <div class="pull-indicator" style="transform: translateY({pullDistance}px)">
+      {refreshing ? 'Refreshing...' : 'Pull to refresh'}
+    </div>
+  {/if}
+  <slot />
+</div>
+```
 
 **Acceptance Criteria**:
-- [ ] Pull gesture detected on mobile
-- [ ] Loading indicator shown
-- [ ] Data refreshed
-- [ ] Works on Dashboard, Services, Clients
+- [ ] Pull gesture detected on mobile (touch events)
+- [ ] Only activates when scrolled to top (`scrollY === 0`)
+- [ ] Loading indicator shown during refresh
+- [ ] Data refreshed via `invalidateAll()`
+- [ ] Works on Dashboard, Services, Clients pages
+- [ ] Does not conflict with SvelteKit navigation/scroll restoration
+- [ ] Visual feedback during pull (distance indicator)
 
 ---
 
@@ -733,21 +956,34 @@ CHECK (pricing_mode IN ('warehouse', 'zone'));
 - `nav_insights` - "Insights" / "Estatísticas"
 - `nav_more` - "More" / "Mais"
 
-### Pricing
+### Pricing Configuration (Client)
 - `pricing_config_optional` - "Pricing Configuration (Optional)"
 - `pricing_not_configured` - "Pricing not configured"
 - `pricing_configure` - "Configure Pricing"
 
+### Pricing Mode (Courier Settings - P5B.1)
+- `settings_pricing_mode` - "Distance Calculation Mode" / "Modo de Cálculo de Distância"
+- `settings_pricing_mode_desc` - "How distance is calculated for pricing" / "Como a distância é calculada para preços"
+- `pricing_mode_warehouse` - "Always from Warehouse" / "Sempre do Armazém"
+- `pricing_mode_warehouse_desc` - "Distance from your base location to pickup, plus pickup to delivery" / "Distância da sua localização base até ao levantamento, mais levantamento até à entrega"
+- `pricing_mode_zone` - "Zone-Based" / "Por Zona"
+- `pricing_mode_zone_desc` - "Fixed prices per geographic zone, regardless of actual distance" / "Preços fixos por zona geográfica, independentemente da distância real"
+
 ### Offline
-- `offline_banner` - "You're offline"
-- `offline_pending` - "{count} changes pending"
-- `offline_syncing` - "Syncing..."
-- `offline_sync_complete` - "All changes synced"
+- `offline_banner` - "You're offline" / "Está offline"
+- `offline_pending` - "{count} changes pending" / "{count} alterações pendentes"
+- `offline_syncing` - "Syncing..." / "A sincronizar..."
+- `offline_sync_complete` - "All changes synced" / "Todas as alterações sincronizadas"
 
 ### Cancellation
-- `action_cancel_request` - "Cancel Request"
-- `confirm_cancel_request` - "Cancel this request?"
-- `confirm_cancel_request_desc` - "This will cancel your pending pickup request."
+- `action_cancel_request` - "Cancel Request" / "Cancelar Pedido"
+- `confirm_cancel_request` - "Cancel this request?" / "Cancelar este pedido?"
+- `confirm_cancel_request_desc` - "This will cancel your pending pickup request." / "Isto irá cancelar o seu pedido de levantamento pendente."
+
+### AddressInput Hints (P2.7)
+- `address_hint_idle` - "Start typing for address suggestions" / "Comece a escrever para sugestões de morada"
+- `address_hint_verified` - "Address verified - distance and map available" / "Morada verificada - distância e mapa disponíveis"
+- `address_hint_custom` - "Manual address - distance calculation unavailable" / "Morada manual - cálculo de distância indisponível"
 
 ---
 
@@ -779,15 +1015,27 @@ P1.4 (Bottom Nav) ─┴──> P1.6 (Client Layout)
 
 P2.3 (PricingForm) ──┬──> P2.4 (Billing Tab)
                      ├──> P2.5 (Create Form)
-                     └──> P2.6 (Edit Form)
+                     ├──> P2.6 (Edit Form)
+                     └──> P5B.1 (Pricing Mode)
+
+P2.7 (AddressInput) ────> P2.8 (Courier Service Form)
 
 P2.1 (Insights) ────────> P2.2 (Deprecate Routes)
 
 P5.1 (IndexedDB) ───┬──> P5.2 (Background Sync)
                     └──> P5.3 (Optimistic UI)
 
+P5B.1 (Pricing Mode) ───> P5B.2 (Price Calculation)
+
 P4.1 (Push) ────────┬──> P4.3 (Preferences)
 P4.2 (Email) ───────┘
+```
+
+**Critical Path** (must be completed in order):
+```
+P1.2 (RLS Fix) → P1.1 (Centering) → P1.3 (Sidebar) → P1.4 (BottomNav)
+       ↓                                    ↓
+   P3.1 (Cancel)                   P1.5/P1.6 (Layouts)
 ```
 
 ---

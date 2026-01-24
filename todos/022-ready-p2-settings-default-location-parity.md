@@ -6,7 +6,11 @@ priority: p2
 issue_id: "022"
 tags: [code-review, ux, feature-parity, settings]
 dependencies: []
+plan_task: "P5B.1"
+plan_status: "POST-PLAN - Can be done alongside P5B.1 (Pricing Mode Setting)"
 ---
+
+> **UX PLAN INTEGRATION**: This todo can be implemented alongside **P5B.1** (Add Pricing Mode to Courier Settings) in the [UX Implementation Plan](../docs/plans/2026-01-23-ux-implementation-plan.md). Since both modify the courier settings page, it makes sense to combine this work with P5B.1 to avoid touching the same file twice.
 
 ## Problem Statement
 

@@ -6,7 +6,11 @@ priority: p2
 issue_id: "007"
 tags: [code-review, performance, bundle-size]
 dependencies: []
+plan_task: "N/A"
+plan_status: "PARALLEL - Can be done alongside UX plan"
 ---
+
+> **UX PLAN INTEGRATION**: This is a **PARALLEL** task that can be done independently of the [UX Implementation Plan](../docs/plans/2026-01-23-ux-implementation-plan.md). Performance optimizations like this should be done before or during Phase 6 (Polish). Note: P2.1 (Insights page) will reuse these chart components.
 
 ## Problem Statement
 

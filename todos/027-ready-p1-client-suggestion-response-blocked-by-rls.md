@@ -6,7 +6,13 @@ priority: p1
 issue_id: "027"
 tags: [bug, rls, database, client, critical]
 dependencies: []
+plan_task: "P1.2"
+plan_status: "PREREQUISITE - First task to implement"
 ---
+
+> **UX PLAN INTEGRATION**: This bug fix is task **P1.2** in the [UX Implementation Plan](../docs/plans/2026-01-23-ux-implementation-plan.md). It is a **PREREQUISITE** that must be completed first as it unblocks #015 (cancellation) and P3.1.
+>
+> **Migration file**: `supabase/migrations/018_add_client_update_policy.sql`
 
 ## Problem Statement
 
