@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -6,6 +7,8 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import { Label } from '$lib/components/ui/label/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import RouteMap from '$lib/components/RouteMap.svelte';
 	import * as m from '$lib/paraglide/messages.js';
@@ -21,7 +24,8 @@
 		Clock,
 		User,
 		CheckCircle,
-		Circle
+		Circle,
+		DollarSign
 	} from '@lucide/svelte';
 
 	const hasMapbox = !!PUBLIC_MAPBOX_TOKEN;
@@ -30,9 +34,12 @@
 
 	let showDeleteDialog = $state(false);
 	let showStatusDialog = $state(false);
+	let showPriceOverride = $state(false);
 	let pendingStatus = $state<'pending' | 'delivered'>('pending');
 	let loading = $state(false);
 	let actionError = $state('');
+	let priceOverrideLoading = $state(false);
+	let priceOverrideError = $state('');
 
 	function formatDate(dateStr: string): string {
 		return new Date(dateStr).toLocaleDateString(getLocale(), {
@@ -114,6 +121,20 @@
 	function confirmStatusChange(status: 'pending' | 'delivered') {
 		pendingStatus = status;
 		showStatusDialog = true;
+	}
+
+	function handlePriceOverrideSubmit() {
+		priceOverrideLoading = true;
+		priceOverrideError = '';
+		return async ({ result }: { result: { type: string; data?: { error?: string; success?: boolean } } }) => {
+			if (result.type === 'failure' && result.data?.error) {
+				priceOverrideError = result.data.error;
+			} else if (result.type === 'success' && result.data?.success) {
+				showPriceOverride = false;
+				await invalidateAll();
+			}
+			priceOverrideLoading = false;
+		};
 	}
 
 	const service = $derived(data.service);
@@ -296,6 +317,38 @@
 					{/if}
 				</Card.Content>
 			</Card.Root>
+
+			<!-- Price -->
+			<Card.Root>
+				<Card.Header>
+					<Card.Title class="flex items-center gap-2">
+						<DollarSign class="size-5" />
+						{m.billing_price()}
+					</Card.Title>
+				</Card.Header>
+				<Card.Content>
+					{#if service.calculated_price !== null}
+						<div class="flex items-center justify-between">
+							<div>
+								<p class="text-2xl font-bold">€{service.calculated_price.toFixed(2)}</p>
+								{#if service.price_override_reason}
+									<p class="text-sm text-muted-foreground">{service.price_override_reason}</p>
+								{/if}
+							</div>
+							<Button variant="outline" onclick={() => (showPriceOverride = true)}>
+								{m.price_override()}
+							</Button>
+						</div>
+					{:else}
+						<div class="flex items-center justify-between">
+							<p class="text-muted-foreground">{m.price_pending()}</p>
+							<Button variant="outline" onclick={() => (showPriceOverride = true)}>
+								{m.price_override()}
+							</Button>
+						</div>
+					{/if}
+				</Card.Content>
+			</Card.Root>
 		</Tabs.Content>
 
 		<Tabs.Content value="history" class="pt-4">
@@ -391,5 +444,54 @@
 				{loading ? m.loading() : m.action_delete()}
 			</AlertDialog.Action>
 		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>
+
+<!-- Price Override Dialog -->
+<AlertDialog.Root bind:open={showPriceOverride}>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title>{m.price_override()}</AlertDialog.Title>
+		</AlertDialog.Header>
+		<form method="POST" action="?/overridePrice" use:enhance={handlePriceOverrideSubmit}>
+			<div class="space-y-4 py-4">
+				{#if service.calculated_price !== null}
+					<p class="text-sm text-muted-foreground">
+						{m.price_calculated()}: €{service.calculated_price.toFixed(2)}
+					</p>
+				{/if}
+				{#if priceOverrideError}
+					<div class="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+						{priceOverrideError}
+					</div>
+				{/if}
+				<div class="space-y-2">
+					<Label for="override_price">{m.price_override()}</Label>
+					<Input
+						id="override_price"
+						name="override_price"
+						type="number"
+						step="0.01"
+						min="0"
+						value={service.calculated_price ?? ''}
+						required
+					/>
+				</div>
+				<div class="space-y-2">
+					<Label for="override_reason">{m.price_override_reason()}</Label>
+					<Input
+						id="override_reason"
+						name="override_reason"
+						value={service.price_override_reason ?? ''}
+					/>
+				</div>
+			</div>
+			<AlertDialog.Footer>
+				<AlertDialog.Cancel onclick={() => (priceOverrideError = '')}>{m.action_cancel()}</AlertDialog.Cancel>
+				<Button type="submit" disabled={priceOverrideLoading}>
+					{priceOverrideLoading ? m.saving() : m.price_save_override()}
+				</Button>
+			</AlertDialog.Footer>
+		</form>
 	</AlertDialog.Content>
 </AlertDialog.Root>
