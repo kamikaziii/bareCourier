@@ -1,7 +1,7 @@
 # Insights Page Needs Pagination
 
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "037"
 tags: [performance, pagination, insights]
@@ -47,9 +47,9 @@ Test with 1000+ services - page should load in under 2 seconds.
 
 ## Acceptance Criteria
 
-- [ ] Services query has pagination or aggregation
-- [ ] Date range changes are debounced
-- [ ] Page loads quickly with large datasets
+- [x] Services query has pagination or aggregation
+- [x] Date range changes are debounced
+- [x] Page loads quickly with large datasets
 
 ## Work Log
 
@@ -57,3 +57,25 @@ Test with 1000+ services - page should load in under 2 seconds.
 |------|--------|-----------|
 | 2026-01-24 | Identified by performance-oracle agent | Unbounded queries don't scale |
 | 2026-01-24 | Approved during triage | Status changed to ready |
+| 2026-01-24 | Implemented pagination (500 records/batch, 10K limit) + debounce (300ms) | Batched loading + debounce prevents both memory and request flooding |
+| 2026-01-24 | Fixed gaps: added data truncation warning, error handling, memory optimization | User must be informed when analytics are based on incomplete data |
+
+## Implementation Details
+
+### Data Service (`insights-data.ts`)
+- `PAGE_SIZE = 500` for batched loading
+- `MAX_RECORDS = 10000` safety limit
+- `.range()` for Supabase pagination
+- Error handling with `console.error` on batch failures
+- Memory-efficient `push()` instead of spread operator
+- Returns `hasMoreData` and `totalRecordsLoaded` flags
+
+### UI (`insights/+page.svelte`)
+- Tracks `hasMoreData` and `totalRecordsLoaded` state
+- Shows destructive Alert banner when data is truncated
+- Warns user to select shorter date range for complete data
+- 300ms debounce on date range changes
+
+### i18n Keys Added
+- `insights_data_truncated_title`: "Data Limit Reached"
+- `insights_data_truncated_desc`: "Showing {count} records. Select a shorter date range for complete data."

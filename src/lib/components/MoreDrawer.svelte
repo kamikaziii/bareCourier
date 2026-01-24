@@ -1,14 +1,8 @@
 <script lang="ts">
-	import type { Component } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
-
-	interface NavItem {
-		href: string;
-		label: string;
-		icon: Component;
-	}
+	import { type NavItem, isItemActive } from '$lib/types/navigation.js';
 
 	interface MoreDrawerProps {
 		items: NavItem[];
@@ -17,13 +11,6 @@
 	}
 
 	let { items, currentPath, open = $bindable() }: MoreDrawerProps = $props();
-
-	// Check if item is active
-	function isItemActive(itemHref: string): boolean {
-		if (currentPath === itemHref) return true;
-		if (itemHref !== '/' && currentPath.startsWith(itemHref + '/')) return true;
-		return false;
-	}
 
 	function handleItemClick(href: string) {
 		open = false;
@@ -39,7 +26,7 @@
 		<nav class="mt-4 grid gap-1">
 			{#each items as item (item.href)}
 				{@const Icon = item.icon}
-				{@const active = isItemActive(item.href)}
+				{@const active = isItemActive(item.href, currentPath)}
 				<button
 					onclick={() => handleItemClick(item.href)}
 					class="flex items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-medium transition-colors

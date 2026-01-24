@@ -9,6 +9,7 @@
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import type { PageData, ActionData } from './$types';
+	import { Textarea } from '$lib/components/ui/textarea/index.js';
 	import { Settings, User, Zap, Plus, Trash2, Power, Bell, MapPin, Warehouse } from '@lucide/svelte';
 	import {
 		isPushSupported,
@@ -139,6 +140,35 @@
 					<Label>{m.auth_email()}</Label>
 					<Input disabled value={data.session?.user?.email || ''} />
 					<p class="text-xs text-muted-foreground">{m.settings_email_readonly()}</p>
+				</div>
+				<Button type="submit">{m.action_save()}</Button>
+			</form>
+		</Card.Content>
+	</Card.Root>
+
+	<!-- Default Location -->
+	<Card.Root>
+		<Card.Header>
+			<Card.Title class="flex items-center gap-2">
+				<Warehouse class="size-5" />
+				{m.settings_default_location()}
+			</Card.Title>
+			<Card.Description>{m.settings_courier_default_location_desc()}</Card.Description>
+		</Card.Header>
+		<Card.Content>
+			<form method="POST" action="?/updateProfile" use:enhance class="space-y-4">
+				<input type="hidden" name="name" value={data.profile.name} />
+				<input type="hidden" name="phone" value={data.profile.phone || ''} />
+				<div class="space-y-2">
+					<Label for="default_pickup_location">{m.settings_warehouse_address()}</Label>
+					<Textarea
+						id="default_pickup_location"
+						name="default_pickup_location"
+						value={data.profile.default_pickup_location || ''}
+						placeholder={m.form_warehouse_placeholder()}
+						rows={2}
+					/>
+					<p class="text-xs text-muted-foreground">{m.settings_warehouse_hint()}</p>
 				</div>
 				<Button type="submit">{m.action_save()}</Button>
 			</form>

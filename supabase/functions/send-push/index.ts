@@ -108,14 +108,34 @@ Deno.serve(async (req: Request) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Check if user has push notifications enabled
-    const { data: profile } = await adminClient
+    // IDOR Protection: Verify caller has permission to notify target user
+    const { data: callerProfile } = await adminClient
       .from("profiles")
-      .select("push_notifications_enabled")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    // Get target user's profile (role and push notification preference)
+    const { data: targetProfile } = await adminClient
+      .from("profiles")
+      .select("role, push_notifications_enabled")
       .eq("id", user_id)
       .single();
 
-    if (profile && profile.push_notifications_enabled === false) {
+    const isCourier = callerProfile?.role === "courier";
+    const isSelfNotification = user_id === user.id;
+    const isNotifyingCourier = targetProfile?.role === "courier";
+
+    // Allow if: caller is courier, OR notifying self, OR client notifying courier
+    if (!isCourier && !isSelfNotification && !isNotifyingCourier) {
+      return new Response(
+        JSON.stringify({ error: "Forbidden: Cannot send notifications to other users" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check if user has push notifications enabled
+    if (targetProfile && targetProfile.push_notifications_enabled === false) {
       return new Response(
         JSON.stringify({ success: true, sent: 0, reason: "Push notifications disabled for user" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

@@ -1,7 +1,7 @@
 # Overly Permissive RLS Policy for Client Updates
 
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "032"
 tags: [security, rls, database]
@@ -52,9 +52,9 @@ Test as client: attempt to modify `calculated_price` on pending service - should
 
 ## Acceptance Criteria
 
-- [ ] Clients cannot modify calculated_price
-- [ ] Clients cannot modify pickup/delivery locations
-- [ ] Clients CAN still update request_status and deleted_at
+- [x] Clients cannot modify calculated_price
+- [x] Clients cannot modify pickup/delivery locations
+- [x] Clients CAN still update request_status and deleted_at
 
 ## Work Log
 
@@ -62,3 +62,16 @@ Test as client: attempt to modify `calculated_price` on pending service - should
 |------|--------|-----------|
 | 2026-01-24 | Identified by 3 agents | RLS WITH CHECK needs column restrictions |
 | 2026-01-24 | Approved during triage | Status changed to ready |
+| 2026-01-24 | Implemented via migration 023 | BEFORE UPDATE trigger with SECURITY DEFINER checks user role and restricts field changes for clients |
+
+## Resolution
+
+Created migration `023_restrict_client_service_updates.sql` which adds:
+1. A `check_client_service_update_fields()` trigger function that:
+   - Checks the user's role from profiles table
+   - Allows couriers to update any field
+   - Restricts clients to only modify: `request_status`, `deleted_at`, `requested_date`, `requested_time_slot`
+   - Uses `IS DISTINCT FROM` for proper NULL handling
+2. A `BEFORE UPDATE` trigger on the services table
+
+The function uses `SECURITY DEFINER` with `SET search_path = public` for security best practices.

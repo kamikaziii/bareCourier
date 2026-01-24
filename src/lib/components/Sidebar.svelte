@@ -1,15 +1,9 @@
 <script lang="ts">
-	import type { Component } from 'svelte';
 	import { browser } from '$app/environment';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { ChevronLeft, ChevronRight } from '@lucide/svelte';
+	import { type NavItem, isItemActive } from '$lib/types/navigation.js';
 	import SidebarItem from './SidebarItem.svelte';
-
-	interface NavItem {
-		href: string;
-		label: string;
-		icon: Component;
-	}
 
 	interface SidebarProps {
 		items: NavItem[];
@@ -38,15 +32,6 @@
 			localStorage.setItem(STORAGE_KEY, String(collapsed));
 		}
 	}
-
-	// Check if item is active (exact match or starts with for nested routes)
-	function isItemActive(itemHref: string): boolean {
-		if (currentPath === itemHref) return true;
-		// For nested routes, check if current path starts with item href
-		// But don't match parent if we're on an exact child route
-		if (itemHref !== '/' && currentPath.startsWith(itemHref + '/')) return true;
-		return false;
-	}
 </script>
 
 <aside
@@ -60,7 +45,7 @@
 				href={item.href}
 				label={item.label}
 				icon={item.icon}
-				isActive={isItemActive(item.href)}
+				isActive={isItemActive(item.href, currentPath)}
 				{collapsed}
 			/>
 		{/each}

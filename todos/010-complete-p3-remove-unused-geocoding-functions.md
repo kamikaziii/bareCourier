@@ -1,7 +1,7 @@
 # Remove Unused Geocoding Functions
 
 ---
-status: ready
+status: complete
 priority: p3
 issue_id: "010"
 tags: [code-review, simplicity, dead-code]
@@ -33,9 +33,9 @@ Delete lines 75-123 from `geocoding.ts`.
 
 ## Acceptance Criteria
 
-- [ ] Unused functions removed
-- [ ] App still builds and runs
-- [ ] Address autocomplete still works
+- [x] Unused functions removed
+- [x] App still builds and runs
+- [x] Address autocomplete still works
 
 ## Work Log
 
@@ -43,3 +43,4 @@ Delete lines 75-123 from `geocoding.ts`.
 |------|--------|-----------|
 | 2026-01-22 | Identified by code-simplicity-reviewer | Features built but not integrated |
 | 2026-01-22 | Approved during triage | Ready for implementation - delete lines 75-123 |
+| 2026-01-24 | Resolved | Removed `getCoordinates()` and `reverseGeocode()` functions from geocoding.ts. File now only contains `searchAddress()`. |

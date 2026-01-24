@@ -194,6 +194,7 @@
 	"requests_confirm_suggest_desc": "The client will be notified and can accept or decline.",
 	"requests_requested_schedule": "Requested",
 	"requests_scheduled": "Scheduled",
+	"scheduling_info": "Scheduling",
 
 	"calendar_title": "Calendar",
 	"calendar_no_services": "No services on this day",
@@ -296,7 +297,11 @@
 	"settings_inactive": "Inactive",
 	"settings_default_location": "Default Location",
 	"settings_default_location_desc": "Set the default pickup address for new requests",
+	"settings_courier_default_location_desc": "Your base location for deliveries",
 	"settings_default_location_hint": "This address will be pre-filled in new requests",
+	"settings_warehouse_address": "Warehouse Address",
+	"form_warehouse_placeholder": "Enter your warehouse or base address",
+	"settings_warehouse_hint": "This address can be used as a default starting point",
 	"settings_deactivate": "Deactivate",
 	"settings_activate": "Activate",
 	"settings_delete_urgency": "Delete Urgency Fee",
@@ -330,6 +335,8 @@
 	"insights_tab_overview": "Overview",
 	"insights_tab_charts": "Charts",
 	"insights_tab_data": "Data",
+	"insights_data_truncated_title": "Data Limit Reached",
+	"insights_data_truncated_desc": "Showing {count} records. Select a shorter date range for complete data.",
 
 	"action_cancel_request": "Cancel Request",
 	"confirm_cancel_request": "Cancel this request?",

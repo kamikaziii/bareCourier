@@ -194,6 +194,7 @@
 	"requests_confirm_suggest_desc": "O cliente será notificado e pode aceitar ou recusar.",
 	"requests_requested_schedule": "Solicitado",
 	"requests_scheduled": "Agendado",
+	"scheduling_info": "Agendamento",
 
 	"calendar_title": "Calendário",
 	"calendar_no_services": "Sem serviços neste dia",
@@ -296,7 +297,11 @@
 	"settings_inactive": "Inativo",
 	"settings_default_location": "Localização Padrão",
 	"settings_default_location_desc": "Defina a morada de recolha padrão para novos pedidos",
+	"settings_courier_default_location_desc": "A sua localização base para entregas",
 	"settings_default_location_hint": "Esta morada será pré-preenchida em novos pedidos",
+	"settings_warehouse_address": "Morada do Armazém",
+	"form_warehouse_placeholder": "Introduza a morada do seu armazém ou base",
+	"settings_warehouse_hint": "Esta morada pode ser usada como ponto de partida padrão",
 	"settings_deactivate": "Desativar",
 	"settings_activate": "Ativar",
 	"settings_delete_urgency": "Eliminar Taxa de Urgência",
@@ -330,6 +335,8 @@
 	"insights_tab_overview": "Resumo",
 	"insights_tab_charts": "Gráficos",
 	"insights_tab_data": "Dados",
+	"insights_data_truncated_title": "Limite de Dados Atingido",
+	"insights_data_truncated_desc": "A mostrar {count} registos. Selecione um intervalo de datas mais curto para dados completos.",
 
 	"action_cancel_request": "Cancelar Pedido",
 	"confirm_cancel_request": "Cancelar este pedido?",

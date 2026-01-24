@@ -35,7 +35,31 @@ interface EmailData {
   data: Record<string, string>;
 }
 
-function generateEmailHtml(template: EmailTemplate, data: Record<string, string>): { subject: string; html: string } {
+/**
+ * Escapes HTML special characters to prevent XSS attacks.
+ * All user-provided data must be escaped before HTML interpolation.
+ */
+function escapeHtml(str: string | undefined | null): string {
+  if (!str) return "";
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function generateEmailHtml(template: EmailTemplate, rawData: Record<string, string>): { subject: string; html: string } {
+  // Escape all user-provided data to prevent XSS
+  const data: Record<string, string> = {};
+  for (const [key, value] of Object.entries(rawData)) {
+    // app_url is a trusted internal value, don't escape it
+    if (key === "app_url") {
+      data[key] = value;
+    } else {
+      data[key] = escapeHtml(value);
+    }
+  }
   const baseStyles = `
     <style>
       body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
@@ -322,14 +346,34 @@ Deno.serve(async (req: Request) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Get profile with email notification preference
-    const { data: profile } = await adminClient
+    // IDOR Protection: Verify caller has permission to send email to target user
+    const { data: callerProfile } = await adminClient
       .from("profiles")
-      .select("email_notifications_enabled")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    // Get target user's profile (role and email notification preference)
+    const { data: targetProfile } = await adminClient
+      .from("profiles")
+      .select("role, email_notifications_enabled")
       .eq("id", user_id)
       .single();
 
-    if (profile && profile.email_notifications_enabled === false) {
+    const isCourier = callerProfile?.role === "courier";
+    const isSelfNotification = user_id === user.id;
+    const isNotifyingCourier = targetProfile?.role === "courier";
+
+    // Allow if: caller is courier, OR notifying self, OR client notifying courier
+    if (!isCourier && !isSelfNotification && !isNotifyingCourier) {
+      return new Response(
+        JSON.stringify({ error: "Forbidden: Cannot send emails to other users" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check if email notifications are enabled for target user
+    if (targetProfile && targetProfile.email_notifications_enabled === false) {
       return new Response(
         JSON.stringify({ success: true, sent: false, reason: "Email notifications disabled for user" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

@@ -1,7 +1,7 @@
 # IDOR Vulnerability in Push/Email Edge Functions
 
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "031"
 tags: [security, idor, edge-function]
@@ -44,9 +44,9 @@ Test as client user attempting to send notification to another client - should r
 
 ## Acceptance Criteria
 
-- [ ] Clients cannot send notifications to other clients
-- [ ] Courier can send to anyone
-- [ ] Returns 403 Forbidden for unauthorized attempts
+- [x] Clients cannot send notifications to other clients
+- [x] Courier can send to anyone
+- [x] Returns 403 Forbidden for unauthorized attempts
 
 ## Work Log
 
@@ -54,3 +54,4 @@ Test as client user attempting to send notification to another client - should r
 |------|--------|-----------|
 | 2026-01-24 | Identified by security-sentinel agent | Edge functions need role-based authorization |
 | 2026-01-24 | Approved during triage | Status changed to ready |
+| 2026-01-24 | Implemented IDOR protection | Added role checks to both send-push and send-email functions. Allows: courier to notify anyone, client to notify self, client to notify courier. Returns 403 for client-to-client notifications. |

@@ -1,7 +1,7 @@
 # XSS via HTML Injection in Email Edge Function
 
 ---
-status: ready
+status: complete
 priority: p1
 issue_id: "029"
 tags: [security, xss, edge-function]
@@ -45,9 +45,9 @@ After fix, test with `<script>alert(1)</script>` in notes field - should render 
 
 ## Acceptance Criteria
 
-- [ ] All user-provided fields are HTML-escaped before interpolation
-- [ ] XSS payload renders as plain text in email
-- [ ] Email formatting still looks correct
+- [x] All user-provided fields are HTML-escaped before interpolation
+- [x] XSS payload renders as plain text in email
+- [x] Email formatting still looks correct
 
 ## Work Log
 
@@ -55,3 +55,4 @@ After fix, test with `<script>alert(1)</script>` in notes field - should render 
 |------|--------|-----------|
 | 2026-01-24 | Identified by security-sentinel agent | User input in HTML templates must be escaped |
 | 2026-01-24 | Approved during triage | Status changed to ready |
+| 2026-01-24 | Implemented escapeHtml function | Escape all data at function entry point for cleaner code |

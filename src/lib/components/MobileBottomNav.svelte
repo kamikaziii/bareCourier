@@ -1,13 +1,8 @@
 <script lang="ts">
-	import type { Component } from 'svelte';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
+	import { MoreHorizontal } from '@lucide/svelte';
+	import { type NavItem, isItemActive } from '$lib/types/navigation.js';
 	import MoreDrawer from './MoreDrawer.svelte';
-
-	interface NavItem {
-		href: string;
-		label: string;
-		icon: Component;
-	}
 
 	interface MobileBottomNavProps {
 		mainItems: NavItem[];
@@ -19,15 +14,8 @@
 
 	let drawerOpen = $state(false);
 
-	// Check if item is active
-	function isItemActive(itemHref: string): boolean {
-		if (currentPath === itemHref) return true;
-		if (itemHref !== '/' && currentPath.startsWith(itemHref + '/')) return true;
-		return false;
-	}
-
 	// Check if any "more" item is active
-	const isMoreActive = $derived(moreItems.some((item) => isItemActive(item.href)));
+	const isMoreActive = $derived(moreItems.some((item) => isItemActive(item.href, currentPath)));
 </script>
 
 <nav
@@ -37,7 +25,7 @@
 	<div class="flex items-center justify-around">
 		{#each mainItems as item (item.href)}
 			{@const Icon = item.icon}
-			{@const active = isItemActive(item.href)}
+			{@const active = isItemActive(item.href, currentPath)}
 			<a
 				href={localizeHref(item.href)}
 				class="flex flex-1 flex-col items-center gap-1 py-2 text-xs transition-colors
@@ -54,20 +42,7 @@
 				class="flex flex-1 flex-col items-center gap-1 py-2 text-xs transition-colors
 					{isMoreActive ? 'text-primary' : 'text-muted-foreground'}"
 			>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					class="size-5"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				>
-					<circle cx="12" cy="12" r="1" />
-					<circle cx="19" cy="12" r="1" />
-					<circle cx="5" cy="12" r="1" />
-				</svg>
+				<MoreHorizontal class="size-5" />
 				<span>More</span>
 			</button>
 		{/if}

@@ -1,7 +1,7 @@
 # Settings: Client Has Default Location, Courier Doesn't
 
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "022"
 tags: [code-review, ux, feature-parity, settings]
@@ -132,9 +132,9 @@ Option 1 - Add default location to courier settings. Even if not immediately use
 
 ## Acceptance Criteria
 
-- [ ] Courier settings has Default Location card
-- [ ] Location saved to profile
-- [ ] Appropriate i18n messages
+- [x] Courier settings has Default Location card
+- [x] Location saved to profile
+- [x] Appropriate i18n messages
 - [ ] Future: Used as fallback when creating services
 
 ## Work Log
@@ -143,6 +143,7 @@ Option 1 - Add default location to courier settings. Even if not immediately use
 |------|--------|-----------|
 | 2026-01-22 | Identified during UX review | Client has default location, courier doesn't - inconsistency |
 | 2026-01-22 | Approved during triage | Status changed to ready - ready to implement |
+| 2026-01-24 | Resolved | Added Default Location card to courier settings page with i18n keys: settings_default_location, settings_courier_default_location_desc, settings_warehouse_address. Uses existing updateProfile action. |
 
 ## Resources
 
