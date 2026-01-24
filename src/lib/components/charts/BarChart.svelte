@@ -1,7 +1,18 @@
 <script lang="ts">
-	import { Chart, registerables, type ChartData, type ChartOptions } from 'chart.js';
+	import {
+		Chart,
+		BarController,
+		BarElement,
+		CategoryScale,
+		LinearScale,
+		Title,
+		Tooltip,
+		Legend,
+		type ChartData,
+		type ChartOptions
+	} from 'chart.js';
 
-	Chart.register(...registerables);
+	Chart.register(BarController, BarElement, CategoryScale, LinearScale, Title, Tooltip, Legend);
 
 	let {
 		data,

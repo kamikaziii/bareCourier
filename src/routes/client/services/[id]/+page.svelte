@@ -9,7 +9,7 @@
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData } from './$types';
 	import { PUBLIC_MAPBOX_TOKEN } from '$env/static/public';
-	import { ArrowLeft, MapPin, Clock } from '@lucide/svelte';
+	import { ArrowLeft, MapPin, Clock, Calendar } from '@lucide/svelte';
 
 	const hasMapbox = !!PUBLIC_MAPBOX_TOKEN;
 
@@ -31,6 +31,22 @@
 			hour: '2-digit',
 			minute: '2-digit'
 		});
+	}
+
+	function formatTimeSlot(slot: string | null): string {
+		if (!slot) return '';
+		switch (slot) {
+			case 'morning':
+				return m.time_slot_morning();
+			case 'afternoon':
+				return m.time_slot_afternoon();
+			case 'evening':
+				return m.time_slot_evening();
+			case 'specific':
+				return m.time_slot_specific();
+			default:
+				return slot;
+		}
 	}
 
 	const service = $derived(data.service);
@@ -108,6 +124,57 @@
 					{/if}
 				</Card.Content>
 			</Card.Root>
+
+			<!-- Scheduling Info -->
+			{#if service.requested_date || service.scheduled_date}
+				<Card.Root>
+					<Card.Header>
+						<Card.Title class="flex items-center gap-2">
+							<Calendar class="size-5" />
+							{m.scheduling_info()}
+						</Card.Title>
+					</Card.Header>
+					<Card.Content class="space-y-4">
+						{#if service.requested_date}
+							<div>
+								<p class="text-sm font-medium text-muted-foreground">{m.client_your_request()}</p>
+								<p class="mt-1">
+									{formatDate(service.requested_date)}
+									{#if service.requested_time_slot}
+										- {formatTimeSlot(service.requested_time_slot)}
+									{/if}
+								</p>
+							</div>
+						{/if}
+
+						{#if service.scheduled_date}
+							<Separator />
+							<div>
+								<p class="text-sm font-medium text-muted-foreground">{m.requests_scheduled()}</p>
+								<p class="mt-1 font-medium text-green-600">
+									{formatDate(service.scheduled_date)}
+									{#if service.scheduled_time_slot}
+										- {formatTimeSlot(service.scheduled_time_slot)}
+									{/if}
+								</p>
+							</div>
+						{/if}
+
+						{#if service.request_status === 'suggested' && service.suggested_date}
+							<Separator />
+							<div class="rounded-lg bg-orange-500/10 p-3">
+								<p class="text-sm font-medium text-orange-600">{m.client_courier_suggests()}</p>
+								<p class="mt-1">
+									{formatDate(service.suggested_date)}
+									{#if service.suggested_time_slot}
+										- {formatTimeSlot(service.suggested_time_slot)}
+									{/if}
+								</p>
+							</div>
+						{/if}
+					</Card.Content>
+				</Card.Root>
+			{/if}
 
 			<!-- Notes -->
 			{#if service.notes}

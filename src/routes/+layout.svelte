@@ -5,12 +5,13 @@
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import type { LayoutData } from './$types';
+	import type { Snippet } from 'svelte';
 	import ReloadPrompt from '$lib/components/ReloadPrompt.svelte';
 	import OfflineIndicator from '$lib/components/OfflineIndicator.svelte';
 	import { deLocalizeUrl } from '$lib/paraglide/runtime.js';
 	import * as m from '$lib/paraglide/messages.js';
 
-	let { data, children }: { data: LayoutData; children: any } = $props();
+	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
 	onMount(() => {
 		const {

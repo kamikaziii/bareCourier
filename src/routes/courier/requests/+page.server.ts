@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import type { Service, Profile } from '$lib/database.types';
-import { localizeHref } from '$lib/paraglide/runtime.js';
+import { localizeHref, extractLocaleFromRequest } from '$lib/paraglide/runtime.js';
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
 
 // Helper to send notification to client
@@ -247,21 +247,45 @@ export const actions: Actions = {
 
 		// Notify client
 		if (service?.client_id) {
-			const dateFormatted = new Date(suggestedDate).toLocaleDateString('pt-PT');
-			const slotLabels: Record<string, string> = {
-				morning: 'Manhã',
-				afternoon: 'Tarde',
-				evening: 'Noite',
-				specific: 'Hora específica'
+			// Use the current request's locale for formatting the notification
+			const locale = extractLocaleFromRequest(request);
+			const dateFormatted = new Date(suggestedDate).toLocaleDateString(locale);
+			const slotLabels: Record<string, Record<string, string>> = {
+				'pt-PT': {
+					morning: 'Manhã',
+					afternoon: 'Tarde',
+					evening: 'Noite',
+					specific: 'Hora específica'
+				},
+				en: {
+					morning: 'Morning',
+					afternoon: 'Afternoon',
+					evening: 'Evening',
+					specific: 'Specific time'
+				}
 			};
-			const slotText = slotLabels[suggestedTimeSlot] || suggestedTimeSlot;
+			const labels = slotLabels[locale] || slotLabels['pt-PT'];
+			const slotText = labels[suggestedTimeSlot] || suggestedTimeSlot;
+
+			// Notification messages by locale
+			const messages: Record<string, { subject: string; body: string }> = {
+				'pt-PT': {
+					subject: 'Nova Data Sugerida',
+					body: `O estafeta sugeriu uma nova data para o seu serviço: ${dateFormatted} (${slotText}). Aceda à aplicação para aceitar ou recusar.`
+				},
+				en: {
+					subject: 'New Date Suggested',
+					body: `The courier suggested a new date for your service: ${dateFormatted} (${slotText}). Check the app to accept or decline.`
+				}
+			};
+			const msg = messages[locale] || messages['pt-PT'];
 
 			await notifyClient(
 				session,
 				service.client_id,
 				serviceId,
-				'Nova Data Sugerida',
-				`O estafeta sugeriu uma nova data para o seu serviço: ${dateFormatted} (${slotText}). Aceda à aplicação para aceitar ou recusar.`
+				msg.subject,
+				msg.body
 			);
 		}
 

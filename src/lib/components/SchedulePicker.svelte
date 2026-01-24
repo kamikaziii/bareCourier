@@ -5,6 +5,7 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as m from '$lib/paraglide/messages.js';
+	import { getLocale } from '$lib/paraglide/runtime.js';
 	import type { TimeSlot } from '$lib/database.types.js';
 	import {
 		CalendarDate,
@@ -35,9 +36,11 @@
 		disabled = false
 	}: Props = $props();
 
-	const df = new DateFormatter('pt-PT', {
-		dateStyle: 'long'
-	});
+	// Use a function to get the DateFormatter with current locale
+	const getDateFormatter = () =>
+		new DateFormatter(getLocale(), {
+			dateStyle: 'long'
+		});
 
 	// Use a derived value for calendar that syncs with selectedDate prop
 	let calendarValue = $state<DateValue | undefined>(
@@ -92,7 +95,9 @@
 	}
 
 	const displayDate = $derived(
-		calendarValue ? df.format(calendarValue.toDate(getLocalTimeZone())) : m.schedule_select_date()
+		calendarValue
+			? getDateFormatter().format(calendarValue.toDate(getLocalTimeZone()))
+			: m.schedule_select_date()
 	);
 </script>
 
@@ -134,7 +139,7 @@
 					bind:value={calendarValue}
 					onValueChange={handleDateSelect}
 					minValue={today(getLocalTimeZone())}
-					locale="pt-PT"
+					locale={getLocale()}
 				/>
 				{#if calendarValue}
 					<div class="border-t p-2">

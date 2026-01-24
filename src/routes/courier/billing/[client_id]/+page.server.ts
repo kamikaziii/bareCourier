@@ -11,38 +11,26 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 
 	const { client_id } = params;
 
-	// Load client profile
-	const { data: client } = await supabase
-		.from('profiles')
-		.select('*')
-		.eq('id', client_id)
-		.eq('role', 'client')
-		.single();
+	// Load all data in parallel for better performance
+	const [clientResult, pricingResult, zonesResult, urgencyFeesResult] = await Promise.all([
+		// Load client profile
+		supabase.from('profiles').select('*').eq('id', client_id).eq('role', 'client').single(),
+		// Load client's pricing configuration
+		supabase.from('client_pricing').select('*').eq('client_id', client_id).single(),
+		// Load pricing zones if zone pricing model
+		supabase.from('pricing_zones').select('*').eq('client_id', client_id).order('min_km'),
+		// Load urgency fees for reference
+		supabase.from('urgency_fees').select('*').eq('active', true).order('sort_order')
+	]);
+
+	const client = clientResult.data;
+	const pricing = pricingResult.data;
+	const zones = zonesResult.data;
+	const urgencyFees = urgencyFeesResult.data;
 
 	if (!client) {
 		error(404, 'Client not found');
 	}
-
-	// Load client's pricing configuration
-	const { data: pricing } = await supabase
-		.from('client_pricing')
-		.select('*')
-		.eq('client_id', client_id)
-		.single();
-
-	// Load pricing zones if zone pricing model
-	const { data: zones } = await supabase
-		.from('pricing_zones')
-		.select('*')
-		.eq('client_id', client_id)
-		.order('min_km');
-
-	// Load urgency fees for reference
-	const { data: urgencyFees } = await supabase
-		.from('urgency_fees')
-		.select('*')
-		.eq('active', true)
-		.order('sort_order');
 
 	return {
 		client: client as Profile,
@@ -57,6 +45,17 @@ export const actions: Actions = {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {
 			return { success: false, error: 'Not authenticated' };
+		}
+
+		// Verify courier role
+		const { data: profile } = await supabase
+			.from('profiles')
+			.select('role')
+			.eq('id', user.id)
+			.single();
+
+		if (profile?.role !== 'courier') {
+			return { success: false, error: 'Unauthorized' };
 		}
 
 		const formData = await request.formData();
@@ -89,6 +88,17 @@ export const actions: Actions = {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {
 			return { success: false, error: 'Not authenticated' };
+		}
+
+		// Verify courier role
+		const { data: profile } = await supabase
+			.from('profiles')
+			.select('role')
+			.eq('id', user.id)
+			.single();
+
+		if (profile?.role !== 'courier') {
+			return { success: false, error: 'Unauthorized' };
 		}
 
 		const formData = await request.formData();

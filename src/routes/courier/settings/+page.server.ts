@@ -58,9 +58,20 @@ export const actions: Actions = {
 	},
 
 	updateUrgencyFee: async ({ request, locals: { supabase, safeGetSession } }) => {
-		const { session } = await safeGetSession();
-		if (!session) {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
 			return { success: false, error: 'Not authenticated' };
+		}
+
+		// Verify courier role
+		const { data: profile } = await supabase
+			.from('profiles')
+			.select('role')
+			.eq('id', user.id)
+			.single();
+
+		if (profile?.role !== 'courier') {
+			return { success: false, error: 'Unauthorized' };
 		}
 
 		const formData = await request.formData();
@@ -91,9 +102,20 @@ export const actions: Actions = {
 	},
 
 	createUrgencyFee: async ({ request, locals: { supabase, safeGetSession } }) => {
-		const { session } = await safeGetSession();
-		if (!session) {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
 			return { success: false, error: 'Not authenticated' };
+		}
+
+		// Verify courier role
+		const { data: profile } = await supabase
+			.from('profiles')
+			.select('role')
+			.eq('id', user.id)
+			.single();
+
+		if (profile?.role !== 'courier') {
+			return { success: false, error: 'Unauthorized' };
 		}
 
 		const formData = await request.formData();
@@ -130,9 +152,20 @@ export const actions: Actions = {
 	},
 
 	toggleUrgencyFee: async ({ request, locals: { supabase, safeGetSession } }) => {
-		const { session } = await safeGetSession();
-		if (!session) {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
 			return { success: false, error: 'Not authenticated' };
+		}
+
+		// Verify courier role
+		const { data: profile } = await supabase
+			.from('profiles')
+			.select('role')
+			.eq('id', user.id)
+			.single();
+
+		if (profile?.role !== 'courier') {
+			return { success: false, error: 'Unauthorized' };
 		}
 
 		const formData = await request.formData();
@@ -153,9 +186,20 @@ export const actions: Actions = {
 	},
 
 	deleteUrgencyFee: async ({ request, locals: { supabase, safeGetSession } }) => {
-		const { session } = await safeGetSession();
-		if (!session) {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
 			return { success: false, error: 'Not authenticated' };
+		}
+
+		// Verify courier role
+		const { data: profile } = await supabase
+			.from('profiles')
+			.select('role')
+			.eq('id', user.id)
+			.single();
+
+		if (profile?.role !== 'courier') {
+			return { success: false, error: 'Unauthorized' };
 		}
 
 		const formData = await request.formData();
@@ -228,5 +272,63 @@ export const actions: Actions = {
 		}
 
 		return { success: true, message: 'pricing_mode_updated' };
+	},
+
+	updateWarehouseLocation: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const formData = await request.formData();
+		const default_pickup_location = formData.get('default_pickup_location') as string;
+		const warehouse_lat = formData.get('warehouse_lat') as string;
+		const warehouse_lng = formData.get('warehouse_lng') as string;
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error } = await (supabase as any)
+			.from('profiles')
+			.update({
+				default_pickup_location: default_pickup_location || null,
+				warehouse_lat: warehouse_lat ? parseFloat(warehouse_lat) : null,
+				warehouse_lng: warehouse_lng ? parseFloat(warehouse_lng) : null
+			})
+			.eq('id', user.id);
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		return { success: true, message: 'warehouse_updated' };
+	},
+
+	updatePricingPreferences: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const formData = await request.formData();
+		const auto_calculate_price = formData.get('auto_calculate_price') === 'true';
+		const default_urgency_fee_id = (formData.get('default_urgency_fee_id') as string) || null;
+		const minimum_charge = parseFloat(formData.get('minimum_charge') as string) || 0;
+		const round_distance = formData.get('round_distance') === 'true';
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error } = await (supabase as any)
+			.from('profiles')
+			.update({
+				auto_calculate_price,
+				default_urgency_fee_id: default_urgency_fee_id || null,
+				minimum_charge,
+				round_distance
+			})
+			.eq('id', user.id);
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		return { success: true, message: 'pricing_preferences_updated' };
 	}
 };

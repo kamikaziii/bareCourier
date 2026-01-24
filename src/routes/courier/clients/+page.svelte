@@ -10,14 +10,14 @@
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData } from './$types';
-	import type { PricingModel } from '$lib/database.types.js';
+	import type { PricingModel, Profile } from '$lib/database.types.js';
 	import SkeletonList from '$lib/components/SkeletonList.svelte';
 	import PullToRefresh from '$lib/components/PullToRefresh.svelte';
 	import { ChevronRight, ChevronDown, Euro } from '@lucide/svelte';
 
 	let { data }: { data: PageData } = $props();
 
-	let clients = $state<any[]>([]);
+	let clients = $state<Profile[]>([]);
 	let loading = $state(true);
 	let showForm = $state(false);
 
@@ -151,7 +151,7 @@
 		return Promise.resolve();
 	}
 
-	async function toggleClientActive(client: any) {
+	async function toggleClientActive(client: Profile) {
 		await data.supabase
 			.from('profiles')
 			.update({ active: !client.active })

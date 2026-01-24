@@ -8,11 +8,20 @@
 	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
 	import AddressInput from '$lib/components/AddressInput.svelte';
 	import RouteMap from '$lib/components/RouteMap.svelte';
-	import { calculateRoute, calculateHaversineDistance } from '$lib/services/distance.js';
+	import {
+		calculateRoute,
+		calculateHaversineDistance,
+		calculateServiceDistance,
+		type ServiceDistanceResult
+	} from '$lib/services/distance.js';
+	import {
+		getCourierPricingSettings,
+		type CourierPricingSettings
+	} from '$lib/services/pricing.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData } from './$types';
-	import type { TimeSlot } from '$lib/database.types.js';
+	import type { TimeSlot, UrgencyFee } from '$lib/database.types.js';
 	import { PUBLIC_MAPBOX_TOKEN } from '$env/static/public';
 
 	let { data }: { data: PageData } = $props();
@@ -31,13 +40,40 @@
 	let routeGeometry = $state<string | null>(null);
 	let calculatingDistance = $state(false);
 
+	// Distance breakdown for warehouse mode
+	let distanceResult = $state<ServiceDistanceResult | null>(null);
+
 	// Scheduling state
 	let requestedDate = $state<string | null>(null);
 	let requestedTimeSlot = $state<TimeSlot | null>(null);
 	let requestedTime = $state<string | null>(null);
 
+	// Urgency fees and pricing settings
+	let urgencyFees = $state<UrgencyFee[]>([]);
+	let selectedUrgencyFeeId = $state<string | null>(null);
+	let courierSettings = $state<CourierPricingSettings | null>(null);
+	let settingsLoaded = $state(false);
+
 	// Whether to show address autocomplete (only if Mapbox is configured)
 	const hasMapbox = !!PUBLIC_MAPBOX_TOKEN;
+
+	// Load courier settings and urgency fees on mount
+	$effect(() => {
+		if (!settingsLoaded) {
+			loadSettings();
+		}
+	});
+
+	async function loadSettings() {
+		const [settings, { data: fees }] = await Promise.all([
+			getCourierPricingSettings(data.supabase),
+			data.supabase.from('urgency_fees').select('*').eq('active', true).order('sort_order')
+		]);
+		courierSettings = settings;
+		urgencyFees = (fees || []) as UrgencyFee[];
+		selectedUrgencyFeeId = settings.defaultUrgencyFeeId;
+		settingsLoaded = true;
+	}
 
 	function handlePickupSelect(address: string, coords: [number, number] | null) {
 		pickupLocation = address;
@@ -57,18 +93,33 @@
 		calculatingDistance = true;
 		distanceKm = null;
 		routeGeometry = null;
+		distanceResult = null;
 
 		try {
-			// Try to get route from OpenRouteService
-			const result = await calculateRoute(pickupCoords, deliveryCoords);
-
-			if (result) {
-				distanceKm = result.distanceKm;
-				routeGeometry = result.geometry || null;
+			// Use service distance calculation with warehouse mode support
+			if (courierSettings) {
+				const result = await calculateServiceDistance({
+					pickupCoords,
+					deliveryCoords,
+					warehouseCoords: courierSettings.warehouseCoords,
+					pricingMode: courierSettings.pricingMode,
+					roundDistance: courierSettings.roundDistance
+				});
+				distanceResult = result;
+				distanceKm = result.totalDistanceKm;
 			} else {
-				// Fallback to Haversine distance
-				distanceKm = calculateHaversineDistance(pickupCoords, deliveryCoords);
+				// Fallback to direct route calculation
+				const result = await calculateRoute(pickupCoords, deliveryCoords);
+				if (result) {
+					distanceKm = result.distanceKm;
+				} else {
+					distanceKm = calculateHaversineDistance(pickupCoords, deliveryCoords);
+				}
 			}
+
+			// Get route geometry for map display
+			const routeResult = await calculateRoute(pickupCoords, deliveryCoords);
+			routeGeometry = routeResult?.geometry || null;
 		} catch {
 			// Fallback to Haversine distance
 			distanceKm = calculateHaversineDistance(pickupCoords, deliveryCoords);
@@ -96,7 +147,9 @@
 			pickup_lng: pickupCoords?.[0] ?? null,
 			delivery_lat: deliveryCoords?.[1] ?? null,
 			delivery_lng: deliveryCoords?.[0] ?? null,
-			distance_km: distanceKm
+			distance_km: distanceKm,
+			// Urgency fee
+			urgency_fee_id: selectedUrgencyFeeId || null
 		});
 
 		if (insertError) {
@@ -210,6 +263,48 @@
 						disabled={loading}
 					/>
 				</div>
+
+				<!-- Urgency fee selection -->
+				{#if urgencyFees.length > 0}
+					<Separator />
+					<div class="space-y-2">
+						<Label for="urgency">{m.form_urgency()}</Label>
+						<select
+							id="urgency"
+							bind:value={selectedUrgencyFeeId}
+							class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+							disabled={loading}
+						>
+							{#each urgencyFees as fee (fee.id)}
+								<option value={fee.id}>
+									{fee.name}
+									{#if fee.multiplier > 1 || fee.flat_fee > 0}
+										({fee.multiplier}x{fee.flat_fee > 0 ? ` + €${fee.flat_fee}` : ''})
+									{/if}
+								</option>
+							{/each}
+						</select>
+					</div>
+				{/if}
+
+				<!-- Distance breakdown for warehouse mode -->
+				{#if distanceResult?.distanceMode === 'warehouse' && distanceResult.warehouseToPickupKm}
+					<div class="rounded-md bg-muted p-3 text-sm space-y-1">
+						<div class="flex justify-between">
+							<span class="text-muted-foreground">{m.distance_warehouse_to_pickup()}</span>
+							<span>{distanceResult.warehouseToPickupKm} km</span>
+						</div>
+						<div class="flex justify-between">
+							<span class="text-muted-foreground">{m.distance_pickup_to_delivery()}</span>
+							<span>{distanceResult.pickupToDeliveryKm} km</span>
+						</div>
+						<Separator />
+						<div class="flex justify-between font-medium">
+							<span>{m.distance_total()}</span>
+							<span>{distanceResult.totalDistanceKm} km</span>
+						</div>
+					</div>
+				{/if}
 
 				<div class="flex gap-2 pt-2">
 					<Button type="button" variant="outline" class="flex-1" onclick={() => goto(localizeHref('/client'))}>

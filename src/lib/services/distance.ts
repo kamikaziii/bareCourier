@@ -18,6 +18,21 @@ export interface RouteResult {
 	geometry?: string;
 }
 
+export interface ServiceDistanceInput {
+	pickupCoords: [number, number];
+	deliveryCoords: [number, number];
+	warehouseCoords?: [number, number] | null;
+	pricingMode: 'warehouse' | 'zone';
+	roundDistance?: boolean;
+}
+
+export interface ServiceDistanceResult {
+	totalDistanceKm: number;
+	distanceMode: 'warehouse' | 'zone' | 'fallback';
+	warehouseToPickupKm?: number;
+	pickupToDeliveryKm: number;
+}
+
 const ORS_DIRECTIONS_URL = 'https://api.openrouteservice.org/v2/directions/driving-car';
 
 /**
@@ -140,4 +155,64 @@ export function decodePolyline(encoded: string): [number, number][] {
 	}
 
 	return points;
+}
+
+/**
+ * Calculate distance for a service, handling warehouse mode and fallbacks
+ * @param input - Service distance calculation input
+ * @returns Distance result with breakdown
+ */
+export async function calculateServiceDistance(
+	input: ServiceDistanceInput
+): Promise<ServiceDistanceResult> {
+	const { pickupCoords, deliveryCoords, warehouseCoords, pricingMode, roundDistance } = input;
+
+	// Calculate pickup → delivery (always needed)
+	let pickupToDeliveryKm: number;
+	const pickupDeliveryRoute = await calculateRoute(pickupCoords, deliveryCoords);
+	if (pickupDeliveryRoute) {
+		pickupToDeliveryKm = pickupDeliveryRoute.distanceKm;
+	} else {
+		// Haversine fallback
+		pickupToDeliveryKm = calculateHaversineDistance(pickupCoords, deliveryCoords);
+	}
+
+	// If warehouse mode and coords exist, calculate warehouse → pickup
+	if (pricingMode === 'warehouse' && warehouseCoords) {
+		let warehouseToPickupKm: number;
+		const warehousePickupRoute = await calculateRoute(warehouseCoords, pickupCoords);
+		if (warehousePickupRoute) {
+			warehouseToPickupKm = warehousePickupRoute.distanceKm;
+		} else {
+			warehouseToPickupKm = calculateHaversineDistance(warehouseCoords, pickupCoords);
+		}
+
+		let totalDistanceKm = warehouseToPickupKm + pickupToDeliveryKm;
+		if (roundDistance) {
+			totalDistanceKm = Math.round(totalDistanceKm);
+			warehouseToPickupKm = Math.round(warehouseToPickupKm * 10) / 10;
+			pickupToDeliveryKm = Math.round(pickupToDeliveryKm * 10) / 10;
+		}
+
+		return {
+			totalDistanceKm,
+			distanceMode: 'warehouse',
+			warehouseToPickupKm,
+			pickupToDeliveryKm
+		};
+	}
+
+	// Zone mode (direct) or fallback when warehouse mode but no coords
+	let totalDistanceKm = pickupToDeliveryKm;
+	if (roundDistance) {
+		totalDistanceKm = Math.round(totalDistanceKm);
+		pickupToDeliveryKm = Math.round(pickupToDeliveryKm * 10) / 10;
+	}
+
+	return {
+		totalDistanceKm,
+		distanceMode:
+			warehouseCoords === null && pricingMode === 'warehouse' ? 'fallback' : 'zone',
+		pickupToDeliveryKm
+	};
 }

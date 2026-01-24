@@ -33,12 +33,16 @@ export interface ServicePricingInput {
 	clientId: string;
 	distanceKm: number | null;
 	urgencyFeeId?: string | null;
-	// For warehouse mode - coordinates to calculate from courier base
-	courierDefaultLocation?: string | null;
-	pickupLat?: number | null;
-	pickupLng?: number | null;
-	deliveryLat?: number | null;
-	deliveryLng?: number | null;
+	minimumCharge?: number;
+}
+
+export interface CourierPricingSettings {
+	pricingMode: 'warehouse' | 'zone';
+	warehouseCoords: [number, number] | null;
+	autoCalculatePrice: boolean;
+	defaultUrgencyFeeId: string | null;
+	minimumCharge: number;
+	roundDistance: boolean;
 }
 
 export interface CalculatePriceResult {
@@ -62,6 +66,34 @@ export async function getCourierPricingMode(
 		.single();
 
 	return (profiles?.pricing_mode as 'warehouse' | 'zone') || 'warehouse';
+}
+
+/**
+ * Get all courier pricing settings
+ */
+export async function getCourierPricingSettings(
+	supabase: SupabaseClient
+): Promise<CourierPricingSettings> {
+	const { data: profile } = await supabase
+		.from('profiles')
+		.select(
+			'pricing_mode, warehouse_lat, warehouse_lng, auto_calculate_price, default_urgency_fee_id, minimum_charge, round_distance'
+		)
+		.eq('role', 'courier')
+		.limit(1)
+		.single();
+
+	return {
+		pricingMode: (profile?.pricing_mode as 'warehouse' | 'zone') || 'zone',
+		warehouseCoords:
+			profile?.warehouse_lat && profile?.warehouse_lng
+				? [profile.warehouse_lng, profile.warehouse_lat]
+				: null,
+		autoCalculatePrice: profile?.auto_calculate_price ?? true,
+		defaultUrgencyFeeId: profile?.default_urgency_fee_id || null,
+		minimumCharge: profile?.minimum_charge || 0,
+		roundDistance: profile?.round_distance ?? false
+	};
 }
 
 /**
@@ -139,16 +171,14 @@ function calculateBasePrice(
 	distanceKm: number
 ): { price: number; model: 'per_km' | 'zone' | 'flat_plus_km' } | null {
 	switch (config.pricing_model) {
+		// Both per_km and flat_plus_km use the same calculation: base + (distance * rate)
+		// The distinction is semantic: per_km emphasizes distance-based pricing,
+		// while flat_plus_km emphasizes a flat base fee plus distance surcharge
 		case 'per_km':
-			return {
-				price: config.base_fee + distanceKm * config.per_km_rate,
-				model: 'per_km'
-			};
-
 		case 'flat_plus_km':
 			return {
 				price: config.base_fee + distanceKm * config.per_km_rate,
-				model: 'flat_plus_km'
+				model: config.pricing_model
 			};
 
 		case 'zone': {
@@ -229,19 +259,24 @@ export async function calculateServicePrice(
 			}
 		}
 
+		// Apply minimum charge if provided
+		const minimumCharge = input.minimumCharge || 0;
+		const priceAfterMinimum = Math.max(finalPrice, minimumCharge);
+
 		// Build breakdown
 		const breakdown: PriceBreakdown = {
 			base: config.base_fee,
-			distance: baseResult.model === 'zone' ? baseResult.price : input.distanceKm * config.per_km_rate,
+			distance:
+				baseResult.model === 'zone' ? baseResult.price : input.distanceKm * config.per_km_rate,
 			urgency: urgencyAmount,
-			total: finalPrice,
+			total: priceAfterMinimum,
 			model: baseResult.model,
 			distance_km: input.distanceKm
 		};
 
 		return {
 			success: true,
-			price: Math.round(finalPrice * 100) / 100, // Round to 2 decimal places
+			price: Math.round(priceAfterMinimum * 100) / 100, // Round to 2 decimal places
 			breakdown
 		};
 	} catch (error) {

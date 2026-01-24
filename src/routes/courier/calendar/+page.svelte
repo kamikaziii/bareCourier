@@ -5,7 +5,8 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import * as m from '$lib/paraglide/messages.js';
-	import { localizeHref } from '$lib/paraglide/runtime.js';
+	import { localizeHref, getLocale } from '$lib/paraglide/runtime.js';
+	import { formatMonthYear, formatDateFull } from '$lib/utils.js';
 	import type { PageData } from './$types';
 	import type { Service, Profile } from '$lib/database.types.js';
 
@@ -66,9 +67,7 @@
 	}
 
 	// Format month name
-	const monthName = $derived(
-		currentMonthDate.toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' })
-	);
+	const monthName = $derived(formatMonthYear(currentMonthDate));
 
 	// Check if a day is today
 	function isToday(day: number): boolean {
@@ -80,8 +79,17 @@
 		);
 	}
 
-	// Weekday names (Monday first)
-	const weekdays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+	// Weekday names (Monday first) - generated dynamically based on locale
+	const weekdays = $derived(() => {
+		const locale = getLocale();
+		// Create a week starting from Monday (Jan 6, 2020 was a Monday)
+		const baseDate = new Date(2020, 0, 6);
+		return Array.from({ length: 7 }, (_, i) => {
+			const date = new Date(baseDate);
+			date.setDate(baseDate.getDate() + i);
+			return date.toLocaleDateString(locale, { weekday: 'short' }).slice(0, 3);
+		});
+	});
 
 	// Selected day for detail view
 	let selectedDay = $state<number | null>(null);
@@ -198,11 +206,7 @@
 		<Card.Root>
 			<Card.Header>
 				<Card.Title>
-					{new Date(year, month, selectedDay).toLocaleDateString('pt-PT', {
-						weekday: 'long',
-						day: 'numeric',
-						month: 'long'
-					})}
+					{formatDateFull(new Date(year, month, selectedDay))}
 				</Card.Title>
 				<Card.Description>
 					{m.calendar_services_count({ count: selectedDayServices.length })}

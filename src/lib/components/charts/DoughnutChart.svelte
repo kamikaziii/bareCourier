@@ -1,7 +1,15 @@
 <script lang="ts">
-	import { Chart, registerables, type ChartData, type ChartOptions } from 'chart.js';
+	import {
+		Chart,
+		DoughnutController,
+		ArcElement,
+		Tooltip,
+		Legend,
+		type ChartData,
+		type ChartOptions
+	} from 'chart.js';
 
-	Chart.register(...registerables);
+	Chart.register(DoughnutController, ArcElement, Tooltip, Legend);
 
 	let {
 		data,
