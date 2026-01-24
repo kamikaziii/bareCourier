@@ -12,18 +12,31 @@
 
 ---
 
-## Task 1: Database Migration
+## Foundation Already Implemented
+
+The following has already been implemented and merged:
+
+- ✅ `calculateServiceDistance()` function in distance.ts
+- ✅ `getCourierPricingSettings()` function in pricing.ts (with old field name)
+- ✅ Database columns: warehouse_lat, warehouse_lng, auto_calculate_price, default_urgency_fee_id, minimum_charge, round_distance
+- ✅ Urgency fee dropdown in client and courier forms
+- ✅ Distance breakdown display in forms
+- ✅ AddressInput for warehouse address on settings page
+- ✅ Basic pricing preferences card on settings page
+
+---
+
+## Task 1: Database Migration - Replace auto_calculate_price
 
 **Files:**
-- Create: `supabase/migrations/028_pricing_display_settings.sql`
+- Apply via Supabase MCP
 - Modify: `src/lib/database.types.ts`
 
-**Step 1: Create migration file**
+**Step 1: Apply migration**
+
+Use `mcp__supabase__apply_migration` with name "pricing_display_settings" and query:
 
 ```sql
--- Migration: 028_pricing_display_settings
--- Remove obsolete column, add visibility settings
-
 -- Remove obsolete column
 ALTER TABLE profiles DROP COLUMN IF EXISTS auto_calculate_price;
 
@@ -35,21 +48,15 @@ ALTER TABLE profiles
 -- Track price overrides
 ALTER TABLE services ADD COLUMN IF NOT EXISTS price_override_reason text;
 
--- Comments for documentation
+-- Comments
 COMMENT ON COLUMN profiles.show_price_to_courier IS 'Whether courier sees price previews in UI';
 COMMENT ON COLUMN profiles.show_price_to_client IS 'Whether client sees price previews in UI';
 COMMENT ON COLUMN services.price_override_reason IS 'Reason for manual price override';
 ```
 
-**Step 2: Apply migration via Supabase MCP**
+**Step 2: Update database.types.ts - Profile type**
 
-Run: `mcp__supabase__apply_migration` with name "pricing_display_settings" and the SQL above.
-
-**Step 3: Update database.types.ts - Profile type**
-
-In `src/lib/database.types.ts`, update the Profile Row/Insert/Update types:
-
-Remove:
+In Row/Insert/Update, remove:
 ```typescript
 auto_calculate_price: boolean | null;
 ```
@@ -60,16 +67,16 @@ show_price_to_courier: boolean | null;
 show_price_to_client: boolean | null;
 ```
 
-**Step 4: Update database.types.ts - Service type**
+**Step 3: Update database.types.ts - Service type**
 
-Add to Service Row/Insert/Update:
+Add to Row/Insert/Update:
 ```typescript
 price_override_reason: string | null;
 ```
 
-**Step 5: Update PriceBreakdown type**
+**Step 4: Update PriceBreakdown type**
 
-Modify the PriceBreakdown type to include distance breakdown:
+Add distance breakdown fields:
 ```typescript
 export type PriceBreakdown = {
   base: number;
@@ -86,16 +93,15 @@ export type PriceBreakdown = {
 };
 ```
 
-**Step 6: Commit**
+**Step 5: Commit**
 
 ```bash
-git add supabase/migrations/028_pricing_display_settings.sql src/lib/database.types.ts
-git commit -m "feat: Add pricing display settings migration
+git add src/lib/database.types.ts
+git commit -m "feat: Update types for pricing display settings
 
-- Remove auto_calculate_price column
-- Add show_price_to_courier, show_price_to_client
-- Add price_override_reason to services
-- Update TypeScript types
+- Replace auto_calculate_price with show_price_to_courier/client
+- Add price_override_reason to Service type
+- Add distance breakdown fields to PriceBreakdown
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 ```
@@ -109,7 +115,8 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 
 **Step 1: Update CourierPricingSettings interface**
 
-Replace the existing interface:
+Replace `autoCalculatePrice` with visibility settings:
+
 ```typescript
 export interface CourierPricingSettings {
   pricingMode: 'warehouse' | 'zone';
@@ -123,6 +130,8 @@ export interface CourierPricingSettings {
 ```
 
 **Step 2: Update getCourierPricingSettings function**
+
+Change the select and return to use new field names:
 
 ```typescript
 export async function getCourierPricingSettings(
@@ -152,7 +161,7 @@ export async function getCourierPricingSettings(
 }
 ```
 
-**Step 3: Update ServicePricingInput to include distance breakdown**
+**Step 3: Add distance breakdown to ServicePricingInput**
 
 ```typescript
 export interface ServicePricingInput {
@@ -167,14 +176,14 @@ export interface ServicePricingInput {
 }
 ```
 
-**Step 4: Update calculateServicePrice to include distance breakdown in result**
+**Step 4: Update calculateServicePrice to include distance breakdown**
 
-In the breakdown building section, add the distance breakdown fields:
+In the breakdown building section, add:
+
 ```typescript
 const breakdown: PriceBreakdown = {
   base: config.base_fee,
-  distance:
-    baseResult.model === 'zone' ? baseResult.price : input.distanceKm * config.per_km_rate,
+  distance: baseResult.model === 'zone' ? baseResult.price : input.distanceKm * config.per_km_rate,
   urgency: urgencyAmount,
   total: priceAfterMinimum,
   model: baseResult.model,
@@ -192,9 +201,9 @@ const breakdown: PriceBreakdown = {
 git add src/lib/services/pricing.ts
 git commit -m "feat: Update pricing service for visibility settings
 
-- Update CourierPricingSettings with show_price_to_* fields
-- Include distance breakdown in price calculation
-- Remove autoCalculatePrice reference
+- Replace autoCalculatePrice with showPriceToCourier/Client
+- Add distance breakdown to ServicePricingInput
+- Include distance breakdown in price calculation result
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 ```
@@ -209,20 +218,20 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 
 **Step 1: Update state variables in +page.svelte**
 
-Remove:
-```typescript
-let autoCalculatePrice = $state(data.profile.auto_calculate_price ?? true);
-```
+Find and replace `autoCalculatePrice` state:
 
-Add:
 ```typescript
+// Remove this:
+let autoCalculatePrice = $state(data.profile.auto_calculate_price ?? true);
+
+// Add these:
 let showPriceToCourier = $state(data.profile.show_price_to_courier ?? true);
 let showPriceToClient = $state(data.profile.show_price_to_client ?? true);
 ```
 
-**Step 2: Update Pricing Preferences card in +page.svelte**
+**Step 2: Update Pricing Preferences card**
 
-Replace the auto-calculate toggle with two visibility toggles:
+Replace the auto-calculate toggle section with two visibility toggles:
 
 ```svelte
 <!-- Show price to courier -->
@@ -301,7 +310,7 @@ git commit -m "feat: Replace auto_calculate with visibility toggles
 
 - Add show_price_to_courier toggle
 - Add show_price_to_client toggle
-- Update server action
+- Update server action for new fields
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 ```
@@ -316,7 +325,7 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 
 **Step 1: Add English messages**
 
-Add to `messages/en.json` (before the closing brace):
+Add before the closing brace in `messages/en.json`:
 
 ```json
 "price_pending": "Price pending",
@@ -375,7 +384,7 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 - Create: `src/routes/client/new/+page.server.ts`
 - Modify: `src/routes/client/new/+page.svelte`
 
-**Step 1: Create +page.server.ts with form action**
+**Step 1: Create +page.server.ts**
 
 ```typescript
 import { fail, redirect } from '@sveltejs/kit';
@@ -393,7 +402,6 @@ export const actions: Actions = {
 
     const formData = await request.formData();
 
-    // Extract form data
     const pickup_location = formData.get('pickup_location') as string;
     const delivery_location = formData.get('delivery_location') as string;
     const notes = formData.get('notes') as string || null;
@@ -406,17 +414,14 @@ export const actions: Actions = {
     const delivery_lng = formData.get('delivery_lng') ? parseFloat(formData.get('delivery_lng') as string) : null;
     const urgency_fee_id = formData.get('urgency_fee_id') as string || null;
 
-    // Validate required fields
     if (!pickup_location || !delivery_location) {
       return fail(400, { error: 'Pickup and delivery locations are required' });
     }
 
-    // Get courier settings
     const courierSettings = await getCourierPricingSettings(supabase);
 
-    // Calculate distance if coordinates available
     let distance_km: number | null = null;
-    let distanceResult: { totalDistanceKm: number; distanceMode: string; warehouseToPickupKm?: number; pickupToDeliveryKm?: number } | null = null;
+    let distanceResult: any = null;
 
     if (pickup_lat && pickup_lng && delivery_lat && delivery_lng) {
       distanceResult = await calculateServiceDistance({
@@ -429,7 +434,6 @@ export const actions: Actions = {
       distance_km = distanceResult.totalDistanceKm;
     }
 
-    // Check if client has pricing config
     const { config: pricingConfig } = await getClientPricing(supabase, user.id);
 
     let calculated_price: number | null = null;
@@ -437,16 +441,14 @@ export const actions: Actions = {
     let warning: string | null = null;
 
     if (!pricingConfig) {
-      // No pricing config - allow creation with warning
       warning = 'service_created_no_pricing';
     } else if (distance_km !== null) {
-      // Calculate price
       const priceResult = await calculateServicePrice(supabase, {
         clientId: user.id,
         distanceKm: distance_km,
         urgencyFeeId: urgency_fee_id,
         minimumCharge: courierSettings.minimumCharge,
-        distanceMode: distanceResult?.distanceMode as any,
+        distanceMode: distanceResult?.distanceMode,
         warehouseToPickupKm: distanceResult?.warehouseToPickupKm,
         pickupToDeliveryKm: distanceResult?.pickupToDeliveryKm
       });
@@ -457,7 +459,6 @@ export const actions: Actions = {
       }
     }
 
-    // Insert service
     const { error: insertError } = await supabase.from('services').insert({
       client_id: user.id,
       pickup_location,
@@ -487,9 +488,7 @@ export const actions: Actions = {
 
 **Step 2: Update +page.svelte to use form action**
 
-Convert the client-side submit to a form with hidden fields:
-
-Replace the `handleSubmit` function and form to use `use:enhance`:
+Add `enhance` import and convert form to use POST:
 
 ```svelte
 <script lang="ts">
@@ -498,13 +497,15 @@ Replace the `handleSubmit` function and form to use `use:enhance`:
 </script>
 ```
 
-Update the form to use action and hidden fields for coordinates:
+Convert the form element and add hidden fields:
 
 ```svelte
 <form method="POST" use:enhance class="space-y-4">
-  <!-- ... existing visible fields ... -->
+  <!-- Existing visible form fields... -->
 
-  <!-- Hidden fields for coordinates -->
+  <!-- Hidden fields for data -->
+  <input type="hidden" name="pickup_location" value={pickupLocation} />
+  <input type="hidden" name="delivery_location" value={deliveryLocation} />
   <input type="hidden" name="pickup_lat" value={pickupCoords?.[1] ?? ''} />
   <input type="hidden" name="pickup_lng" value={pickupCoords?.[0] ?? ''} />
   <input type="hidden" name="delivery_lat" value={deliveryCoords?.[1] ?? ''} />
@@ -513,22 +514,14 @@ Update the form to use action and hidden fields for coordinates:
   <input type="hidden" name="requested_date" value={requestedDate ?? ''} />
   <input type="hidden" name="requested_time_slot" value={requestedTimeSlot ?? ''} />
   <input type="hidden" name="requested_time" value={requestedTime ?? ''} />
-
-  <!-- Submit button -->
-  <Button type="submit" disabled={!pickupLocation || !deliveryLocation}>
-    {m.client_create_request()}
-  </Button>
+  <input type="hidden" name="notes" value={notes} />
 </form>
 ```
 
 **Step 3: Update urgency dropdown with "Standard" option**
 
 ```svelte
-<select
-  id="urgency"
-  bind:value={selectedUrgencyFeeId}
-  class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
->
+<select id="urgency" bind:value={selectedUrgencyFeeId} class="...">
   <option value="">{m.urgency_standard()}</option>
   {#each urgencyFees as fee (fee.id)}
     <option value={fee.id}>
@@ -541,20 +534,7 @@ Update the form to use action and hidden fields for coordinates:
 </select>
 ```
 
-**Step 4: Add conditional price display based on settings**
-
-```svelte
-{#if courierSettings?.showPriceToClient && calculated_price !== null}
-  <div class="rounded-md bg-muted p-3">
-    <div class="flex justify-between">
-      <span class="text-muted-foreground">{m.billing_estimated_cost()}</span>
-      <span class="font-medium">€{calculated_price.toFixed(2)}</span>
-    </div>
-  </div>
-{/if}
-```
-
-**Step 5: Commit**
+**Step 4: Commit**
 
 ```bash
 git add src/routes/client/new/+page.server.ts src/routes/client/new/+page.svelte
@@ -562,8 +542,7 @@ git commit -m "feat: Add server-side price calculation for client form
 
 - Create server action with price calculation
 - Add 'Standard' urgency option
-- Conditional price display based on settings
-- Warning when no pricing config
+- Convert to form action with hidden fields
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 ```
@@ -578,7 +557,7 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 
 **Step 1: Create +page.server.ts**
 
-Similar to client form but for courier (can specify client_id):
+Similar to client form but for courier (specifies client_id, auto-accepts):
 
 ```typescript
 import { fail } from '@sveltejs/kit';
@@ -593,7 +572,6 @@ export const actions: Actions = {
       return fail(401, { error: 'Not authenticated' });
     }
 
-    // Verify courier role
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
@@ -605,7 +583,6 @@ export const actions: Actions = {
     }
 
     const formData = await request.formData();
-
     const client_id = formData.get('client_id') as string;
     const pickup_location = formData.get('pickup_location') as string;
     const delivery_location = formData.get('delivery_location') as string;
@@ -680,7 +657,7 @@ export const actions: Actions = {
       urgency_fee_id: urgency_fee_id || null,
       calculated_price,
       price_breakdown,
-      request_status: 'accepted' // Courier-created services are auto-accepted
+      request_status: 'accepted'
     });
 
     if (insertError) {
@@ -692,27 +669,15 @@ export const actions: Actions = {
 };
 ```
 
-**Step 2: Update +page.svelte form**
+**Step 2: Update +page.svelte to use form action**
 
-Convert to use form action with `use:enhance`, similar to client form.
+Similar changes as client form.
 
-**Step 3: Update urgency dropdown with "Standard" option**
-
-Same pattern as client form.
-
-**Step 4: Add conditional price display**
-
-Check `courierSettings.showPriceToCourier` before displaying price.
-
-**Step 5: Commit**
+**Step 3: Commit**
 
 ```bash
 git add src/routes/courier/services/+page.server.ts src/routes/courier/services/+page.svelte
 git commit -m "feat: Add server-side price calculation for courier form
-
-- Create server action with price calculation
-- Add 'Standard' urgency option
-- Conditional price display based on settings
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 ```
@@ -730,20 +695,15 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 ```typescript
 overridePrice: async ({ request, params, locals: { supabase, safeGetSession } }) => {
   const { session, user } = await safeGetSession();
-  if (!session || !user) {
-    return fail(401, { error: 'Not authenticated' });
-  }
+  if (!session || !user) return fail(401);
 
-  // Verify courier role
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
     .single();
 
-  if (profile?.role !== 'courier') {
-    return fail(403, { error: 'Unauthorized' });
-  }
+  if (profile?.role !== 'courier') return fail(403);
 
   const formData = await request.formData();
   const override_price = parseFloat(formData.get('override_price') as string);
@@ -761,96 +721,20 @@ overridePrice: async ({ request, params, locals: { supabase, safeGetSession } })
     })
     .eq('id', params.id);
 
-  if (error) {
-    return fail(500, { error: error.message });
-  }
-
-  return { success: true, message: 'price_updated' };
+  if (error) return fail(500, { error: error.message });
+  return { success: true };
 }
 ```
 
-**Step 2: Add price override UI to +page.svelte**
+**Step 2: Add price display and override dialog to +page.svelte**
 
-Add a section showing current price and override form:
-
-```svelte
-{#if courierSettings?.showPriceToCourier}
-  <Card.Root>
-    <Card.Header>
-      <Card.Title>{m.billing_price()}</Card.Title>
-    </Card.Header>
-    <Card.Content>
-      {#if service.calculated_price !== null}
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-2xl font-bold">€{service.calculated_price.toFixed(2)}</p>
-            {#if service.price_override_reason}
-              <p class="text-sm text-muted-foreground">{service.price_override_reason}</p>
-            {/if}
-          </div>
-          <Button variant="outline" onclick={() => showPriceOverride = true}>
-            {m.price_override()}
-          </Button>
-        </div>
-      {:else}
-        <p class="text-muted-foreground">{m.price_pending()}</p>
-      {/if}
-    </Card.Content>
-  </Card.Root>
-{/if}
-
-<!-- Price Override Dialog -->
-<AlertDialog.Root bind:open={showPriceOverride}>
-  <AlertDialog.Content>
-    <AlertDialog.Header>
-      <AlertDialog.Title>{m.price_override()}</AlertDialog.Title>
-    </AlertDialog.Header>
-    <form method="POST" action="?/overridePrice" use:enhance>
-      <div class="space-y-4 py-4">
-        {#if service.calculated_price !== null}
-          <p class="text-sm text-muted-foreground">
-            {m.price_calculated()}: €{service.calculated_price.toFixed(2)}
-          </p>
-        {/if}
-        <div class="space-y-2">
-          <Label for="override_price">{m.price_override()}</Label>
-          <Input
-            id="override_price"
-            name="override_price"
-            type="number"
-            step="0.01"
-            min="0"
-            value={service.calculated_price ?? ''}
-            required
-          />
-        </div>
-        <div class="space-y-2">
-          <Label for="override_reason">{m.price_override_reason()}</Label>
-          <Input
-            id="override_reason"
-            name="override_reason"
-            value={service.price_override_reason ?? ''}
-          />
-        </div>
-      </div>
-      <AlertDialog.Footer>
-        <AlertDialog.Cancel>{m.action_cancel()}</AlertDialog.Cancel>
-        <Button type="submit">{m.price_save_override()}</Button>
-      </AlertDialog.Footer>
-    </form>
-  </AlertDialog.Content>
-</AlertDialog.Root>
-```
+Add state, dialog UI, and price card.
 
 **Step 3: Commit**
 
 ```bash
 git add src/routes/courier/services/[id]/+page.svelte src/routes/courier/services/[id]/+page.server.ts
 git commit -m "feat: Add price override on service detail page
-
-- Add overridePrice server action
-- Add override dialog UI
-- Show override reason if set
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 ```
@@ -863,98 +747,17 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 - Modify: `src/routes/courier/billing/[client_id]/+page.svelte`
 - Modify: `src/routes/courier/billing/[client_id]/+page.server.ts`
 
-**Step 1: Add recalculate actions to +page.server.ts**
-
-```typescript
-recalculateMissing: async ({ params, locals: { supabase, safeGetSession } }) => {
-  // Recalculate prices for services where calculated_price IS NULL
-  const { session, user } = await safeGetSession();
-  if (!session || !user) return fail(401);
-
-  const { data: services } = await supabase
-    .from('services')
-    .select('*')
-    .eq('client_id', params.client_id)
-    .is('calculated_price', null)
-    .is('deleted_at', null);
-
-  if (!services || services.length === 0) {
-    return { success: true, count: 0 };
-  }
-
-  const courierSettings = await getCourierPricingSettings(supabase);
-  let updated = 0;
-
-  for (const service of services) {
-    if (service.distance_km) {
-      const priceResult = await calculateServicePrice(supabase, {
-        clientId: service.client_id,
-        distanceKm: service.distance_km,
-        urgencyFeeId: service.urgency_fee_id,
-        minimumCharge: courierSettings.minimumCharge
-      });
-
-      if (priceResult.success) {
-        await supabase
-          .from('services')
-          .update({
-            calculated_price: priceResult.price,
-            price_breakdown: priceResult.breakdown
-          })
-          .eq('id', service.id);
-        updated++;
-      }
-    }
-  }
-
-  return { success: true, count: updated };
-},
-
-recalculateAll: async ({ params, locals: { supabase, safeGetSession } }) => {
-  // Similar but for all services in the period
-  // ... implementation similar to above but without the IS NULL filter
-}
-```
+**Step 1: Add recalculate actions**
 
 **Step 2: Add UI for missing price warning and recalculate buttons**
 
-```svelte
-{#if servicesWithoutPrice > 0}
-  <div class="rounded-md bg-orange-100 p-3 text-orange-800 flex items-center justify-between">
-    <span>{m.billing_missing_price_warning()} ({servicesWithoutPrice})</span>
-    <form method="POST" action="?/recalculateMissing" use:enhance>
-      <Button type="submit" variant="outline" size="sm">
-        {m.billing_recalculate_missing()}
-      </Button>
-    </form>
-  </div>
-{/if}
-```
-
 **Step 3: Highlight rows without price**
-
-```svelte
-<tr class="{service.calculated_price === null ? 'bg-orange-50' : ''}">
-  <!-- ... -->
-  <td>
-    {#if service.calculated_price !== null}
-      €{service.calculated_price.toFixed(2)}
-    {:else}
-      <span class="text-orange-600">{m.price_pending()}</span>
-    {/if}
-  </td>
-</tr>
-```
 
 **Step 4: Commit**
 
 ```bash
 git add src/routes/courier/billing/[client_id]/+page.svelte src/routes/courier/billing/[client_id]/+page.server.ts
 git commit -m "feat: Add billing page price management
-
-- Highlight services without prices
-- Add recalculate missing prices button
-- Add recalculate all button
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 ```
@@ -969,16 +772,14 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 pnpm run check
 ```
 
-Fix any type errors introduced.
+**Step 2: Manual testing checklist**
 
-**Step 2: Test manually**
-
-1. Set pricing visibility settings (courier settings page)
-2. Create service as client - verify price calculated
+1. Settings page - verify two visibility toggles work
+2. Create service as client - verify price calculated and stored
 3. Create service as courier - verify price calculated
-4. Test with client that has no pricing config - verify warning
+4. Test with client without pricing config - verify warning
 5. Override price on service detail
-6. Test billing page recalculate buttons
+6. Billing page recalculate buttons
 
 **Step 3: Final commit**
 
@@ -993,14 +794,14 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 
 ## Summary
 
-| Task | Description | Files |
-|------|-------------|-------|
-| 1 | Database migration | migration, types |
-| 2 | Update pricing service | pricing.ts |
-| 3 | Update settings page | settings page + server |
-| 4 | Add i18n messages | en.json, pt-PT.json |
-| 5 | Client form server action | client/new |
-| 6 | Courier form server action | courier/services |
-| 7 | Price override UI | courier/services/[id] |
-| 8 | Billing page enhancements | courier/billing |
-| 9 | Testing & cleanup | all |
+| Task | Status | Description |
+|------|--------|-------------|
+| 1 | TODO | Database migration - replace auto_calculate_price |
+| 2 | TODO | Update pricing service interfaces |
+| 3 | TODO | Update settings page toggles |
+| 4 | TODO | Add i18n messages |
+| 5 | TODO | Client form server action |
+| 6 | TODO | Courier form server action |
+| 7 | TODO | Price override UI |
+| 8 | TODO | Billing page enhancements |
+| 9 | TODO | Testing & cleanup |
