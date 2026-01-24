@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -50,7 +51,7 @@
 
 	// Urgency fees and pricing settings
 	let urgencyFees = $state<UrgencyFee[]>([]);
-	let selectedUrgencyFeeId = $state<string | null>(null);
+	let selectedUrgencyFeeId = $state<string>(''); // Empty string = Standard (no urgency)
 	let courierSettings = $state<CourierPricingSettings | null>(null);
 	let settingsLoaded = $state(false);
 
@@ -71,7 +72,7 @@
 		]);
 		courierSettings = settings;
 		urgencyFees = (fees || []) as UrgencyFee[];
-		selectedUrgencyFeeId = settings.defaultUrgencyFeeId;
+		selectedUrgencyFeeId = settings.defaultUrgencyFeeId || ''; // Empty string = Standard
 		settingsLoaded = true;
 	}
 
@@ -128,37 +129,19 @@
 		calculatingDistance = false;
 	}
 
-	async function handleSubmit(e: Event) {
-		e.preventDefault();
+	function handleFormSubmit() {
 		loading = true;
 		error = '';
-
-		const { error: insertError } = await data.supabase.from('services').insert({
-			client_id: data.session?.user.id,
-			pickup_location: pickupLocation,
-			delivery_location: deliveryLocation,
-			notes: notes || null,
-			// Scheduling fields
-			requested_date: requestedDate,
-			requested_time_slot: requestedTimeSlot,
-			requested_time: requestedTime,
-			// Coordinates and distance
-			pickup_lat: pickupCoords?.[1] ?? null,
-			pickup_lng: pickupCoords?.[0] ?? null,
-			delivery_lat: deliveryCoords?.[1] ?? null,
-			delivery_lng: deliveryCoords?.[0] ?? null,
-			distance_km: distanceKm,
-			// Urgency fee
-			urgency_fee_id: selectedUrgencyFeeId || null
-		});
-
-		if (insertError) {
-			error = insertError.message;
-			loading = false;
-			return;
-		}
-
-		goto(localizeHref('/client'));
+		return async ({ result }: { result: { type: string; data?: { error?: string } } }) => {
+			if (result.type === 'failure' && result.data?.error) {
+				error = result.data.error;
+				loading = false;
+			} else if (result.type === 'redirect') {
+				// Redirect is handled automatically by SvelteKit
+			} else {
+				loading = false;
+			}
+		};
 	}
 </script>
 
@@ -170,7 +153,7 @@
 
 	<Card.Root>
 		<Card.Content class="pt-6">
-			<form onsubmit={handleSubmit} class="space-y-4">
+			<form method="POST" use:enhance={handleFormSubmit} class="space-y-4">
 				{#if error}
 					<div class="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
 						{error}
@@ -265,16 +248,18 @@
 				</div>
 
 				<!-- Urgency fee selection -->
-				{#if urgencyFees.length > 0}
+				{#if settingsLoaded}
 					<Separator />
 					<div class="space-y-2">
 						<Label for="urgency">{m.form_urgency()}</Label>
 						<select
 							id="urgency"
+							name="urgency_fee_id"
 							bind:value={selectedUrgencyFeeId}
 							class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
 							disabled={loading}
 						>
+							<option value="">{m.urgency_standard()}</option>
 							{#each urgencyFees as fee (fee.id)}
 								<option value={fee.id}>
 									{fee.name}
@@ -305,6 +290,18 @@
 						</div>
 					</div>
 				{/if}
+
+				<!-- Hidden fields for form submission -->
+				<input type="hidden" name="pickup_location" value={pickupLocation} />
+				<input type="hidden" name="delivery_location" value={deliveryLocation} />
+				<input type="hidden" name="notes" value={notes} />
+				<input type="hidden" name="pickup_lat" value={pickupCoords?.[1] ?? ''} />
+				<input type="hidden" name="pickup_lng" value={pickupCoords?.[0] ?? ''} />
+				<input type="hidden" name="delivery_lat" value={deliveryCoords?.[1] ?? ''} />
+				<input type="hidden" name="delivery_lng" value={deliveryCoords?.[0] ?? ''} />
+				<input type="hidden" name="requested_date" value={requestedDate ?? ''} />
+				<input type="hidden" name="requested_time_slot" value={requestedTimeSlot ?? ''} />
+				<input type="hidden" name="requested_time" value={requestedTime ?? ''} />
 
 				<div class="flex gap-2 pt-2">
 					<Button type="button" variant="outline" class="flex-1" onclick={() => goto(localizeHref('/client'))}>
