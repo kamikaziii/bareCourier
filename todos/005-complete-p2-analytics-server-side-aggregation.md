@@ -1,11 +1,12 @@
 # Implement Server-Side Aggregation for Analytics Page
 
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "005"
 tags: [code-review, performance, database]
 dependencies: []
+resolution: "SUPERSEDED - Analytics page merged into Insights (P2.1). Issue still exists in insights/+page.svelte but requires new approach due to tabbed architecture."
 ---
 
 ## Problem Statement

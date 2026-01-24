@@ -1,11 +1,13 @@
 # Client Cannot Cancel Pending Service Requests
 
 ---
-status: ready
+status: complete
 priority: p1
 issue_id: "015"
 tags: [code-review, ux, feature-parity, client]
 dependencies: ["027"]
+plan_task: "P3.1"
+plan_status: "COMPLETED"
 ---
 
 ## Problem Statement

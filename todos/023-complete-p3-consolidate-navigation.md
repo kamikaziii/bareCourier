@@ -1,13 +1,13 @@
 # Consolidate Courier Navigation (Reports/Analytics Overlap)
 
 ---
-status: ready
+status: complete
 priority: p3
 issue_id: "023"
 tags: [code-review, ux, navigation, courier]
 dependencies: []
 plan_task: "P2.1, P2.2"
-plan_status: "SUPERSEDED - Will be implemented as part of UX plan"
+plan_status: "COMPLETED"
 ---
 
 > **UX PLAN INTEGRATION**: This feature is covered by tasks **P2.1** (Create Insights Page) and **P2.2** (Deprecate Analytics/Reports Routes) in the [UX Implementation Plan](../docs/plans/2026-01-23-ux-implementation-plan.md). The plan consolidates Analytics + Reports into a single "Insights" page with tabs. Close this todo when P2.1 and P2.2 are completed.

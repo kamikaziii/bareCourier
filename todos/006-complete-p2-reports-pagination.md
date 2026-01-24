@@ -1,11 +1,12 @@
 # Add Pagination to Reports Page
 
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "006"
 tags: [code-review, performance, ux]
 dependencies: []
+resolution: "SUPERSEDED - Reports page merged into Insights (P2.2). See #037 (insights-pagination) for the current issue."
 ---
 
 ## Problem Statement

@@ -1,13 +1,13 @@
 # Client Cannot Filter or Search Services
 
 ---
-status: ready
+status: complete
 priority: p1
 issue_id: "016"
 tags: [code-review, ux, feature-parity, client]
 dependencies: []
 plan_task: "P3.2"
-plan_status: "SUPERSEDED - Will be implemented as part of UX plan"
+plan_status: "COMPLETED"
 ---
 
 > **UX PLAN INTEGRATION**: This feature is task **P3.2** in the [UX Implementation Plan](../docs/plans/2026-01-23-ux-implementation-plan.md). Close this todo when P3.2 is completed.

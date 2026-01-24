@@ -1,13 +1,14 @@
 # Remove Unused Push Service
 
 ---
-status: pending
+status: complete
 priority: p3
 issue_id: "009"
 tags: [code-review, simplicity, dead-code]
 dependencies: []
 plan_task: "P4.1"
-plan_status: "POST-PLAN - Decide after P4.1 push notification implementation"
+plan_status: "COMPLETED"
+resolution: "Push service is now actively used by P4.1 notification infrastructure"
 ---
 
 > **UX PLAN INTEGRATION**: This todo should be **resolved after P4.1** (Push Notification Infrastructure) in the [UX Implementation Plan](../docs/plans/2026-01-23-ux-implementation-plan.md). P4.1 will properly implement push notifications. After P4.1 is complete, either:

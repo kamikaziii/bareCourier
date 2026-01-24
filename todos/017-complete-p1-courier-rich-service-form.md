@@ -1,13 +1,13 @@
 # Courier Service Creation Lacks Rich Form Features
 
 ---
-status: ready
+status: complete
 priority: p1
 issue_id: "017"
 tags: [code-review, ux, feature-parity, courier]
 dependencies: []
 plan_task: "P2.8"
-plan_status: "SUPERSEDED - Will be implemented as part of UX plan"
+plan_status: "COMPLETED"
 ---
 
 > **UX PLAN INTEGRATION**: This feature is task **P2.8** in the [UX Implementation Plan](../docs/plans/2026-01-23-ux-implementation-plan.md). Depends on P2.7 (AddressInput hints). Close this todo when P2.8 is completed.
