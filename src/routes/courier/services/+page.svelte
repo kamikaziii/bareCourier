@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -60,7 +61,7 @@
 
 	// Urgency fees and pricing settings
 	let urgencyFees = $state<UrgencyFee[]>([]);
-	let selectedUrgencyFeeId = $state<string | null>(null);
+	let selectedUrgencyFeeId = $state<string>(''); // Empty string = Standard (no urgency)
 	let courierSettings = $state<CourierPricingSettings | null>(null);
 
 	async function loadData() {
@@ -86,55 +87,40 @@
 		clients = clientsResult.data || [];
 		urgencyFees = (feesResult.data || []) as UrgencyFee[];
 		courierSettings = settings;
-		selectedUrgencyFeeId = settings.defaultUrgencyFeeId;
+		selectedUrgencyFeeId = settings.defaultUrgencyFeeId || ''; // Empty string = Standard
 		loading = false;
 	}
 
-	async function handleCreateService(e: Event) {
-		e.preventDefault();
+	function handleFormSubmit() {
 		formLoading = true;
 		formError = '';
+		return async ({ result }: { result: { type: string; data?: { error?: string; success?: boolean; warning?: string } } }) => {
+			if (result.type === 'failure' && result.data?.error) {
+				formError = result.data.error;
+				formLoading = false;
+			} else if (result.type === 'success' && result.data?.success) {
+				// Reset form
+				showForm = false;
+				selectedClientId = '';
+				pickupLocation = '';
+				deliveryLocation = '';
+				notes = '';
+				pickupCoords = null;
+				deliveryCoords = null;
+				routeGeometry = null;
+				distanceKm = null;
+				distanceResult = null;
+				scheduledDate = null;
+				scheduledTimeSlot = null;
+				scheduledTime = null;
+				selectedUrgencyFeeId = courierSettings?.defaultUrgencyFeeId || '';
+				formLoading = false;
 
-		const { error: insertError } = await data.supabase.from('services').insert({
-			client_id: selectedClientId,
-			pickup_location: pickupLocation,
-			delivery_location: deliveryLocation,
-			notes: notes || null,
-			pickup_lat: pickupCoords?.[1] || null,
-			pickup_lng: pickupCoords?.[0] || null,
-			delivery_lat: deliveryCoords?.[1] || null,
-			delivery_lng: deliveryCoords?.[0] || null,
-			distance_km: distanceKm,
-			scheduled_date: scheduledDate,
-			scheduled_time_slot: scheduledTimeSlot,
-			scheduled_time: scheduledTimeSlot === 'specific' ? scheduledTime : null,
-			urgency_fee_id: selectedUrgencyFeeId || null
-		});
-
-		if (insertError) {
-			formError = insertError.message;
-			formLoading = false;
-			return;
-		}
-
-		// Reset form
-		showForm = false;
-		selectedClientId = '';
-		pickupLocation = '';
-		deliveryLocation = '';
-		notes = '';
-		pickupCoords = null;
-		deliveryCoords = null;
-		routeGeometry = null;
-		distanceKm = null;
-		distanceResult = null;
-		scheduledDate = null;
-		scheduledTimeSlot = null;
-		scheduledTime = null;
-		selectedUrgencyFeeId = courierSettings?.defaultUrgencyFeeId || null;
-		formLoading = false;
-
-		await loadData();
+				await loadData();
+			} else {
+				formLoading = false;
+			}
+		};
 	}
 
 	function handleClientSelect() {
@@ -245,7 +231,7 @@
 				<Card.Title>{m.services_create()}</Card.Title>
 			</Card.Header>
 			<Card.Content>
-				<form onsubmit={handleCreateService} class="space-y-4">
+				<form method="POST" action="?/createService" use:enhance={handleFormSubmit} class="space-y-4">
 					{#if formError}
 						<div class="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
 							{formError}
@@ -256,6 +242,7 @@
 						<Label for="client">{m.form_client()} *</Label>
 						<select
 							id="client"
+							name="client_id"
 							bind:value={selectedClientId}
 							onchange={handleClientSelect}
 							required
@@ -328,26 +315,26 @@
 					<Separator />
 
 					<!-- Urgency fee selection -->
-					{#if urgencyFees.length > 0}
-						<div class="space-y-2">
-							<Label for="urgency">{m.form_urgency()}</Label>
-							<select
-								id="urgency"
-								bind:value={selectedUrgencyFeeId}
-								class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-								disabled={formLoading}
-							>
-								{#each urgencyFees as fee (fee.id)}
-									<option value={fee.id}>
-										{fee.name}
-										{#if fee.multiplier > 1 || fee.flat_fee > 0}
-											({fee.multiplier}x{fee.flat_fee > 0 ? ` + €${fee.flat_fee}` : ''})
-										{/if}
-									</option>
-								{/each}
-							</select>
-						</div>
-					{/if}
+					<div class="space-y-2">
+						<Label for="urgency">{m.form_urgency()}</Label>
+						<select
+							id="urgency"
+							name="urgency_fee_id"
+							bind:value={selectedUrgencyFeeId}
+							class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+							disabled={formLoading}
+						>
+							<option value="">{m.urgency_standard()}</option>
+							{#each urgencyFees as fee (fee.id)}
+								<option value={fee.id}>
+									{fee.name}
+									{#if fee.multiplier > 1 || fee.flat_fee > 0}
+										({fee.multiplier}x{fee.flat_fee > 0 ? ` + €${fee.flat_fee}` : ''})
+									{/if}
+								</option>
+							{/each}
+						</select>
+					</div>
 
 					<!-- Distance breakdown for warehouse mode -->
 					{#if distanceResult?.distanceMode === 'warehouse' && distanceResult.warehouseToPickupKm}
@@ -374,13 +361,25 @@
 						<Label for="notes">{m.form_notes()}</Label>
 						<Input
 							id="notes"
+							name="notes"
 							type="text"
 							bind:value={notes}
 							disabled={formLoading}
 						/>
 					</div>
 
-					<Button type="submit" disabled={formLoading || !pickupLocation || !deliveryLocation}>
+					<!-- Hidden fields for form submission -->
+					<input type="hidden" name="pickup_location" value={pickupLocation} />
+					<input type="hidden" name="delivery_location" value={deliveryLocation} />
+					<input type="hidden" name="pickup_lat" value={pickupCoords?.[1] ?? ''} />
+					<input type="hidden" name="pickup_lng" value={pickupCoords?.[0] ?? ''} />
+					<input type="hidden" name="delivery_lat" value={deliveryCoords?.[1] ?? ''} />
+					<input type="hidden" name="delivery_lng" value={deliveryCoords?.[0] ?? ''} />
+					<input type="hidden" name="scheduled_date" value={scheduledDate ?? ''} />
+					<input type="hidden" name="scheduled_time_slot" value={scheduledTimeSlot ?? ''} />
+					<input type="hidden" name="scheduled_time" value={scheduledTime ?? ''} />
+
+					<Button type="submit" disabled={formLoading || !selectedClientId || !pickupLocation || !deliveryLocation}>
 						{formLoading ? m.services_creating() : m.services_create()}
 					</Button>
 				</form>
