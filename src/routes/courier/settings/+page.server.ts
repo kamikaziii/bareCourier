@@ -309,7 +309,8 @@ export const actions: Actions = {
 		}
 
 		const formData = await request.formData();
-		const auto_calculate_price = formData.get('auto_calculate_price') === 'true';
+		const show_price_to_courier = formData.get('show_price_to_courier') === 'true';
+		const show_price_to_client = formData.get('show_price_to_client') === 'true';
 		const default_urgency_fee_id = (formData.get('default_urgency_fee_id') as string) || null;
 		const minimum_charge = parseFloat(formData.get('minimum_charge') as string) || 0;
 		const round_distance = formData.get('round_distance') === 'true';
@@ -318,7 +319,8 @@ export const actions: Actions = {
 		const { error } = await (supabase as any)
 			.from('profiles')
 			.update({
-				auto_calculate_price,
+				show_price_to_courier,
+				show_price_to_client,
 				default_urgency_fee_id: default_urgency_fee_id || null,
 				minimum_charge,
 				round_distance

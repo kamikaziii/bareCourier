@@ -50,7 +50,8 @@
 	);
 
 	// Pricing preferences state
-	let autoCalculatePrice = $state(data.profile.auto_calculate_price ?? true);
+	let showPriceToCourier = $state(data.profile.show_price_to_courier ?? true);
+	let showPriceToClient = $state(data.profile.show_price_to_client ?? true);
 	let defaultUrgencyFeeId = $state<string | null>(data.profile.default_urgency_fee_id || null);
 	let minimumCharge = $state(data.profile.minimum_charge ?? 0);
 	let roundDistance = $state(data.profile.round_distance ?? false);
@@ -344,17 +345,34 @@
 		</Card.Header>
 		<Card.Content>
 			<form method="POST" action="?/updatePricingPreferences" use:enhance class="space-y-6">
-				<!-- Auto-calculate toggle -->
+				<!-- Show price to courier -->
 				<div class="flex items-center justify-between">
 					<div class="space-y-0.5">
-						<Label>{m.settings_auto_calculate()}</Label>
-						<p class="text-sm text-muted-foreground">{m.settings_auto_calculate_desc()}</p>
+						<Label>{m.settings_show_price_to_courier()}</Label>
+						<p class="text-sm text-muted-foreground">{m.settings_show_price_to_courier_desc()}</p>
 					</div>
-					<input type="hidden" name="auto_calculate_price" value={autoCalculatePrice.toString()} />
+					<input type="hidden" name="show_price_to_courier" value={showPriceToCourier.toString()} />
 					<Switch
-						checked={autoCalculatePrice}
+						checked={showPriceToCourier}
 						onCheckedChange={(checked) => {
-							autoCalculatePrice = checked;
+							showPriceToCourier = checked;
+						}}
+					/>
+				</div>
+
+				<Separator />
+
+				<!-- Show price to client -->
+				<div class="flex items-center justify-between">
+					<div class="space-y-0.5">
+						<Label>{m.settings_show_price_to_client()}</Label>
+						<p class="text-sm text-muted-foreground">{m.settings_show_price_to_client_desc()}</p>
+					</div>
+					<input type="hidden" name="show_price_to_client" value={showPriceToClient.toString()} />
+					<Switch
+						checked={showPriceToClient}
+						onCheckedChange={(checked) => {
+							showPriceToClient = checked;
 						}}
 					/>
 				</div>
