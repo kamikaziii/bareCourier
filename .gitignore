@@ -39,3 +39,6 @@ supabase/.temp/
 
 # Paraglide generated files
 src/lib/paraglide/
+
+# Git worktrees
+.worktrees/
