@@ -1,7 +1,8 @@
 import { redirect, error } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import type { Profile, ClientPricing, PricingZone, UrgencyFee } from '$lib/database.types';
+import type { Profile, ClientPricing, PricingZone, UrgencyFee, Service } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
+import { calculateServicePrice, getCourierPricingSettings } from '$lib/services/pricing.js';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
 	const { session } = await safeGetSession();
@@ -119,5 +120,125 @@ export const actions: Actions = {
 		}
 
 		return { success: true };
+	},
+
+	recalculateMissing: async ({ params, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		// Verify courier role
+		const { data: profile } = await supabase
+			.from('profiles')
+			.select('role')
+			.eq('id', user.id)
+			.single();
+
+		if (profile?.role !== 'courier') {
+			return { success: false, error: 'Unauthorized' };
+		}
+
+		const { client_id } = params;
+
+		// Get services with missing prices
+		const { data: services } = await supabase
+			.from('services')
+			.select('*')
+			.eq('client_id', client_id)
+			.is('deleted_at', null)
+			.is('calculated_price', null);
+
+		if (!services || services.length === 0) {
+			return { success: true, recalculated: 0 };
+		}
+
+		const courierSettings = await getCourierPricingSettings(supabase);
+		let recalculated = 0;
+
+		for (const service of services as Service[]) {
+			if (service.distance_km === null) continue;
+
+			const priceResult = await calculateServicePrice(supabase, {
+				clientId: client_id,
+				distanceKm: service.distance_km,
+				urgencyFeeId: service.urgency_fee_id,
+				minimumCharge: courierSettings.minimumCharge
+			});
+
+			if (priceResult.success) {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				await (supabase as any)
+					.from('services')
+					.update({
+						calculated_price: priceResult.price,
+						price_breakdown: priceResult.breakdown
+					})
+					.eq('id', service.id);
+				recalculated++;
+			}
+		}
+
+		return { success: true, recalculated };
+	},
+
+	recalculateAll: async ({ params, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		// Verify courier role
+		const { data: profile } = await supabase
+			.from('profiles')
+			.select('role')
+			.eq('id', user.id)
+			.single();
+
+		if (profile?.role !== 'courier') {
+			return { success: false, error: 'Unauthorized' };
+		}
+
+		const { client_id } = params;
+
+		// Get all services (with distance)
+		const { data: services } = await supabase
+			.from('services')
+			.select('*')
+			.eq('client_id', client_id)
+			.is('deleted_at', null)
+			.not('distance_km', 'is', null);
+
+		if (!services || services.length === 0) {
+			return { success: true, recalculated: 0 };
+		}
+
+		const courierSettings = await getCourierPricingSettings(supabase);
+		let recalculated = 0;
+
+		for (const service of services as Service[]) {
+			if (service.distance_km === null) continue;
+
+			const priceResult = await calculateServicePrice(supabase, {
+				clientId: client_id,
+				distanceKm: service.distance_km,
+				urgencyFeeId: service.urgency_fee_id,
+				minimumCharge: courierSettings.minimumCharge
+			});
+
+			if (priceResult.success) {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				await (supabase as any)
+					.from('services')
+					.update({
+						calculated_price: priceResult.price,
+						price_breakdown: priceResult.breakdown
+					})
+					.eq('id', service.id);
+				recalculated++;
+			}
+		}
+
+		return { success: true, recalculated };
 	}
 };
