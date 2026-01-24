@@ -399,5 +399,21 @@
 	"distance_warehouse_to_pickup": "Armazém → Levantamento",
 	"distance_pickup_to_delivery": "Levantamento → Entrega",
 	"distance_total": "Distância total",
-	"none": "Nenhuma"
+	"none": "Nenhuma",
+
+	"price_pending": "Preço pendente",
+	"price_not_configured": "Configure os preços para este cliente",
+	"urgency_standard": "Normal (sem taxa extra)",
+	"settings_show_price_to_courier": "Mostrar preços para mim",
+	"settings_show_price_to_courier_desc": "Mostrar preços nos formulários e detalhes de serviços",
+	"settings_show_price_to_client": "Mostrar preços aos clientes",
+	"settings_show_price_to_client_desc": "Clientes vêem o custo estimado ao criar pedidos",
+	"price_override": "Alterar preço",
+	"price_override_reason": "Motivo (opcional)",
+	"price_calculated": "Calculado",
+	"price_save_override": "Guardar Alteração",
+	"billing_recalculate_missing": "Recalcular preços em falta",
+	"billing_recalculate_all": "Recalcular todos",
+	"billing_missing_price_warning": "Alguns serviços não têm preço calculado",
+	"service_created_no_pricing": "Serviço criado. Preços não configurados para este cliente."
 }
