@@ -5,10 +5,17 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
+	import { Switch } from '$lib/components/ui/switch/index.js';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import type { PageData, ActionData } from './$types';
-	import { Settings, User, Zap, Plus, Trash2, Power } from '@lucide/svelte';
+	import { Settings, User, Zap, Plus, Trash2, Power, Bell, MapPin, Warehouse } from '@lucide/svelte';
+	import {
+		isPushSupported,
+		subscribeToPush,
+		unsubscribeFromPush,
+		isSubscribedToPush
+	} from '$lib/services/push';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -23,9 +30,65 @@
 	let deletingFeeId = $state<string | null>(null);
 	let deleteDialogOpen = $state(false);
 
+	// Notification preferences state
+	let pushEnabled = $state(false);
+	let emailEnabled = $state(data.profile.email_notifications_enabled ?? true);
+	let pushLoading = $state(false);
+	let pushError = $state('');
+	let pushSupported = $state(false);
+
+	// Pricing mode state
+	let pricingMode = $state<'warehouse' | 'zone'>(data.profile.pricing_mode ?? 'warehouse');
+
+	// Check push subscription status on mount
+	$effect(() => {
+		if (typeof window !== 'undefined') {
+			pushSupported = isPushSupported();
+			if (pushSupported) {
+				isSubscribedToPush().then((subscribed) => {
+					pushEnabled = subscribed;
+				});
+			}
+		}
+	});
+
 	function openDeleteDialog(feeId: string) {
 		deletingFeeId = feeId;
 		deleteDialogOpen = true;
+	}
+
+	async function togglePushNotifications() {
+		if (pushLoading) return;
+		pushLoading = true;
+		pushError = '';
+
+		try {
+			if (pushEnabled) {
+				// Unsubscribe
+				const result = await unsubscribeFromPush(data.supabase, data.profile.id);
+				if (result.success) {
+					pushEnabled = false;
+				} else {
+					pushError = result.error || 'Failed to disable push notifications';
+				}
+			} else {
+				// Subscribe
+				const result = await subscribeToPush(data.supabase, data.profile.id);
+				if (result.success) {
+					pushEnabled = true;
+				} else {
+					if (result.error?.includes('permission')) {
+						pushError = m.push_permission_denied();
+					} else {
+						pushError = result.error || 'Failed to enable push notifications';
+					}
+				}
+			}
+		} catch (error) {
+			pushError = (error as Error).message;
+		} finally {
+			pushLoading = false;
+		}
 	}
 </script>
 
@@ -76,6 +139,141 @@
 					<Label>{m.auth_email()}</Label>
 					<Input disabled value={data.session?.user?.email || ''} />
 					<p class="text-xs text-muted-foreground">{m.settings_email_readonly()}</p>
+				</div>
+				<Button type="submit">{m.action_save()}</Button>
+			</form>
+		</Card.Content>
+	</Card.Root>
+
+	<Separator />
+
+	<!-- Notification Preferences -->
+	<Card.Root>
+		<Card.Header>
+			<Card.Title class="flex items-center gap-2">
+				<Bell class="size-5" />
+				{m.settings_notifications()}
+			</Card.Title>
+			<Card.Description>{m.settings_notifications_desc()}</Card.Description>
+		</Card.Header>
+		<Card.Content class="space-y-6">
+			{#if pushError}
+				<div class="rounded-md bg-destructive/10 p-3 text-destructive text-sm">
+					{pushError}
+				</div>
+			{/if}
+
+			<!-- Push Notifications -->
+			<div class="flex items-center justify-between">
+				<div class="space-y-0.5">
+					<Label class="text-base">{m.settings_push_notifications()}</Label>
+					<p class="text-sm text-muted-foreground">
+						{#if !pushSupported}
+							{m.push_not_supported()}
+						{:else}
+							{m.settings_push_desc()}
+						{/if}
+					</p>
+				</div>
+				<div class="flex items-center gap-2">
+					{#if pushLoading}
+						<span class="text-xs text-muted-foreground">
+							{pushEnabled ? m.push_disabling() : m.push_enabling()}
+						</span>
+					{/if}
+					<Switch
+						checked={pushEnabled}
+						onCheckedChange={togglePushNotifications}
+						disabled={!pushSupported || pushLoading}
+					/>
+				</div>
+			</div>
+
+			<Separator />
+
+			<!-- Email Notifications -->
+			<form method="POST" action="?/updateNotificationPreferences" use:enhance class="flex items-center justify-between">
+				<div class="space-y-0.5">
+					<Label class="text-base">{m.settings_email_notifications()}</Label>
+					<p class="text-sm text-muted-foreground">{m.settings_email_desc()}</p>
+				</div>
+				<input type="hidden" name="email_notifications_enabled" value={emailEnabled.toString()} />
+				<Switch
+					checked={emailEnabled}
+					onCheckedChange={(checked) => {
+						emailEnabled = checked;
+						// Auto-submit the form
+						const form = document.querySelector('form[action="?/updateNotificationPreferences"]') as HTMLFormElement;
+						if (form) {
+							const input = form.querySelector('input[name="email_notifications_enabled"]') as HTMLInputElement;
+							if (input) input.value = checked.toString();
+							form.requestSubmit();
+						}
+					}}
+				/>
+			</form>
+		</Card.Content>
+	</Card.Root>
+
+	<Separator />
+
+	<!-- Pricing Mode Settings -->
+	<Card.Root>
+		<Card.Header>
+			<Card.Title class="flex items-center gap-2">
+				<MapPin class="size-5" />
+				{m.settings_pricing_mode()}
+			</Card.Title>
+			<Card.Description>{m.settings_pricing_mode_desc()}</Card.Description>
+		</Card.Header>
+		<Card.Content>
+			<form method="POST" action="?/updatePricingMode" use:enhance class="space-y-4">
+				<div class="space-y-3">
+					<!-- Warehouse Option -->
+					<label
+						class="flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors {pricingMode === 'warehouse' ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}"
+					>
+						<input
+							type="radio"
+							name="pricing_mode"
+							value="warehouse"
+							checked={pricingMode === 'warehouse'}
+							onchange={() => pricingMode = 'warehouse'}
+							class="mt-1"
+						/>
+						<div class="flex-1">
+							<div class="flex items-center gap-2">
+								<Warehouse class="size-4" />
+								<span class="font-medium">{m.pricing_mode_warehouse()}</span>
+							</div>
+							<p class="mt-1 text-sm text-muted-foreground">
+								{m.pricing_mode_warehouse_desc()}
+							</p>
+						</div>
+					</label>
+
+					<!-- Zone Option -->
+					<label
+						class="flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors {pricingMode === 'zone' ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}"
+					>
+						<input
+							type="radio"
+							name="pricing_mode"
+							value="zone"
+							checked={pricingMode === 'zone'}
+							onchange={() => pricingMode = 'zone'}
+							class="mt-1"
+						/>
+						<div class="flex-1">
+							<div class="flex items-center gap-2">
+								<MapPin class="size-4" />
+								<span class="font-medium">{m.pricing_mode_zone()}</span>
+							</div>
+							<p class="mt-1 text-sm text-muted-foreground">
+								{m.pricing_mode_zone_desc()}
+							</p>
+						</div>
+					</label>
 				</div>
 				<Button type="submit">{m.action_save()}</Button>
 			</form>

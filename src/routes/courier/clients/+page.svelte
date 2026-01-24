@@ -5,10 +5,15 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { Separator } from '$lib/components/ui/separator/index.js';
+	import PricingConfigForm from '$lib/components/PricingConfigForm.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData } from './$types';
-	import { ChevronRight } from '@lucide/svelte';
+	import type { PricingModel } from '$lib/database.types.js';
+	import SkeletonList from '$lib/components/SkeletonList.svelte';
+	import PullToRefresh from '$lib/components/PullToRefresh.svelte';
+	import { ChevronRight, ChevronDown, Euro } from '@lucide/svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -25,6 +30,11 @@
 	let formLoading = $state(false);
 	let formError = $state('');
 	let formSuccess = $state('');
+
+	// Pricing section
+	let showPricingSection = $state(false);
+	let pendingPricingConfig: { pricing_model: PricingModel; base_fee: number; per_km_rate: number } | null = $state(null);
+	let pendingPricingZones: { min_km: number; max_km: number | null; price: number }[] = $state([]);
 
 	async function loadClients() {
 		loading = true;
@@ -81,6 +91,40 @@
 			return;
 		}
 
+		// If pricing config was set, save it for the new client
+		if (pendingPricingConfig && result.user?.id) {
+			try {
+				// Save pricing configuration
+				const { error: pricingError } = await data.supabase.from('client_pricing').upsert(
+					{
+						client_id: result.user.id,
+						pricing_model: pendingPricingConfig.pricing_model,
+						base_fee: pendingPricingConfig.base_fee,
+						per_km_rate: pendingPricingConfig.per_km_rate
+					},
+					{ onConflict: 'client_id' }
+				);
+
+				if (pricingError) {
+					console.error('Pricing save error:', pricingError);
+				}
+
+				// If zone pricing, save zones
+				if (pendingPricingConfig.pricing_model === 'zone' && pendingPricingZones.length > 0) {
+					const { error: zonesError } = await data.supabase.rpc('replace_pricing_zones', {
+						p_client_id: result.user.id,
+						p_zones: pendingPricingZones
+					});
+
+					if (zonesError) {
+						console.error('Zones save error:', zonesError);
+					}
+				}
+			} catch (err) {
+				console.error('Failed to save pricing:', err);
+			}
+		}
+
 		formSuccess = m.clients_success();
 		formLoading = false;
 
@@ -90,9 +134,21 @@
 		phone = '';
 		defaultPickupLocation = '';
 		password = '';
+		showPricingSection = false;
+		pendingPricingConfig = null;
+		pendingPricingZones = [];
 
 		// Reload clients list
 		await loadClients();
+	}
+
+	function handlePricingChange(
+		config: { pricing_model: PricingModel; base_fee: number; per_km_rate: number },
+		zones: { min_km: number; max_km: number | null; price: number }[]
+	) {
+		pendingPricingConfig = config;
+		pendingPricingZones = zones;
+		return Promise.resolve();
 	}
 
 	async function toggleClientActive(client: any) {
@@ -111,6 +167,7 @@
 	const inactiveClients = $derived(clients.filter((c) => !c.active));
 </script>
 
+<PullToRefresh>
 <div class="space-y-6">
 	<div class="flex items-center justify-between">
 		<h1 class="text-2xl font-bold">{m.clients_title()}</h1>
@@ -191,6 +248,42 @@
 						</div>
 					</div>
 
+					<!-- Pricing Configuration (Collapsible) -->
+					<Separator />
+
+					<div class="space-y-4">
+						<button
+							type="button"
+							class="flex w-full items-center justify-between text-left"
+							onclick={() => (showPricingSection = !showPricingSection)}
+							disabled={formLoading}
+						>
+							<div class="flex items-center gap-2">
+								<Euro class="size-5 text-muted-foreground" />
+								<span class="font-medium">{m.billing_pricing_config()}</span>
+								<Badge variant="secondary">{m.schedule_optional()}</Badge>
+							</div>
+							<ChevronDown
+								class="size-5 text-muted-foreground transition-transform {showPricingSection
+									? 'rotate-180'
+									: ''}"
+							/>
+						</button>
+
+						{#if showPricingSection}
+							<div class="rounded-md border p-4">
+								<p class="mb-4 text-sm text-muted-foreground">{m.billing_pricing_config_desc()}</p>
+								<PricingConfigForm
+									onSave={handlePricingChange}
+									compact={true}
+								/>
+								{#if pendingPricingConfig}
+									<p class="mt-2 text-xs text-green-600">{m.billing_configured()}</p>
+								{/if}
+							</div>
+						{/if}
+					</div>
+
 					<Button type="submit" disabled={formLoading}>
 						{formLoading ? m.clients_creating() : m.clients_create()}
 					</Button>
@@ -201,9 +294,9 @@
 
 	<!-- Active Clients -->
 	<div class="space-y-3">
-		<h2 class="text-lg font-semibold">{m.clients_active()} ({activeClients.length})</h2>
+		<h2 class="text-lg font-semibold">{m.clients_active()} ({loading ? '...' : activeClients.length})</h2>
 		{#if loading}
-			<p class="text-center text-muted-foreground py-4">{m.loading()}</p>
+			<SkeletonList variant="client" count={3} />
 		{:else if activeClients.length === 0}
 			<Card.Root>
 				<Card.Content class="py-8 text-center text-muted-foreground">
@@ -255,3 +348,4 @@
 		</div>
 	{/if}
 </div>
+</PullToRefresh>

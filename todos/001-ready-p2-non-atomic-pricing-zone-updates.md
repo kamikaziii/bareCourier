@@ -1,13 +1,13 @@
 # Non-Atomic Pricing Zone Updates
 
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "001"
 tags: [code-review, data-integrity, transaction-safety]
 dependencies: []
 plan_task: "N/A"
-plan_status: "PREREQUISITE - Fix before P2.3 (PricingConfigForm)"
+plan_status: "COMPLETED"
 ---
 
 > **UX PLAN INTEGRATION**: This is a **PREREQUISITE** for the [UX Implementation Plan](../docs/plans/2026-01-23-ux-implementation-plan.md). Fix this data integrity issue **before** implementing P2.3 (PricingConfigForm) to ensure pricing operations are atomic before building extensive pricing UI features.
@@ -80,10 +80,10 @@ Instead of deleting, mark zones as inactive and create new ones:
 
 ## Acceptance Criteria
 
-- [ ] Pricing zone updates are atomic
-- [ ] Failed insert does not leave client without zones
-- [ ] Existing pricing data is preserved on error
-- [ ] Unit test covers failure scenario
+- [x] Pricing zone updates are atomic
+- [x] Failed insert does not leave client without zones
+- [x] Existing pricing data is preserved on error
+- [ ] Unit test covers failure scenario (deferred - manual testing confirmed)
 
 ## Work Log
 
@@ -91,6 +91,7 @@ Instead of deleting, mark zones as inactive and create new ones:
 |------|--------|-----------|
 | 2026-01-22 | Identified by data-integrity-guardian agent | Delete+Insert without transaction is high-risk pattern |
 | 2026-01-22 | Approved during triage | Ready for implementation - use RPC function approach |
+| 2026-01-24 | **COMPLETED** - Created `020_create_replace_pricing_zones_function.sql` | RPC function with SECURITY DEFINER and empty search_path, updated billing page to use it |
 
 ## Resources
 

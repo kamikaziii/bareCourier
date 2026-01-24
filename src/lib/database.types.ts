@@ -23,6 +23,11 @@ export type Database = {
 					default_pickup_location: string | null;
 					active: boolean;
 					created_at: string;
+					// Notification preferences (Phase 4)
+					push_notifications_enabled: boolean;
+					email_notifications_enabled: boolean;
+					// Pricing mode (Phase 5B)
+					pricing_mode: 'warehouse' | 'zone' | null;
 				};
 				Insert: {
 					id: string;
@@ -32,6 +37,9 @@ export type Database = {
 					default_pickup_location?: string | null;
 					active?: boolean;
 					created_at?: string;
+					push_notifications_enabled?: boolean;
+					email_notifications_enabled?: boolean;
+					pricing_mode?: 'warehouse' | 'zone' | null;
 				};
 				Update: {
 					id?: string;
@@ -41,6 +49,9 @@ export type Database = {
 					default_pickup_location?: string | null;
 					active?: boolean;
 					created_at?: string;
+					push_notifications_enabled?: boolean;
+					email_notifications_enabled?: boolean;
+					pricing_mode?: 'warehouse' | 'zone' | null;
 				};
 			};
 			services: {

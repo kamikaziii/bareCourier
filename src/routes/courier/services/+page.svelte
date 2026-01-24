@@ -4,9 +4,17 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { Separator } from '$lib/components/ui/separator/index.js';
+	import AddressInput from '$lib/components/AddressInput.svelte';
+	import RouteMap from '$lib/components/RouteMap.svelte';
+	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
+	import { calculateRoute } from '$lib/services/distance.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData } from './$types';
+	import type { TimeSlot } from '$lib/database.types.js';
+	import SkeletonList from '$lib/components/SkeletonList.svelte';
+	import PullToRefresh from '$lib/components/PullToRefresh.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -27,6 +35,18 @@
 	let notes = $state('');
 	let formLoading = $state(false);
 	let formError = $state('');
+
+	// Coordinates and distance
+	let pickupCoords = $state<[number, number] | null>(null);
+	let deliveryCoords = $state<[number, number] | null>(null);
+	let routeGeometry = $state<string | null>(null);
+	let distanceKm = $state<number | null>(null);
+	let calculatingDistance = $state(false);
+
+	// Schedule
+	let scheduledDate = $state<string | null>(null);
+	let scheduledTimeSlot = $state<TimeSlot | null>(null);
+	let scheduledTime = $state<string | null>(null);
 
 	async function loadData() {
 		loading = true;
@@ -59,7 +79,15 @@
 			client_id: selectedClientId,
 			pickup_location: pickupLocation,
 			delivery_location: deliveryLocation,
-			notes: notes || null
+			notes: notes || null,
+			pickup_lat: pickupCoords?.[1] || null,
+			pickup_lng: pickupCoords?.[0] || null,
+			delivery_lat: deliveryCoords?.[1] || null,
+			delivery_lng: deliveryCoords?.[0] || null,
+			distance_km: distanceKm,
+			scheduled_date: scheduledDate,
+			scheduled_time_slot: scheduledTimeSlot,
+			scheduled_time: scheduledTimeSlot === 'specific' ? scheduledTime : null
 		});
 
 		if (insertError) {
@@ -74,6 +102,13 @@
 		pickupLocation = '';
 		deliveryLocation = '';
 		notes = '';
+		pickupCoords = null;
+		deliveryCoords = null;
+		routeGeometry = null;
+		distanceKm = null;
+		scheduledDate = null;
+		scheduledTimeSlot = null;
+		scheduledTime = null;
 		formLoading = false;
 
 		await loadData();
@@ -83,6 +118,35 @@
 		const client = clients.find((c) => c.id === selectedClientId);
 		if (client?.default_pickup_location) {
 			pickupLocation = client.default_pickup_location;
+			// Clear coords since this is just text
+			pickupCoords = null;
+		}
+	}
+
+	function handlePickupSelect(address: string, coords: [number, number] | null) {
+		pickupLocation = address;
+		pickupCoords = coords;
+		calculateRouteIfReady();
+	}
+
+	function handleDeliverySelect(address: string, coords: [number, number] | null) {
+		deliveryLocation = address;
+		deliveryCoords = coords;
+		calculateRouteIfReady();
+	}
+
+	async function calculateRouteIfReady() {
+		if (pickupCoords && deliveryCoords) {
+			calculatingDistance = true;
+			const result = await calculateRoute(pickupCoords, deliveryCoords);
+			if (result) {
+				distanceKm = result.distanceKm;
+				routeGeometry = result.geometry || null;
+			}
+			calculatingDistance = false;
+		} else {
+			distanceKm = null;
+			routeGeometry = null;
 		}
 	}
 
@@ -114,6 +178,7 @@
 	}
 </script>
 
+<PullToRefresh>
 <div class="space-y-6">
 	<div class="flex items-center justify-between">
 		<h1 class="text-2xl font-bold">{m.services_title()}</h1>
@@ -155,25 +220,60 @@
 					<div class="grid gap-4 md:grid-cols-2">
 						<div class="space-y-2">
 							<Label for="pickup">{m.form_pickup_location()} *</Label>
-							<Input
+							<AddressInput
 								id="pickup"
-								type="text"
 								bind:value={pickupLocation}
-								required
+								onSelect={handlePickupSelect}
+								placeholder={m.form_pickup_placeholder()}
 								disabled={formLoading}
 							/>
 						</div>
 						<div class="space-y-2">
 							<Label for="delivery">{m.form_delivery_location()} *</Label>
-							<Input
+							<AddressInput
 								id="delivery"
-								type="text"
 								bind:value={deliveryLocation}
-								required
+								onSelect={handleDeliverySelect}
+								placeholder={m.form_delivery_placeholder()}
 								disabled={formLoading}
 							/>
 						</div>
 					</div>
+
+					<!-- Route Map Preview -->
+					{#if pickupCoords || deliveryCoords}
+						<div class="space-y-2">
+							<Label>{m.map_route()}</Label>
+							<RouteMap
+								{pickupCoords}
+								{deliveryCoords}
+								{routeGeometry}
+								{distanceKm}
+								height="200px"
+							/>
+							{#if calculatingDistance}
+								<p class="text-sm text-muted-foreground">{m.map_calculating()}</p>
+							{/if}
+						</div>
+					{/if}
+
+					<Separator />
+
+					<!-- Schedule -->
+					<div class="space-y-2">
+						<Label>{m.schedule_optional()}</Label>
+						<SchedulePicker
+							selectedDate={scheduledDate}
+							selectedTimeSlot={scheduledTimeSlot}
+							selectedTime={scheduledTime}
+							onDateChange={(date) => (scheduledDate = date)}
+							onTimeSlotChange={(slot) => (scheduledTimeSlot = slot)}
+							onTimeChange={(time) => (scheduledTime = time)}
+							disabled={formLoading}
+						/>
+					</div>
+
+					<Separator />
 
 					<div class="space-y-2">
 						<Label for="notes">{m.form_notes()}</Label>
@@ -185,7 +285,7 @@
 						/>
 					</div>
 
-					<Button type="submit" disabled={formLoading}>
+					<Button type="submit" disabled={formLoading || !pickupLocation || !deliveryLocation}>
 						{formLoading ? m.services_creating() : m.services_create()}
 					</Button>
 				</form>
@@ -224,7 +324,7 @@
 	<!-- Services List -->
 	<div class="space-y-3">
 		{#if loading}
-			<p class="text-center text-muted-foreground py-8">{m.loading()}</p>
+			<SkeletonList variant="service" count={5} />
 		{:else if filteredServices.length === 0}
 			<Card.Root>
 				<Card.Content class="py-8 text-center text-muted-foreground">
@@ -277,3 +377,4 @@
 		{/if}
 	</div>
 </div>
+</PullToRefresh>

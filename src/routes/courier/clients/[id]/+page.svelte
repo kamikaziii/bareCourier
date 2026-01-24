@@ -7,9 +7,11 @@
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
+	import PricingConfigForm from '$lib/components/PricingConfigForm.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData } from './$types';
+	import type { PricingModel } from '$lib/database.types.js';
 	import {
 		ArrowLeft,
 		Edit,
@@ -21,7 +23,8 @@
 		CheckCircle,
 		Clock,
 		UserX,
-		UserCheck
+		UserCheck,
+		Euro
 	} from '@lucide/svelte';
 
 	let { data }: { data: PageData } = $props();
@@ -29,6 +32,7 @@
 	let showArchiveDialog = $state(false);
 	let loading = $state(false);
 	let actionError = $state('');
+	let pricingSuccess = $state(false);
 
 	function formatDate(dateStr: string): string {
 		return new Date(dateStr).toLocaleDateString(getLocale(), {
@@ -65,6 +69,46 @@
 	const client = $derived(data.client);
 	const services = $derived(data.services);
 	const stats = $derived(data.stats);
+	const pricing = $derived(data.pricing);
+	const zones = $derived(data.zones);
+
+	function getPricingModelLabel(model: PricingModel): string {
+		switch (model) {
+			case 'per_km':
+				return m.billing_model_per_km();
+			case 'flat_plus_km':
+				return m.billing_model_flat_plus_km();
+			case 'zone':
+				return m.billing_model_zone();
+		}
+	}
+
+	async function handleSavePricing(
+		config: { pricing_model: PricingModel; base_fee: number; per_km_rate: number },
+		pricingZones: { min_km: number; max_km: number | null; price: number }[]
+	) {
+		const formData = new FormData();
+		formData.append('pricing_model', config.pricing_model);
+		formData.append('base_fee', config.base_fee.toString());
+		formData.append('per_km_rate', config.per_km_rate.toString());
+		if (config.pricing_model === 'zone') {
+			formData.append('zones', JSON.stringify(pricingZones));
+		}
+
+		const response = await fetch('?/savePricing', {
+			method: 'POST',
+			body: formData
+		});
+
+		const result = await response.json();
+		if (result.type === 'success' || result.data?.success) {
+			pricingSuccess = true;
+			setTimeout(() => (pricingSuccess = false), 3000);
+			await invalidateAll();
+		} else {
+			throw new Error(result.data?.error || 'Failed to save pricing');
+		}
+	}
 </script>
 
 <div class="space-y-6">
@@ -142,6 +186,7 @@
 		<Tabs.List>
 			<Tabs.Trigger value="info">{m.tab_info()}</Tabs.Trigger>
 			<Tabs.Trigger value="services">{m.tab_services()} ({services.length})</Tabs.Trigger>
+			<Tabs.Trigger value="billing">{m.nav_billing()}</Tabs.Trigger>
 		</Tabs.List>
 
 		<Tabs.Content value="info" class="space-y-4 pt-4">
@@ -253,6 +298,69 @@
 					{/each}
 				{/if}
 			</div>
+		</Tabs.Content>
+
+		<Tabs.Content value="billing" class="space-y-4 pt-4">
+			{#if pricingSuccess}
+				<div class="rounded-md bg-green-500/10 p-3 text-sm text-green-600">
+					{m.billing_saved()}
+				</div>
+			{/if}
+
+			<!-- Current Pricing Summary -->
+			<Card.Root>
+				<Card.Header>
+					<Card.Title class="flex items-center gap-2">
+						<Euro class="size-5" />
+						{m.billing_pricing_config()}
+					</Card.Title>
+					<Card.Description>{m.billing_pricing_config_desc()}</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					{#if pricing}
+						<div class="mb-4 space-y-2 rounded-md bg-muted p-4">
+							<div class="flex justify-between">
+								<span class="text-muted-foreground">{m.billing_pricing_model()}</span>
+								<Badge variant="outline">{getPricingModelLabel(pricing.pricing_model)}</Badge>
+							</div>
+							{#if pricing.pricing_model !== 'zone'}
+								<div class="flex justify-between">
+									<span class="text-muted-foreground">{m.billing_base_fee()}</span>
+									<span>€{pricing.base_fee.toFixed(2)}</span>
+								</div>
+								<div class="flex justify-between">
+									<span class="text-muted-foreground">{m.billing_per_km_rate()}</span>
+									<span>€{pricing.per_km_rate.toFixed(2)}/km</span>
+								</div>
+							{:else if zones.length > 0}
+								<Separator class="my-2" />
+								<p class="text-sm font-medium">{m.billing_zones()}</p>
+								{#each zones as zone (zone.id)}
+									<div class="flex justify-between text-sm">
+										<span class="text-muted-foreground">
+											{zone.min_km} - {zone.max_km !== null ? `${zone.max_km} km` : '∞'}
+										</span>
+										<span>€{zone.price.toFixed(2)}</span>
+									</div>
+								{/each}
+							{/if}
+						</div>
+					{:else}
+						<p class="mb-4 text-muted-foreground">{m.billing_not_configured()}</p>
+					{/if}
+
+					<PricingConfigForm
+						existingConfig={pricing}
+						existingZones={zones}
+						onSave={handleSavePricing}
+					/>
+				</Card.Content>
+			</Card.Root>
+
+			<!-- Link to full billing page -->
+			<Button variant="outline" href={localizeHref(`/courier/billing/${client.id}`)}>
+				{m.billing_client_detail()}
+			</Button>
 		</Tabs.Content>
 	</Tabs.Root>
 </div>

@@ -317,5 +317,62 @@
 	"client_no_pricing_configured": "Ainda não tem configuração de preços definida",
 	"client_estimated_cost": "Custo Estimado",
 	"client_services_this_period": "Serviços Neste Período",
-	"client_billing_note": "Nota: Estes são valores estimados. A fatura oficial será emitida pelo estafeta."
+	"client_billing_note": "Nota: Estes são valores estimados. A fatura oficial será emitida pelo estafeta.",
+
+	"address_hint_idle": "Comece a escrever para sugestões de morada",
+	"address_hint_verified": "Morada verificada - distância e mapa disponíveis",
+	"address_hint_custom": "Morada manual - cálculo de distância indisponível",
+
+	"nav_insights": "Estatísticas",
+	"nav_more": "Mais",
+
+	"insights_title": "Estatísticas",
+	"insights_tab_overview": "Resumo",
+	"insights_tab_charts": "Gráficos",
+	"insights_tab_data": "Dados",
+
+	"action_cancel_request": "Cancelar Pedido",
+	"confirm_cancel_request": "Cancelar este pedido?",
+	"confirm_cancel_request_desc": "Isto irá cancelar o seu pedido de serviço pendente. O estafeta será notificado.",
+
+	"filter_all": "Todos",
+	"filter_search_location": "Pesquisar recolha ou entrega...",
+	"filter_date_from": "De",
+	"filter_date_to": "Até",
+	"filter_showing": "A mostrar {count} de {total} serviços",
+	"filter_clear": "Limpar filtros",
+
+	"export_csv": "Exportar CSV",
+	"export_filename": "faturacao",
+
+	"settings_notifications": "Notificações",
+	"settings_notifications_desc": "Configure como recebe notificações",
+	"settings_push_notifications": "Notificações Push",
+	"settings_push_desc": "Receba notificações mesmo quando a aplicação está fechada",
+	"settings_email_notifications": "Notificações por Email",
+	"settings_email_desc": "Receba notificações por email",
+	"push_enabled": "Notificações push ativadas",
+	"push_disabled": "Notificações push desativadas",
+	"push_permission_denied": "Permissão de notificação foi negada. Por favor ative nas definições do navegador.",
+	"push_not_supported": "Notificações push não são suportadas neste navegador",
+	"push_enabling": "A ativar...",
+	"push_disabling": "A desativar...",
+
+	"offline_banner": "Está offline",
+	"offline_pending": "{count} alterações pendentes",
+	"offline_syncing": "A sincronizar...",
+	"offline_sync_complete": "Todas as alterações sincronizadas",
+
+	"settings_pricing_mode": "Modo de Cálculo de Distância",
+	"settings_pricing_mode_desc": "Como a distância é calculada para preços",
+	"pricing_mode_warehouse": "Sempre do Armazém",
+	"pricing_mode_warehouse_desc": "Distância da sua localização base até ao levantamento, mais levantamento até à entrega",
+	"pricing_mode_zone": "Por Zona",
+	"pricing_mode_zone_desc": "Preços fixos por zona geográfica, independentemente da distância real",
+
+	"pull_to_refresh": "Puxe para atualizar",
+	"refreshing": "A atualizar...",
+	"release_to_refresh": "Solte para atualizar",
+
+	"skip_to_content": "Ir para conteúdo principal"
 }

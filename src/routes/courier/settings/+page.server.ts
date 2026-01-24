@@ -180,5 +180,53 @@ export const actions: Actions = {
 		}
 
 		return { success: true, message: 'urgency_deleted' };
+	},
+
+	updateNotificationPreferences: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const formData = await request.formData();
+		const emailNotificationsEnabled = formData.get('email_notifications_enabled') === 'true';
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error } = await (supabase as any)
+			.from('profiles')
+			.update({ email_notifications_enabled: emailNotificationsEnabled })
+			.eq('id', user.id);
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		return { success: true, message: 'notifications_updated' };
+	},
+
+	updatePricingMode: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const formData = await request.formData();
+		const pricingMode = formData.get('pricing_mode') as 'warehouse' | 'zone';
+
+		if (!['warehouse', 'zone'].includes(pricingMode)) {
+			return { success: false, error: 'Invalid pricing mode' };
+		}
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error } = await (supabase as any)
+			.from('profiles')
+			.update({ pricing_mode: pricingMode })
+			.eq('id', user.id);
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		return { success: true, message: 'pricing_mode_updated' };
 	}
 };

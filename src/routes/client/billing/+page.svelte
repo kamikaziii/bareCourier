@@ -3,10 +3,11 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import { getLocale } from '$lib/paraglide/runtime.js';
 	import type { PageData } from './$types';
-	import { Euro, MapPin, Package, Receipt } from '@lucide/svelte';
+	import { Euro, MapPin, Package, Receipt, Download } from '@lucide/svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -87,12 +88,73 @@
 				return model;
 		}
 	}
+
+	function exportCSV() {
+		if (services.length === 0) return;
+
+		// CSV headers
+		const headers = [
+			m.reports_table_date(),
+			m.reports_table_route(),
+			m.billing_distance(),
+			m.billing_price(),
+			m.reports_status()
+		];
+
+		// CSV rows
+		const rows = services.map((service) => [
+			formatDate(service.created_at),
+			`${service.pickup_location} → ${service.delivery_location}`,
+			`${(service.distance_km || 0).toFixed(1)} km`,
+			formatCurrency(service.calculated_price || 0),
+			service.status === 'pending' ? m.status_pending() : m.status_delivered()
+		]);
+
+		// Add totals row
+		rows.push([
+			m.billing_total(),
+			'',
+			`${totals.km} km`,
+			formatCurrency(totals.cost),
+			''
+		]);
+
+		// Escape and format CSV
+		const escapeCell = (cell: string) => {
+			if (cell.includes(',') || cell.includes('"') || cell.includes('\n')) {
+				return `"${cell.replace(/"/g, '""')}"`;
+			}
+			return cell;
+		};
+
+		const csvContent = [
+			headers.map(escapeCell).join(','),
+			...rows.map((row) => row.map(escapeCell).join(','))
+		].join('\n');
+
+		// Create and download file
+		const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement('a');
+		link.href = url;
+		link.download = `${m.export_filename()}_${startDate}_${endDate}.csv`;
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+		URL.revokeObjectURL(url);
+	}
 </script>
 
 <div class="space-y-6">
-	<div class="flex items-center gap-2">
-		<Receipt class="size-6" />
-		<h1 class="text-2xl font-bold">{m.client_billing_title()}</h1>
+	<div class="flex items-center justify-between">
+		<div class="flex items-center gap-2">
+			<Receipt class="size-6" />
+			<h1 class="text-2xl font-bold">{m.client_billing_title()}</h1>
+		</div>
+		<Button variant="outline" onclick={exportCSV} disabled={loading || services.length === 0} class="gap-2">
+			<Download class="size-4" />
+			{m.export_csv()}
+		</Button>
 	</div>
 
 	<!-- Pricing Info -->

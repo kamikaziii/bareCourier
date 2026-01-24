@@ -39,13 +39,13 @@
 	// Whether to show address autocomplete (only if Mapbox is configured)
 	const hasMapbox = !!PUBLIC_MAPBOX_TOKEN;
 
-	function handlePickupSelect(address: string, coords: [number, number]) {
+	function handlePickupSelect(address: string, coords: [number, number] | null) {
 		pickupLocation = address;
 		pickupCoords = coords;
 		calculateDistanceIfReady();
 	}
 
-	function handleDeliverySelect(address: string, coords: [number, number]) {
+	function handleDeliverySelect(address: string, coords: [number, number] | null) {
 		deliveryLocation = address;
 		deliveryCoords = coords;
 		calculateDistanceIfReady();

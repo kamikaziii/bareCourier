@@ -6,7 +6,9 @@
 	import { browser } from '$app/environment';
 	import type { LayoutData } from './$types';
 	import ReloadPrompt from '$lib/components/ReloadPrompt.svelte';
+	import OfflineIndicator from '$lib/components/OfflineIndicator.svelte';
 	import { deLocalizeUrl } from '$lib/paraglide/runtime.js';
+	import * as m from '$lib/paraglide/messages.js';
 
 	let { data, children }: { data: LayoutData; children: any } = $props();
 
@@ -33,7 +35,16 @@
 	<link rel="alternate" hreflang="x-default" href="https://barecourier.vercel.app{basePathname}" />
 </svelte:head>
 
-{@render children()}
+<!-- Skip link for keyboard navigation -->
+<a href="#main-content" class="skip-link">{m.skip_to_content()}</a>
+
+{#if browser}
+	<OfflineIndicator />
+{/if}
+
+<div id="main-content">
+	{@render children()}
+</div>
 
 {#if browser}
 	<ReloadPrompt />

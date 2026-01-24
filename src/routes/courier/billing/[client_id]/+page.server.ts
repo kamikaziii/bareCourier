@@ -97,25 +97,15 @@ export const actions: Actions = {
 
 		const { client_id } = params;
 
-		// Delete existing zones
+		// Use atomic RPC function to replace zones (DELETE + INSERT in single transaction)
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		await (supabase as any).from('pricing_zones').delete().eq('client_id', client_id);
+		const { error: rpcError } = await (supabase as any).rpc('replace_pricing_zones', {
+			p_client_id: client_id,
+			p_zones: zones
+		});
 
-		// Insert new zones
-		if (zones.length > 0) {
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const { error: insertError } = await (supabase as any).from('pricing_zones').insert(
-				zones.map((z) => ({
-					client_id,
-					min_km: z.min_km,
-					max_km: z.max_km,
-					price: z.price
-				}))
-			);
-
-			if (insertError) {
-				return { success: false, error: insertError.message };
-			}
+		if (rpcError) {
+			return { success: false, error: rpcError.message };
 		}
 
 		return { success: true };

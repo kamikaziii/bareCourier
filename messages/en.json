@@ -317,5 +317,62 @@
 	"client_no_pricing_configured": "No pricing configuration has been set yet",
 	"client_estimated_cost": "Estimated Cost",
 	"client_services_this_period": "Services This Period",
-	"client_billing_note": "Note: These are estimated values. The official invoice will be issued by the courier."
+	"client_billing_note": "Note: These are estimated values. The official invoice will be issued by the courier.",
+
+	"address_hint_idle": "Start typing for address suggestions",
+	"address_hint_verified": "Address verified - distance and map available",
+	"address_hint_custom": "Manual address - distance calculation unavailable",
+
+	"nav_insights": "Insights",
+	"nav_more": "More",
+
+	"insights_title": "Insights",
+	"insights_tab_overview": "Overview",
+	"insights_tab_charts": "Charts",
+	"insights_tab_data": "Data",
+
+	"action_cancel_request": "Cancel Request",
+	"confirm_cancel_request": "Cancel this request?",
+	"confirm_cancel_request_desc": "This will cancel your pending service request. The courier will be notified.",
+
+	"filter_all": "All",
+	"filter_search_location": "Search pickup or delivery...",
+	"filter_date_from": "From",
+	"filter_date_to": "To",
+	"filter_showing": "Showing {count} of {total} services",
+	"filter_clear": "Clear filters",
+
+	"export_csv": "Export CSV",
+	"export_filename": "billing",
+
+	"settings_notifications": "Notifications",
+	"settings_notifications_desc": "Configure how you receive notifications",
+	"settings_push_notifications": "Push Notifications",
+	"settings_push_desc": "Receive notifications even when the app is closed",
+	"settings_email_notifications": "Email Notifications",
+	"settings_email_desc": "Receive notifications via email",
+	"push_enabled": "Push notifications enabled",
+	"push_disabled": "Push notifications disabled",
+	"push_permission_denied": "Notification permission was denied. Please enable it in your browser settings.",
+	"push_not_supported": "Push notifications are not supported in this browser",
+	"push_enabling": "Enabling...",
+	"push_disabling": "Disabling...",
+
+	"offline_banner": "You're offline",
+	"offline_pending": "{count} changes pending",
+	"offline_syncing": "Syncing...",
+	"offline_sync_complete": "All changes synced",
+
+	"settings_pricing_mode": "Distance Calculation Mode",
+	"settings_pricing_mode_desc": "How distance is calculated for pricing",
+	"pricing_mode_warehouse": "Always from Warehouse",
+	"pricing_mode_warehouse_desc": "Distance from your base location to pickup, plus pickup to delivery",
+	"pricing_mode_zone": "Zone-Based",
+	"pricing_mode_zone_desc": "Fixed prices per geographic zone, regardless of actual distance",
+
+	"pull_to_refresh": "Pull to refresh",
+	"refreshing": "Refreshing...",
+	"release_to_refresh": "Release to refresh",
+
+	"skip_to_content": "Skip to main content"
 }

@@ -106,3 +106,17 @@
 		@apply bg-background text-foreground;
 	}
 }
+
+/* Accessibility: Focus ring styles */
+@layer utilities {
+	/* Visible focus rings for keyboard navigation */
+	:focus-visible {
+		@apply outline-2 outline-offset-2 outline-ring;
+	}
+
+	/* Skip link - hidden until focused */
+	.skip-link {
+		@apply absolute -top-10 left-4 z-50 bg-primary text-primary-foreground px-4 py-2 rounded-md;
+		@apply focus:top-4 transition-[top];
+	}
+}

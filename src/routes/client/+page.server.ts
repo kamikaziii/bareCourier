@@ -161,5 +161,65 @@ export const actions: Actions = {
 		);
 
 		return { success: true };
+	},
+
+	cancelRequest: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const formData = await request.formData();
+		const serviceId = formData.get('service_id') as string;
+
+		if (!serviceId) {
+			return { success: false, error: 'Service ID required' };
+		}
+
+		// Get the service and verify ownership + status
+		const { data: serviceData } = await supabase
+			.from('services')
+			.select('client_id, request_status')
+			.eq('id', serviceId)
+			.single();
+
+		if (!serviceData) {
+			return { success: false, error: 'Service not found' };
+		}
+
+		const service = serviceData as { client_id: string; request_status: string };
+
+		if (service.client_id !== user.id) {
+			return { success: false, error: 'Unauthorized' };
+		}
+
+		// Only allow cancellation of pending requests
+		if (service.request_status !== 'pending') {
+			return { success: false, error: 'Only pending requests can be cancelled' };
+		}
+
+		// Soft delete by setting deleted_at
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error: updateError } = await (supabase as any)
+			.from('services')
+			.update({
+				deleted_at: new Date().toISOString()
+			})
+			.eq('id', serviceId);
+
+		if (updateError) {
+			return { success: false, error: updateError.message };
+		}
+
+		// Notify courier
+		await notifyCourier(
+			supabase,
+			session,
+			serviceId,
+			'Pedido Cancelado',
+			'O cliente cancelou um pedido de serviço pendente.'
+		);
+
+		return { success: true };
 	}
 };

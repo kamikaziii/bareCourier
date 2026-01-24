@@ -3,9 +3,21 @@
 	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import NotificationBell from '$lib/components/NotificationBell.svelte';
+	import Sidebar from '$lib/components/Sidebar.svelte';
+	import MobileBottomNav from '$lib/components/MobileBottomNav.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref, getLocale, deLocalizeUrl } from '$lib/paraglide/runtime.js';
 	import type { LayoutData } from './$types';
+	import {
+		LayoutDashboard,
+		Package,
+		Inbox,
+		Calendar,
+		Users,
+		Receipt,
+		BarChart3,
+		Settings
+	} from '@lucide/svelte';
 
 	let { data, children }: { data: LayoutData; children: any } = $props();
 
@@ -14,16 +26,32 @@
 		goto(localizeHref('/login'));
 	}
 
-	const navItems = $derived([
-		{ href: '/courier', label: m.nav_dashboard() },
-		{ href: '/courier/services', label: m.nav_services() },
-		{ href: '/courier/requests', label: m.nav_requests() },
-		{ href: '/courier/calendar', label: m.nav_calendar() },
-		{ href: '/courier/clients', label: m.nav_clients() },
-		{ href: '/courier/billing', label: m.nav_billing() },
-		{ href: '/courier/analytics', label: m.nav_analytics() },
-		{ href: '/courier/reports', label: m.nav_reports() },
-		{ href: '/courier/settings', label: m.nav_settings() }
+	// All navigation items with icons (for sidebar)
+	const allNavItems = $derived([
+		{ href: '/courier', label: m.nav_dashboard(), icon: LayoutDashboard },
+		{ href: '/courier/services', label: m.nav_services(), icon: Package },
+		{ href: '/courier/requests', label: m.nav_requests(), icon: Inbox },
+		{ href: '/courier/calendar', label: m.nav_calendar(), icon: Calendar },
+		{ href: '/courier/clients', label: m.nav_clients(), icon: Users },
+		{ href: '/courier/billing', label: m.nav_billing(), icon: Receipt },
+		{ href: '/courier/insights', label: m.nav_insights(), icon: BarChart3 },
+		{ href: '/courier/settings', label: m.nav_settings(), icon: Settings }
+	]);
+
+	// Bottom nav items (5 items shown directly)
+	const bottomNavItems = $derived([
+		{ href: '/courier', label: m.nav_dashboard(), icon: LayoutDashboard },
+		{ href: '/courier/services', label: m.nav_services(), icon: Package },
+		{ href: '/courier/requests', label: m.nav_requests(), icon: Inbox },
+		{ href: '/courier/calendar', label: m.nav_calendar(), icon: Calendar }
+	]);
+
+	// Items that go in the "More" drawer
+	const moreItems = $derived([
+		{ href: '/courier/clients', label: m.nav_clients(), icon: Users },
+		{ href: '/courier/billing', label: m.nav_billing(), icon: Receipt },
+		{ href: '/courier/insights', label: m.nav_insights(), icon: BarChart3 },
+		{ href: '/courier/settings', label: m.nav_settings(), icon: Settings }
 	]);
 
 	const locales = [
@@ -37,58 +65,50 @@
 	const currentPath = $derived(deLocalizeUrl(page.url).pathname);
 </script>
 
-<div class="min-h-screen bg-background">
-	<!-- Header -->
-	<header class="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
-		<div class="container flex h-14 items-center justify-between px-4">
-			<div class="flex items-center gap-4">
-				<a href={localizeHref('/courier')} class="font-semibold">{m.app_name()}</a>
-			</div>
-			<div class="flex items-center gap-2">
-				<!-- Language Switcher -->
-				<div class="flex gap-1">
-					{#each locales as locale (locale.code)}
-						<a
-							href={localizeHref(currentPath, { locale: locale.code })}
-							data-sveltekit-reload
-						>
-							<Button
-								variant={currentLocale === locale.code ? 'default' : 'ghost'}
-								size="sm"
-								class="px-2"
-							>
-								{locale.label}
-							</Button>
-						</a>
-					{/each}
+<div class="flex min-h-screen bg-background">
+	<!-- Desktop Sidebar -->
+	<Sidebar items={allNavItems} {currentPath} />
+
+	<!-- Main content area -->
+	<div class="flex flex-1 flex-col">
+		<!-- Header -->
+		<header class="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
+			<div class="flex h-14 items-center justify-between px-4">
+				<div class="flex items-center gap-4">
+					<a href={localizeHref('/courier')} class="font-semibold">{m.app_name()}</a>
 				</div>
-				<NotificationBell supabase={data.supabase} userId={data.profile.id} />
-				<span class="text-sm text-muted-foreground">{data.profile.name}</span>
-				<Button variant="ghost" size="sm" onclick={handleLogout}>
-					{m.auth_logout()}
-				</Button>
+				<div class="flex items-center gap-2">
+					<!-- Language Switcher -->
+					<div class="flex gap-1">
+						{#each locales as locale (locale.code)}
+							<a href={localizeHref(currentPath, { locale: locale.code })} data-sveltekit-reload>
+								<Button
+									variant={currentLocale === locale.code ? 'default' : 'ghost'}
+									size="sm"
+									class="px-2"
+								>
+									{locale.label}
+								</Button>
+							</a>
+						{/each}
+					</div>
+					<NotificationBell supabase={data.supabase} userId={data.profile.id} />
+					<span class="hidden text-sm text-muted-foreground sm:inline">{data.profile.name}</span>
+					<Button variant="ghost" size="sm" onclick={handleLogout}>
+						{m.auth_logout()}
+					</Button>
+				</div>
 			</div>
-		</div>
-	</header>
+		</header>
 
-	<!-- Navigation -->
-	<nav class="border-b bg-muted/40">
-		<div class="container flex gap-1 overflow-x-auto px-4 py-2">
-			{#each navItems as item (item.href)}
-				<a
-					href={localizeHref(item.href)}
-					class="rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground {currentPath === item.href
-						? 'bg-accent text-accent-foreground'
-						: 'text-muted-foreground'}"
-				>
-					{item.label}
-				</a>
-			{/each}
-		</div>
-	</nav>
+		<!-- Main content -->
+		<main class="flex-1 px-4 py-6 pb-24 md:pb-6">
+			<div class="mx-auto max-w-6xl">
+				{@render children()}
+			</div>
+		</main>
+	</div>
 
-	<!-- Main content -->
-	<main class="container px-4 py-6">
-		{@render children()}
-	</main>
+	<!-- Mobile Bottom Navigation -->
+	<MobileBottomNav mainItems={bottomNavItems} {moreItems} {currentPath} />
 </div>
