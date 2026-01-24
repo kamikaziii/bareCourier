@@ -10,6 +10,7 @@
 	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
+	import { formatDateWithWeekday, formatDate } from '$lib/utils.js';
 	import type { PageData } from './$types';
 	import type { Service, Profile, TimeSlot } from '$lib/database.types.js';
 
@@ -32,13 +33,9 @@
 	let suggestedTimeSlot = $state<TimeSlot | null>(null);
 	let suggestedTime = $state<string | null>(null);
 
-	function formatDate(dateStr: string | null): string {
+	function formatRequestDate(dateStr: string | null): string {
 		if (!dateStr) return '-';
-		return new Date(dateStr).toLocaleDateString('pt-PT', {
-			weekday: 'short',
-			day: 'numeric',
-			month: 'short'
-		});
+		return formatDateWithWeekday(dateStr);
 	}
 
 	function formatTimeSlot(slot: string | null): string {
@@ -231,7 +228,7 @@
 									<div class="flex items-center gap-2">
 										<Badge variant="outline">{m.requests_requested_schedule()}</Badge>
 										<span class="text-sm">
-											{formatDate(service.requested_date)}
+											{formatRequestDate(service.requested_date)}
 											{#if service.requested_time_slot}
 												- {formatTimeSlot(service.requested_time_slot)}
 											{/if}
@@ -249,7 +246,7 @@
 
 								<!-- Created date -->
 								<p class="text-xs text-muted-foreground">
-									{m.created_at({ date: new Date(service.created_at).toLocaleDateString('pt-PT') })}
+									{m.created_at({ date: formatDate(service.created_at) })}
 								</p>
 							</div>
 
@@ -290,7 +287,7 @@
 				<p>Para: {selectedService.delivery_location}</p>
 				{#if selectedService.requested_date || selectedService.requested_time_slot}
 					<p>
-						{formatDate(selectedService.requested_date)}
+						{formatRequestDate(selectedService.requested_date)}
 						{#if selectedService.requested_time_slot}
 							- {formatTimeSlot(selectedService.requested_time_slot)}
 						{/if}
@@ -370,7 +367,7 @@
 			<div class="rounded-md bg-muted p-3 text-sm">
 				<p class="font-medium">{m.requests_requested_schedule()}:</p>
 				<p>
-					{formatDate(selectedService?.requested_date ?? null)}
+					{formatRequestDate(selectedService?.requested_date ?? null)}
 					{#if selectedService?.requested_time_slot}
 						- {formatTimeSlot(selectedService?.requested_time_slot ?? null)}
 					{/if}

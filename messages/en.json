@@ -381,5 +381,23 @@
 	"refreshing": "Refreshing...",
 	"release_to_refresh": "Release to refresh",
 
-	"skip_to_content": "Skip to main content"
+	"skip_to_content": "Skip to main content",
+
+	"settings_pricing_preferences": "Pricing Preferences",
+	"settings_pricing_preferences_desc": "Configure automatic pricing behavior",
+	"settings_auto_calculate": "Auto-calculate price",
+	"settings_auto_calculate_desc": "Automatically calculate price when services are created",
+	"settings_default_urgency": "Default urgency fee",
+	"settings_default_urgency_desc": "Pre-select this urgency fee for new services",
+	"settings_minimum_charge": "Minimum charge (€)",
+	"settings_minimum_charge_desc": "Minimum price for any service, regardless of distance",
+	"settings_round_distance": "Round distance",
+	"settings_round_distance_desc": "Round distance to nearest kilometer for pricing",
+	"settings_warehouse_select_hint": "Select from suggestions for warehouse distance calculation",
+	"address_verified": "Address verified with coordinates",
+	"form_urgency": "Urgency",
+	"distance_warehouse_to_pickup": "Warehouse → Pickup",
+	"distance_pickup_to_delivery": "Pickup → Delivery",
+	"distance_total": "Total distance",
+	"none": "None"
 }

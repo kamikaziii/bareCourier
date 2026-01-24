@@ -28,6 +28,14 @@ export type Database = {
 					email_notifications_enabled: boolean;
 					// Pricing mode (Phase 5B)
 					pricing_mode: 'warehouse' | 'zone' | null;
+					// Warehouse coordinates (Phase 6)
+					warehouse_lat: number | null;
+					warehouse_lng: number | null;
+					// Pricing settings (Phase 6)
+					auto_calculate_price: boolean | null;
+					default_urgency_fee_id: string | null;
+					minimum_charge: number | null;
+					round_distance: boolean | null;
 				};
 				Insert: {
 					id: string;
@@ -40,6 +48,12 @@ export type Database = {
 					push_notifications_enabled?: boolean;
 					email_notifications_enabled?: boolean;
 					pricing_mode?: 'warehouse' | 'zone' | null;
+					warehouse_lat?: number | null;
+					warehouse_lng?: number | null;
+					auto_calculate_price?: boolean | null;
+					default_urgency_fee_id?: string | null;
+					minimum_charge?: number | null;
+					round_distance?: boolean | null;
 				};
 				Update: {
 					id?: string;
@@ -52,6 +66,12 @@ export type Database = {
 					push_notifications_enabled?: boolean;
 					email_notifications_enabled?: boolean;
 					pricing_mode?: 'warehouse' | 'zone' | null;
+					warehouse_lat?: number | null;
+					warehouse_lng?: number | null;
+					auto_calculate_price?: boolean | null;
+					default_urgency_fee_id?: string | null;
+					minimum_charge?: number | null;
+					round_distance?: boolean | null;
 				};
 			};
 			services: {

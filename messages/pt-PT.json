@@ -381,5 +381,23 @@
 	"refreshing": "A atualizar...",
 	"release_to_refresh": "Solte para atualizar",
 
-	"skip_to_content": "Ir para conteúdo principal"
+	"skip_to_content": "Ir para conteúdo principal",
+
+	"settings_pricing_preferences": "Preferências de Preços",
+	"settings_pricing_preferences_desc": "Configure o comportamento automático de preços",
+	"settings_auto_calculate": "Calcular preço automaticamente",
+	"settings_auto_calculate_desc": "Calcular preço automaticamente quando os serviços são criados",
+	"settings_default_urgency": "Taxa de urgência padrão",
+	"settings_default_urgency_desc": "Pré-selecionar esta taxa de urgência para novos serviços",
+	"settings_minimum_charge": "Taxa mínima (€)",
+	"settings_minimum_charge_desc": "Preço mínimo para qualquer serviço, independentemente da distância",
+	"settings_round_distance": "Arredondar distância",
+	"settings_round_distance_desc": "Arredondar distância para o quilómetro mais próximo para preços",
+	"settings_warehouse_select_hint": "Selecione das sugestões para cálculo de distância do armazém",
+	"address_verified": "Endereço verificado com coordenadas",
+	"form_urgency": "Urgência",
+	"distance_warehouse_to_pickup": "Armazém → Levantamento",
+	"distance_pickup_to_delivery": "Levantamento → Entrega",
+	"distance_total": "Distância total",
+	"none": "Nenhuma"
 }

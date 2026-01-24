@@ -8,6 +8,7 @@
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref, getLocale, deLocalizeUrl } from '$lib/paraglide/runtime.js';
 	import type { LayoutData } from './$types';
+	import type { Snippet } from 'svelte';
 	import {
 		LayoutDashboard,
 		Package,
@@ -19,7 +20,7 @@
 		Settings
 	} from '@lucide/svelte';
 
-	let { data, children }: { data: LayoutData; children: any } = $props();
+	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
 	async function handleLogout() {
 		await data.supabase.auth.signOut();

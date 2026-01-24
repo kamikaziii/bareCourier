@@ -9,8 +9,8 @@
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import type { PageData, ActionData } from './$types';
-	import { Textarea } from '$lib/components/ui/textarea/index.js';
-	import { Settings, User, Zap, Plus, Trash2, Power, Bell, MapPin, Warehouse } from '@lucide/svelte';
+	import AddressInput from '$lib/components/AddressInput.svelte';
+	import { Settings, User, Zap, Plus, Trash2, Power, Bell, MapPin, Warehouse, Calculator } from '@lucide/svelte';
 	import {
 		isPushSupported,
 		subscribeToPush,
@@ -40,6 +40,20 @@
 
 	// Pricing mode state
 	let pricingMode = $state<'warehouse' | 'zone'>(data.profile.pricing_mode ?? 'warehouse');
+
+	// Warehouse address state
+	let warehouseAddress = $state(data.profile.default_pickup_location || '');
+	let warehouseCoords = $state<[number, number] | null>(
+		data.profile.warehouse_lat && data.profile.warehouse_lng
+			? [data.profile.warehouse_lng, data.profile.warehouse_lat]
+			: null
+	);
+
+	// Pricing preferences state
+	let autoCalculatePrice = $state(data.profile.auto_calculate_price ?? true);
+	let defaultUrgencyFeeId = $state<string | null>(data.profile.default_urgency_fee_id || null);
+	let minimumCharge = $state(data.profile.minimum_charge ?? 0);
+	let roundDistance = $state(data.profile.round_distance ?? false);
 
 	// Check push subscription status on mount
 	$effect(() => {
@@ -156,19 +170,28 @@
 			<Card.Description>{m.settings_courier_default_location_desc()}</Card.Description>
 		</Card.Header>
 		<Card.Content>
-			<form method="POST" action="?/updateProfile" use:enhance class="space-y-4">
-				<input type="hidden" name="name" value={data.profile.name} />
-				<input type="hidden" name="phone" value={data.profile.phone || ''} />
+			<form method="POST" action="?/updateWarehouseLocation" use:enhance class="space-y-4">
 				<div class="space-y-2">
 					<Label for="default_pickup_location">{m.settings_warehouse_address()}</Label>
-					<Textarea
+					<AddressInput
 						id="default_pickup_location"
-						name="default_pickup_location"
-						value={data.profile.default_pickup_location || ''}
+						bind:value={warehouseAddress}
+						onSelect={(address, coords) => {
+							warehouseAddress = address;
+							warehouseCoords = coords;
+						}}
 						placeholder={m.form_warehouse_placeholder()}
-						rows={2}
 					/>
-					<p class="text-xs text-muted-foreground">{m.settings_warehouse_hint()}</p>
+					{#if warehouseCoords}
+						<p class="text-xs text-green-600">{m.address_verified()}</p>
+					{:else if warehouseAddress}
+						<p class="text-xs text-orange-600">{m.settings_warehouse_select_hint()}</p>
+					{:else}
+						<p class="text-xs text-muted-foreground">{m.settings_warehouse_hint()}</p>
+					{/if}
+					<input type="hidden" name="default_pickup_location" value={warehouseAddress} />
+					<input type="hidden" name="warehouse_lat" value={warehouseCoords?.[1] ?? ''} />
+					<input type="hidden" name="warehouse_lng" value={warehouseCoords?.[0] ?? ''} />
 				</div>
 				<Button type="submit">{m.action_save()}</Button>
 			</form>
@@ -305,6 +328,85 @@
 						</div>
 					</label>
 				</div>
+				<Button type="submit">{m.action_save()}</Button>
+			</form>
+		</Card.Content>
+	</Card.Root>
+
+	<!-- Pricing Preferences -->
+	<Card.Root>
+		<Card.Header>
+			<Card.Title class="flex items-center gap-2">
+				<Calculator class="size-5" />
+				{m.settings_pricing_preferences()}
+			</Card.Title>
+			<Card.Description>{m.settings_pricing_preferences_desc()}</Card.Description>
+		</Card.Header>
+		<Card.Content>
+			<form method="POST" action="?/updatePricingPreferences" use:enhance class="space-y-6">
+				<!-- Auto-calculate toggle -->
+				<div class="flex items-center justify-between">
+					<div class="space-y-0.5">
+						<Label>{m.settings_auto_calculate()}</Label>
+						<p class="text-sm text-muted-foreground">{m.settings_auto_calculate_desc()}</p>
+					</div>
+					<input type="hidden" name="auto_calculate_price" value={autoCalculatePrice.toString()} />
+					<Switch
+						checked={autoCalculatePrice}
+						onCheckedChange={(checked) => {
+							autoCalculatePrice = checked;
+						}}
+					/>
+				</div>
+
+				<Separator />
+
+				<!-- Default urgency fee -->
+				<div class="space-y-2">
+					<Label for="default_urgency_fee_id">{m.settings_default_urgency()}</Label>
+					<select
+						id="default_urgency_fee_id"
+						name="default_urgency_fee_id"
+						bind:value={defaultUrgencyFeeId}
+						class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+					>
+						<option value="">{m.none()}</option>
+						{#each data.urgencyFees.filter((f) => f.active) as fee (fee.id)}
+							<option value={fee.id}>{fee.name}</option>
+						{/each}
+					</select>
+					<p class="text-xs text-muted-foreground">{m.settings_default_urgency_desc()}</p>
+				</div>
+
+				<!-- Minimum charge -->
+				<div class="space-y-2">
+					<Label for="minimum_charge">{m.settings_minimum_charge()}</Label>
+					<Input
+						id="minimum_charge"
+						name="minimum_charge"
+						type="number"
+						min="0"
+						step="0.01"
+						bind:value={minimumCharge}
+					/>
+					<p class="text-xs text-muted-foreground">{m.settings_minimum_charge_desc()}</p>
+				</div>
+
+				<!-- Round distance -->
+				<div class="flex items-center justify-between">
+					<div class="space-y-0.5">
+						<Label>{m.settings_round_distance()}</Label>
+						<p class="text-sm text-muted-foreground">{m.settings_round_distance_desc()}</p>
+					</div>
+					<input type="hidden" name="round_distance" value={roundDistance.toString()} />
+					<Switch
+						checked={roundDistance}
+						onCheckedChange={(checked) => {
+							roundDistance = checked;
+						}}
+					/>
+				</div>
+
 				<Button type="submit">{m.action_save()}</Button>
 			</form>
 		</Card.Content>

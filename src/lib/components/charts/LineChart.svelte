@@ -1,7 +1,30 @@
 <script lang="ts">
-	import { Chart, registerables, type ChartData, type ChartOptions } from 'chart.js';
+	import {
+		Chart,
+		LineController,
+		LineElement,
+		PointElement,
+		CategoryScale,
+		LinearScale,
+		Title,
+		Tooltip,
+		Legend,
+		Filler,
+		type ChartData,
+		type ChartOptions
+	} from 'chart.js';
 
-	Chart.register(...registerables);
+	Chart.register(
+		LineController,
+		LineElement,
+		PointElement,
+		CategoryScale,
+		LinearScale,
+		Title,
+		Tooltip,
+		Legend,
+		Filler
+	);
 
 	let {
 		data,

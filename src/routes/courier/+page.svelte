@@ -5,6 +5,7 @@
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData } from './$types';
+	import type { Service } from '$lib/database.types';
 	import { Check, RotateCcw, Loader2 } from '@lucide/svelte';
 	import { cacheServices, applyOptimisticUpdate, rollbackOptimisticUpdate } from '$lib/services/offline-store';
 	import SkeletonCard from '$lib/components/SkeletonCard.svelte';
@@ -13,8 +14,11 @@
 
 	let { data }: { data: PageData } = $props();
 
+	// Service with joined profile data
+	type ServiceWithProfile = Service & { profiles: { name: string } | null };
+
 	let filter = $state<'today' | 'tomorrow' | 'all'>('today');
-	let services = $state<any[]>([]);
+	let services = $state<ServiceWithProfile[]>([]);
 	let loading = $state(true);
 	// Track which services are currently syncing
 	let syncingIds = $state<Set<string>>(new Set());
@@ -31,14 +35,29 @@
 		let query = data.supabase
 			.from('services')
 			.select('*, profiles!client_id(name)')
-			.is('deleted_at', null)
-			.order('created_at', { ascending: false });
+			.is('deleted_at', null);
+
+		// Format dates as YYYY-MM-DD for scheduled_date comparison
+		const todayStr = today.toISOString().split('T')[0];
+		const tomorrowStr = tomorrow.toISOString().split('T')[0];
+		const dayAfterStr = dayAfter.toISOString().split('T')[0];
 
 		if (filter === 'today') {
-			query = query.gte('created_at', today.toISOString()).lt('created_at', tomorrow.toISOString());
+			// Services scheduled for today OR unscheduled services created today
+			query = query.or(
+				`scheduled_date.eq.${todayStr},and(scheduled_date.is.null,created_at.gte.${today.toISOString()},created_at.lt.${tomorrow.toISOString()})`
+			);
 		} else if (filter === 'tomorrow') {
-			query = query.gte('created_at', tomorrow.toISOString()).lt('created_at', dayAfter.toISOString());
+			// Services scheduled for tomorrow OR unscheduled services created tomorrow
+			query = query.or(
+				`scheduled_date.eq.${tomorrowStr},and(scheduled_date.is.null,created_at.gte.${tomorrow.toISOString()},created_at.lt.${dayAfter.toISOString()})`
+			);
 		}
+
+		// Order by scheduled_date first (nulls last), then by created_at descending
+		query = query
+			.order('scheduled_date', { ascending: true, nullsFirst: false })
+			.order('created_at', { ascending: false });
 
 		const { data: result } = await query;
 		services = result || [];
@@ -50,12 +69,12 @@
 		}
 	}
 
-	async function toggleStatus(service: any, e: Event) {
+	async function toggleStatus(service: ServiceWithProfile, e: Event) {
 		e.preventDefault();
 		e.stopPropagation();
 
 		const newStatus = service.status === 'pending' ? 'delivered' : 'pending';
-		const updates: any = { status: newStatus };
+		const updates: Partial<Service> = { status: newStatus };
 
 		if (newStatus === 'delivered') {
 			updates.delivered_at = new Date().toISOString();
