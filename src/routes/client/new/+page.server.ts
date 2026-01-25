@@ -15,6 +15,18 @@ export const actions: Actions = {
 			return fail(401, { error: 'Not authenticated' });
 		}
 
+		// Verify user has client role (defense-in-depth)
+		const { data: profile } = await supabase
+			.from('profiles')
+			.select('role')
+			.eq('id', user.id)
+			.single();
+
+		const userProfile = profile as { role: string } | null;
+		if (userProfile?.role !== 'client') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
 		const formData = await request.formData();
 
 		// Extract form data

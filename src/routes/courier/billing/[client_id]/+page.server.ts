@@ -122,7 +122,7 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
-	recalculateMissing: async ({ params, locals: { supabase, safeGetSession } }) => {
+	recalculateMissing: async ({ params, request, locals: { supabase, safeGetSession } }) => {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {
 			return { success: false, error: 'Not authenticated' };
@@ -142,48 +142,69 @@ export const actions: Actions = {
 
 		const { client_id } = params;
 
-		// Get services with missing prices
-		const { data: services } = await supabase
+		// Get date range from form
+		const formData = await request.formData();
+		const startDate = formData.get('start_date') as string;
+		const endDate = formData.get('end_date') as string;
+
+		// Get services with missing prices within date range
+		let query = supabase
 			.from('services')
 			.select('*')
 			.eq('client_id', client_id)
 			.is('deleted_at', null)
 			.is('calculated_price', null);
 
+		if (startDate) {
+			query = query.gte('created_at', startDate);
+		}
+		if (endDate) {
+			// Add one day to include the end date fully
+			const endDatePlusOne = new Date(endDate);
+			endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
+			query = query.lt('created_at', endDatePlusOne.toISOString().split('T')[0]);
+		}
+
+		const { data: services } = await query;
+
 		if (!services || services.length === 0) {
 			return { success: true, recalculated: 0 };
 		}
 
 		const courierSettings = await getCourierPricingSettings(supabase);
-		let recalculated = 0;
 
-		for (const service of services as Service[]) {
-			if (service.distance_km === null) continue;
+		// Process all services in parallel to avoid N+1 queries
+		const updatePromises = (services as Service[])
+			.filter((service) => service.distance_km !== null)
+			.map(async (service) => {
+				const priceResult = await calculateServicePrice(supabase, {
+					clientId: client_id,
+					distanceKm: service.distance_km!,
+					urgencyFeeId: service.urgency_fee_id,
+					minimumCharge: courierSettings.minimumCharge
+				});
 
-			const priceResult = await calculateServicePrice(supabase, {
-				clientId: client_id,
-				distanceKm: service.distance_km,
-				urgencyFeeId: service.urgency_fee_id,
-				minimumCharge: courierSettings.minimumCharge
+				if (priceResult.success) {
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any
+					await (supabase as any)
+						.from('services')
+						.update({
+							calculated_price: priceResult.price,
+							price_breakdown: priceResult.breakdown
+						})
+						.eq('id', service.id);
+					return true;
+				}
+				return false;
 			});
 
-			if (priceResult.success) {
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				await (supabase as any)
-					.from('services')
-					.update({
-						calculated_price: priceResult.price,
-						price_breakdown: priceResult.breakdown
-					})
-					.eq('id', service.id);
-				recalculated++;
-			}
-		}
+		const results = await Promise.all(updatePromises);
+		const recalculated = results.filter(Boolean).length;
 
 		return { success: true, recalculated };
 	},
 
-	recalculateAll: async ({ params, locals: { supabase, safeGetSession } }) => {
+	recalculateAll: async ({ params, request, locals: { supabase, safeGetSession } }) => {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {
 			return { success: false, error: 'Not authenticated' };
@@ -203,43 +224,64 @@ export const actions: Actions = {
 
 		const { client_id } = params;
 
-		// Get all services (with distance)
-		const { data: services } = await supabase
+		// Get date range from form
+		const formData = await request.formData();
+		const startDate = formData.get('start_date') as string;
+		const endDate = formData.get('end_date') as string;
+
+		// Get all services (with distance) within date range
+		let query = supabase
 			.from('services')
 			.select('*')
 			.eq('client_id', client_id)
 			.is('deleted_at', null)
 			.not('distance_km', 'is', null);
 
+		if (startDate) {
+			query = query.gte('created_at', startDate);
+		}
+		if (endDate) {
+			// Add one day to include the end date fully
+			const endDatePlusOne = new Date(endDate);
+			endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
+			query = query.lt('created_at', endDatePlusOne.toISOString().split('T')[0]);
+		}
+
+		const { data: services } = await query;
+
 		if (!services || services.length === 0) {
 			return { success: true, recalculated: 0 };
 		}
 
 		const courierSettings = await getCourierPricingSettings(supabase);
-		let recalculated = 0;
 
-		for (const service of services as Service[]) {
-			if (service.distance_km === null) continue;
+		// Process all services in parallel to avoid N+1 queries
+		const updatePromises = (services as Service[])
+			.filter((service) => service.distance_km !== null)
+			.map(async (service) => {
+				const priceResult = await calculateServicePrice(supabase, {
+					clientId: client_id,
+					distanceKm: service.distance_km!,
+					urgencyFeeId: service.urgency_fee_id,
+					minimumCharge: courierSettings.minimumCharge
+				});
 
-			const priceResult = await calculateServicePrice(supabase, {
-				clientId: client_id,
-				distanceKm: service.distance_km,
-				urgencyFeeId: service.urgency_fee_id,
-				minimumCharge: courierSettings.minimumCharge
+				if (priceResult.success) {
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any
+					await (supabase as any)
+						.from('services')
+						.update({
+							calculated_price: priceResult.price,
+							price_breakdown: priceResult.breakdown
+						})
+						.eq('id', service.id);
+					return true;
+				}
+				return false;
 			});
 
-			if (priceResult.success) {
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				await (supabase as any)
-					.from('services')
-					.update({
-						calculated_price: priceResult.price,
-						price_breakdown: priceResult.breakdown
-					})
-					.eq('id', service.id);
-				recalculated++;
-			}
-		}
+		const results = await Promise.all(updatePromises);
+		const recalculated = results.filter(Boolean).length;
 
 		return { success: true, recalculated };
 	}

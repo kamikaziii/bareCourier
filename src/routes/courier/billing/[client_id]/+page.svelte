@@ -406,6 +406,8 @@
 			<div class="flex flex-wrap gap-2">
 				{#if missingPriceCount > 0}
 					<form method="POST" action="?/recalculateMissing" use:enhance={handleRecalculate}>
+						<input type="hidden" name="start_date" value={startDate} />
+						<input type="hidden" name="end_date" value={endDate} />
 						<Button type="submit" variant="outline" size="sm" disabled={recalculating}>
 							<Calculator class="mr-2 size-4" />
 							{m.billing_recalculate_missing()} ({missingPriceCount})
@@ -413,6 +415,8 @@
 					</form>
 				{/if}
 				<form method="POST" action="?/recalculateAll" use:enhance={handleRecalculate}>
+					<input type="hidden" name="start_date" value={startDate} />
+					<input type="hidden" name="end_date" value={endDate} />
 					<Button type="submit" variant="outline" size="sm" disabled={recalculating || services.length === 0}>
 						<Calculator class="mr-2 size-4" />
 						{m.billing_recalculate_all()}

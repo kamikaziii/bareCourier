@@ -1,4 +1,4 @@
-import { error, redirect } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import type { Service, ServiceStatusHistory, Profile } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
@@ -116,7 +116,7 @@ export const actions: Actions = {
 	overridePrice: async ({ params, request, locals: { supabase, safeGetSession } }) => {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {
-			return { success: false, error: 'Not authenticated' };
+			return fail(401, { error: 'Not authenticated' });
 		}
 
 		// Verify courier role
@@ -128,7 +128,7 @@ export const actions: Actions = {
 
 		const userProfile = profile as { role: string } | null;
 		if (userProfile?.role !== 'courier') {
-			return { success: false, error: 'Unauthorized' };
+			return fail(403, { error: 'Unauthorized' });
 		}
 
 		const formData = await request.formData();
@@ -136,7 +136,7 @@ export const actions: Actions = {
 		const override_reason = (formData.get('override_reason') as string) || null;
 
 		if (isNaN(override_price) || override_price < 0) {
-			return { success: false, error: 'Invalid price' };
+			return fail(400, { error: 'Invalid price' });
 		}
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any

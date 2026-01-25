@@ -45,6 +45,7 @@
 	let notes = $state('');
 	let formLoading = $state(false);
 	let formError = $state('');
+	let formWarning = $state('');
 
 	// Coordinates and distance
 	let pickupCoords = $state<[number, number] | null>(null);
@@ -94,11 +95,16 @@
 	function handleFormSubmit() {
 		formLoading = true;
 		formError = '';
+		formWarning = '';
 		return async ({ result }: { result: { type: string; data?: { error?: string; success?: boolean; warning?: string } } }) => {
 			if (result.type === 'failure' && result.data?.error) {
 				formError = result.data.error;
 				formLoading = false;
 			} else if (result.type === 'success' && result.data?.success) {
+				// Show warning if present (e.g., no pricing configured)
+				if (result.data.warning) {
+					formWarning = result.data.warning;
+				}
 				// Reset form
 				showForm = false;
 				selectedClientId = '';
@@ -414,6 +420,22 @@
 			{/each}
 		</select>
 	</div>
+
+	<!-- Warning message (e.g., no pricing configured) -->
+	{#if formWarning}
+		<div class="rounded-md bg-amber-500/10 p-3 flex items-center justify-between text-amber-600">
+			<span class="text-sm">
+				{#if formWarning === 'service_created_no_pricing'}
+					{m.service_created_no_pricing()}
+				{:else}
+					{formWarning}
+				{/if}
+			</span>
+			<button type="button" class="text-amber-600 hover:text-amber-800" onclick={() => (formWarning = '')}>
+				✕
+			</button>
+		</div>
+	{/if}
 
 	<!-- Services List -->
 	<div class="space-y-3">
