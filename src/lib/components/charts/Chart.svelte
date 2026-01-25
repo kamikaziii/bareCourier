@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import {
 		Chart,
 		// Controllers
@@ -55,16 +56,22 @@
 	let canvas: HTMLCanvasElement | null = $state(null);
 	let chart: Chart | null = $state(null);
 
+	// Create chart when canvas is available or type changes
+	// Use untrack for data/options so changes don't trigger chart recreation
 	$effect(() => {
 		if (!canvas) return;
 
+		// Read data and options without tracking them as dependencies
+		const initialData = untrack(() => data);
+		const initialOptions = untrack(() => options);
+
 		chart = new Chart(canvas, {
 			type,
-			data,
+			data: initialData,
 			options: {
 				responsive: true,
 				maintainAspectRatio: false,
-				...options
+				...initialOptions
 			}
 		});
 
@@ -73,10 +80,22 @@
 		};
 	});
 
-	// Update chart data when it changes
+	// Update chart data efficiently when it changes (without recreating chart)
 	$effect(() => {
 		if (chart && data) {
 			chart.data = data;
+			chart.update();
+		}
+	});
+
+	// Update chart options when they change
+	$effect(() => {
+		if (chart && options) {
+			chart.options = {
+				responsive: true,
+				maintainAspectRatio: false,
+				...options
+			};
 			chart.update();
 		}
 	});
