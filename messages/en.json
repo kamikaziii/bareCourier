@@ -197,6 +197,7 @@
 	"scheduling_info": "Scheduling",
 
 	"calendar_title": "Calendar",
+	"calendar_today": "Today",
 	"calendar_no_services": "No services on this day",
 	"calendar_services_count": "{count} services",
 	"calendar_view_day": "View day",

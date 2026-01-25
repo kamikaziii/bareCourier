@@ -163,6 +163,7 @@
 
 	const pendingCount = $derived(services.filter((s) => s.status === 'pending').length);
 	const deliveredCount = $derived(services.filter((s) => s.status === 'delivered').length);
+	const sortedServices = $derived(sortByUrgency(services));
 
 	function getStatusLabel(status: string): string {
 		return status === 'pending' ? m.status_pending() : m.status_delivered();
@@ -242,7 +243,7 @@
 				</Card.Content>
 			</Card.Root>
 		{:else}
-			{#each sortByUrgency(services) as service (service.id)}
+			{#each sortedServices as service (service.id)}
 				<a href={localizeHref(`/courier/services/${service.id}`)} class="block group">
 					<Card.Root class="overflow-hidden transition-colors group-hover:bg-muted/50">
 						<Card.Content class="flex items-start gap-4 p-4">

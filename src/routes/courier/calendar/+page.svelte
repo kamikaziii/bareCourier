@@ -4,6 +4,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
+	import UrgencyBadge from '$lib/components/UrgencyBadge.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref, getLocale } from '$lib/paraglide/runtime.js';
 	import { formatMonthYear, formatDateFull } from '$lib/utils.js';
@@ -179,7 +180,7 @@
 					<path d="m15 18-6-6 6-6" />
 				</svg>
 			</Button>
-			<Button variant="outline" size="sm" onclick={goToToday}>Hoje</Button>
+			<Button variant="outline" size="sm" onclick={goToToday}>{m.calendar_today()}</Button>
 			<Button variant="outline" size="sm" onclick={goToNextMonth}>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
@@ -315,6 +316,7 @@
 											>
 												{service.status === 'delivered' ? m.status_delivered() : m.status_pending()}
 											</Badge>
+											<UrgencyBadge {service} size="sm" />
 										</div>
 										<p class="text-xs text-muted-foreground truncate">
 											{service.pickup_location} → {service.delivery_location}

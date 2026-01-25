@@ -38,25 +38,25 @@
 		},
 		approaching: {
 			show: true,
-			label: m.urgency_approaching?.() ?? 'Due Soon',
+			label: m.urgency_approaching(),
 			class: 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100',
 			icon: Clock
 		},
 		urgent: {
 			show: true,
-			label: m.urgency_urgent?.() ?? 'Due Soon',
+			label: m.urgency_urgent(),
 			class: 'bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-100',
 			icon: Clock
 		},
 		past_due: {
 			show: true,
-			label: m.urgency_past_due?.() ?? 'Past Due',
+			label: m.urgency_past_due(),
 			class: 'bg-red-100 text-red-800 border-red-200 hover:bg-red-100',
 			icon: AlertCircle
 		},
 		critical: {
 			show: true,
-			label: m.urgency_critical?.() ?? 'Critical',
+			label: m.urgency_critical(),
 			class: 'bg-red-200 text-red-900 border-red-300 hover:bg-red-200',
 			icon: AlertTriangle
 		}

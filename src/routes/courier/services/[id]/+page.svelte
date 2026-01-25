@@ -8,6 +8,7 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import RouteMap from '$lib/components/RouteMap.svelte';
+	import UrgencyBadge from '$lib/components/UrgencyBadge.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData } from './$types';
@@ -168,6 +169,7 @@
 				>
 					{service.status === 'pending' ? m.status_pending() : m.status_delivered()}
 				</Badge>
+				<UrgencyBadge {service} />
 				<span class="text-sm text-muted-foreground">
 					{m.created_at({ date: formatDate(service.created_at) })}
 				</span>
