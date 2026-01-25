@@ -399,5 +399,19 @@
 	"distance_warehouse_to_pickup": "Warehouse → Pickup",
 	"distance_pickup_to_delivery": "Pickup → Delivery",
 	"distance_total": "Total distance",
-	"none": "None"
+	"none": "None",
+
+	"urgency_approaching": "Due Soon",
+	"urgency_urgent": "Due Soon",
+	"urgency_past_due": "Past Due",
+	"urgency_critical": "Critical",
+
+	"reschedule": "Reschedule",
+	"reschedule_service": "Reschedule Service",
+	"reschedule_service_desc": "Select a new date and time for this delivery",
+	"reschedule_reason": "Reason (optional)",
+	"reschedule_reason_placeholder": "Why is this being rescheduled?",
+	"reschedule_notify_client": "Notify client",
+	"reschedule_success": "Service rescheduled successfully",
+	"reschedule_error": "Failed to reschedule service"
 }

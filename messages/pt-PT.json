@@ -399,5 +399,19 @@
 	"distance_warehouse_to_pickup": "Armazém → Levantamento",
 	"distance_pickup_to_delivery": "Levantamento → Entrega",
 	"distance_total": "Distância total",
-	"none": "Nenhuma"
+	"none": "Nenhuma",
+
+	"urgency_approaching": "A Vencer",
+	"urgency_urgent": "Urgente",
+	"urgency_past_due": "Em Atraso",
+	"urgency_critical": "Crítico",
+
+	"reschedule": "Reagendar",
+	"reschedule_service": "Reagendar Serviço",
+	"reschedule_service_desc": "Selecione uma nova data e hora para esta entrega",
+	"reschedule_reason": "Motivo (opcional)",
+	"reschedule_reason_placeholder": "Porque está a ser reagendado?",
+	"reschedule_notify_client": "Notificar cliente",
+	"reschedule_success": "Serviço reagendado com sucesso",
+	"reschedule_error": "Falha ao reagendar serviço"
 }
