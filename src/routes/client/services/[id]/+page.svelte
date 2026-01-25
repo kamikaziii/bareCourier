@@ -66,6 +66,7 @@
 	let rescheduleReason = $state('');
 	let rescheduleLoading = $state(false);
 	let rescheduleError = $state('');
+	let rescheduleSuccess = $state<'auto_approved' | 'pending' | null>(null);
 
 	// Reschedule availability checks
 	const canReschedule = $derived(() => {
@@ -109,6 +110,12 @@
 			if (result.data?.success) {
 				await invalidateAll();
 				showRescheduleDialog = false;
+				// Show success feedback
+				rescheduleSuccess = result.data.needsApproval ? 'pending' : 'auto_approved';
+				// Auto-hide after 5 seconds
+				setTimeout(() => {
+					rescheduleSuccess = null;
+				}, 5000);
 			} else {
 				rescheduleError = result.data?.error || 'Failed to request reschedule';
 			}
@@ -128,6 +135,22 @@
 		</Button>
 		<h1 class="text-2xl font-bold">{m.service_details()}</h1>
 	</div>
+
+	<!-- Reschedule Success Banner -->
+	{#if rescheduleSuccess}
+		<Card.Root class={rescheduleSuccess === 'auto_approved' ? 'border-green-200 bg-green-50' : 'border-blue-200 bg-blue-50'}>
+			<Card.Content class="flex items-center gap-3 p-4">
+				<div class={rescheduleSuccess === 'auto_approved' ? 'text-green-600' : 'text-blue-600'}>
+					{#if rescheduleSuccess === 'auto_approved'}
+						<p class="font-medium">{m.client_reschedule_auto_approved()}</p>
+					{:else}
+						<p class="font-medium">{m.client_reschedule_success()}</p>
+						<p class="text-sm mt-1">{m.client_reschedule_pending_desc()}</p>
+					{/if}
+				</div>
+			</Card.Content>
+		</Card.Root>
+	{/if}
 
 	<!-- Status Badge -->
 	<Card.Root>

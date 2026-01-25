@@ -307,6 +307,18 @@ export const actions: Actions = {
 			return { success: false, error: 'Not authenticated' };
 		}
 
+		// Verify user is courier
+		const { data: profile } = await supabase
+			.from('profiles')
+			.select('role')
+			.eq('id', user.id)
+			.single();
+
+		const userProfile = profile as { role: string } | null;
+		if (userProfile?.role !== 'courier') {
+			return { success: false, error: 'Unauthorized' };
+		}
+
 		const formData = await request.formData();
 		const serviceId = formData.get('service_id') as string;
 
@@ -381,6 +393,18 @@ export const actions: Actions = {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {
 			return { success: false, error: 'Not authenticated' };
+		}
+
+		// Verify user is courier
+		const { data: profile } = await supabase
+			.from('profiles')
+			.select('role')
+			.eq('id', user.id)
+			.single();
+
+		const userProfile = profile as { role: string } | null;
+		if (userProfile?.role !== 'courier') {
+			return { success: false, error: 'Unauthorized' };
 		}
 
 		const formData = await request.formData();

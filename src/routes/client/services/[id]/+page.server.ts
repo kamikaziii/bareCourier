@@ -205,6 +205,18 @@ export const actions: Actions = {
 				approval_status: 'auto_approved'
 			});
 
+			// Notify courier of auto-approved reschedule
+			if (courierProfile?.id) {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				await (supabase as any).from('notifications').insert({
+					user_id: courierProfile.id,
+					type: 'schedule_change',
+					title: 'Reagendamento Automático',
+					message: 'Um cliente reagendou uma entrega automaticamente.',
+					service_id: params.id
+				});
+			}
+
 			return { success: true, needsApproval: false };
 		}
 	}
