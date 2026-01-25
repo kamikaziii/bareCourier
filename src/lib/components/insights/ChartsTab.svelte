@@ -1,8 +1,6 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card/index.js';
-	import BarChart from '$lib/components/charts/BarChart.svelte';
-	import LineChart from '$lib/components/charts/LineChart.svelte';
-	import DoughnutChart from '$lib/components/charts/DoughnutChart.svelte';
+	import Chart from '$lib/components/charts/Chart.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import type { StatusData, MonthlyData, ClientData } from '$lib/services/insights-data';
 	import {
@@ -43,7 +41,7 @@
 			</Card.Header>
 			<Card.Content>
 				{#if monthlyData.length > 0}
-					<BarChart data={servicesChartData} height="250px" />
+					<Chart type="bar" data={servicesChartData} height="250px" />
 				{:else}
 					<p class="py-8 text-center text-muted-foreground">{m.analytics_no_data()}</p>
 				{/if}
@@ -57,7 +55,7 @@
 			</Card.Header>
 			<Card.Content>
 				{#if monthlyData.length > 0}
-					<LineChart data={revenueChartData} height="250px" />
+					<Chart type="line" data={revenueChartData} height="250px" />
 				{:else}
 					<p class="py-8 text-center text-muted-foreground">{m.analytics_no_data()}</p>
 				{/if}
@@ -71,7 +69,7 @@
 			</Card.Header>
 			<Card.Content>
 				{#if monthlyData.length > 0}
-					<LineChart data={distanceChartData} height="250px" />
+					<Chart type="line" data={distanceChartData} height="250px" />
 				{:else}
 					<p class="py-8 text-center text-muted-foreground">{m.analytics_no_data()}</p>
 				{/if}
@@ -85,7 +83,7 @@
 			</Card.Header>
 			<Card.Content>
 				{#if statusData.pending > 0 || statusData.delivered > 0}
-					<DoughnutChart data={statusChartData} height="250px" />
+					<Chart type="doughnut" data={statusChartData} height="250px" />
 				{:else}
 					<p class="py-8 text-center text-muted-foreground">{m.analytics_no_data()}</p>
 				{/if}
@@ -101,7 +99,8 @@
 		</Card.Header>
 		<Card.Content>
 			{#if clientData.length > 0}
-				<BarChart
+				<Chart
+					type="bar"
 					data={clientChartData}
 					height="300px"
 					options={{

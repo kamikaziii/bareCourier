@@ -1,34 +1,65 @@
 <script lang="ts">
 	import {
 		Chart,
+		// Controllers
+		BarController,
+		LineController,
 		DoughnutController,
+		// Elements
+		BarElement,
+		LineElement,
+		PointElement,
 		ArcElement,
+		// Scales
+		CategoryScale,
+		LinearScale,
+		// Plugins
+		Title,
 		Tooltip,
 		Legend,
+		Filler,
 		type ChartData,
-		type ChartOptions
+		type ChartOptions,
+		type ChartType
 	} from 'chart.js';
 
-	Chart.register(DoughnutController, ArcElement, Tooltip, Legend);
+	// Register all components once
+	Chart.register(
+		BarController,
+		LineController,
+		DoughnutController,
+		BarElement,
+		LineElement,
+		PointElement,
+		ArcElement,
+		CategoryScale,
+		LinearScale,
+		Title,
+		Tooltip,
+		Legend,
+		Filler
+	);
 
 	let {
+		type,
 		data,
 		options = {},
 		height = '300px'
 	}: {
-		data: ChartData<'doughnut'>;
-		options?: ChartOptions<'doughnut'>;
+		type: ChartType;
+		data: ChartData;
+		options?: ChartOptions;
 		height?: string;
 	} = $props();
 
 	let canvas: HTMLCanvasElement | null = $state(null);
-	let chart: Chart<'doughnut'> | null = $state(null);
+	let chart: Chart | null = $state(null);
 
 	$effect(() => {
 		if (!canvas) return;
 
 		chart = new Chart(canvas, {
-			type: 'doughnut',
+			type,
 			data,
 			options: {
 				responsive: true,

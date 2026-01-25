@@ -27,11 +27,14 @@
 		goto(localizeHref('/login'));
 	}
 
+	// Badge count for requests
+	const pendingRequests = $derived(data.navCounts?.pendingRequests ?? 0);
+
 	// All navigation items with icons (for sidebar)
 	const allNavItems = $derived([
 		{ href: '/courier', label: m.nav_dashboard(), icon: LayoutDashboard },
 		{ href: '/courier/services', label: m.nav_services(), icon: Package },
-		{ href: '/courier/requests', label: m.nav_requests(), icon: Inbox },
+		{ href: '/courier/requests', label: m.nav_requests(), icon: Inbox, badge: pendingRequests },
 		{ href: '/courier/calendar', label: m.nav_calendar(), icon: Calendar },
 		{ href: '/courier/clients', label: m.nav_clients(), icon: Users },
 		{ href: '/courier/billing', label: m.nav_billing(), icon: Receipt },
@@ -43,7 +46,7 @@
 	const bottomNavItems = $derived([
 		{ href: '/courier', label: m.nav_dashboard(), icon: LayoutDashboard },
 		{ href: '/courier/services', label: m.nav_services(), icon: Package },
-		{ href: '/courier/requests', label: m.nav_requests(), icon: Inbox },
+		{ href: '/courier/requests', label: m.nav_requests(), icon: Inbox, badge: pendingRequests },
 		{ href: '/courier/calendar', label: m.nav_calendar(), icon: Calendar }
 	]);
 
