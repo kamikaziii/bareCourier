@@ -1,6 +1,6 @@
 # Past Due System Phase 1 Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **Status:** ✅ COMPLETE (2026-01-25)
 
 **Goal:** Display urgency badges on service cards and sort by urgency priority.
 
