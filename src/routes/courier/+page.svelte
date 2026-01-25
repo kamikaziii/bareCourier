@@ -12,9 +12,11 @@
 	import SkeletonList from '$lib/components/SkeletonList.svelte';
 	import PullToRefresh from '$lib/components/PullToRefresh.svelte';
 	import UrgencyBadge from '$lib/components/UrgencyBadge.svelte';
-	import { sortByUrgency } from '$lib/utils/past-due.js';
+	import { sortByUrgency, settingsToConfig, type PastDueConfig } from '$lib/utils/past-due.js';
 
 	let { data }: { data: PageData } = $props();
+
+	const pastDueConfig = $derived(settingsToConfig(data.profile.past_due_settings));
 
 	// Service with joined profile data
 	type ServiceWithProfile = Service & { profiles: { name: string } | null };
@@ -163,7 +165,7 @@
 
 	const pendingCount = $derived(services.filter((s) => s.status === 'pending').length);
 	const deliveredCount = $derived(services.filter((s) => s.status === 'delivered').length);
-	const sortedServices = $derived(sortByUrgency(services));
+	const sortedServices = $derived(sortByUrgency(services, pastDueConfig));
 
 	function getStatusLabel(status: string): string {
 		return status === 'pending' ? m.status_pending() : m.status_delivered();
@@ -258,7 +260,7 @@
 										{service.profiles?.name || m.unknown_client()}
 									</p>
 									<div class="flex items-center gap-2">
-										<UrgencyBadge service={service} size="sm" />
+										<UrgencyBadge service={service} size="sm" config={pastDueConfig} />
 										<span
 											class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium {service.status ===
 											'pending'

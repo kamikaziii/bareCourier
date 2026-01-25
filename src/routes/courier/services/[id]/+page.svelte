@@ -9,6 +9,7 @@
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import RouteMap from '$lib/components/RouteMap.svelte';
 	import UrgencyBadge from '$lib/components/UrgencyBadge.svelte';
+	import { settingsToConfig } from '$lib/utils/past-due.js';
 	import RescheduleDialog from '$lib/components/RescheduleDialog.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import type { TimeSlot } from '$lib/database.types.js';
@@ -31,6 +32,9 @@
 	const hasMapbox = !!PUBLIC_MAPBOX_TOKEN;
 
 	let { data }: { data: PageData } = $props();
+
+	// Access layout profile data for past due config
+	const pastDueConfig = $derived(settingsToConfig(data.profile?.past_due_settings));
 
 	let showDeleteDialog = $state(false);
 	let showStatusDialog = $state(false);
@@ -202,7 +206,7 @@
 				>
 					{service.status === 'pending' ? m.status_pending() : m.status_delivered()}
 				</Badge>
-				<UrgencyBadge {service} />
+				<UrgencyBadge {service} config={pastDueConfig} />
 				<span class="text-sm text-muted-foreground">
 					{m.created_at({ date: formatDate(service.created_at) })}
 				</span>

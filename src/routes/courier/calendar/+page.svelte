@@ -8,10 +8,14 @@
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref, getLocale } from '$lib/paraglide/runtime.js';
 	import { formatMonthYear, formatDateFull } from '$lib/utils.js';
+	import { settingsToConfig, type PastDueConfig } from '$lib/utils/past-due.js';
 	import type { PageData } from './$types';
 	import type { Service, Profile } from '$lib/database.types.js';
 
 	let { data }: { data: PageData } = $props();
+
+	// Access layout profile data for past due config
+	const pastDueConfig = $derived(settingsToConfig(data.profile?.past_due_settings));
 
 	type ServiceWithClient = Service & { profiles: Pick<Profile, 'id' | 'name'> };
 
@@ -316,7 +320,7 @@
 											>
 												{service.status === 'delivered' ? m.status_delivered() : m.status_pending()}
 											</Badge>
-											<UrgencyBadge {service} size="sm" />
+											<UrgencyBadge {service} size="sm" config={pastDueConfig} />
 										</div>
 										<p class="text-xs text-muted-foreground truncate">
 											{service.pickup_location} → {service.delivery_location}

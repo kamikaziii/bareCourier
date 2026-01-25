@@ -11,6 +11,18 @@ export type PriceBreakdown = {
 	error?: string;
 };
 
+// Phase 3 Past Due: Configurable settings
+export type PastDueSettings = {
+	gracePeriodStandard: number; // minutes after slot end (default: 30)
+	gracePeriodSpecific: number; // minutes after specific time (default: 15)
+	thresholdApproaching: number; // minutes before deadline to show "approaching" (default: 120)
+	thresholdUrgent: number; // minutes before deadline to show "urgent" (default: 60)
+	thresholdCriticalHours: number; // hours after past due to show "critical" (default: 24)
+	allowClientReschedule: boolean; // whether clients can request reschedules
+	clientMinNoticeHours: number; // minimum hours notice for client reschedule
+	clientMaxReschedules: number; // maximum reschedules per service
+};
+
 export type Database = {
 	public: {
 		Tables: {
@@ -36,6 +48,8 @@ export type Database = {
 					default_urgency_fee_id: string | null;
 					minimum_charge: number | null;
 					round_distance: boolean | null;
+					// Past due settings (Phase 3 Past Due)
+					past_due_settings: PastDueSettings | null;
 				};
 				Insert: {
 					id: string;
@@ -54,6 +68,7 @@ export type Database = {
 					default_urgency_fee_id?: string | null;
 					minimum_charge?: number | null;
 					round_distance?: boolean | null;
+					past_due_settings?: PastDueSettings | null;
 				};
 				Update: {
 					id?: string;
@@ -72,6 +87,7 @@ export type Database = {
 					default_urgency_fee_id?: string | null;
 					minimum_charge?: number | null;
 					round_distance?: boolean | null;
+					past_due_settings?: PastDueSettings | null;
 				};
 			};
 			services: {

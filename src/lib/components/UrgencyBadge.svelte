@@ -6,19 +6,21 @@
 		calculateUrgency,
 		getTimeRemaining,
 		type ServiceForUrgency,
-		type UrgencyLevel
+		type UrgencyLevel,
+		type PastDueConfig
 	} from '$lib/utils/past-due.js';
 
 	interface UrgencyBadgeProps {
 		service: ServiceForUrgency;
 		showTimeRemaining?: boolean;
 		size?: 'sm' | 'default';
+		config?: PastDueConfig;
 	}
 
-	let { service, showTimeRemaining = false, size = 'default' }: UrgencyBadgeProps = $props();
+	let { service, showTimeRemaining = false, size = 'default', config: pastDueConfig }: UrgencyBadgeProps = $props();
 
-	const urgency = $derived(calculateUrgency(service));
-	const timeRemaining = $derived(showTimeRemaining ? getTimeRemaining(service) : null);
+	const urgency = $derived(calculateUrgency(service, pastDueConfig));
+	const timeRemaining = $derived(showTimeRemaining ? getTimeRemaining(service, pastDueConfig) : null);
 
 	// Badge configuration based on urgency level
 	const badgeConfig: Record<

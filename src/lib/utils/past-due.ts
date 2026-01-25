@@ -194,3 +194,28 @@ export function sortByUrgency<T extends ServiceForUrgency>(
 		return timeA.localeCompare(timeB);
 	});
 }
+
+/**
+ * Convert database PastDueSettings to PastDueConfig for calculations.
+ * Merges user settings with defaults, preserving timeSlots from defaults.
+ */
+export function settingsToConfig(
+	settings: {
+		gracePeriodStandard?: number;
+		gracePeriodSpecific?: number;
+		thresholdApproaching?: number;
+		thresholdUrgent?: number;
+		thresholdCriticalHours?: number;
+	} | null
+): PastDueConfig {
+	if (!settings) return DEFAULT_CONFIG;
+
+	return {
+		timeSlots: DEFAULT_CONFIG.timeSlots, // Time slots are not user-configurable
+		gracePeriodStandard: settings.gracePeriodStandard ?? DEFAULT_CONFIG.gracePeriodStandard,
+		gracePeriodSpecific: settings.gracePeriodSpecific ?? DEFAULT_CONFIG.gracePeriodSpecific,
+		thresholdApproaching: settings.thresholdApproaching ?? DEFAULT_CONFIG.thresholdApproaching,
+		thresholdUrgent: settings.thresholdUrgent ?? DEFAULT_CONFIG.thresholdUrgent,
+		thresholdCriticalHours: settings.thresholdCriticalHours ?? DEFAULT_CONFIG.thresholdCriticalHours
+	};
+}

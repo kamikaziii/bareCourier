@@ -330,5 +330,107 @@ export const actions: Actions = {
 		}
 
 		return { success: true, message: 'pricing_preferences_updated' };
+	},
+
+	updatePastDueSettings: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const formData = await request.formData();
+
+		// Helper to parse int with bounds validation (handles 0 correctly, unlike || default)
+		const parseIntWithBounds = (value: FormDataEntryValue | null, min: number, max: number, defaultVal: number): number => {
+			if (value === null || value === '') return defaultVal;
+			const parsed = parseInt(value as string, 10);
+			if (Number.isNaN(parsed)) return defaultVal;
+			return Math.max(min, Math.min(max, parsed));
+		};
+
+		const gracePeriodStandard = parseIntWithBounds(formData.get('gracePeriodStandard'), 0, 60, 30);
+		const gracePeriodSpecific = parseIntWithBounds(formData.get('gracePeriodSpecific'), 0, 30, 15);
+		const thresholdApproaching = parseIntWithBounds(formData.get('thresholdApproaching'), 30, 180, 120);
+		const thresholdUrgent = parseIntWithBounds(formData.get('thresholdUrgent'), 15, 120, 60);
+		const thresholdCriticalHours = parseIntWithBounds(formData.get('thresholdCriticalHours'), 1, 72, 24);
+
+		// Get current settings to preserve client reschedule fields
+		const { data: currentProfile } = await supabase
+			.from('profiles')
+			.select('past_due_settings')
+			.eq('id', user.id)
+			.single();
+
+		const currentSettings = (currentProfile as unknown as { past_due_settings: Record<string, unknown> | null })?.past_due_settings || {};
+
+		const updatedSettings = {
+			...currentSettings,
+			gracePeriodStandard,
+			gracePeriodSpecific,
+			thresholdApproaching,
+			thresholdUrgent,
+			thresholdCriticalHours
+		};
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error } = await (supabase as any)
+			.from('profiles')
+			.update({ past_due_settings: updatedSettings })
+			.eq('id', user.id);
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		return { success: true, message: 'past_due_settings_updated' };
+	},
+
+	updateClientRescheduleSettings: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const formData = await request.formData();
+		const allowClientReschedule = formData.get('allowClientReschedule') === 'true';
+
+		// Helper to parse int with bounds validation
+		const parseIntWithBounds = (value: FormDataEntryValue | null, min: number, max: number, defaultVal: number): number => {
+			if (value === null || value === '') return defaultVal;
+			const parsed = parseInt(value as string, 10);
+			if (Number.isNaN(parsed)) return defaultVal;
+			return Math.max(min, Math.min(max, parsed));
+		};
+
+		const clientMinNoticeHours = parseIntWithBounds(formData.get('clientMinNoticeHours'), 1, 72, 24);
+		const clientMaxReschedules = parseIntWithBounds(formData.get('clientMaxReschedules'), 1, 10, 3);
+
+		// Get current settings to preserve threshold fields
+		const { data: currentProfile } = await supabase
+			.from('profiles')
+			.select('past_due_settings')
+			.eq('id', user.id)
+			.single();
+
+		const currentSettings = (currentProfile as unknown as { past_due_settings: Record<string, unknown> | null })?.past_due_settings || {};
+
+		const updatedSettings = {
+			...currentSettings,
+			allowClientReschedule,
+			clientMinNoticeHours,
+			clientMaxReschedules
+		};
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error } = await (supabase as any)
+			.from('profiles')
+			.update({ past_due_settings: updatedSettings })
+			.eq('id', user.id);
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		return { success: true, message: 'client_reschedule_settings_updated' };
 	}
 };

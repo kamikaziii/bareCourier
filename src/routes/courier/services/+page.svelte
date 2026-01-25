@@ -19,7 +19,7 @@
 		getCourierPricingSettings,
 		type CourierPricingSettings
 	} from '$lib/services/pricing.js';
-	import { sortByUrgency } from '$lib/utils/past-due.js';
+	import { sortByUrgency, settingsToConfig, type PastDueConfig } from '$lib/utils/past-due.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData } from './$types';
@@ -28,6 +28,8 @@
 	import PullToRefresh from '$lib/components/PullToRefresh.svelte';
 
 	let { data }: { data: PageData } = $props();
+
+	const pastDueConfig = $derived(settingsToConfig(data.profile.past_due_settings));
 
 	let services = $state<any[]>([]);
 	let clients = $state<any[]>([]);
@@ -221,7 +223,8 @@
 					if (!matchesClient && !matchesPickup && !matchesDelivery) return false;
 				}
 				return true;
-			})
+			}),
+			pastDueConfig
 		)
 	);
 
@@ -449,7 +452,7 @@
 										{service.profiles?.name || m.unknown_client()}
 									</p>
 									<div class="flex items-center gap-2">
-										<UrgencyBadge service={service} size="sm" />
+										<UrgencyBadge service={service} size="sm" config={pastDueConfig} />
 										<span class="text-xs text-muted-foreground">
 											{formatDate(service.created_at)}
 										</span>

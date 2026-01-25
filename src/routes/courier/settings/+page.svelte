@@ -10,7 +10,8 @@
 	import * as m from '$lib/paraglide/messages.js';
 	import type { PageData, ActionData } from './$types';
 	import AddressInput from '$lib/components/AddressInput.svelte';
-	import { Settings, User, Zap, Plus, Trash2, Power, Bell, MapPin, Warehouse, Calculator } from '@lucide/svelte';
+	import { Settings, User, Zap, Plus, Trash2, Power, Bell, MapPin, Warehouse, Calculator, Clock } from '@lucide/svelte';
+	import type { PastDueSettings } from '$lib/database.types.js';
 	import {
 		isPushSupported,
 		subscribeToPush,
@@ -62,6 +63,22 @@
 	let minimumCharge = $state(data.profile.minimum_charge ?? 0);
 	// svelte-ignore state_referenced_locally
 	let roundDistance = $state(data.profile.round_distance ?? false);
+
+	// Past due settings state
+	const defaultPastDueSettings: PastDueSettings = {
+		gracePeriodStandard: 30,
+		gracePeriodSpecific: 15,
+		thresholdApproaching: 120,
+		thresholdUrgent: 60,
+		thresholdCriticalHours: 24,
+		allowClientReschedule: true,
+		clientMinNoticeHours: 24,
+		clientMaxReschedules: 3
+	};
+	// svelte-ignore state_referenced_locally
+	let pastDueSettings = $state<PastDueSettings>(
+		data.profile.past_due_settings ?? defaultPastDueSettings
+	);
 
 	// Check push subscription status on mount
 	$effect(() => {
@@ -414,6 +431,182 @@
 						}}
 					/>
 				</div>
+
+				<Button type="submit">{m.action_save()}</Button>
+			</form>
+		</Card.Content>
+	</Card.Root>
+
+	<!-- Delivery Deadlines -->
+	<Card.Root>
+		<Card.Header>
+			<Card.Title class="flex items-center gap-2">
+				<Clock class="size-5" />
+				{m.settings_delivery_deadlines()}
+			</Card.Title>
+			<Card.Description>{m.settings_delivery_deadlines_desc()}</Card.Description>
+		</Card.Header>
+		<Card.Content>
+			<form method="POST" action="?/updatePastDueSettings" use:enhance class="space-y-6">
+				<!-- Grace period (standard) -->
+				<div class="space-y-2">
+					<Label for="gracePeriodStandard">{m.settings_grace_period_standard()}</Label>
+					<div class="flex items-center gap-2">
+						<Input
+							id="gracePeriodStandard"
+							name="gracePeriodStandard"
+							type="number"
+							min="0"
+							max="60"
+							bind:value={pastDueSettings.gracePeriodStandard}
+							class="w-24"
+						/>
+						<span class="text-sm text-muted-foreground">{m.settings_minutes()}</span>
+					</div>
+					<p class="text-xs text-muted-foreground">{m.settings_grace_period_standard_desc()}</p>
+				</div>
+
+				<!-- Grace period (specific) -->
+				<div class="space-y-2">
+					<Label for="gracePeriodSpecific">{m.settings_grace_period_specific()}</Label>
+					<div class="flex items-center gap-2">
+						<Input
+							id="gracePeriodSpecific"
+							name="gracePeriodSpecific"
+							type="number"
+							min="0"
+							max="30"
+							bind:value={pastDueSettings.gracePeriodSpecific}
+							class="w-24"
+						/>
+						<span class="text-sm text-muted-foreground">{m.settings_minutes()}</span>
+					</div>
+					<p class="text-xs text-muted-foreground">{m.settings_grace_period_specific_desc()}</p>
+				</div>
+
+				<Separator />
+
+				<!-- Approaching threshold -->
+				<div class="space-y-2">
+					<Label for="thresholdApproaching">{m.settings_threshold_approaching()}</Label>
+					<div class="flex items-center gap-2">
+						<Input
+							id="thresholdApproaching"
+							name="thresholdApproaching"
+							type="number"
+							min="30"
+							max="180"
+							bind:value={pastDueSettings.thresholdApproaching}
+							class="w-24"
+						/>
+						<span class="text-sm text-muted-foreground">{m.settings_minutes()}</span>
+					</div>
+					<p class="text-xs text-muted-foreground">{m.settings_threshold_approaching_desc()}</p>
+				</div>
+
+				<!-- Urgent threshold -->
+				<div class="space-y-2">
+					<Label for="thresholdUrgent">{m.settings_threshold_urgent()}</Label>
+					<div class="flex items-center gap-2">
+						<Input
+							id="thresholdUrgent"
+							name="thresholdUrgent"
+							type="number"
+							min="15"
+							max="120"
+							bind:value={pastDueSettings.thresholdUrgent}
+							class="w-24"
+						/>
+						<span class="text-sm text-muted-foreground">{m.settings_minutes()}</span>
+					</div>
+					<p class="text-xs text-muted-foreground">{m.settings_threshold_urgent_desc()}</p>
+				</div>
+
+				<!-- Critical threshold -->
+				<div class="space-y-2">
+					<Label for="thresholdCriticalHours">{m.settings_threshold_critical()}</Label>
+					<div class="flex items-center gap-2">
+						<Input
+							id="thresholdCriticalHours"
+							name="thresholdCriticalHours"
+							type="number"
+							min="1"
+							max="72"
+							bind:value={pastDueSettings.thresholdCriticalHours}
+							class="w-24"
+						/>
+						<span class="text-sm text-muted-foreground">{m.settings_hours()}</span>
+					</div>
+					<p class="text-xs text-muted-foreground">{m.settings_threshold_critical_desc()}</p>
+				</div>
+
+				<Button type="submit">{m.action_save()}</Button>
+			</form>
+		</Card.Content>
+	</Card.Root>
+
+	<!-- Client Rescheduling -->
+	<Card.Root>
+		<Card.Header>
+			<Card.Title class="flex items-center gap-2">
+				<Clock class="size-5" />
+				{m.settings_client_rescheduling()}
+			</Card.Title>
+			<Card.Description>{m.settings_client_rescheduling_desc()}</Card.Description>
+		</Card.Header>
+		<Card.Content>
+			<form method="POST" action="?/updateClientRescheduleSettings" use:enhance class="space-y-6">
+				<!-- Allow client reschedule toggle -->
+				<div class="flex items-center justify-between">
+					<div class="space-y-0.5">
+						<Label>{m.settings_allow_client_reschedule()}</Label>
+						<p class="text-sm text-muted-foreground">{m.settings_allow_client_reschedule_desc()}</p>
+					</div>
+					<input type="hidden" name="allowClientReschedule" value={pastDueSettings.allowClientReschedule.toString()} />
+					<Switch
+						checked={pastDueSettings.allowClientReschedule}
+						onCheckedChange={(checked) => {
+							pastDueSettings.allowClientReschedule = checked;
+						}}
+					/>
+				</div>
+
+				{#if pastDueSettings.allowClientReschedule}
+					<Separator />
+
+					<!-- Minimum notice hours -->
+					<div class="space-y-2">
+						<Label for="clientMinNoticeHours">{m.settings_client_min_notice()}</Label>
+						<div class="flex items-center gap-2">
+							<Input
+								id="clientMinNoticeHours"
+								name="clientMinNoticeHours"
+								type="number"
+								min="1"
+								max="72"
+								bind:value={pastDueSettings.clientMinNoticeHours}
+								class="w-24"
+							/>
+							<span class="text-sm text-muted-foreground">{m.settings_hours()}</span>
+						</div>
+						<p class="text-xs text-muted-foreground">{m.settings_client_min_notice_desc()}</p>
+					</div>
+
+					<!-- Max reschedules -->
+					<div class="space-y-2">
+						<Label for="clientMaxReschedules">{m.settings_client_max_reschedules()}</Label>
+						<Input
+							id="clientMaxReschedules"
+							name="clientMaxReschedules"
+							type="number"
+							min="1"
+							max="10"
+							bind:value={pastDueSettings.clientMaxReschedules}
+							class="w-24"
+						/>
+						<p class="text-xs text-muted-foreground">{m.settings_client_max_reschedules_desc()}</p>
+					</div>
+				{/if}
 
 				<Button type="submit">{m.action_save()}</Button>
 			</form>
