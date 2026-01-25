@@ -183,6 +183,22 @@ export const actions: Actions = {
 			return { success: false, error: updateError.message };
 		}
 
+		// Create history record for courier-initiated reschedule
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		await (supabase as any).from('service_reschedule_history').insert({
+			service_id: params.id,
+			initiated_by: user.id,
+			initiated_by_role: 'courier',
+			old_date: service.scheduled_date,
+			old_time_slot: service.scheduled_time_slot,
+			old_time: service.scheduled_time,
+			new_date: newDate,
+			new_time_slot: newTimeSlot,
+			new_time: newTime || null,
+			reason: reason || null,
+			approval_status: 'auto_approved'
+		});
+
 		// Create notification for client
 		// Format date nicely for Portuguese users (primary user base)
 		const formattedDate = new Date(newDate).toLocaleDateString('pt-PT', {

@@ -52,8 +52,17 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 		.is('deleted_at', null)
 		.order('created_at', { ascending: false });
 
+	// Load services with pending reschedule requests
+	const { data: pendingReschedules } = await supabase
+		.from('services')
+		.select('*, profiles!client_id(id, name, phone)')
+		.not('pending_reschedule_date', 'is', null)
+		.is('deleted_at', null)
+		.order('pending_reschedule_requested_at', { ascending: true });
+
 	return {
-		pendingRequests: (pendingRequests || []) as (Service & { profiles: Pick<Profile, 'id' | 'name' | 'phone'> })[]
+		pendingRequests: (pendingRequests || []) as (Service & { profiles: Pick<Profile, 'id' | 'name' | 'phone'> })[],
+		pendingReschedules: (pendingReschedules || []) as (Service & { profiles: Pick<Profile, 'id' | 'name' | 'phone'> })[]
 	};
 };
 
@@ -286,6 +295,151 @@ export const actions: Actions = {
 				serviceId,
 				msg.subject,
 				msg.body
+			);
+		}
+
+		return { success: true };
+	},
+
+	approveReschedule: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const formData = await request.formData();
+		const serviceId = formData.get('service_id') as string;
+
+		if (!serviceId) {
+			return { success: false, error: 'Service ID required' };
+		}
+
+		// Get the service with pending reschedule
+		const { data: serviceData } = await supabase
+			.from('services')
+			.select('*')
+			.eq('id', serviceId)
+			.single();
+
+		const service = serviceData as Service | null;
+
+		if (!service || !service.pending_reschedule_date) {
+			return { success: false, error: 'No pending reschedule request' };
+		}
+
+		// Apply the reschedule
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error: updateError } = await (supabase as any)
+			.from('services')
+			.update({
+				scheduled_date: service.pending_reschedule_date,
+				scheduled_time_slot: service.pending_reschedule_time_slot,
+				scheduled_time: service.pending_reschedule_time,
+				reschedule_count: (service.reschedule_count || 0) + 1,
+				last_rescheduled_at: new Date().toISOString(),
+				last_rescheduled_by: service.pending_reschedule_requested_by,
+				pending_reschedule_date: null,
+				pending_reschedule_time_slot: null,
+				pending_reschedule_time: null,
+				pending_reschedule_reason: null,
+				pending_reschedule_requested_at: null,
+				pending_reschedule_requested_by: null
+			})
+			.eq('id', serviceId);
+
+		if (updateError) {
+			return { success: false, error: updateError.message };
+		}
+
+		// Update history record
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		await (supabase as any)
+			.from('service_reschedule_history')
+			.update({
+				approval_status: 'approved',
+				approved_by: user.id,
+				approved_at: new Date().toISOString()
+			})
+			.eq('service_id', serviceId)
+			.eq('approval_status', 'pending');
+
+		// Notify client
+		if (service.client_id) {
+			await notifyClient(
+				session,
+				service.client_id,
+				serviceId,
+				'Reagendamento Aprovado',
+				'O seu pedido de reagendamento foi aprovado.'
+			);
+		}
+
+		return { success: true };
+	},
+
+	denyReschedule: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const formData = await request.formData();
+		const serviceId = formData.get('service_id') as string;
+		const denialReason = formData.get('denial_reason') as string;
+
+		if (!serviceId) {
+			return { success: false, error: 'Service ID required' };
+		}
+
+		// Get the service
+		const { data: serviceData2 } = await supabase
+			.from('services')
+			.select('client_id')
+			.eq('id', serviceId)
+			.single();
+
+		const service = serviceData2 as Pick<Service, 'client_id'> | null;
+
+		// Clear pending reschedule fields
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error: updateError } = await (supabase as any)
+			.from('services')
+			.update({
+				pending_reschedule_date: null,
+				pending_reschedule_time_slot: null,
+				pending_reschedule_time: null,
+				pending_reschedule_reason: null,
+				pending_reschedule_requested_at: null,
+				pending_reschedule_requested_by: null
+			})
+			.eq('id', serviceId);
+
+		if (updateError) {
+			return { success: false, error: updateError.message };
+		}
+
+		// Update history record
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		await (supabase as any)
+			.from('service_reschedule_history')
+			.update({
+				approval_status: 'denied',
+				approved_by: user.id,
+				approved_at: new Date().toISOString(),
+				denial_reason: denialReason || null
+			})
+			.eq('service_id', serviceId)
+			.eq('approval_status', 'pending');
+
+		// Notify client
+		if (service?.client_id) {
+			const reasonText = denialReason ? ` Motivo: ${denialReason}` : '';
+			await notifyClient(
+				session,
+				service.client_id,
+				serviceId,
+				'Reagendamento Recusado',
+				`O seu pedido de reagendamento foi recusado.${reasonText}`
 			);
 		}
 

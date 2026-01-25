@@ -23,6 +23,26 @@ export type PastDueSettings = {
 	clientMaxReschedules: number; // maximum reschedules per service
 };
 
+// Phase 4 Past Due: Reschedule history tracking
+export type ServiceRescheduleHistory = {
+	id: string;
+	service_id: string;
+	initiated_by: string;
+	initiated_by_role: 'courier' | 'client';
+	old_date: string | null;
+	old_time_slot: string | null;
+	old_time: string | null;
+	new_date: string;
+	new_time_slot: string;
+	new_time: string | null;
+	reason: string | null;
+	approval_status: 'auto_approved' | 'pending' | 'approved' | 'denied';
+	approved_by: string | null;
+	approved_at: string | null;
+	denial_reason: string | null;
+	created_at: string;
+};
+
 export type Database = {
 	public: {
 		Tables: {
@@ -127,6 +147,13 @@ export type Database = {
 					reschedule_count: number;
 					last_rescheduled_at: string | null;
 					last_rescheduled_by: string | null;
+					// Pending reschedule request (Phase 4 Past Due)
+					pending_reschedule_date: string | null;
+					pending_reschedule_time_slot: string | null;
+					pending_reschedule_time: string | null;
+					pending_reschedule_reason: string | null;
+					pending_reschedule_requested_at: string | null;
+					pending_reschedule_requested_by: string | null;
 				};
 				Insert: {
 					id?: string;
@@ -164,6 +191,13 @@ export type Database = {
 					reschedule_count?: number;
 					last_rescheduled_at?: string | null;
 					last_rescheduled_by?: string | null;
+					// Pending reschedule request (Phase 4 Past Due)
+					pending_reschedule_date?: string | null;
+					pending_reschedule_time_slot?: string | null;
+					pending_reschedule_time?: string | null;
+					pending_reschedule_reason?: string | null;
+					pending_reschedule_requested_at?: string | null;
+					pending_reschedule_requested_by?: string | null;
 				};
 				Update: {
 					id?: string;
@@ -201,6 +235,13 @@ export type Database = {
 					reschedule_count?: number;
 					last_rescheduled_at?: string | null;
 					last_rescheduled_by?: string | null;
+					// Pending reschedule request (Phase 4 Past Due)
+					pending_reschedule_date?: string | null;
+					pending_reschedule_time_slot?: string | null;
+					pending_reschedule_time?: string | null;
+					pending_reschedule_reason?: string | null;
+					pending_reschedule_requested_at?: string | null;
+					pending_reschedule_requested_by?: string | null;
 				};
 			};
 			service_status_history: {

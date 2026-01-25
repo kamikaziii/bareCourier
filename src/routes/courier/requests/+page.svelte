@@ -171,6 +171,75 @@
 		}
 		loading = false;
 	}
+
+	// Reschedule denial state
+	let showDenyRescheduleDialog = $state(false);
+	let denyingService = $state<ServiceWithClient | null>(null);
+	let denialReason = $state('');
+
+	function openDenyRescheduleDialog(service: ServiceWithClient) {
+		denyingService = service;
+		denialReason = '';
+		actionError = '';
+		showDenyRescheduleDialog = true;
+	}
+
+	async function handleApproveReschedule(serviceId: string) {
+		loading = true;
+		actionError = '';
+
+		const formData = new FormData();
+		formData.set('service_id', serviceId);
+
+		try {
+			const response = await fetch('?/approveReschedule', {
+				method: 'POST',
+				body: formData
+			});
+
+			if (response.ok) {
+				const result = await response.json();
+				if (result.type === 'success' || result.data?.success) {
+					await invalidateAll();
+				} else {
+					actionError = result.data?.error || 'Failed to approve reschedule';
+				}
+			}
+		} catch {
+			actionError = 'An unexpected error occurred';
+		}
+		loading = false;
+	}
+
+	async function handleDenyReschedule() {
+		if (!denyingService) return;
+		loading = true;
+		actionError = '';
+
+		const formData = new FormData();
+		formData.set('service_id', denyingService.id);
+		formData.set('denial_reason', denialReason);
+
+		try {
+			const response = await fetch('?/denyReschedule', {
+				method: 'POST',
+				body: formData
+			});
+
+			if (response.ok) {
+				const result = await response.json();
+				if (result.type === 'success' || result.data?.success) {
+					await invalidateAll();
+					showDenyRescheduleDialog = false;
+				} else {
+					actionError = result.data?.error || 'Failed to deny reschedule';
+				}
+			}
+		} catch {
+			actionError = 'An unexpected error occurred';
+		}
+		loading = false;
+	}
 </script>
 
 <div class="space-y-6">
@@ -266,6 +335,70 @@
 					</Card.Content>
 				</Card.Root>
 			{/each}
+		</div>
+	{/if}
+
+	<!-- Pending Reschedules Section -->
+	{#if data.pendingReschedules.length > 0}
+		<Separator class="my-6" />
+
+		<div class="space-y-4">
+			<div>
+				<h2 class="text-xl font-semibold">{m.courier_pending_reschedules()}</h2>
+				<p class="text-muted-foreground text-sm">{m.courier_pending_reschedules_desc()}</p>
+			</div>
+
+			<div class="grid gap-4">
+				{#each data.pendingReschedules as service}
+					<Card.Root class="border-orange-200">
+						<Card.Content class="pt-6">
+							<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+								<div class="space-y-3 flex-1">
+									<div class="flex items-center gap-2">
+										<a
+											href={localizeHref(`/courier/clients/${service.profiles.id}`)}
+											class="font-medium hover:underline"
+										>
+											{service.profiles.name}
+										</a>
+									</div>
+
+									<div class="text-sm">
+										<span class="text-muted-foreground">Atual:</span>
+										{formatRequestDate(service.scheduled_date)}
+										{#if service.scheduled_time_slot}
+											- {formatTimeSlot(service.scheduled_time_slot)}
+										{/if}
+									</div>
+
+									<div class="text-sm font-medium text-orange-600">
+										<span>Novo:</span>
+										{formatRequestDate(service.pending_reschedule_date)}
+										{#if service.pending_reschedule_time_slot}
+											- {formatTimeSlot(service.pending_reschedule_time_slot)}
+										{/if}
+									</div>
+
+									{#if service.pending_reschedule_reason}
+										<p class="text-sm text-muted-foreground italic">
+											"{service.pending_reschedule_reason}"
+										</p>
+									{/if}
+								</div>
+
+								<div class="flex flex-wrap gap-2">
+									<Button size="sm" onclick={() => handleApproveReschedule(service.id)}>
+										{m.courier_approve_reschedule()}
+									</Button>
+									<Button size="sm" variant="destructive" onclick={() => openDenyRescheduleDialog(service)}>
+										{m.courier_deny_reschedule()}
+									</Button>
+								</div>
+							</div>
+						</Card.Content>
+					</Card.Root>
+				{/each}
+			</div>
 		</div>
 	{/if}
 </div>
@@ -402,6 +535,43 @@
 			</Button>
 			<Button onclick={handleSuggest} disabled={loading || !suggestedDate || !suggestedTimeSlot}>
 				{loading ? m.saving() : m.requests_confirm_suggest()}
+			</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
+
+<!-- Deny Reschedule Dialog -->
+<Dialog.Root bind:open={showDenyRescheduleDialog}>
+	<Dialog.Content>
+		<Dialog.Header>
+			<Dialog.Title>{m.courier_deny_reschedule()}</Dialog.Title>
+		</Dialog.Header>
+
+		<div class="space-y-4">
+			<div class="space-y-2">
+				<Label for="denial-reason">{m.courier_deny_reason()}</Label>
+				<Input
+					id="denial-reason"
+					type="text"
+					placeholder={m.courier_deny_reason_placeholder()}
+					bind:value={denialReason}
+					disabled={loading}
+				/>
+			</div>
+		</div>
+
+		{#if actionError}
+			<div class="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+				{actionError}
+			</div>
+		{/if}
+
+		<Dialog.Footer>
+			<Button variant="outline" onclick={() => (showDenyRescheduleDialog = false)} disabled={loading}>
+				{m.action_cancel()}
+			</Button>
+			<Button variant="destructive" onclick={handleDenyReschedule} disabled={loading}>
+				{loading ? m.saving() : m.courier_deny_reschedule()}
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>

@@ -14,12 +14,17 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
 	depends('app:nav-counts');
 
 	// Fetch profile and pending request count in parallel
-	const [profileResult, pendingRequestsResult] = await Promise.all([
+	const [profileResult, pendingRequestsResult, pendingReschedulesResult] = await Promise.all([
 		supabase.from('profiles').select('*').eq('id', user.id).single(),
 		supabase
 			.from('services')
 			.select('*', { count: 'exact', head: true })
 			.eq('request_status', 'pending')
+			.is('deleted_at', null),
+		supabase
+			.from('services')
+			.select('*', { count: 'exact', head: true })
+			.not('pending_reschedule_date', 'is', null)
 			.is('deleted_at', null)
 	]);
 
@@ -37,7 +42,7 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
 			past_due_settings: profile.past_due_settings
 		},
 		navCounts: {
-			pendingRequests: pendingRequestsResult.count ?? 0
+			pendingRequests: (pendingRequestsResult.count ?? 0) + (pendingReschedulesResult.count ?? 0)
 		}
 	};
 };
