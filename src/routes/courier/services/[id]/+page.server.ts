@@ -184,13 +184,19 @@ export const actions: Actions = {
 		}
 
 		// Create notification for client
-		const reasonText = reason ? ` Reason: ${reason}` : '';
+		// Format date nicely for Portuguese users (primary user base)
+		const formattedDate = new Date(newDate).toLocaleDateString('pt-PT', {
+			day: 'numeric',
+			month: 'long',
+			year: 'numeric'
+		});
+		const reasonText = reason ? ` Motivo: ${reason}` : '';
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const { error: notifyError } = await (supabase as any).from('notifications').insert({
 			user_id: service.client_id,
 			type: 'schedule_change',
-			title: 'Delivery Rescheduled',
-			message: `Your delivery has been rescheduled to ${newDate}.${reasonText}`,
+			title: 'Entrega Reagendada',
+			message: `A sua entrega foi reagendada para ${formattedDate}.${reasonText}`,
 			service_id: params.id
 		});
 

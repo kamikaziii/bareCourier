@@ -96,7 +96,7 @@
 							</a>
 						{/each}
 					</div>
-					<NotificationBell supabase={data.supabase} userId={data.profile.id} />
+					<NotificationBell supabase={data.supabase} userId={data.profile.id} userRole="courier" />
 					<span class="hidden text-sm text-muted-foreground sm:inline">{data.profile.name}</span>
 					<Button variant="ghost" size="sm" onclick={handleLogout}>
 						{m.auth_logout()}

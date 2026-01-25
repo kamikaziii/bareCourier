@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
@@ -7,14 +8,16 @@
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime.js';
 	import type { Notification } from '$lib/database.types';
 	import type { SupabaseClient } from '@supabase/supabase-js';
-	import { Bell, CheckCheck, Package, Clock } from '@lucide/svelte';
+	import { Bell, CheckCheck, Package, Clock, CalendarClock } from '@lucide/svelte';
 
 	let {
 		supabase,
-		userId
+		userId,
+		userRole = 'client'
 	}: {
 		supabase: SupabaseClient;
 		userId: string;
+		userRole?: 'courier' | 'client';
 	} = $props();
 
 	let notifications = $state<Notification[]>([]);
@@ -75,8 +78,21 @@
 				return CheckCheck;
 			case 'new_request':
 				return Package;
+			case 'schedule_change':
+				return CalendarClock;
 			default:
 				return Clock;
+		}
+	}
+
+	async function handleNotificationClick(notification: Notification) {
+		await markAsRead(notification.id);
+
+		// Navigate to service if service_id is present
+		if (notification.service_id) {
+			const basePath = userRole === 'courier' ? '/courier/services' : '/client/services';
+			open = false;
+			await goto(localizeHref(`${basePath}/${notification.service_id}`));
 		}
 	}
 
@@ -147,7 +163,7 @@
 						class="flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-muted {!notification.read
 							? 'bg-muted/50'
 							: ''}"
-						onclick={() => markAsRead(notification.id)}
+						onclick={() => handleNotificationClick(notification)}
 					>
 						<div
 							class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full {!notification.read

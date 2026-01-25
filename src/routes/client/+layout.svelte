@@ -68,7 +68,7 @@
 						{/each}
 					</div>
 					{#if data.profile?.id}
-						<NotificationBell supabase={data.supabase} userId={data.profile.id} />
+						<NotificationBell supabase={data.supabase} userId={data.profile.id} userRole="client" />
 					{/if}
 					<span class="hidden text-sm text-muted-foreground sm:inline">{data.profile?.name}</span>
 					<Button variant="ghost" size="sm" onclick={handleLogout}>
