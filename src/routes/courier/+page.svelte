@@ -12,7 +12,7 @@
 	import SkeletonList from '$lib/components/SkeletonList.svelte';
 	import PullToRefresh from '$lib/components/PullToRefresh.svelte';
 	import UrgencyBadge from '$lib/components/UrgencyBadge.svelte';
-	import { sortByUrgency, isPastDue } from '$lib/utils/past-due.js';
+	import { sortByUrgency } from '$lib/utils/past-due.js';
 
 	let { data }: { data: PageData } = $props();
 
@@ -242,7 +242,7 @@
 				</Card.Content>
 			</Card.Root>
 		{:else}
-			{#each services as service (service.id)}
+			{#each sortByUrgency(services) as service (service.id)}
 				<a href={localizeHref(`/courier/services/${service.id}`)} class="block group">
 					<Card.Root class="overflow-hidden transition-colors group-hover:bg-muted/50">
 						<Card.Content class="flex items-start gap-4 p-4">
@@ -257,6 +257,7 @@
 										{service.profiles?.name || m.unknown_client()}
 									</p>
 									<div class="flex items-center gap-2">
+										<UrgencyBadge service={service} size="sm" />
 										<span
 											class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium {service.status ===
 											'pending'
