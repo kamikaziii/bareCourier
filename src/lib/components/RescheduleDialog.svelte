@@ -59,6 +59,7 @@
 		newTime = service.scheduled_time;
 		reason = '';
 		error = '';
+		loading = false;
 	}
 
 	$effect(() => {
