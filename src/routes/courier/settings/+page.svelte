@@ -33,16 +33,20 @@
 
 	// Notification preferences state
 	let pushEnabled = $state(false);
+	// svelte-ignore state_referenced_locally - intentional: capture initial preference for toggle
 	let emailEnabled = $state(data.profile.email_notifications_enabled ?? true);
 	let pushLoading = $state(false);
 	let pushError = $state('');
 	let pushSupported = $state(false);
 
-	// Pricing mode state
+	// Pricing mode state - svelte-ignore state_referenced_locally for all: intentional initial value capture
+	// svelte-ignore state_referenced_locally
 	let pricingMode = $state<'warehouse' | 'zone'>(data.profile.pricing_mode ?? 'warehouse');
 
 	// Warehouse address state
+	// svelte-ignore state_referenced_locally
 	let warehouseAddress = $state(data.profile.default_pickup_location || '');
+	// svelte-ignore state_referenced_locally
 	let warehouseCoords = $state<[number, number] | null>(
 		data.profile.warehouse_lat && data.profile.warehouse_lng
 			? [data.profile.warehouse_lng, data.profile.warehouse_lat]
@@ -50,9 +54,13 @@
 	);
 
 	// Pricing preferences state
+	// svelte-ignore state_referenced_locally
 	let autoCalculatePrice = $state(data.profile.auto_calculate_price ?? true);
+	// svelte-ignore state_referenced_locally
 	let defaultUrgencyFeeId = $state<string | null>(data.profile.default_urgency_fee_id || null);
+	// svelte-ignore state_referenced_locally
 	let minimumCharge = $state(data.profile.minimum_charge ?? 0);
+	// svelte-ignore state_referenced_locally
 	let roundDistance = $state(data.profile.round_distance ?? false);
 
 	// Check push subscription status on mount

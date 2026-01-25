@@ -21,6 +21,7 @@
 
 	// Notification preferences state
 	let pushEnabled = $state(false);
+	// svelte-ignore state_referenced_locally - intentional: capture initial preference for toggle
 	let emailEnabled = $state(data.profile.email_notifications_enabled ?? true);
 	let pushLoading = $state(false);
 	let pushError = $state('');

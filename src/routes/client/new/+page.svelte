@@ -26,6 +26,7 @@
 
 	let { data }: { data: PageData } = $props();
 
+	// svelte-ignore state_referenced_locally - intentional: prefill form with user's default location
 	const defaultPickup = data.profile?.default_pickup_location || '';
 	let pickupLocation = $state(defaultPickup);
 	let deliveryLocation = $state('');

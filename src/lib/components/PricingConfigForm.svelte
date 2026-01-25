@@ -27,14 +27,18 @@
 
 	let { existingConfig = null, existingZones = [], onSave, compact = false }: Props = $props();
 
-	// State for pricing form
+	// State for pricing form - svelte-ignore state_referenced_locally for all: intentional initial value capture
+	// svelte-ignore state_referenced_locally
 	let pricingModel = $state<PricingModel>(existingConfig?.pricing_model || 'per_km');
+	// svelte-ignore state_referenced_locally
 	let baseFee = $state(existingConfig?.base_fee?.toString() || '0');
+	// svelte-ignore state_referenced_locally
 	let perKmRate = $state(existingConfig?.per_km_rate?.toString() || '0');
 	let saving = $state(false);
 	let error = $state('');
 
 	// State for zones (for zone pricing)
+	// svelte-ignore state_referenced_locally
 	let zones = $state<ZoneConfig[]>(
 		existingZones.length > 0
 			? existingZones.map((z) => ({ min_km: z.min_km, max_km: z.max_km, price: z.price }))
