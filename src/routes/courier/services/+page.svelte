@@ -209,18 +209,20 @@
 	});
 
 	const filteredServices = $derived(
-		services.filter((s) => {
-			if (statusFilter !== 'all' && s.status !== statusFilter) return false;
-			if (clientFilter !== 'all' && s.client_id !== clientFilter) return false;
-			if (searchQuery) {
-				const query = searchQuery.toLowerCase();
-				const matchesClient = s.profiles?.name?.toLowerCase().includes(query);
-				const matchesPickup = s.pickup_location?.toLowerCase().includes(query);
-				const matchesDelivery = s.delivery_location?.toLowerCase().includes(query);
-				if (!matchesClient && !matchesPickup && !matchesDelivery) return false;
-			}
-			return true;
-		})
+		sortByUrgency(
+			services.filter((s) => {
+				if (statusFilter !== 'all' && s.status !== statusFilter) return false;
+				if (clientFilter !== 'all' && s.client_id !== clientFilter) return false;
+				if (searchQuery) {
+					const query = searchQuery.toLowerCase();
+					const matchesClient = s.profiles?.name?.toLowerCase().includes(query);
+					const matchesPickup = s.pickup_location?.toLowerCase().includes(query);
+					const matchesDelivery = s.delivery_location?.toLowerCase().includes(query);
+					if (!matchesClient && !matchesPickup && !matchesDelivery) return false;
+				}
+				return true;
+			})
+		)
 	);
 
 	function getStatusLabel(status: string): string {
@@ -447,6 +449,7 @@
 										{service.profiles?.name || m.unknown_client()}
 									</p>
 									<div class="flex items-center gap-2">
+										<UrgencyBadge service={service} size="sm" />
 										<span class="text-xs text-muted-foreground">
 											{formatDate(service.created_at)}
 										</span>
