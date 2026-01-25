@@ -9,7 +9,9 @@
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import RouteMap from '$lib/components/RouteMap.svelte';
 	import UrgencyBadge from '$lib/components/UrgencyBadge.svelte';
+	import RescheduleDialog from '$lib/components/RescheduleDialog.svelte';
 	import * as m from '$lib/paraglide/messages.js';
+	import type { TimeSlot } from '$lib/database.types.js';
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData } from './$types';
 	import { PUBLIC_MAPBOX_TOKEN } from '$env/static/public';
@@ -22,7 +24,8 @@
 		Clock,
 		User,
 		CheckCircle,
-		Circle
+		Circle,
+		CalendarClock
 	} from '@lucide/svelte';
 
 	const hasMapbox = !!PUBLIC_MAPBOX_TOKEN;
@@ -31,6 +34,7 @@
 
 	let showDeleteDialog = $state(false);
 	let showStatusDialog = $state(false);
+	let showRescheduleDialog = $state(false);
 	let pendingStatus = $state<'pending' | 'delivered'>('pending');
 	let loading = $state(false);
 	let actionError = $state('');
@@ -112,6 +116,35 @@
 		loading = false;
 	}
 
+	async function handleReschedule(data: {
+		date: string;
+		timeSlot: TimeSlot;
+		time: string | null;
+		reason: string;
+	}) {
+		const formData = new FormData();
+		formData.set('date', data.date);
+		formData.set('time_slot', data.timeSlot);
+		if (data.time) formData.set('time', data.time);
+		formData.set('reason', data.reason);
+
+		const response = await fetch('?/reschedule', {
+			method: 'POST',
+			body: formData
+		});
+
+		if (!response.ok) {
+			throw new Error('Failed to reschedule');
+		}
+
+		const result = await response.json();
+		if (result.type === 'failure' || result.data?.success === false) {
+			throw new Error(result.data?.error || 'Failed to reschedule');
+		}
+
+		await invalidateAll();
+	}
+
 	function confirmStatusChange(status: 'pending' | 'delivered') {
 		pendingStatus = status;
 		showStatusDialog = true;
@@ -176,6 +209,10 @@
 			</div>
 			<div class="flex gap-2">
 				{#if service.status === 'pending'}
+					<Button variant="outline" size="sm" onclick={() => (showRescheduleDialog = true)}>
+						<CalendarClock class="mr-2 size-4" />
+						{m.reschedule()}
+					</Button>
 					<Button size="sm" onclick={() => confirmStatusChange('delivered')}>
 						<CheckCircle class="mr-2 size-4" />
 						{m.mark_delivered()}
@@ -395,3 +432,10 @@
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>
+
+<!-- Reschedule Dialog -->
+<RescheduleDialog
+	{service}
+	bind:open={showRescheduleDialog}
+	onReschedule={handleReschedule}
+/>
