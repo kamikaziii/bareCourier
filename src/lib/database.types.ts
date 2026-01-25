@@ -107,6 +107,10 @@ export type Database = {
 					urgency_fee_id: string | null;
 					calculated_price: number | null;
 					price_breakdown: PriceBreakdown | null;
+					// Reschedule tracking (Phase 2 Past Due)
+					reschedule_count: number;
+					last_rescheduled_at: string | null;
+					last_rescheduled_by: string | null;
 				};
 				Insert: {
 					id?: string;
@@ -140,6 +144,10 @@ export type Database = {
 					urgency_fee_id?: string | null;
 					calculated_price?: number | null;
 					price_breakdown?: PriceBreakdown | null;
+					// Reschedule tracking (Phase 2 Past Due)
+					reschedule_count?: number;
+					last_rescheduled_at?: string | null;
+					last_rescheduled_by?: string | null;
 				};
 				Update: {
 					id?: string;
@@ -173,6 +181,10 @@ export type Database = {
 					urgency_fee_id?: string | null;
 					calculated_price?: number | null;
 					price_breakdown?: PriceBreakdown | null;
+					// Reschedule tracking (Phase 2 Past Due)
+					reschedule_count?: number;
+					last_rescheduled_at?: string | null;
+					last_rescheduled_by?: string | null;
 				};
 			};
 			service_status_history: {
