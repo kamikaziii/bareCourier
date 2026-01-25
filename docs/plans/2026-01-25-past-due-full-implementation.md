@@ -139,6 +139,8 @@ git add -A && git commit -m "fix(past-due): Phase 1 polish"
 
 # Phase 2: Courier Reschedule
 
+**Status:** ✅ COMPLETE (2026-01-25)
+
 **Goal:** Enable courier to reschedule services with client notification
 
 ---
@@ -787,8 +789,8 @@ Create scheduled job to send morning summary of day's deliveries.
 
 | Phase | Tasks | Database | Status |
 |-------|-------|----------|--------|
-| 1 | 5 | None | Foundation ✅, UI pending |
-| 2 | 6 | 1 migration | Not started |
+| 1 | 5 | None | ✅ Complete |
+| 2 | 6 | 2 migrations | ✅ Complete |
 | 3 | 5 | 1 migration | Not started |
 | 4 | 4 | 2 migrations | Not started |
 | 5 | 3 | None | Not started |
