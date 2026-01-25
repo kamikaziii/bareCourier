@@ -111,5 +111,94 @@ export const actions: Actions = {
 		}
 
 		redirect(303, localizeHref('/courier/services'));
+	},
+
+	reschedule: async ({ params, request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		// Verify user is courier
+		const { data: profile } = await supabase
+			.from('profiles')
+			.select('role')
+			.eq('id', user.id)
+			.single();
+
+		const userProfile = profile as { role: string } | null;
+		if (userProfile?.role !== 'courier') {
+			return { success: false, error: 'Unauthorized' };
+		}
+
+		const formData = await request.formData();
+		const newDate = formData.get('date') as string;
+		const newTimeSlot = formData.get('time_slot') as string;
+		const newTime = formData.get('time') as string | null;
+		const reason = formData.get('reason') as string;
+
+		if (!newDate || !newTimeSlot) {
+			return { success: false, error: 'Date and time slot required' };
+		}
+
+		// Validate date format (YYYY-MM-DD)
+		if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
+			return { success: false, error: 'Invalid date format' };
+		}
+
+		// Validate time slot
+		const validTimeSlots = ['morning', 'afternoon', 'evening', 'specific'];
+		if (!validTimeSlots.includes(newTimeSlot)) {
+			return { success: false, error: 'Invalid time slot' };
+		}
+
+		// Get current service for notification
+		const { data: serviceData } = await supabase
+			.from('services')
+			.select('*, profiles!client_id(id, name)')
+			.eq('id', params.id)
+			.single();
+
+		const service = serviceData as (Service & { profiles: Pick<Profile, 'id' | 'name'> }) | null;
+
+		if (!service) {
+			return { success: false, error: 'Service not found' };
+		}
+
+		// Update service with new schedule and reschedule tracking
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error: updateError } = await (supabase as any)
+			.from('services')
+			.update({
+				scheduled_date: newDate,
+				scheduled_time_slot: newTimeSlot,
+				scheduled_time: newTime || null,
+				reschedule_count: (service.reschedule_count || 0) + 1,
+				last_rescheduled_at: new Date().toISOString(),
+				last_rescheduled_by: user.id
+			})
+			.eq('id', params.id);
+
+		if (updateError) {
+			return { success: false, error: updateError.message };
+		}
+
+		// Create notification for client
+		const reasonText = reason ? ` Reason: ${reason}` : '';
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error: notifyError } = await (supabase as any).from('notifications').insert({
+			user_id: service.client_id,
+			type: 'schedule_change',
+			title: 'Delivery Rescheduled',
+			message: `Your delivery has been rescheduled to ${newDate}.${reasonText}`,
+			service_id: params.id
+		});
+
+		if (notifyError) {
+			console.error('Failed to create reschedule notification:', notifyError);
+			// Still return success since the reschedule itself worked
+		}
+
+		return { success: true };
 	}
 };
