@@ -149,7 +149,7 @@ export const actions: Actions = {
 			.eq('id', params.id);
 
 		if (updateError) {
-			return { success: false, error: updateError.message };
+			return fail(500, { error: updateError.message });
 		}
 
 		return { success: true, message: 'price_updated' };
