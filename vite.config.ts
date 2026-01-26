@@ -27,7 +27,7 @@ export default defineConfig({
 			manifest: false,
 			strategies: 'injectManifest',
 			srcDir: 'src',
-			filename: 'sw.ts',
+			filename: 'service-worker.ts',
 			injectManifest: {
 				globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
 				globIgnores: ['**/apple-splash-*.png']
