@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p1
 issue_id: "069"
 tags: [security, database]
@@ -32,14 +32,21 @@ Create migration to ALTER FUNCTION with SET search_path = ''
 - **Database Changes**: Yes - ALTER FUNCTION
 
 ## Acceptance Criteria
-- [ ] Function has SET search_path = ''
-- [ ] Supabase security advisor passes
+- [x] Function has SET search_path = ''
+- [x] Supabase security advisor passes
 
 ## Work Log
 
 ### 2026-01-26 - Approved for Work
 **By:** Claude Triage System
 **Actions:** Issue approved during triage session
+
+### 2026-01-26 - Resolved
+**By:** Claude Code
+**Actions:**
+- Created migration 033 to ALTER FUNCTION with SET search_path = ''
+- Added `public.` schema qualifier to profiles table reference
+- Supabase security advisor passes (no mutable search_path warnings)
 
 ## Notes
 Source: Full codebase review 2026-01-26 (CRIT-008)

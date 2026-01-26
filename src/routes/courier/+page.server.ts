@@ -1,5 +1,4 @@
 import type { Actions } from './$types';
-import type { Service } from '$lib/database.types';
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
 
 // Helper to send notification
@@ -77,64 +76,44 @@ export const actions: Actions = {
 			return { success: false, error: 'Date and time slot required' };
 		}
 
-		// Get all selected services
-		const { data: services } = await supabase
-			.from('services')
-			.select(
-				'id, client_id, scheduled_date, scheduled_time_slot, scheduled_time, reschedule_count, status'
-			)
-			.in('id', serviceIds)
-			.eq('status', 'pending');
+		// Call the bulk reschedule RPC function (single atomic operation)
+		// The RPC handles validation, updates services, and creates history records atomically
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { data: rpcResult, error: rpcError } = await (supabase as any).rpc(
+			'bulk_reschedule_services',
+			{
+				p_service_ids: serviceIds,
+				p_new_date: newDate,
+				p_new_time_slot: newTimeSlot,
+				p_new_time: newTime || null,
+				p_reason: reason || 'Batch reschedule',
+				p_user_id: user.id
+			}
+		);
 
-		if (!services || services.length === 0) {
-			return { success: false, error: 'No pending services found' };
+		if (rpcError) {
+			return { success: false, error: rpcError.message };
 		}
 
-		const results: { success: number; failed: number } = { success: 0, failed: 0 };
+		const bulkResult = rpcResult as {
+			success: boolean;
+			error?: string;
+			updated_count: number;
+			client_notifications?: Array<{ client_id: string; service_ids: string[] }>;
+		};
+
+		if (!bulkResult.success) {
+			return { success: false, error: bulkResult.error || 'Reschedule failed' };
+		}
+
+		const results = { success: bulkResult.updated_count, failed: 0 };
+
+		// Build client notifications map from RPC result
 		const clientNotifications: Map<string, string[]> = new Map();
-
-		for (const service of services as Service[]) {
-			// Update service
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const { error: updateError } = await (supabase as any)
-				.from('services')
-				.update({
-					scheduled_date: newDate,
-					scheduled_time_slot: newTimeSlot,
-					scheduled_time: newTime,
-					reschedule_count: (service.reschedule_count || 0) + 1,
-					last_rescheduled_at: new Date().toISOString(),
-					last_rescheduled_by: user.id
-				})
-				.eq('id', service.id);
-
-			if (updateError) {
-				results.failed++;
-				continue;
+		if (bulkResult.client_notifications) {
+			for (const notification of bulkResult.client_notifications) {
+				clientNotifications.set(notification.client_id, notification.service_ids);
 			}
-
-			// Create history record
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			await (supabase as any).from('service_reschedule_history').insert({
-				service_id: service.id,
-				initiated_by: user.id,
-				initiated_by_role: 'courier',
-				old_date: service.scheduled_date,
-				old_time_slot: service.scheduled_time_slot,
-				old_time: service.scheduled_time,
-				new_date: newDate,
-				new_time_slot: newTimeSlot,
-				new_time: newTime,
-				reason: reason || 'Batch reschedule',
-				approval_status: 'auto_approved'
-			});
-
-			results.success++;
-
-			// Group notifications by client
-			const clientServices = clientNotifications.get(service.client_id) || [];
-			clientServices.push(service.id);
-			clientNotifications.set(service.client_id, clientServices);
 		}
 
 		// Send grouped notifications to clients

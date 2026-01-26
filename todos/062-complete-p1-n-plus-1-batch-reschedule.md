@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p1
 issue_id: "062"
 tags: [performance, data, n-plus-1]
@@ -39,15 +39,23 @@ Create RPC function for bulk reschedule that handles all operations atomically
 - **Database Changes**: Yes - new RPC function
 
 ## Acceptance Criteria
-- [ ] Batch reschedule uses single RPC call
-- [ ] All operations are atomic
-- [ ] Performance scales O(1) not O(n)
+- [x] Batch reschedule uses single RPC call
+- [x] All operations are atomic
+- [x] Performance scales O(1) not O(n)
 
 ## Work Log
 
 ### 2026-01-26 - Approved for Work
 **By:** Claude Triage System
 **Actions:** Issue approved during triage session
+
+### 2026-01-26 - Resolved
+**By:** Claude Code
+**Actions:**
+- Created RPC function `bulk_reschedule_services` (migration 034)
+- Updated `src/routes/courier/+page.server.ts` to use single RPC call
+- Removed N+1 loop pattern
+- Performance now O(1) regardless of service count
 
 ## Notes
 Source: Full codebase review 2026-01-26 (CRIT-001)

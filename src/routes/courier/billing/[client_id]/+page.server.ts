@@ -1,8 +1,8 @@
 import { redirect, error } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import type { Profile, ClientPricing, PricingZone, UrgencyFee, Service } from '$lib/database.types';
+import type { Profile, ClientPricing, PricingZone, UrgencyFee } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
-import { calculateServicePrice, getCourierPricingSettings } from '$lib/services/pricing.js';
+import { getCourierPricingSettings } from '$lib/services/pricing.js';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
 	const { session } = await safeGetSession();
@@ -155,10 +155,11 @@ export const actions: Actions = {
 		// Get services with missing prices within date range
 		let query = supabase
 			.from('services')
-			.select('*')
+			.select('id')
 			.eq('client_id', client_id)
 			.is('deleted_at', null)
-			.is('calculated_price', null);
+			.is('calculated_price', null)
+			.not('distance_km', 'is', null);
 
 		if (startDate) {
 			query = query.gte('created_at', startDate);
@@ -178,35 +179,22 @@ export const actions: Actions = {
 
 		const courierSettings = await getCourierPricingSettings(supabase);
 
-		// Process all services in parallel to avoid N+1 queries
-		const updatePromises = (services as Service[])
-			.filter((service) => service.distance_km !== null)
-			.map(async (service) => {
-				const priceResult = await calculateServicePrice(supabase, {
-					clientId: client_id,
-					distanceKm: service.distance_km!,
-					urgencyFeeId: service.urgency_fee_id,
-					minimumCharge: courierSettings.minimumCharge
-				});
+		// Use bulk RPC to calculate and update all prices in a single call
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { data: result, error: rpcError } = await (supabase as any).rpc(
+			'bulk_recalculate_service_prices',
+			{
+				p_service_ids: services.map((s: { id: string }) => s.id),
+				p_client_id: client_id,
+				p_minimum_charge: courierSettings.minimumCharge
+			}
+		);
 
-				if (priceResult.success) {
-					// eslint-disable-next-line @typescript-eslint/no-explicit-any
-					await (supabase as any)
-						.from('services')
-						.update({
-							calculated_price: priceResult.price,
-							price_breakdown: priceResult.breakdown
-						})
-						.eq('id', service.id);
-					return true;
-				}
-				return false;
-			});
+		if (rpcError) {
+			return { success: false, error: rpcError.message };
+		}
 
-		const results = await Promise.all(updatePromises);
-		const recalculated = results.filter(Boolean).length;
-
-		return { success: true, recalculated };
+		return { success: true, recalculated: result?.updated || 0 };
 	},
 
 	recalculateAll: async ({ params, request, locals: { supabase, safeGetSession } }) => {
@@ -234,10 +222,10 @@ export const actions: Actions = {
 		const startDate = formData.get('start_date') as string;
 		const endDate = formData.get('end_date') as string;
 
-		// Get all services (with distance) within date range
+		// Get all services (with distance) within date range - only need IDs
 		let query = supabase
 			.from('services')
-			.select('*')
+			.select('id')
 			.eq('client_id', client_id)
 			.is('deleted_at', null)
 			.not('distance_km', 'is', null);
@@ -260,34 +248,21 @@ export const actions: Actions = {
 
 		const courierSettings = await getCourierPricingSettings(supabase);
 
-		// Process all services in parallel to avoid N+1 queries
-		const updatePromises = (services as Service[])
-			.filter((service) => service.distance_km !== null)
-			.map(async (service) => {
-				const priceResult = await calculateServicePrice(supabase, {
-					clientId: client_id,
-					distanceKm: service.distance_km!,
-					urgencyFeeId: service.urgency_fee_id,
-					minimumCharge: courierSettings.minimumCharge
-				});
+		// Use bulk RPC to calculate and update all prices in a single call
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { data: result, error: rpcError } = await (supabase as any).rpc(
+			'bulk_recalculate_service_prices',
+			{
+				p_service_ids: services.map((s: { id: string }) => s.id),
+				p_client_id: client_id,
+				p_minimum_charge: courierSettings.minimumCharge
+			}
+		);
 
-				if (priceResult.success) {
-					// eslint-disable-next-line @typescript-eslint/no-explicit-any
-					await (supabase as any)
-						.from('services')
-						.update({
-							calculated_price: priceResult.price,
-							price_breakdown: priceResult.breakdown
-						})
-						.eq('id', service.id);
-					return true;
-				}
-				return false;
-			});
+		if (rpcError) {
+			return { success: false, error: rpcError.message };
+		}
 
-		const results = await Promise.all(updatePromises);
-		const recalculated = results.filter(Boolean).length;
-
-		return { success: true, recalculated };
+		return { success: true, recalculated: result?.updated || 0 };
 	}
 };

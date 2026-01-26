@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p1
 issue_id: "063"
 tags: [performance, data, n-plus-1]
@@ -39,15 +39,23 @@ Fetch client pricing config once, then batch update all services via RPC
 - **Database Changes**: Yes - new RPC function for bulk price update
 
 ## Acceptance Criteria
-- [ ] Config fetched once per batch
-- [ ] Single RPC call updates all prices
-- [ ] Performance scales O(1) not O(n)
+- [x] Config fetched once per batch
+- [x] Single RPC call updates all prices
+- [x] Performance scales O(1) not O(n)
 
 ## Work Log
 
 ### 2026-01-26 - Approved for Work
 **By:** Claude Triage System
 **Actions:** Issue approved during triage session
+
+### 2026-01-26 - Resolved
+**By:** Claude Code
+**Actions:**
+- Created RPC function `bulk_recalculate_service_prices` (migration 032)
+- Updated `src/routes/courier/billing/[client_id]/+page.server.ts` to use RPC
+- Config is now fetched once by the RPC function internally
+- Performance now O(1) regardless of service count
 
 ## Notes
 Source: Full codebase review 2026-01-26 (CRIT-002)

@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p1
 issue_id: "064"
 tags: [performance, data, n-plus-1]
@@ -32,14 +32,21 @@ Use same RPC function created for recalculateMissing (todo #063)
 - **Database Changes**: Shares RPC from #063
 
 ## Acceptance Criteria
-- [ ] Uses same bulk RPC as recalculateMissing
-- [ ] Performance scales O(1) not O(n)
+- [x] Uses same bulk RPC as recalculateMissing
+- [x] Performance scales O(1) not O(n)
 
 ## Work Log
 
 ### 2026-01-26 - Approved for Work
 **By:** Claude Triage System
 **Actions:** Issue approved during triage session
+
+### 2026-01-26 - Resolved
+**By:** Claude Code
+**Actions:**
+- Uses same `bulk_recalculate_service_prices` RPC as recalculateMissing (#063)
+- Updated action in `src/routes/courier/billing/[client_id]/+page.server.ts`
+- Performance now O(1) regardless of service count
 
 ## Notes
 Source: Full codebase review 2026-01-26 (CRIT-003)
