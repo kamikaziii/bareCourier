@@ -9,6 +9,7 @@
 	import * as m from '$lib/paraglide/messages.js';
 	import { Bell, Globe } from '@lucide/svelte';
 	import type { Profile, PastDueSettings } from '$lib/database.types.js';
+	import { DEFAULT_PAST_DUE_SETTINGS } from '$lib/constants/scheduling.js';
 	import type { SupabaseClient } from '@supabase/supabase-js';
 	import {
 		isPushSupported,
@@ -24,20 +25,8 @@
 
 	let { profile, supabase }: Props = $props();
 
-	// Default past due settings
-	const defaultPastDueSettings: PastDueSettings = {
-		gracePeriodStandard: 30,
-		gracePeriodSpecific: 15,
-		thresholdApproaching: 120,
-		thresholdUrgent: 60,
-		thresholdCriticalHours: 24,
-		allowClientReschedule: true,
-		clientMinNoticeHours: 24,
-		clientMaxReschedules: 3,
-		pastDueReminderInterval: 60,
-		dailySummaryEnabled: true,
-		dailySummaryTime: '08:00'
-	};
+	// Use shared defaults from constants
+	const defaultPastDueSettings = DEFAULT_PAST_DUE_SETTINGS;
 
 	// Notification preferences state
 	let pushEnabled = $state(false);

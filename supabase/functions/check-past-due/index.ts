@@ -58,25 +58,44 @@ function getSlotCutoff(slot: string, timeSlots: TimeSlots | null): string {
 	return DEFAULT_SLOT_CUTOFFS[slot] || '17:00';
 }
 
-function getCutoffTime(service: Service, gracePeriod: number, timeSlots: TimeSlots | null): Date | null {
+function getCutoffTime(
+	service: Service,
+	gracePeriod: number,
+	timeSlots: TimeSlots | null,
+	timezone: string
+): Date | null {
 	if (!service.scheduled_date) return null;
 
-	const date = new Date(service.scheduled_date + 'T00:00:00');
-
+	// Determine the cutoff time string (HH:MM)
+	let cutoffTimeStr: string;
 	if (service.scheduled_time_slot === 'specific' && service.scheduled_time) {
-		const [hours, minutes] = service.scheduled_time.split(':').map(Number);
-		date.setHours(hours, minutes, 0, 0);
+		cutoffTimeStr = service.scheduled_time;
 	} else if (service.scheduled_time_slot) {
-		const cutoffTime = getSlotCutoff(service.scheduled_time_slot, timeSlots);
-		const [hours, minutes] = cutoffTime.split(':').map(Number);
-		date.setHours(hours, minutes, 0, 0);
+		cutoffTimeStr = getSlotCutoff(service.scheduled_time_slot, timeSlots);
 	} else {
-		// Default to end of day
-		date.setHours(17, 0, 0, 0);
+		cutoffTimeStr = '17:00';
 	}
 
+	// Create ISO string for the local datetime
+	const localDateTimeStr = `${service.scheduled_date}T${cutoffTimeStr}:00`;
+
+	// Parse the local datetime and convert to UTC
+	// We need to find out what UTC time corresponds to this local time
+	const localDate = new Date(localDateTimeStr);
+
+	// Get the timezone offset by comparing UTC and local representations
+	// This handles DST automatically
+	const utcStr = localDate.toLocaleString('en-US', { timeZone: 'UTC' });
+	const tzStr = localDate.toLocaleString('en-US', { timeZone: timezone });
+	const utcDate = new Date(utcStr);
+	const tzDate = new Date(tzStr);
+	const offsetMs = utcDate.getTime() - tzDate.getTime();
+
+	// Apply offset to get the correct UTC time
+	const cutoffUtc = new Date(localDate.getTime() + offsetMs);
+
 	// Add grace period
-	return new Date(date.getTime() + gracePeriod * 60 * 1000);
+	return new Date(cutoffUtc.getTime() + gracePeriod * 60 * 1000);
 }
 
 function formatOverdueTime(minutes: number): string {
@@ -149,8 +168,8 @@ Deno.serve(async (req: Request) => {
 		// Get custom time slots from courier profile
 		const timeSlots = courier.time_slots || null;
 
-		// Get pending services scheduled for today or earlier
-		const todayStr = now.toISOString().split('T')[0];
+		// Get pending services scheduled for today or earlier (use local date)
+		const todayStr = localDate.toISOString().split('T')[0];
 		const { data: services } = await supabase
 			.from('services')
 			.select(
@@ -172,7 +191,7 @@ Deno.serve(async (req: Request) => {
 			const gracePeriod =
 				service.scheduled_time_slot === 'specific' ? gracePeriodSpecific : gracePeriodStandard;
 
-			const cutoff = getCutoffTime(service, gracePeriod, timeSlots);
+			const cutoff = getCutoffTime(service, gracePeriod, timeSlots, courierTimezone);
 			if (!cutoff) continue;
 
 			if (now > cutoff) {

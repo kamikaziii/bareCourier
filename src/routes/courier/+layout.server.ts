@@ -40,7 +40,9 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
 			role: profile.role,
 			name: profile.name,
 			past_due_settings: profile.past_due_settings,
-			time_slots: profile.time_slots
+			time_slots: profile.time_slots,
+			working_days: profile.working_days,
+			timezone: profile.timezone
 		},
 		navCounts: {
 			pendingRequests: (pendingRequestsResult.count ?? 0) + (pendingReschedulesResult.count ?? 0)

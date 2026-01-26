@@ -77,7 +77,11 @@ Deno.serve(async (req: Request) => {
 		const [prefHour, prefMin] = preferredTime.split(':').map(Number);
 		const [localHour, localMin] = localTime.split(':').map(Number);
 
-		if (localHour !== prefHour || Math.abs(localMin - prefMin) > 7) {
+		// Use total minutes to handle hour boundaries correctly
+		const prefTotalMin = prefHour * 60 + prefMin;
+		const localTotalMin = localHour * 60 + localMin;
+
+		if (Math.abs(localTotalMin - prefTotalMin) > 7) {
 			return new Response(JSON.stringify({ message: 'Not the right time', sent: false }), {
 				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
 			});
@@ -118,16 +122,17 @@ Deno.serve(async (req: Request) => {
 
 		// Count urgent services (scheduled in next hour)
 		let urgent = 0;
-		const hour = now.getHours();
+		// Use local hour in courier's timezone for urgent detection
+		const localHourForUrgent = localHour;
 
 		for (const service of typedServices) {
 			if (service.status !== 'pending') continue;
 
 			// Simple urgent check: morning services if before noon, afternoon if after, etc.
 			if (
-				(service.scheduled_time_slot === 'morning' && hour >= 11) ||
-				(service.scheduled_time_slot === 'afternoon' && hour >= 16) ||
-				(service.scheduled_time_slot === 'evening' && hour >= 20)
+				(service.scheduled_time_slot === 'morning' && localHourForUrgent >= 11) ||
+				(service.scheduled_time_slot === 'afternoon' && localHourForUrgent >= 16) ||
+				(service.scheduled_time_slot === 'evening' && localHourForUrgent >= 20)
 			) {
 				urgent++;
 			}

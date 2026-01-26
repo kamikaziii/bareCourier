@@ -10,6 +10,12 @@
 	import * as m from '$lib/paraglide/messages.js';
 	import { Clock, Calendar } from '@lucide/svelte';
 	import type { Profile, PastDueSettings, TimeSlotDefinitions, WorkingDay } from '$lib/database.types.js';
+	import {
+		DEFAULT_TIME_SLOTS,
+		DEFAULT_WORKING_DAYS,
+		DEFAULT_PAST_DUE_SETTINGS,
+		VALID_DAYS
+	} from '$lib/constants/scheduling.js';
 
 	interface Props {
 		profile: Profile;
@@ -17,30 +23,10 @@
 
 	let { profile }: Props = $props();
 
-	// Default past due settings
-	const defaultPastDueSettings: PastDueSettings = {
-		gracePeriodStandard: 30,
-		gracePeriodSpecific: 15,
-		thresholdApproaching: 120,
-		thresholdUrgent: 60,
-		thresholdCriticalHours: 24,
-		allowClientReschedule: true,
-		clientMinNoticeHours: 24,
-		clientMaxReschedules: 3,
-		pastDueReminderInterval: 60,
-		dailySummaryEnabled: true,
-		dailySummaryTime: '08:00'
-	};
-
-	// Default time slot definitions
-	const defaultTimeSlots: TimeSlotDefinitions = {
-		morning: { start: '08:00', end: '12:00' },
-		afternoon: { start: '12:00', end: '18:00' },
-		evening: { start: '18:00', end: '21:00' }
-	};
-
-	// Default working days
-	const defaultWorkingDays: WorkingDay[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+	// Use shared defaults from constants
+	const defaultPastDueSettings = DEFAULT_PAST_DUE_SETTINGS;
+	const defaultTimeSlots = DEFAULT_TIME_SLOTS;
+	const defaultWorkingDays = DEFAULT_WORKING_DAYS;
 
 	// Past due settings state
 	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
@@ -61,7 +47,7 @@
 	);
 
 	// All days of the week for iteration
-	const allDays: WorkingDay[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+	const allDays = VALID_DAYS;
 
 	// Message lookup for day names
 	const dayMessages: Record<WorkingDay, () => string> = {
@@ -105,15 +91,15 @@
 		<form method="POST" action="?/updateTimeSlots" use:enhance class="space-y-4">
 			{#each ['morning', 'afternoon', 'evening'] as slot (slot)}
 				{@const slotKey = slot as 'morning' | 'afternoon' | 'evening'}
-				<div class="grid grid-cols-3 gap-4 items-center">
+				<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
 					<Label>{slotMessages[slotKey]()}</Label>
 					<div class="space-y-1">
 						<Label class="text-xs text-muted-foreground">{m.settings_time_slot_start()}</Label>
-						<Input type="time" name="{slot}_start" value={timeSlots[slotKey].start} oninput={(e) => timeSlots[slotKey].start = (e.target as HTMLInputElement).value} />
+						<Input type="time" name="{slot}_start" bind:value={timeSlots[slotKey].start} />
 					</div>
 					<div class="space-y-1">
 						<Label class="text-xs text-muted-foreground">{m.settings_time_slot_end()}</Label>
-						<Input type="time" name="{slot}_end" value={timeSlots[slotKey].end} oninput={(e) => timeSlots[slotKey].end = (e.target as HTMLInputElement).value} />
+						<Input type="time" name="{slot}_end" bind:value={timeSlots[slotKey].end} />
 					</div>
 				</div>
 			{/each}
@@ -137,8 +123,6 @@
 				{#each allDays as day (day)}
 					<label class="flex items-center gap-2 cursor-pointer">
 						<Checkbox
-							name="working_days"
-							value={day}
 							checked={workingDays.includes(day)}
 							onCheckedChange={(checked) => toggleWorkingDay(day, checked === true)}
 						/>

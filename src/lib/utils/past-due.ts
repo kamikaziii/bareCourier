@@ -4,6 +4,8 @@
  * Calculates urgency levels for services based on scheduled times and cutoffs.
  */
 
+import { DEFAULT_TIME_SLOTS, DEFAULT_PAST_DUE_SETTINGS } from '$lib/constants/scheduling';
+
 export type UrgencyLevel = 'on_track' | 'approaching' | 'urgent' | 'past_due' | 'critical';
 
 export type TimeSlotConfig = {
@@ -22,16 +24,12 @@ export type PastDueConfig = {
 };
 
 export const DEFAULT_CONFIG: PastDueConfig = {
-	timeSlots: {
-		morning: { start: '08:00', end: '12:00' },
-		afternoon: { start: '12:00', end: '17:00' },
-		evening: { start: '17:00', end: '21:00' }
-	},
-	gracePeriodStandard: 30,
-	gracePeriodSpecific: 15,
-	thresholdApproaching: 120, // 2 hours
-	thresholdUrgent: 60, // 1 hour
-	thresholdCriticalHours: 24
+	timeSlots: DEFAULT_TIME_SLOTS,
+	gracePeriodStandard: DEFAULT_PAST_DUE_SETTINGS.gracePeriodStandard,
+	gracePeriodSpecific: DEFAULT_PAST_DUE_SETTINGS.gracePeriodSpecific,
+	thresholdApproaching: DEFAULT_PAST_DUE_SETTINGS.thresholdApproaching,
+	thresholdUrgent: DEFAULT_PAST_DUE_SETTINGS.thresholdUrgent,
+	thresholdCriticalHours: DEFAULT_PAST_DUE_SETTINGS.thresholdCriticalHours
 };
 
 export type ServiceForUrgency = {

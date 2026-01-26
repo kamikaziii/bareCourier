@@ -3,6 +3,27 @@ import type { PageServerLoad, Actions } from './$types';
 import type { Profile, UrgencyFee } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 
+// Validation helpers
+const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
+const VALID_DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
+const VALID_TIMEZONES = ['Europe/Lisbon', 'Europe/London', 'Europe/Paris', 'Europe/Madrid', 'Atlantic/Azores', 'Atlantic/Madeira'] as const;
+
+function isValidTime(time: string): boolean {
+	return TIME_REGEX.test(time);
+}
+
+function isValidTimeRange(start: string, end: string): boolean {
+	return isValidTime(start) && isValidTime(end) && start < end;
+}
+
+function isValidWorkingDay(day: string): day is (typeof VALID_DAYS)[number] {
+	return VALID_DAYS.includes(day as (typeof VALID_DAYS)[number]);
+}
+
+function isValidTimezone(tz: string): tz is (typeof VALID_TIMEZONES)[number] {
+	return VALID_TIMEZONES.includes(tz as (typeof VALID_TIMEZONES)[number]);
+}
+
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
 	const { session, user } = await safeGetSession();
 	if (!session || !user) {
@@ -207,12 +228,12 @@ export const actions: Actions = {
 
 		// Check if this urgency fee is in use by any services
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { data: usageCount } = await (supabase as any)
+		const { count } = await (supabase as any)
 			.from('services')
 			.select('id', { count: 'exact', head: true })
 			.eq('urgency_fee_id', id);
 
-		if (usageCount && usageCount.length > 0) {
+		if (count && count > 0) {
 			return { success: false, error: 'urgency_in_use' };
 		}
 
@@ -497,6 +518,13 @@ export const actions: Actions = {
 			}
 		};
 
+		// Validate all time slots
+		for (const [slot, times] of Object.entries(timeSlots)) {
+			if (!isValidTimeRange(times.start, times.end)) {
+				return { success: false, error: `Invalid time range for ${slot}` };
+			}
+		}
+
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const { error } = await (supabase as any)
 			.from('profiles')
@@ -519,6 +547,12 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const workingDays = formData.getAll('working_days') as string[];
 
+		// Validate all days
+		const invalidDays = workingDays.filter((day) => !isValidWorkingDay(day));
+		if (invalidDays.length > 0) {
+			return { success: false, error: `Invalid working days: ${invalidDays.join(', ')}` };
+		}
+
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const { error } = await (supabase as any)
 			.from('profiles')
@@ -540,6 +574,11 @@ export const actions: Actions = {
 
 		const formData = await request.formData();
 		const timezone = formData.get('timezone') as string;
+
+		// Validate timezone
+		if (!isValidTimezone(timezone)) {
+			return { success: false, error: 'Invalid timezone' };
+		}
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const { error } = await (supabase as any)
