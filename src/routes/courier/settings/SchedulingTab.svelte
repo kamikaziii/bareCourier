@@ -8,6 +8,7 @@
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import * as m from '$lib/paraglide/messages.js';
+	import { getLocale } from '$lib/paraglide/runtime.js';
 	import { Clock, Calendar } from '@lucide/svelte';
 	import type { Profile, PastDueSettings, TimeSlotDefinitions, WorkingDay } from '$lib/database.types.js';
 	import {
@@ -95,11 +96,11 @@
 					<Label>{slotMessages[slotKey]()}</Label>
 					<div class="space-y-1">
 						<Label class="text-xs text-muted-foreground">{m.settings_time_slot_start()}</Label>
-						<Input type="time" name="{slot}_start" bind:value={timeSlots[slotKey].start} />
+						<Input type="time" lang={getLocale()} name="{slot}_start" bind:value={timeSlots[slotKey].start} />
 					</div>
 					<div class="space-y-1">
 						<Label class="text-xs text-muted-foreground">{m.settings_time_slot_end()}</Label>
-						<Input type="time" name="{slot}_end" bind:value={timeSlots[slotKey].end} />
+						<Input type="time" lang={getLocale()} name="{slot}_end" bind:value={timeSlots[slotKey].end} />
 					</div>
 				</div>
 			{/each}

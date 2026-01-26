@@ -177,6 +177,7 @@
 			<Input
 				id="specific-time"
 				type="time"
+				lang={getLocale()}
 				value={selectedTime || ''}
 				oninput={(e) => onTimeChange(e.currentTarget.value || null)}
 				{disabled}

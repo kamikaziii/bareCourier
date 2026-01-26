@@ -7,6 +7,7 @@
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import * as m from '$lib/paraglide/messages.js';
+	import { getLocale } from '$lib/paraglide/runtime.js';
 	import { Bell, Globe } from '@lucide/svelte';
 	import type { Profile, PastDueSettings } from '$lib/database.types.js';
 	import { DEFAULT_PAST_DUE_SETTINGS } from '$lib/constants/scheduling.js';
@@ -218,6 +219,7 @@
 							id="dailySummaryTime"
 							name="dailySummaryTime"
 							type="time"
+							lang={getLocale()}
 							bind:value={pastDueSettings.dailySummaryTime}
 							class="w-32"
 						/>
