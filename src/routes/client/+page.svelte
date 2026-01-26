@@ -8,7 +8,8 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import * as m from '$lib/paraglide/messages.js';
-	import { getLocale, localizeHref } from '$lib/paraglide/runtime.js';
+	import { localizeHref } from '$lib/paraglide/runtime.js';
+import { formatDate, formatDateTime } from '$lib/utils.js';
 	import type { PageData } from './$types';
 	import type { Service } from '$lib/database.types.js';
 	import { Search, X, Filter } from '@lucide/svelte';
@@ -128,14 +129,6 @@
 			default:
 				return '';
 		}
-	}
-
-	function formatDate(dateStr: string): string {
-		return new Date(dateStr).toLocaleDateString(getLocale());
-	}
-
-	function formatDateTime(dateStr: string): string {
-		return new Date(dateStr).toLocaleString(getLocale());
 	}
 
 	function formatTimeSlot(slot: string | null): string {

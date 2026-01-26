@@ -7,6 +7,7 @@
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime.js';
+import { formatDate } from '$lib/utils.js';
 	import type { PageData, ActionData } from './$types';
 	import type { PricingModel } from '$lib/database.types';
 	import { ArrowLeft, Euro, MapPin, Trash2, Plus, FileText, Calculator, AlertTriangle } from '@lucide/svelte';
@@ -167,10 +168,6 @@
 			style: 'currency',
 			currency: 'EUR'
 		}).format(value);
-	}
-
-	function formatDate(dateStr: string): string {
-		return new Date(dateStr).toLocaleDateString(getLocale());
 	}
 
 	function handleRecalculate() {

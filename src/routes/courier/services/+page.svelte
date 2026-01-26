@@ -22,7 +22,8 @@
 	} from '$lib/services/pricing.js';
 	import { sortByUrgency, settingsToConfig, type PastDueConfig } from '$lib/utils/past-due.js';
 	import * as m from '$lib/paraglide/messages.js';
-	import { getLocale, localizeHref } from '$lib/paraglide/runtime.js';
+	import { localizeHref } from '$lib/paraglide/runtime.js';
+import { formatDate } from '$lib/utils.js';
 	import type { PageData } from './$types';
 	import type { TimeSlot, UrgencyFee } from '$lib/database.types.js';
 	import SkeletonList from '$lib/components/SkeletonList.svelte';
@@ -222,10 +223,6 @@
 
 	function getStatusLabel(status: string): string {
 		return status === 'pending' ? m.status_pending() : m.status_delivered();
-	}
-
-	function formatDate(dateStr: string): string {
-		return new Date(dateStr).toLocaleDateString(getLocale());
 	}
 </script>
 

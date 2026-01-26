@@ -13,6 +13,7 @@
 	import RouteMap from '$lib/components/RouteMap.svelte';
 	import UrgencyBadge from '$lib/components/UrgencyBadge.svelte';
 	import { settingsToConfig } from '$lib/utils/past-due.js';
+import { formatDate, formatDateTime } from '$lib/utils.js';
 	import RescheduleDialog from '$lib/components/RescheduleDialog.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import type { TimeSlot } from '$lib/database.types.js';
@@ -49,24 +50,6 @@
 	let actionError = $state('');
 	let priceOverrideLoading = $state(false);
 	let priceOverrideError = $state('');
-
-	function formatDate(dateStr: string): string {
-		return new Date(dateStr).toLocaleDateString(getLocale(), {
-			year: 'numeric',
-			month: 'long',
-			day: 'numeric'
-		});
-	}
-
-	function formatDateTime(dateStr: string): string {
-		return new Date(dateStr).toLocaleString(getLocale(), {
-			year: 'numeric',
-			month: 'short',
-			day: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit'
-		});
-	}
 
 	async function handleStatusChange() {
 		loading = true;

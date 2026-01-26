@@ -6,6 +6,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import { getLocale } from '$lib/paraglide/runtime.js';
+import { formatDate } from '$lib/utils.js';
 	import type { PageData } from './$types';
 	import { Euro, MapPin, Package, Receipt, Download } from '@lucide/svelte';
 
@@ -70,10 +71,6 @@
 			style: 'currency',
 			currency: 'EUR'
 		}).format(value);
-	}
-
-	function formatDate(dateStr: string): string {
-		return new Date(dateStr).toLocaleDateString(getLocale());
 	}
 
 	function getPricingModelLabel(model: string): string {

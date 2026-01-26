@@ -104,7 +104,12 @@ export const actions: Actions = {
 
 		const formData = await request.formData();
 		const zonesJson = formData.get('zones') as string;
-		const zones = JSON.parse(zonesJson) as { min_km: number; max_km: number | null; price: number }[];
+		let zones: { min_km: number; max_km: number | null; price: number }[];
+		try {
+			zones = JSON.parse(zonesJson);
+		} catch {
+			return { success: false, error: 'Invalid zone configuration format' };
+		}
 
 		const { client_id } = params;
 

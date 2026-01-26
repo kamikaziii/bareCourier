@@ -110,7 +110,12 @@ export const actions: Actions = {
 
 			// If zone pricing, save zones using atomic RPC
 			if (pricingModel === 'zone' && zonesJson) {
-				const zones = JSON.parse(zonesJson) as { min_km: number; max_km: number | null; price: number }[];
+				let zones: { min_km: number; max_km: number | null; price: number }[];
+				try {
+					zones = JSON.parse(zonesJson);
+				} catch {
+					return { success: false, error: 'Invalid zone configuration format' };
+				}
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				const { error: rpcError } = await (supabase as any).rpc('replace_pricing_zones', {
 					p_client_id: params.id,
