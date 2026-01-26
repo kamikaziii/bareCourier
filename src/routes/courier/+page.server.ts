@@ -51,7 +51,19 @@ export const actions: Actions = {
 		}
 
 		const formData = await request.formData();
-		const serviceIds = JSON.parse(formData.get('service_ids') as string) as string[];
+
+		// Parse service IDs with error handling
+		let serviceIds: string[];
+		try {
+			const serviceIdsRaw = formData.get('service_ids') as string;
+			if (!serviceIdsRaw) {
+				return { success: false, error: 'No services selected' };
+			}
+			serviceIds = JSON.parse(serviceIdsRaw) as string[];
+		} catch {
+			return { success: false, error: 'Invalid service selection' };
+		}
+
 		const newDate = formData.get('date') as string;
 		const newTimeSlot = formData.get('time_slot') as string;
 		const newTime = (formData.get('time') as string) || null;

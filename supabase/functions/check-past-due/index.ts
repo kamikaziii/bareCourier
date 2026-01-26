@@ -19,6 +19,7 @@ interface Service {
 	scheduled_time: string | null;
 	status: string;
 	profiles: { name: string } | null;
+	last_past_due_notification_at: string | null;
 }
 
 interface PastDueSettings {
@@ -32,8 +33,8 @@ interface CourierProfile {
 	past_due_settings: PastDueSettings | null;
 }
 
-// Track last notification time per service to prevent spam
-const notificationCache: Map<string, number> = new Map();
+// Note: Edge Functions are STATELESS - no in-memory caching
+// We use the database column `last_past_due_notification_at` for deduplication
 
 function getCutoffTime(service: Service, gracePeriod: number): Date | null {
 	if (!service.scheduled_date) return null;
@@ -114,7 +115,7 @@ Deno.serve(async (req: Request) => {
 		const { data: services } = await supabase
 			.from('services')
 			.select(
-				'id, client_id, scheduled_date, scheduled_time_slot, scheduled_time, status, profiles!client_id(name)'
+				'id, client_id, scheduled_date, scheduled_time_slot, scheduled_time, status, last_past_due_notification_at, profiles!client_id(name)'
 			)
 			.eq('status', 'pending')
 			.lte('scheduled_date', todayStr)
@@ -138,8 +139,10 @@ Deno.serve(async (req: Request) => {
 			if (now > cutoff) {
 				const overdueMinutes = (now.getTime() - cutoff.getTime()) / (1000 * 60);
 
-				// Check if we've notified recently
-				const lastNotified = notificationCache.get(service.id) || 0;
+				// Check if we've notified recently using database timestamp
+				const lastNotified = service.last_past_due_notification_at
+					? new Date(service.last_past_due_notification_at).getTime()
+					: 0;
 				const minutesSinceLastNotification = (now.getTime() - lastNotified) / (1000 * 60);
 
 				if (minutesSinceLastNotification >= reminderInterval) {
@@ -156,7 +159,7 @@ Deno.serve(async (req: Request) => {
 			const overdueText = formatOverdueTime(overdueMinutes);
 
 			// Create in-app notification for courier
-			await supabase.from('notifications').insert({
+			const { error: notifError } = await supabase.from('notifications').insert({
 				user_id: courier.id,
 				type: 'service_status',
 				title: 'Entrega Atrasada',
@@ -164,9 +167,15 @@ Deno.serve(async (req: Request) => {
 				service_id: service.id
 			});
 
-			// Update cache
-			notificationCache.set(service.id, now.getTime());
-			notifiedCount++;
+			if (!notifError) {
+				// Persist notification timestamp to database for deduplication
+				await supabase
+					.from('services')
+					.update({ last_past_due_notification_at: now.toISOString() })
+					.eq('id', service.id);
+
+				notifiedCount++;
+			}
 		}
 
 		return new Response(
