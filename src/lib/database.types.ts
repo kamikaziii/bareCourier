@@ -499,7 +499,7 @@ export type Database = {
 			is_courier: { Args: Record<string, never>; Returns: boolean };
 			replace_pricing_zones: {
 				Args: { p_client_id: string; p_zones: Json };
-				Returns: undefined;
+				Returns: Json; // Changed from void to jsonb with {success, error?}
 			};
 			reschedule_service: {
 				Args: {
