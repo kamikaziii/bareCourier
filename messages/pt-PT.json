@@ -393,6 +393,7 @@
 	"offline_pending": "{count} alterações pendentes",
 	"offline_syncing": "A sincronizar...",
 	"offline_sync_complete": "Todas as alterações sincronizadas",
+	"offline_sync_failed": "Sincronização falhou - algumas alterações podem ter sido perdidas",
 
 	"settings_pricing_mode": "Modo de Cálculo de Distância",
 	"settings_pricing_mode_desc": "Como a distância é calculada para preços",

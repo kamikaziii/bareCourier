@@ -4,7 +4,6 @@ import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
 import { NetworkOnly, NetworkFirst, CacheFirst } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
-import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 import { BackgroundSyncPlugin } from 'workbox-background-sync';
 
 declare const self: ServiceWorkerGlobalScope & {
@@ -32,17 +31,30 @@ const statusSyncPlugin = new BackgroundSyncPlugin('statusChangeQueue', {
 			try {
 				const response = await fetch(entry.request.clone());
 				if (!response.ok) {
-					// Re-queue if the request failed
+					// Detect permanent failures (4xx) - don't retry these
+					if (response.status >= 400 && response.status < 500) {
+						console.error('[SW] Permanent sync failure:', response.status, entry.request.url);
+						notifyClients({
+							type: 'SYNC_FAILED_PERMANENT',
+							url: entry.request.url,
+							status: response.status
+						});
+						continue; // Don't re-queue - permanent failure
+					}
+
+					// 5xx errors - temporary, re-queue for retry
 					await queue.unshiftRequest(entry);
-					throw new Error(`Request failed with status ${response.status}`);
+					console.warn('[SW] Temporary sync failure, re-queued:', response.status, entry.request.url);
+					continue;
 				}
 				console.log('[SW] Synced:', entry.request.url);
 				// Notify clients of successful sync
 				notifyClients({ type: 'SYNC_COMPLETE', url: entry.request.url });
 			} catch (error) {
-				console.error('[SW] Sync failed, re-queuing:', error);
+				// Network errors - temporary, re-queue for retry
+				console.error('[SW] Sync failed (network error), re-queuing:', error);
 				await queue.unshiftRequest(entry);
-				throw error; // Re-throw to trigger retry
+				continue; // Don't break - try next request
 			}
 		}
 	}
@@ -67,6 +79,19 @@ registerRoute(
 	'PATCH'
 );
 
+// Supabase REST API POST requests (service creation) - NetworkOnly with Background Sync
+registerRoute(
+	({ url, request }) =>
+		url.hostname.includes('supabase.co') &&
+		url.pathname.includes('/rest/') &&
+		url.pathname.includes('/services') &&
+		request.method === 'POST',
+	new NetworkOnly({
+		plugins: [statusSyncPlugin]
+	}),
+	'POST'
+);
+
 // Supabase REST API - NetworkFirst with cache fallback
 registerRoute(
 	/^https:\/\/.*\.supabase\.co\/rest\/.*/i,
@@ -77,10 +102,8 @@ registerRoute(
 			new ExpirationPlugin({
 				maxEntries: 100,
 				maxAgeSeconds: 60 * 60 * 24 // 24 hours
-			}),
-			new CacheableResponsePlugin({
-				statuses: [0, 200]
 			})
+			// CacheableResponsePlugin removed - uses default [0, 200]
 		]
 	})
 );
@@ -94,10 +117,8 @@ registerRoute(
 			new ExpirationPlugin({
 				maxEntries: 500,
 				maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
-			}),
-			new CacheableResponsePlugin({
-				statuses: [0, 200]
 			})
+			// CacheableResponsePlugin removed - uses safe default [200]
 		]
 	})
 );
@@ -106,7 +127,13 @@ registerRoute(
 self.addEventListener('push', (event) => {
 	if (!event.data) return;
 
-	const data = event.data.json();
+	let data;
+	try {
+		data = event.data.json();
+	} catch (error) {
+		console.error('[SW] Failed to parse push notification:', error);
+		return;
+	}
 
 	const options: NotificationOptions = {
 		body: data.message || data.body,
@@ -131,18 +158,33 @@ self.addEventListener('notificationclick', (event) => {
 
 	const url = event.notification.data?.url || '/';
 
+	// Validate URL is same-origin to prevent malicious redirects
+	let safeUrl: string;
+	try {
+		const parsedUrl = new URL(url, self.location.origin);
+		if (parsedUrl.origin !== self.location.origin) {
+			console.warn('[SW] Blocked navigation to external URL:', url);
+			return;
+		}
+		// Use only path and search to ensure same-origin
+		safeUrl = parsedUrl.pathname + parsedUrl.search;
+	} catch {
+		console.warn('[SW] Invalid URL in notification:', url);
+		return;
+	}
+
 	event.waitUntil(
 		self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
 			// Try to focus an existing window
 			for (const client of clientList) {
 				if (client.url.includes(self.location.origin) && 'focus' in client) {
-					client.navigate(url);
+					client.navigate(safeUrl);
 					return client.focus();
 				}
 			}
 			// Open new window if none exist
 			if (self.clients.openWindow) {
-				return self.clients.openWindow(url);
+				return self.clients.openWindow(safeUrl);
 			}
 		})
 	);
@@ -164,11 +206,5 @@ self.addEventListener('sync', (event) => {
 self.addEventListener('message', (event) => {
 	if (event.data && event.data.type === 'SKIP_WAITING') {
 		self.skipWaiting();
-	}
-	// Handle sync status request
-	if (event.data && event.data.type === 'GET_SYNC_STATUS') {
-		// This would be used to get pending sync count
-		// The actual pending count is managed by workbox-background-sync
-		event.ports?.[0]?.postMessage({ pending: 0 });
 	}
 });
