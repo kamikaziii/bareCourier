@@ -1,6 +1,7 @@
 -- Create RPC function for bulk price recalculation
 -- Fixes N+1 query issue by fetching config once and batch updating all services
 -- Used by recalculateMissing and recalculateAll actions
+-- Requires courier role for authorization
 
 CREATE OR REPLACE FUNCTION bulk_recalculate_service_prices(
     p_service_ids uuid[],
@@ -12,19 +13,45 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE
+    v_user_id uuid;
+    v_user_role text;
     v_pricing_config record;
     v_zones jsonb;
     v_urgency_fees jsonb;
     v_service record;
     v_base_price numeric;
     v_zone_price numeric;
-    v_urgency_fee record;
     v_urgency_amount numeric;
     v_final_price numeric;
     v_breakdown jsonb;
     v_updated_count integer := 0;
     v_skipped_count integer := 0;
 BEGIN
+    -- Authorization check: only couriers can recalculate prices
+    v_user_id := (SELECT auth.uid());
+
+    IF v_user_id IS NULL THEN
+        RETURN jsonb_build_object(
+            'success', false,
+            'error', 'Not authenticated',
+            'updated', 0,
+            'skipped', 0
+        );
+    END IF;
+
+    SELECT role INTO v_user_role
+    FROM public.profiles
+    WHERE id = v_user_id;
+
+    IF v_user_role IS NULL OR v_user_role != 'courier' THEN
+        RETURN jsonb_build_object(
+            'success', false,
+            'error', 'Unauthorized - courier role required',
+            'updated', 0,
+            'skipped', 0
+        );
+    END IF;
+
     -- Fetch client pricing config once
     SELECT
         cp.pricing_model,
@@ -153,9 +180,9 @@ BEGIN
 END;
 $$;
 
--- Grant execute to authenticated users
+-- Grant execute to authenticated users only (not anon)
 GRANT EXECUTE ON FUNCTION bulk_recalculate_service_prices(uuid[], uuid, numeric) TO authenticated;
 
 -- Add comment for documentation
 COMMENT ON FUNCTION bulk_recalculate_service_prices IS
-    'Bulk recalculates prices for multiple services. Fetches config once, updates all in single transaction. Returns {success, updated, skipped}.';
+    'Bulk recalculates prices for multiple services. Requires courier role. Uses empty search_path for security.';

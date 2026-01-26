@@ -1,5 +1,6 @@
 -- RPC function for bulk rescheduling services
 -- Replaces N+1 query pattern with single atomic operation
+-- Uses empty search_path and fully qualified names for security
 
 CREATE OR REPLACE FUNCTION bulk_reschedule_services(
   p_service_ids uuid[],
@@ -31,7 +32,7 @@ BEGIN
     );
   END IF;
 
-  -- Verify user is courier
+  -- Verify user is courier (using fully qualified name)
   SELECT role INTO v_user_role
   FROM public.profiles
   WHERE id = v_user_id;
@@ -72,14 +73,14 @@ BEGIN
 
   TRUNCATE temp_services_to_update;
 
-  -- Capture current state for history records
+  -- Capture current state for history records (using fully qualified name)
   INSERT INTO temp_services_to_update (id, client_id, old_date, old_time_slot, old_time)
   SELECT s.id, s.client_id, s.scheduled_date, s.scheduled_time_slot, s.scheduled_time
   FROM public.services s
   WHERE s.id = ANY(p_service_ids)
     AND s.status = 'pending';
 
-  -- Perform bulk update on services
+  -- Perform bulk update on services (using fully qualified name)
   UPDATE public.services
   SET
     scheduled_date = p_new_date,
@@ -94,7 +95,7 @@ BEGIN
 
   GET DIAGNOSTICS v_updated_count = ROW_COUNT;
 
-  -- Insert history records for all updated services (single bulk insert)
+  -- Insert history records for all updated services (using fully qualified name)
   INSERT INTO public.service_reschedule_history (
     service_id,
     initiated_by,
@@ -154,4 +155,7 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$;
 
-COMMENT ON FUNCTION bulk_reschedule_services(uuid[], date, text, time, text, uuid) IS 'Bulk reschedule services atomically. Returns notification data for clients.';
+-- Grant execute to authenticated users only (not anon)
+GRANT EXECUTE ON FUNCTION bulk_reschedule_services(uuid[], date, text, time, text, uuid) TO authenticated;
+
+COMMENT ON FUNCTION bulk_reschedule_services(uuid[], date, text, time, text, uuid) IS 'Bulk reschedule services atomically. Returns notification data for clients. Uses empty search_path for security.';
