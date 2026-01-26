@@ -3,6 +3,7 @@ import type { Profile, Service } from '$lib/database.types';
 import type { ChartData } from 'chart.js';
 import { getLocale } from '$lib/paraglide/runtime.js';
 import * as m from '$lib/paraglide/messages.js';
+import { formatDate as formatDateUtil } from '$lib/utils.js';
 
 // Constants
 const PAGE_SIZE = 500;
@@ -224,10 +225,9 @@ export function formatCurrency(value: number): string {
 
 /**
  * Format date string
+ * Re-export from utils for backwards compatibility
  */
-export function formatDate(dateStr: string): string {
-	return new Date(dateStr).toLocaleDateString(getLocale());
-}
+export const formatDate = formatDateUtil;
 
 /**
  * Get localized status label

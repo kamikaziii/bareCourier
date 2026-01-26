@@ -1,4 +1,4 @@
-import { error, redirect } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import type { Service, ServiceStatusHistory, Profile } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
@@ -111,6 +111,48 @@ export const actions: Actions = {
 		}
 
 		redirect(303, localizeHref('/courier/services'));
+	},
+
+	overridePrice: async ({ params, request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return fail(401, { error: 'Not authenticated' });
+		}
+
+		// Verify courier role
+		const { data: profile } = await supabase
+			.from('profiles')
+			.select('role')
+			.eq('id', user.id)
+			.single();
+
+		const userProfile = profile as { role: string } | null;
+		if (userProfile?.role !== 'courier') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const override_price = parseFloat(formData.get('override_price') as string);
+		const override_reason = (formData.get('override_reason') as string) || null;
+
+		if (isNaN(override_price) || override_price < 0) {
+			return fail(400, { error: 'Invalid price' });
+		}
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error: updateError } = await (supabase as any)
+			.from('services')
+			.update({
+				calculated_price: override_price,
+				price_override_reason: override_reason
+			})
+			.eq('id', params.id);
+
+		if (updateError) {
+			return fail(500, { error: updateError.message });
+		}
+
+		return { success: true, message: 'price_updated' };
 	},
 
 	reschedule: async ({ params, request, locals: { supabase, safeGetSession } }) => {

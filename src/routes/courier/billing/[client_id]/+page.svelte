@@ -7,9 +7,10 @@
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime.js';
+import { formatDate } from '$lib/utils.js';
 	import type { PageData, ActionData } from './$types';
 	import type { PricingModel } from '$lib/database.types';
-	import { ArrowLeft, Euro, MapPin, Trash2, Plus, FileText } from '@lucide/svelte';
+	import { ArrowLeft, Euro, MapPin, Trash2, Plus, FileText, Calculator, AlertTriangle } from '@lucide/svelte';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -38,6 +39,8 @@
 	let services = $state<any[]>([]);
 	let loadingServices = $state(true);
 	let totalStats = $state({ services: 0, km: 0, revenue: 0 });
+	let recalculating = $state(false);
+	let missingPriceCount = $derived(services.filter(s => s.calculated_price === null).length);
 
 	// Date range (default to current month)
 	const now = new Date();
@@ -167,8 +170,15 @@
 		}).format(value);
 	}
 
-	function formatDate(dateStr: string): string {
-		return new Date(dateStr).toLocaleDateString(getLocale());
+	function handleRecalculate() {
+		recalculating = true;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		return async ({ result }: { result: any }) => {
+			recalculating = false;
+			if (result.type === 'success' && result.data?.success) {
+				await loadServices();
+			}
+		};
 	}
 
 	function exportClientCSV() {
@@ -392,13 +402,40 @@
 
 	<!-- Services History -->
 	<div class="space-y-4">
-		<div class="flex items-center justify-between">
+		<div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
 			<h2 class="text-xl font-semibold">{m.billing_services_history()}</h2>
-			<Button variant="outline" onclick={exportClientCSV} disabled={services.length === 0}>
-				<FileText class="mr-2 size-4" />
-				{m.billing_export_csv()}
-			</Button>
+			<div class="flex flex-wrap gap-2">
+				{#if missingPriceCount > 0}
+					<form method="POST" action="?/recalculateMissing" use:enhance={handleRecalculate}>
+						<input type="hidden" name="start_date" value={startDate} />
+						<input type="hidden" name="end_date" value={endDate} />
+						<Button type="submit" variant="outline" size="sm" disabled={recalculating}>
+							<Calculator class="mr-2 size-4" />
+							{m.billing_recalculate_missing()} ({missingPriceCount})
+						</Button>
+					</form>
+				{/if}
+				<form method="POST" action="?/recalculateAll" use:enhance={handleRecalculate}>
+					<input type="hidden" name="start_date" value={startDate} />
+					<input type="hidden" name="end_date" value={endDate} />
+					<Button type="submit" variant="outline" size="sm" disabled={recalculating || services.length === 0}>
+						<Calculator class="mr-2 size-4" />
+						{m.billing_recalculate_all()}
+					</Button>
+				</form>
+				<Button variant="outline" size="sm" onclick={exportClientCSV} disabled={services.length === 0}>
+					<FileText class="mr-2 size-4" />
+					{m.billing_export_csv()}
+				</Button>
+			</div>
 		</div>
+
+		{#if missingPriceCount > 0}
+			<div class="rounded-md bg-amber-500/10 p-3 flex items-center gap-2 text-amber-600">
+				<AlertTriangle class="size-4" />
+				<span class="text-sm">{m.billing_missing_price_warning()}</span>
+			</div>
+		{/if}
 
 		<!-- Date Range -->
 		<Card.Root>

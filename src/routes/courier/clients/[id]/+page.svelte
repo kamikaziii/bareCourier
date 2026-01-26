@@ -9,7 +9,8 @@
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import PricingConfigForm from '$lib/components/PricingConfigForm.svelte';
 	import * as m from '$lib/paraglide/messages.js';
-	import { getLocale, localizeHref } from '$lib/paraglide/runtime.js';
+	import { localizeHref } from '$lib/paraglide/runtime.js';
+import { formatDate } from '$lib/utils.js';
 	import type { PageData } from './$types';
 	import type { PricingModel } from '$lib/database.types.js';
 	import {
@@ -33,14 +34,6 @@
 	let loading = $state(false);
 	let actionError = $state('');
 	let pricingSuccess = $state(false);
-
-	function formatDate(dateStr: string): string {
-		return new Date(dateStr).toLocaleDateString(getLocale(), {
-			year: 'numeric',
-			month: 'short',
-			day: 'numeric'
-		});
-	}
 
 	async function handleToggleActive() {
 		loading = true;

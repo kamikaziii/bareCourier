@@ -42,3 +42,6 @@ src/lib/paraglide/
 
 # Git worktrees
 .worktrees/
+
+# Implementation plans (development artifacts)
+docs/plans/

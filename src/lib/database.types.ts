@@ -9,6 +9,10 @@ export type PriceBreakdown = {
 	model: 'per_km' | 'zone' | 'flat_plus_km';
 	distance_km: number;
 	error?: string;
+	// Distance breakdown (warehouse mode)
+	distance_mode?: 'warehouse' | 'zone' | 'fallback';
+	warehouse_to_pickup_km?: number;
+	pickup_to_delivery_km?: number;
 };
 
 // Phase 3 Past Due: Configurable settings
@@ -78,7 +82,8 @@ export type Database = {
 					warehouse_lat: number | null;
 					warehouse_lng: number | null;
 					// Pricing settings (Phase 6)
-					auto_calculate_price: boolean | null;
+					show_price_to_courier: boolean | null;
+					show_price_to_client: boolean | null;
 					default_urgency_fee_id: string | null;
 					minimum_charge: number | null;
 					round_distance: boolean | null;
@@ -102,7 +107,8 @@ export type Database = {
 					pricing_mode?: 'warehouse' | 'zone' | null;
 					warehouse_lat?: number | null;
 					warehouse_lng?: number | null;
-					auto_calculate_price?: boolean | null;
+					show_price_to_courier?: boolean | null;
+					show_price_to_client?: boolean | null;
 					default_urgency_fee_id?: string | null;
 					minimum_charge?: number | null;
 					round_distance?: boolean | null;
@@ -125,7 +131,8 @@ export type Database = {
 					pricing_mode?: 'warehouse' | 'zone' | null;
 					warehouse_lat?: number | null;
 					warehouse_lng?: number | null;
-					auto_calculate_price?: boolean | null;
+					show_price_to_courier?: boolean | null;
+					show_price_to_client?: boolean | null;
 					default_urgency_fee_id?: string | null;
 					minimum_charge?: number | null;
 					round_distance?: boolean | null;
@@ -169,6 +176,7 @@ export type Database = {
 					urgency_fee_id: string | null;
 					calculated_price: number | null;
 					price_breakdown: PriceBreakdown | null;
+					price_override_reason: string | null;
 					// Reschedule tracking (Phase 2 Past Due)
 					reschedule_count: number;
 					last_rescheduled_at: string | null;
@@ -213,6 +221,7 @@ export type Database = {
 					urgency_fee_id?: string | null;
 					calculated_price?: number | null;
 					price_breakdown?: PriceBreakdown | null;
+					price_override_reason?: string | null;
 					// Reschedule tracking (Phase 2 Past Due)
 					reschedule_count?: number;
 					last_rescheduled_at?: string | null;
@@ -257,6 +266,7 @@ export type Database = {
 					urgency_fee_id?: string | null;
 					calculated_price?: number | null;
 					price_breakdown?: PriceBreakdown | null;
+					price_override_reason?: string | null;
 					// Reschedule tracking (Phase 2 Past Due)
 					reschedule_count?: number;
 					last_rescheduled_at?: string | null;

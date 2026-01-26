@@ -34,12 +34,17 @@ export interface ServicePricingInput {
 	distanceKm: number | null;
 	urgencyFeeId?: string | null;
 	minimumCharge?: number;
+	// Distance breakdown for storage
+	distanceMode?: 'warehouse' | 'zone' | 'fallback';
+	warehouseToPickupKm?: number;
+	pickupToDeliveryKm?: number;
 }
 
 export interface CourierPricingSettings {
 	pricingMode: 'warehouse' | 'zone';
 	warehouseCoords: [number, number] | null;
-	autoCalculatePrice: boolean;
+	showPriceToCourier: boolean;
+	showPriceToClient: boolean;
 	defaultUrgencyFeeId: string | null;
 	minimumCharge: number;
 	roundDistance: boolean;
@@ -77,7 +82,7 @@ export async function getCourierPricingSettings(
 	const { data: profile } = await supabase
 		.from('profiles')
 		.select(
-			'pricing_mode, warehouse_lat, warehouse_lng, auto_calculate_price, default_urgency_fee_id, minimum_charge, round_distance'
+			'pricing_mode, warehouse_lat, warehouse_lng, show_price_to_courier, show_price_to_client, default_urgency_fee_id, minimum_charge, round_distance'
 		)
 		.eq('role', 'courier')
 		.limit(1)
@@ -89,7 +94,8 @@ export async function getCourierPricingSettings(
 			profile?.warehouse_lat && profile?.warehouse_lng
 				? [profile.warehouse_lng, profile.warehouse_lat]
 				: null,
-		autoCalculatePrice: profile?.auto_calculate_price ?? true,
+		showPriceToCourier: profile?.show_price_to_courier ?? true,
+		showPriceToClient: profile?.show_price_to_client ?? true,
 		defaultUrgencyFeeId: profile?.default_urgency_fee_id || null,
 		minimumCharge: profile?.minimum_charge || 0,
 		roundDistance: profile?.round_distance ?? false
@@ -271,7 +277,11 @@ export async function calculateServicePrice(
 			urgency: urgencyAmount,
 			total: priceAfterMinimum,
 			model: baseResult.model,
-			distance_km: input.distanceKm
+			distance_km: input.distanceKm,
+			// Include distance breakdown if provided
+			distance_mode: input.distanceMode,
+			warehouse_to_pickup_km: input.warehouseToPickupKm,
+			pickup_to_delivery_km: input.pickupToDeliveryKm
 		};
 
 		return {

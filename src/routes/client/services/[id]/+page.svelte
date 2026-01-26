@@ -11,7 +11,8 @@
 	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
 	import { invalidateAll } from '$app/navigation';
 	import * as m from '$lib/paraglide/messages.js';
-	import { getLocale, localizeHref } from '$lib/paraglide/runtime.js';
+	import { localizeHref } from '$lib/paraglide/runtime.js';
+import { formatDate, formatDateTime } from '$lib/utils.js';
 	import type { PageData } from './$types';
 	import type { TimeSlot } from '$lib/database.types.js';
 	import { PUBLIC_MAPBOX_TOKEN } from '$env/static/public';
@@ -20,24 +21,6 @@
 	const hasMapbox = !!PUBLIC_MAPBOX_TOKEN;
 
 	let { data }: { data: PageData } = $props();
-
-	function formatDate(dateStr: string): string {
-		return new Date(dateStr).toLocaleDateString(getLocale(), {
-			year: 'numeric',
-			month: 'long',
-			day: 'numeric'
-		});
-	}
-
-	function formatDateTime(dateStr: string): string {
-		return new Date(dateStr).toLocaleString(getLocale(), {
-			year: 'numeric',
-			month: 'short',
-			day: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit'
-		});
-	}
 
 	function formatTimeSlot(slot: string | null): string {
 		if (!slot) return '';

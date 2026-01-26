@@ -35,7 +35,9 @@
 
 	// Pricing preferences state
 	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
-	let autoCalculatePrice = $state(profile.auto_calculate_price ?? true);
+	let showPriceToCourier = $state(profile.show_price_to_courier ?? true);
+	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
+	let showPriceToClient = $state(profile.show_price_to_client ?? true);
 	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
 	let defaultUrgencyFeeId = $state<string | null>(profile.default_urgency_fee_id || null);
 	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
@@ -123,17 +125,34 @@
 	</Card.Header>
 	<Card.Content>
 		<form method="POST" action="?/updatePricingPreferences" use:enhance class="space-y-6">
-			<!-- Auto-calculate toggle -->
+			<!-- Show price to courier toggle -->
 			<div class="flex items-center justify-between">
 				<div class="space-y-0.5">
-					<Label>{m.settings_auto_calculate()}</Label>
-					<p class="text-sm text-muted-foreground">{m.settings_auto_calculate_desc()}</p>
+					<Label>{m.settings_show_price_to_courier()}</Label>
+					<p class="text-sm text-muted-foreground">{m.settings_show_price_to_courier_desc()}</p>
 				</div>
-				<input type="hidden" name="auto_calculate_price" value={autoCalculatePrice.toString()} />
+				<input type="hidden" name="show_price_to_courier" value={showPriceToCourier.toString()} />
 				<Switch
-					checked={autoCalculatePrice}
+					checked={showPriceToCourier}
 					onCheckedChange={(checked) => {
-						autoCalculatePrice = checked;
+						showPriceToCourier = checked;
+					}}
+				/>
+			</div>
+
+			<Separator />
+
+			<!-- Show price to client toggle -->
+			<div class="flex items-center justify-between">
+				<div class="space-y-0.5">
+					<Label>{m.settings_show_price_to_client()}</Label>
+					<p class="text-sm text-muted-foreground">{m.settings_show_price_to_client_desc()}</p>
+				</div>
+				<input type="hidden" name="show_price_to_client" value={showPriceToClient.toString()} />
+				<Switch
+					checked={showPriceToClient}
+					onCheckedChange={(checked) => {
+						showPriceToClient = checked;
 					}}
 				/>
 			</div>

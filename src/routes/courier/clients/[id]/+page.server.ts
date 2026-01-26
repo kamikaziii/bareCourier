@@ -111,6 +111,18 @@ export const actions: Actions = {
 			return { success: false, error: 'Not authenticated' };
 		}
 
+		// Verify user is courier
+		const { data: profile } = await supabase
+			.from('profiles')
+			.select('role')
+			.eq('id', user.id)
+			.single();
+
+		const userProfile = profile as { role: string } | null;
+		if (userProfile?.role !== 'courier') {
+			return { success: false, error: 'Unauthorized' };
+		}
+
 		const formData = await request.formData();
 		const pricingModel = formData.get('pricing_model') as string;
 		const baseFee = parseFloat(formData.get('base_fee') as string) || 0;
@@ -135,7 +147,12 @@ export const actions: Actions = {
 
 		// If zone pricing, save zones using atomic RPC
 		if (pricingModel === 'zone' && zonesJson) {
-			const zones = JSON.parse(zonesJson) as { min_km: number; max_km: number | null; price: number }[];
+			let zones: { min_km: number; max_km: number | null; price: number }[];
+			try {
+				zones = JSON.parse(zonesJson);
+			} catch {
+				return { success: false, error: 'Invalid zone configuration format' };
+			}
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			const { error: rpcError } = await (supabase as any).rpc('replace_pricing_zones', {
 				p_client_id: params.id,

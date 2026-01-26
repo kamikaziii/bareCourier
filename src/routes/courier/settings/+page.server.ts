@@ -24,6 +24,23 @@ function isValidTimezone(tz: string): tz is (typeof VALID_TIMEZONES)[number] {
 	return VALID_TIMEZONES.includes(tz as (typeof VALID_TIMEZONES)[number]);
 }
 
+// Helper to verify courier role - returns error object if not courier, null if authorized
+async function requireCourier(
+	supabase: App.Locals['supabase'],
+	userId: string
+): Promise<{ success: false; error: string } | null> {
+	const { data: profile } = await supabase
+		.from('profiles')
+		.select('role')
+		.eq('id', userId)
+		.single() as { data: { role: string } | null };
+
+	if (profile?.role !== 'courier') {
+		return { success: false, error: 'Unauthorized' };
+	}
+	return null;
+}
+
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
 	const { session, user } = await safeGetSession();
 	if (!session || !user) {
@@ -60,6 +77,10 @@ export const actions: Actions = {
 		if (!session || !user) {
 			return { success: false, error: 'Not authenticated' };
 		}
+
+		// Verify courier role
+		const roleError = await requireCourier(supabase, user.id);
+		if (roleError) return roleError;
 
 		const formData = await request.formData();
 		const name = formData.get('name') as string;
@@ -253,6 +274,10 @@ export const actions: Actions = {
 			return { success: false, error: 'Not authenticated' };
 		}
 
+		// Verify courier role
+		const roleError = await requireCourier(supabase, user.id);
+		if (roleError) return roleError;
+
 		const formData = await request.formData();
 		const emailNotificationsEnabled = formData.get('email_notifications_enabled') === 'true';
 
@@ -274,6 +299,10 @@ export const actions: Actions = {
 		if (!session || !user) {
 			return { success: false, error: 'Not authenticated' };
 		}
+
+		// Verify courier role
+		const roleError = await requireCourier(supabase, user.id);
+		if (roleError) return roleError;
 
 		const formData = await request.formData();
 		const pricingMode = formData.get('pricing_mode') as 'warehouse' | 'zone';
@@ -300,6 +329,10 @@ export const actions: Actions = {
 		if (!session || !user) {
 			return { success: false, error: 'Not authenticated' };
 		}
+
+		// Verify courier role
+		const roleError = await requireCourier(supabase, user.id);
+		if (roleError) return roleError;
 
 		const formData = await request.formData();
 		const default_pickup_location = formData.get('default_pickup_location') as string;
@@ -329,8 +362,13 @@ export const actions: Actions = {
 			return { success: false, error: 'Not authenticated' };
 		}
 
+		// Verify courier role
+		const roleError = await requireCourier(supabase, user.id);
+		if (roleError) return roleError;
+
 		const formData = await request.formData();
-		const auto_calculate_price = formData.get('auto_calculate_price') === 'true';
+		const show_price_to_courier = formData.get('show_price_to_courier') === 'true';
+		const show_price_to_client = formData.get('show_price_to_client') === 'true';
 		const default_urgency_fee_id = (formData.get('default_urgency_fee_id') as string) || null;
 		const minimum_charge = parseFloat(formData.get('minimum_charge') as string) || 0;
 		const round_distance = formData.get('round_distance') === 'true';
@@ -339,7 +377,8 @@ export const actions: Actions = {
 		const { error } = await (supabase as any)
 			.from('profiles')
 			.update({
-				auto_calculate_price,
+				show_price_to_courier,
+				show_price_to_client,
 				default_urgency_fee_id: default_urgency_fee_id || null,
 				minimum_charge,
 				round_distance
@@ -358,6 +397,10 @@ export const actions: Actions = {
 		if (!session || !user) {
 			return { success: false, error: 'Not authenticated' };
 		}
+
+		// Verify courier role
+		const roleError = await requireCourier(supabase, user.id);
+		if (roleError) return roleError;
 
 		const formData = await request.formData();
 
@@ -412,6 +455,10 @@ export const actions: Actions = {
 			return { success: false, error: 'Not authenticated' };
 		}
 
+		// Verify courier role
+		const roleError = await requireCourier(supabase, user.id);
+		if (roleError) return roleError;
+
 		const formData = await request.formData();
 		const allowClientReschedule = formData.get('allowClientReschedule') === 'true';
 
@@ -461,6 +508,10 @@ export const actions: Actions = {
 			return { success: false, error: 'Not authenticated' };
 		}
 
+		// Verify courier role
+		const roleError = await requireCourier(supabase, user.id);
+		if (roleError) return roleError;
+
 		const formData = await request.formData();
 		const pastDueReminderInterval = parseInt(formData.get('pastDueReminderInterval') as string) || 0;
 		const dailySummaryEnabled = formData.get('dailySummaryEnabled') === 'true';
@@ -497,10 +548,14 @@ export const actions: Actions = {
 	},
 
 	updateTimeSlots: async ({ request, locals: { supabase, safeGetSession } }) => {
-		const { user } = await safeGetSession();
-		if (!user) {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
 			return { success: false, error: 'Not authenticated' };
 		}
+
+		// Verify courier role
+		const roleError = await requireCourier(supabase, user.id);
+		if (roleError) return roleError;
 
 		const formData = await request.formData();
 		const timeSlots = {
@@ -539,10 +594,14 @@ export const actions: Actions = {
 	},
 
 	updateWorkingDays: async ({ request, locals: { supabase, safeGetSession } }) => {
-		const { user } = await safeGetSession();
-		if (!user) {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
 			return { success: false, error: 'Not authenticated' };
 		}
+
+		// Verify courier role
+		const roleError = await requireCourier(supabase, user.id);
+		if (roleError) return roleError;
 
 		const formData = await request.formData();
 		const workingDays = formData.getAll('working_days') as string[];
@@ -567,10 +626,14 @@ export const actions: Actions = {
 	},
 
 	updateTimezone: async ({ request, locals: { supabase, safeGetSession } }) => {
-		const { user } = await safeGetSession();
-		if (!user) {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
 			return { success: false, error: 'Not authenticated' };
 		}
+
+		// Verify courier role
+		const roleError = await requireCourier(supabase, user.id);
+		if (roleError) return roleError;
 
 		const formData = await request.formData();
 		const timezone = formData.get('timezone') as string;
