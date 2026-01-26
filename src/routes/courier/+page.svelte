@@ -21,7 +21,7 @@
 
 	let { data }: { data: PageData } = $props();
 
-	const pastDueConfig = $derived(settingsToConfig(data.profile.past_due_settings));
+	const pastDueConfig = $derived(settingsToConfig(data.profile.past_due_settings, data.profile.time_slots));
 
 	// Service with joined profile data
 	type ServiceWithProfile = Service & { profiles: { name: string } | null };

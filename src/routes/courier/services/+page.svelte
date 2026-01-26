@@ -29,7 +29,7 @@
 
 	let { data }: { data: PageData } = $props();
 
-	const pastDueConfig = $derived(settingsToConfig(data.profile.past_due_settings));
+	const pastDueConfig = $derived(settingsToConfig(data.profile.past_due_settings, data.profile.time_slots));
 
 	let services = $state<any[]>([]);
 	let clients = $state<any[]>([]);

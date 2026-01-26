@@ -27,6 +27,16 @@ export type PastDueSettings = {
 	dailySummaryTime: string; // time to send daily summary HH:MM (default: "08:00")
 };
 
+// Time slot configuration for scheduling
+export type TimeSlotDefinitions = {
+	morning: { start: string; end: string };
+	afternoon: { start: string; end: string };
+	evening: { start: string; end: string };
+};
+
+// Working days configuration
+export type WorkingDay = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+
 // Phase 4 Past Due: Reschedule history tracking
 export type ServiceRescheduleHistory = {
 	id: string;
@@ -74,6 +84,10 @@ export type Database = {
 					round_distance: boolean | null;
 					// Past due settings (Phase 3 Past Due)
 					past_due_settings: PastDueSettings | null;
+					// Scheduling settings (Settings Page Improvements)
+					timezone: string;
+					time_slots: TimeSlotDefinitions | null;
+					working_days: WorkingDay[] | null;
 				};
 				Insert: {
 					id: string;
@@ -93,6 +107,10 @@ export type Database = {
 					minimum_charge?: number | null;
 					round_distance?: boolean | null;
 					past_due_settings?: PastDueSettings | null;
+					// Scheduling settings (Settings Page Improvements)
+					timezone?: string;
+					time_slots?: TimeSlotDefinitions | null;
+					working_days?: WorkingDay[] | null;
 				};
 				Update: {
 					id?: string;
@@ -112,6 +130,10 @@ export type Database = {
 					minimum_charge?: number | null;
 					round_distance?: boolean | null;
 					past_due_settings?: PastDueSettings | null;
+					// Scheduling settings (Settings Page Improvements)
+					timezone?: string;
+					time_slots?: TimeSlotDefinitions | null;
+					working_days?: WorkingDay[] | null;
 				};
 			};
 			services: {

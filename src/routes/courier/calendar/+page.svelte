@@ -15,7 +15,7 @@
 	let { data }: { data: PageData } = $props();
 
 	// Access layout profile data for past due config
-	const pastDueConfig = $derived(settingsToConfig(data.profile?.past_due_settings));
+	const pastDueConfig = $derived(settingsToConfig(data.profile?.past_due_settings, data.profile?.time_slots));
 
 	type ServiceWithClient = Service & { profiles: Pick<Profile, 'id' | 'name'> };
 

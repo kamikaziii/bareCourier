@@ -197,7 +197,7 @@ export function sortByUrgency<T extends ServiceForUrgency>(
 
 /**
  * Convert database PastDueSettings to PastDueConfig for calculations.
- * Merges user settings with defaults, preserving timeSlots from defaults.
+ * Merges user settings with defaults, using custom time slots if provided.
  */
 export function settingsToConfig(
 	settings: {
@@ -206,12 +206,13 @@ export function settingsToConfig(
 		thresholdApproaching?: number;
 		thresholdUrgent?: number;
 		thresholdCriticalHours?: number;
-	} | null
+	} | null,
+	timeSlots?: TimeSlotConfig | null
 ): PastDueConfig {
 	if (!settings) return DEFAULT_CONFIG;
 
 	return {
-		timeSlots: DEFAULT_CONFIG.timeSlots, // Time slots are not user-configurable
+		timeSlots: timeSlots ?? DEFAULT_CONFIG.timeSlots,
 		gracePeriodStandard: settings.gracePeriodStandard ?? DEFAULT_CONFIG.gracePeriodStandard,
 		gracePeriodSpecific: settings.gracePeriodSpecific ?? DEFAULT_CONFIG.gracePeriodSpecific,
 		thresholdApproaching: settings.thresholdApproaching ?? DEFAULT_CONFIG.thresholdApproaching,

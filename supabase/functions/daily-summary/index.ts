@@ -13,6 +13,8 @@ interface PastDueSettings {
 interface CourierProfile {
 	id: string;
 	past_due_settings: PastDueSettings | null;
+	working_days: string[] | null;
+	timezone: string | null;
 }
 
 interface Service {
@@ -36,12 +38,11 @@ Deno.serve(async (req: Request) => {
 	try {
 		const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 		const now = new Date();
-		const todayStr = now.toISOString().split('T')[0];
 
 		// Get courier profile with settings
 		const { data: courierData } = await supabase
 			.from('profiles')
-			.select('id, past_due_settings')
+			.select('id, past_due_settings, working_days, timezone')
 			.eq('role', 'courier')
 			.single();
 
@@ -54,13 +55,48 @@ Deno.serve(async (req: Request) => {
 		}
 
 		const settings = courier.past_due_settings || {};
+		const courierTimezone = courier.timezone || 'Europe/Lisbon';
 
 		// Check if daily summary is enabled
 		if (settings.dailySummaryEnabled === false) {
-			return new Response(JSON.stringify({ message: 'Daily summary disabled' }), {
+			return new Response(JSON.stringify({ message: 'Daily summary disabled', sent: false }), {
 				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
 			});
 		}
+
+		// Get current time in courier's timezone
+		const localTime = now.toLocaleTimeString('en-GB', {
+			timeZone: courierTimezone,
+			hour: '2-digit',
+			minute: '2-digit',
+			hour12: false
+		});
+
+		// Only send if within the right 15-minute window (cron runs every 15 min)
+		const preferredTime = settings.dailySummaryTime || '08:00';
+		const [prefHour, prefMin] = preferredTime.split(':').map(Number);
+		const [localHour, localMin] = localTime.split(':').map(Number);
+
+		if (localHour !== prefHour || Math.abs(localMin - prefMin) > 7) {
+			return new Response(JSON.stringify({ message: 'Not the right time', sent: false }), {
+				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+			});
+		}
+
+		// Check if today is a working day (in courier's timezone)
+		const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+		const localDate = new Date(now.toLocaleString('en-US', { timeZone: courierTimezone }));
+		const todayName = dayNames[localDate.getDay()];
+		const workingDays = courier.working_days || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+		if (!workingDays.includes(todayName)) {
+			return new Response(JSON.stringify({ message: 'Not a working day', sent: false }), {
+				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+			});
+		}
+
+		// Get today's date in courier's timezone for querying services
+		const todayStr = localDate.toISOString().split('T')[0];
 
 		// Get today's services
 		const { data: services } = await supabase

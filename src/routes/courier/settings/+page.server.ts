@@ -473,5 +473,84 @@ export const actions: Actions = {
 		}
 
 		return { success: true, message: 'notification_settings_updated' };
+	},
+
+	updateTimeSlots: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const formData = await request.formData();
+		const timeSlots = {
+			morning: {
+				start: formData.get('morning_start') as string,
+				end: formData.get('morning_end') as string
+			},
+			afternoon: {
+				start: formData.get('afternoon_start') as string,
+				end: formData.get('afternoon_end') as string
+			},
+			evening: {
+				start: formData.get('evening_start') as string,
+				end: formData.get('evening_end') as string
+			}
+		};
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error } = await (supabase as any)
+			.from('profiles')
+			.update({ time_slots: timeSlots })
+			.eq('id', user.id);
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		return { success: true, message: 'time_slots_updated' };
+	},
+
+	updateWorkingDays: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const formData = await request.formData();
+		const workingDays = formData.getAll('working_days') as string[];
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error } = await (supabase as any)
+			.from('profiles')
+			.update({ working_days: workingDays })
+			.eq('id', user.id);
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		return { success: true, message: 'working_days_updated' };
+	},
+
+	updateTimezone: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const formData = await request.formData();
+		const timezone = formData.get('timezone') as string;
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error } = await (supabase as any)
+			.from('profiles')
+			.update({ timezone })
+			.eq('id', user.id);
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		return { success: true, message: 'timezone_updated' };
 	}
 };

@@ -4,12 +4,23 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-// Time slot cutoffs
-const TIME_SLOT_CUTOFFS: Record<string, string> = {
+// Default time slot cutoffs (used if no custom time slots are defined)
+const DEFAULT_SLOT_CUTOFFS: Record<string, string> = {
 	morning: '12:00',
 	afternoon: '17:00',
 	evening: '21:00'
 };
+
+interface TimeSlotConfig {
+	start: string;
+	end: string;
+}
+
+interface TimeSlots {
+	morning: TimeSlotConfig;
+	afternoon: TimeSlotConfig;
+	evening: TimeSlotConfig;
+}
 
 interface Service {
 	id: string;
@@ -31,12 +42,23 @@ interface PastDueSettings {
 interface CourierProfile {
 	id: string;
 	past_due_settings: PastDueSettings | null;
+	time_slots: TimeSlots | null;
+	working_days: string[] | null;
+	timezone: string | null;
 }
 
 // Note: Edge Functions are STATELESS - no in-memory caching
 // We use the database column `last_past_due_notification_at` for deduplication
 
-function getCutoffTime(service: Service, gracePeriod: number): Date | null {
+// Get time slot end time from custom settings or defaults
+function getSlotCutoff(slot: string, timeSlots: TimeSlots | null): string {
+	if (timeSlots && timeSlots[slot as keyof TimeSlots]) {
+		return timeSlots[slot as keyof TimeSlots].end;
+	}
+	return DEFAULT_SLOT_CUTOFFS[slot] || '17:00';
+}
+
+function getCutoffTime(service: Service, gracePeriod: number, timeSlots: TimeSlots | null): Date | null {
 	if (!service.scheduled_date) return null;
 
 	const date = new Date(service.scheduled_date + 'T00:00:00');
@@ -44,8 +66,9 @@ function getCutoffTime(service: Service, gracePeriod: number): Date | null {
 	if (service.scheduled_time_slot === 'specific' && service.scheduled_time) {
 		const [hours, minutes] = service.scheduled_time.split(':').map(Number);
 		date.setHours(hours, minutes, 0, 0);
-	} else if (service.scheduled_time_slot && TIME_SLOT_CUTOFFS[service.scheduled_time_slot]) {
-		const [hours, minutes] = TIME_SLOT_CUTOFFS[service.scheduled_time_slot].split(':').map(Number);
+	} else if (service.scheduled_time_slot) {
+		const cutoffTime = getSlotCutoff(service.scheduled_time_slot, timeSlots);
+		const [hours, minutes] = cutoffTime.split(':').map(Number);
 		date.setHours(hours, minutes, 0, 0);
 	} else {
 		// Default to end of day
@@ -85,7 +108,7 @@ Deno.serve(async (req: Request) => {
 		// Get courier profile with settings
 		const { data: courierData } = await supabase
 			.from('profiles')
-			.select('id, past_due_settings')
+			.select('id, past_due_settings, time_slots, working_days, timezone')
 			.eq('role', 'courier')
 			.single();
 
@@ -93,6 +116,19 @@ Deno.serve(async (req: Request) => {
 		if (!courier) {
 			return new Response(JSON.stringify({ error: 'Courier not found' }), {
 				status: 404,
+				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+			});
+		}
+
+		// Check if today is a working day (in courier's timezone)
+		const courierTimezone = courier.timezone || 'Europe/Lisbon';
+		const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+		const localDate = new Date(now.toLocaleString('en-US', { timeZone: courierTimezone }));
+		const todayName = dayNames[localDate.getDay()];
+		const workingDays = courier.working_days || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+		if (!workingDays.includes(todayName)) {
+			return new Response(JSON.stringify({ message: 'Not a working day', notified: 0 }), {
 				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
 			});
 		}
@@ -109,6 +145,9 @@ Deno.serve(async (req: Request) => {
 
 		const gracePeriodStandard = settings.gracePeriodStandard ?? 30;
 		const gracePeriodSpecific = settings.gracePeriodSpecific ?? 15;
+
+		// Get custom time slots from courier profile
+		const timeSlots = courier.time_slots || null;
 
 		// Get pending services scheduled for today or earlier
 		const todayStr = now.toISOString().split('T')[0];
@@ -133,7 +172,7 @@ Deno.serve(async (req: Request) => {
 			const gracePeriod =
 				service.scheduled_time_slot === 'specific' ? gracePeriodSpecific : gracePeriodStandard;
 
-			const cutoff = getCutoffTime(service, gracePeriod);
+			const cutoff = getCutoffTime(service, gracePeriod, timeSlots);
 			if (!cutoff) continue;
 
 			if (now > cutoff) {
