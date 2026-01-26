@@ -37,10 +37,12 @@
 	let pushSupported = $state(false);
 
 	// Past due settings for automated notifications
+	// Merge defaults with existing settings to handle partial data from older records
 	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
-	let pastDueSettings = $state<PastDueSettings>(
-		profile.past_due_settings ?? defaultPastDueSettings
-	);
+	let pastDueSettings = $state<PastDueSettings>({
+		...defaultPastDueSettings,
+		...(profile.past_due_settings ?? {})
+	});
 
 	// Timezone state
 	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
