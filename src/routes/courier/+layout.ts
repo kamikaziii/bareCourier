@@ -1,4 +1,10 @@
 import type { LayoutLoad } from './$types';
-import { createProtectedLayoutLoad } from '$lib/utils.js';
 
-export const load: LayoutLoad = createProtectedLayoutLoad();
+export const load: LayoutLoad = async ({ parent, data }) => {
+	const parentData = await parent();
+	return {
+		...parentData,
+		profile: data.profile,
+		navCounts: data.navCounts
+	};
+};

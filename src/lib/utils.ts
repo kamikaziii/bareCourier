@@ -137,22 +137,3 @@ export function formatBadge(count: number | undefined, max: number = 99): string
 	if (count > max) return `${max}+`;
 	return count.toString();
 }
-
-/**
- * Creates a layout load function that merges parent data with route-specific data.
- * Used by both courier and client protected route layouts.
- */
-export function createProtectedLayoutLoad<
-	T extends { profile: unknown; navCounts: unknown }
->(): (params: { parent: () => Promise<Record<string, unknown>>; data: T }) => Promise<
-	Record<string, unknown> & { profile: T['profile']; navCounts: T['navCounts'] }
-> {
-	return async ({ parent, data }) => {
-		const parentData = await parent();
-		return {
-			...parentData,
-			profile: data.profile,
-			navCounts: data.navCounts
-		};
-	};
-}
