@@ -27,6 +27,9 @@ const statusSyncPlugin = new BackgroundSyncPlugin('statusChangeQueue', {
 	maxRetentionTime: 24 * 60, // Retry for 24 hours (in minutes)
 	onSync: async ({ queue }) => {
 		let entry;
+		const failedEntries: typeof entry[] = [];
+
+		// Process all items currently in queue
 		while ((entry = await queue.shiftRequest())) {
 			try {
 				const response = await fetch(entry.request.clone());
@@ -42,20 +45,31 @@ const statusSyncPlugin = new BackgroundSyncPlugin('statusChangeQueue', {
 						continue; // Don't re-queue - permanent failure
 					}
 
-					// 5xx errors - temporary, re-queue for retry
-					await queue.unshiftRequest(entry);
-					console.warn('[SW] Temporary sync failure, re-queued:', response.status, entry.request.url);
-					continue;
+					// 5xx errors - temporary failure, save for re-queue after loop
+					console.warn('[SW] Temporary sync failure:', response.status, entry.request.url);
+					failedEntries.push(entry);
+					continue; // Process remaining items
 				}
 				console.log('[SW] Synced:', entry.request.url);
 				// Notify clients of successful sync
 				notifyClients({ type: 'SYNC_COMPLETE', url: entry.request.url });
 			} catch (error) {
-				// Network errors - temporary, re-queue for retry
-				console.error('[SW] Sync failed (network error), re-queuing:', error);
-				await queue.unshiftRequest(entry);
-				continue; // Don't break - try next request
+				// Network errors - temporary failure, save for re-queue after loop
+				console.error('[SW] Sync failed (network error):', error);
+				failedEntries.push(entry);
+				continue; // Process remaining items
 			}
+		}
+
+		// Re-queue failed entries for retry (after processing all items)
+		for (const failed of failedEntries) {
+			await queue.unshiftRequest(failed);
+		}
+
+		// If any temporary failures occurred, throw to signal Workbox to schedule retry
+		// This ensures the browser uses exponential backoff for retries
+		if (failedEntries.length > 0) {
+			throw new Error(`${failedEntries.length} request(s) failed temporarily and were re-queued for retry`);
 		}
 	}
 });

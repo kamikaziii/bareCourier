@@ -69,16 +69,18 @@ Option A - Update OfflineIndicator to listen to service worker messages.
 
 ## Acceptance Criteria
 
-- [x] OfflineIndicator shows correct pending count from service worker queue
+- [x] OfflineIndicator uses service worker messages (SYNC_COMPLETE, SYNC_FAILED_PERMANENT)
 - [x] Single event system for sync status
 - [x] Remove or deprecate unused event listeners
+- [x] Removed broken pendingCount tracking (SYNC_QUEUED never sent)
 
 ## Work Log
 
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-26 | Issue identified during service worker audit | Two systems were built independently |
-| 2026-01-26 | Implemented Option A - unified on SW messaging | Replaced CustomEvent listener with service worker message listener |
+| 2026-01-26 | Initial fix: added SYNC_QUEUED/SYNC_STATUS listeners | WRONG - these messages were never sent by SW |
+| 2026-01-26 | Corrected: removed pendingCount, added wasOffline tracking | Can't track pending count without SW sending SYNC_QUEUED on queue add |
 
 ## Resources
 

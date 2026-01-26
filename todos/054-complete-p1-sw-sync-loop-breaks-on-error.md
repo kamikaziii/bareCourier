@@ -42,26 +42,39 @@ while ((entry = await queue.shiftRequest())) {
 
 ## Proposed Solutions
 
-### Option A: Continue loop on error, track failures (Recommended)
-**Pros:** All requests get attempted, better UX
+### Option A: Collect failures, re-queue after loop, throw at end (IMPLEMENTED)
+**Pros:** All requests get attempted, proper Workbox retry scheduling
 **Cons:** Slightly more complex
 **Effort:** Small
 **Risk:** Low
 
+**IMPORTANT:** Using `continue` after `unshiftRequest` causes an INFINITE LOOP because `shiftRequest` takes from the front and `unshiftRequest` adds to the front, so the same failing item is immediately re-processed.
+
 ```typescript
+const failedEntries: typeof entry[] = [];
+
 while ((entry = await queue.shiftRequest())) {
   try {
     const response = await fetch(entry.request.clone());
     if (!response.ok) {
-      await queue.unshiftRequest(entry);
-      continue; // Don't break - try next request
+      failedEntries.push(entry);  // Save for later, don't re-queue yet
+      continue;
     }
     notifyClients({ type: 'SYNC_COMPLETE', url: entry.request.url });
   } catch (error) {
-    console.error('[SW] Sync failed:', error);
-    await queue.unshiftRequest(entry);
-    continue; // Don't break - try next request
+    failedEntries.push(entry);  // Save for later
+    continue;
   }
+}
+
+// Re-queue failed entries AFTER processing all
+for (const failed of failedEntries) {
+  await queue.unshiftRequest(failed);
+}
+
+// Throw to signal Workbox to schedule retry with exponential backoff
+if (failedEntries.length > 0) {
+  throw new Error('Some requests failed');
 }
 ```
 
@@ -75,7 +88,7 @@ Remove custom `onSync` handler and let Workbox handle retries natively.
 
 ## Recommended Action
 
-Option A - Continue loop on error so all queued requests get attempted.
+Option A - Collect failures, process all items, re-queue failures after loop, throw at end to trigger Workbox retry scheduling.
 
 ## Technical Details
 
@@ -94,7 +107,8 @@ Option A - Continue loop on error so all queued requests get attempted.
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-26 | Issue identified during service worker audit | throw in loop breaks all processing |
-| 2026-01-26 | Fixed by replacing throw with continue statements | All queued requests now processed during sync |
+| 2026-01-26 | Initial fix with continue+unshiftRequest | WRONG - caused infinite loop |
+| 2026-01-26 | Corrected fix: collect failures, re-queue after loop, throw at end | shiftRequest takes from front, unshiftRequest adds to front = infinite loop if done inline |
 
 ## Resources
 

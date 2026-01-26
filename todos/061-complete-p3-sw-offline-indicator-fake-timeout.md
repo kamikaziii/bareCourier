@@ -31,17 +31,19 @@ The fake setTimeout in handleOnline() was already removed in #056 when the servi
 
 ## Acceptance Criteria
 
-- [x] Remove hardcoded setTimeout (already done in #056)
-- [x] Listen to service worker sync events (SYNC_COMPLETE, SYNC_QUEUED, SYNC_STATUS)
+- [x] Remove hardcoded setTimeout
+- [x] Listen to service worker sync events (SYNC_COMPLETE, SYNC_FAILED_PERMANENT)
 - [x] Show real sync completion status
 - [x] Handle sync failures (SYNC_FAILED_PERMANENT)
+- [x] Fix text-white CSS for red failure banner
 
 ## Work Log
 
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-26 | Issue identified during service worker audit | Fake progress is misleading |
-| 2026-01-26 | Resolved - added SYNC_FAILED_PERMANENT handler and UI | Service worker already sends failure messages |
+| 2026-01-26 | Initial fix added SYNC_FAILED_PERMANENT handler | Missing text-white for red bg, and dead SYNC_QUEUED/SYNC_STATUS listeners |
+| 2026-01-26 | Corrected: added text-white to showSyncFailed, removed dead code | Always verify CSS classes apply to all states |
 
 ## Resources
 

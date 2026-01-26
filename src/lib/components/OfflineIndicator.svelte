@@ -9,8 +9,8 @@
 	let showSyncComplete = $state(false);
 	let showSyncFailed = $state(false);
 
-	// Pending changes count (tracked via service worker messages)
-	let pendingCount = $state(0);
+	// Track if we went offline (to know if sync might be needed on reconnect)
+	let wasOffline = $state(false);
 
 	// Listen for online/offline events
 	$effect(() => {
@@ -18,16 +18,25 @@
 
 		function handleOnline() {
 			isOnline = true;
-			// When coming back online, if there are pending changes,
-			// show syncing indicator (Background Sync API handles actual sync)
-			if (pendingCount > 0) {
+			// If we were offline, show syncing briefly while Background Sync runs
+			if (wasOffline) {
 				isSyncing = true;
+				wasOffline = false;
+				// Sync indicator will be hidden when SYNC_COMPLETE arrives,
+				// or after timeout if no pending changes
+				setTimeout(() => {
+					if (isSyncing) {
+						isSyncing = false;
+					}
+				}, 3000);
 			}
 		}
 
 		function handleOffline() {
 			isOnline = false;
+			wasOffline = true;
 			showSyncComplete = false;
+			showSyncFailed = false;
 		}
 
 		window.addEventListener('online', handleOnline);
@@ -39,32 +48,21 @@
 		};
 	});
 
-	// Listen for service worker messages (unified event system)
+	// Listen for service worker messages
 	$effect(() => {
 		if (!browser || !('serviceWorker' in navigator)) return;
 
 		function handleSWMessage(event: MessageEvent) {
 			if (event.data?.type === 'SYNC_COMPLETE') {
-				// A sync completed successfully - decrement pending count
-				pendingCount = Math.max(0, pendingCount - 1);
-				if (pendingCount === 0) {
-					isSyncing = false;
-					showSyncComplete = true;
-					setTimeout(() => {
-						showSyncComplete = false;
-					}, 2000);
-				}
-			} else if (event.data?.type === 'SYNC_QUEUED') {
-				// A new request was queued for background sync
-				pendingCount += 1;
-			} else if (event.data?.type === 'SYNC_STATUS') {
-				// Full sync status update from service worker
-				pendingCount = event.data.pending || 0;
-				isSyncing = event.data.syncing || false;
+				// A sync completed successfully
+				isSyncing = false;
+				showSyncComplete = true;
+				setTimeout(() => {
+					showSyncComplete = false;
+				}, 2000);
 			} else if (event.data?.type === 'SYNC_FAILED_PERMANENT') {
-				// A sync failed permanently (4xx error) - decrement pending and show failure
-				pendingCount = Math.max(0, pendingCount - 1);
-				isSyncing = pendingCount > 0;
+				// A sync failed permanently (4xx error)
+				isSyncing = false;
 				showSyncFailed = true;
 				setTimeout(() => {
 					showSyncFailed = false;
@@ -79,13 +77,8 @@
 		};
 	});
 
-	// Expose method to update pending count (for IndexedDB integration)
-	export function updatePendingCount(count: number) {
-		pendingCount = count;
-	}
-
 	// Visibility - show when offline, syncing, just synced, or sync failed
-	const isVisible = $derived(!isOnline || isSyncing || showSyncComplete || showSyncFailed || pendingCount > 0);
+	const isVisible = $derived(!isOnline || isSyncing || showSyncComplete || showSyncFailed);
 </script>
 
 {#if isVisible}
@@ -94,7 +87,7 @@
 		class:bg-amber-500={!isOnline}
 		class:text-amber-950={!isOnline}
 		class:bg-blue-500={isSyncing}
-		class:text-white={isSyncing || showSyncComplete}
+		class:text-white={isSyncing || showSyncComplete || showSyncFailed}
 		class:bg-green-500={showSyncComplete}
 		class:bg-red-500={showSyncFailed}
 		role="status"
@@ -102,12 +95,7 @@
 	>
 		{#if !isOnline}
 			<WifiOff class="size-4" />
-			<span>
-				{m.offline_banner()}
-				{#if pendingCount > 0}
-					- {m.offline_pending({ count: pendingCount.toString() })}
-				{/if}
-			</span>
+			<span>{m.offline_banner()}</span>
 		{:else if showSyncFailed}
 			<AlertTriangle class="size-4" />
 			<span>{m.offline_sync_failed()}</span>
@@ -117,9 +105,6 @@
 		{:else if showSyncComplete}
 			<Check class="size-4" />
 			<span>{m.offline_sync_complete()}</span>
-		{:else if pendingCount > 0}
-			<RefreshCw class="size-4" />
-			<span>{m.offline_pending({ count: pendingCount.toString() })}</span>
 		{/if}
 	</div>
 {/if}
