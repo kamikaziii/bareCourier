@@ -79,6 +79,18 @@ export type WithoutChildrenOrChild<T> = WithoutChildren<WithoutChild<T>>;
 export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & { ref?: U | null };
 
 /**
+ * Filtered session type that excludes sensitive tokens.
+ * Used instead of full Session to prevent token exposure to client.
+ */
+export type SafeSession = {
+	expires_at?: number;
+	user: {
+		id: string;
+		email?: string;
+	};
+} | null;
+
+/**
  * Creates a debounced version of a function that delays execution
  * until after the specified delay has elapsed since the last call.
  */

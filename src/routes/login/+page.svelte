@@ -15,6 +15,37 @@
 	let loading = $state(false);
 	let error = $state('');
 
+	/**
+	 * Maps Supabase auth error messages to user-friendly Portuguese messages.
+	 * Prevents exposing internal auth implementation details.
+	 */
+	function mapAuthError(errorMessage: string): string {
+		const errorMap: Record<string, string> = {
+			'Invalid login credentials': 'Email ou password incorretos',
+			'Email not confirmed': 'Por favor, confirme o seu email antes de entrar',
+			'User not found': 'Email ou password incorretos',
+			'Invalid email or password': 'Email ou password incorretos',
+			'Too many requests': 'Demasiadas tentativas. Aguarde alguns minutos',
+			'Email rate limit exceeded': 'Demasiadas tentativas. Aguarde alguns minutos',
+			'User already registered': 'Este email já está registado'
+		};
+
+		// Check for exact match first
+		if (errorMap[errorMessage]) {
+			return errorMap[errorMessage];
+		}
+
+		// Check for partial matches (some errors include dynamic content)
+		for (const [key, value] of Object.entries(errorMap)) {
+			if (errorMessage.toLowerCase().includes(key.toLowerCase())) {
+				return value;
+			}
+		}
+
+		// Generic fallback - don't expose raw error
+		return 'Ocorreu um erro ao iniciar sessão. Tente novamente';
+	}
+
 	async function handleLogin(e: Event) {
 		e.preventDefault();
 		loading = true;
@@ -26,7 +57,7 @@
 		});
 
 		if (authError) {
-			error = authError.message;
+			error = mapAuthError(authError.message);
 			loading = false;
 			return;
 		}

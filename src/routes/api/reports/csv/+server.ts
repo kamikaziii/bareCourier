@@ -3,6 +3,36 @@ import type { Service } from '$lib/database.types';
 
 type ServiceWithProfile = Service & { profiles: { name: string } | null };
 
+/**
+ * Sanitizes a string for safe use in Content-Disposition filename.
+ * Removes newlines, carriage returns, quotes, semicolons, and non-alphanumeric chars (except hyphens).
+ */
+function sanitizeFilenameComponent(str: string): string {
+	return str.replace(/[^a-zA-Z0-9-]/g, '');
+}
+
+/**
+ * Validates that a date string matches ISO 8601 format (YYYY-MM-DD)
+ * and represents a valid calendar date.
+ */
+function isValidDateFormat(dateStr: string): boolean {
+	// Check format: YYYY-MM-DD
+	const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+	if (!dateRegex.test(dateStr)) {
+		return false;
+	}
+
+	// Validate it's a real date (e.g., not 2024-02-30)
+	const date = new Date(dateStr);
+	if (isNaN(date.getTime())) {
+		return false;
+	}
+
+	// Ensure the parsed date matches the input (catches invalid dates like Feb 30)
+	const [year, month, day] = dateStr.split('-').map(Number);
+	return date.getUTCFullYear() === year && date.getUTCMonth() + 1 === month && date.getUTCDate() === day;
+}
+
 export const GET: RequestHandler = async ({ url, locals: { supabase, safeGetSession } }) => {
 	const { session, user } = await safeGetSession();
 	if (!session || !user) {
@@ -24,6 +54,22 @@ export const GET: RequestHandler = async ({ url, locals: { supabase, safeGetSess
 	const endDate = url.searchParams.get('end');
 	const clientId = url.searchParams.get('client_id');
 
+	// Validate date format (YYYY-MM-DD) if dates are provided
+	if (startDate && !isValidDateFormat(startDate)) {
+		return new Response('Invalid start date format. Use YYYY-MM-DD', { status: 400 });
+	}
+	if (endDate && !isValidDateFormat(endDate)) {
+		return new Response('Invalid end date format. Use YYYY-MM-DD', { status: 400 });
+	}
+
+	// Validate UUID format if clientId is provided
+	if (clientId) {
+		const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+		if (!uuidRegex.test(clientId)) {
+			return new Response('Invalid client_id format', { status: 400 });
+		}
+	}
+
 	// Build query
 	let query = supabase
 		.from('services')
@@ -44,7 +90,8 @@ export const GET: RequestHandler = async ({ url, locals: { supabase, safeGetSess
 	const { data: services, error } = await query as { data: ServiceWithProfile[] | null; error: { message: string } | null };
 
 	if (error) {
-		return new Response(error.message, { status: 500 });
+		console.error('CSV export failed:', error.message);
+		return new Response('Failed to generate report', { status: 500 });
 	}
 
 	// Generate CSV
@@ -65,7 +112,10 @@ export const GET: RequestHandler = async ({ url, locals: { supabase, safeGetSess
 		...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
 	].join('\n');
 
-	const filename = `report-${startDate || 'all'}-${endDate || 'all'}.csv`;
+	// Sanitize date values for safe use in filename (defense in depth)
+	const safeStart = startDate ? sanitizeFilenameComponent(startDate) : 'all';
+	const safeEnd = endDate ? sanitizeFilenameComponent(endDate) : 'all';
+	const filename = `report-${safeStart}-${safeEnd}.csv`;
 
 	return new Response(csvContent, {
 		headers: {

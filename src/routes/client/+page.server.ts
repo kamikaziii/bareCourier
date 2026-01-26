@@ -3,6 +3,26 @@ import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/publi
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+// Cache courier ID at module level (only one courier in system)
+let cachedCourierId: string | null = null;
+
+// Helper to get courier ID with caching
+async function getCourierId(supabase: SupabaseClient): Promise<string | null> {
+	if (cachedCourierId) return cachedCourierId;
+
+	const { data: courierData } = await supabase
+		.from('profiles')
+		.select('id')
+		.eq('role', 'courier')
+		.single();
+
+	if (courierData) {
+		cachedCourierId = courierData.id;
+	}
+
+	return cachedCourierId;
+}
+
 // Helper to notify courier
 async function notifyCourier(
 	supabase: SupabaseClient,
@@ -12,14 +32,9 @@ async function notifyCourier(
 	message: string
 ) {
 	try {
-		// Get the courier (there's only one)
-		const { data: courierData } = await supabase
-			.from('profiles')
-			.select('id')
-			.eq('role', 'courier')
-			.single();
+		const courierId = await getCourierId(supabase);
 
-		if (!courierData) return;
+		if (!courierId) return;
 
 		await fetch(`${PUBLIC_SUPABASE_URL}/functions/v1/send-notification`, {
 			method: 'POST',
@@ -30,7 +45,7 @@ async function notifyCourier(
 			},
 			body: JSON.stringify({
 				type: 'both',
-				user_id: courierData.id,
+				user_id: courierId,
 				subject,
 				message,
 				service_id: serviceId,

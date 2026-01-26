@@ -8,11 +8,11 @@
 	import AddressInput from '$lib/components/AddressInput.svelte';
 	import { User, Warehouse } from '@lucide/svelte';
 	import type { Profile } from '$lib/database.types.js';
-	import type { Session } from '@supabase/supabase-js';
+	import type { SafeSession } from '$lib/utils.js';
 
 	interface Props {
 		profile: Profile;
-		session: Session | null;
+		session: SafeSession;
 	}
 
 	let { profile, session }: Props = $props();

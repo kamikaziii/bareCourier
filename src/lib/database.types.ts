@@ -457,7 +457,63 @@ export type Database = {
 			};
 		};
 		Views: {};
-		Functions: {};
+		Functions: {
+			approve_reschedule: {
+				Args: { p_service_id: string; p_approved_by: string };
+				Returns: Json;
+			};
+			deny_reschedule: {
+				Args: { p_service_id: string; p_denied_by: string; p_denial_reason?: string | null };
+				Returns: Json;
+			};
+			bulk_recalculate_service_prices: {
+				Args: {
+					p_client_id: string;
+					p_minimum_charge?: number;
+					p_service_ids: string[];
+				};
+				Returns: Json;
+			};
+			bulk_reschedule_services: {
+				Args: {
+					p_new_date: string;
+					p_new_time?: string;
+					p_new_time_slot: string;
+					p_reason?: string;
+					p_service_ids: string[];
+					p_user_id?: string;
+				};
+				Returns: Json;
+			};
+			calculate_service_price: {
+				Args: {
+					p_client_id: string;
+					p_distance_km: number;
+					p_urgency_fee_id?: string;
+				};
+				Returns: {
+					price_breakdown: Json;
+					total_price: number;
+				}[];
+			};
+			is_courier: { Args: Record<string, never>; Returns: boolean };
+			replace_pricing_zones: {
+				Args: { p_client_id: string; p_zones: Json };
+				Returns: undefined;
+			};
+			reschedule_service: {
+				Args: {
+					p_new_date: string;
+					p_new_time?: string;
+					p_new_time_slot: string;
+					p_notification_message?: string;
+					p_notification_title?: string;
+					p_reason?: string;
+					p_service_id: string;
+				};
+				Returns: Json;
+			};
+		};
 		Enums: {};
 	};
 };

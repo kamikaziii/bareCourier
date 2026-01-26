@@ -326,60 +326,29 @@ export const actions: Actions = {
 			return { success: false, error: 'Service ID required' };
 		}
 
-		// Get the service with pending reschedule
-		const { data: serviceData } = await supabase
-			.from('services')
-			.select('*')
-			.eq('id', serviceId)
-			.single();
+		// Use RPC function to atomically approve reschedule
+		// This updates both services and service_reschedule_history in a single transaction
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { data: rpcResult, error: rpcError } = await (supabase as any).rpc('approve_reschedule', {
+			p_service_id: serviceId,
+			p_approved_by: user.id
+		});
 
-		const service = serviceData as Service | null;
-
-		if (!service || !service.pending_reschedule_date) {
-			return { success: false, error: 'No pending reschedule request' };
+		if (rpcError) {
+			return { success: false, error: rpcError.message };
 		}
 
-		// Apply the reschedule
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error: updateError } = await (supabase as any)
-			.from('services')
-			.update({
-				scheduled_date: service.pending_reschedule_date,
-				scheduled_time_slot: service.pending_reschedule_time_slot,
-				scheduled_time: service.pending_reschedule_time,
-				reschedule_count: (service.reschedule_count || 0) + 1,
-				last_rescheduled_at: new Date().toISOString(),
-				last_rescheduled_by: service.pending_reschedule_requested_by,
-				pending_reschedule_date: null,
-				pending_reschedule_time_slot: null,
-				pending_reschedule_time: null,
-				pending_reschedule_reason: null,
-				pending_reschedule_requested_at: null,
-				pending_reschedule_requested_by: null
-			})
-			.eq('id', serviceId);
+		const result = rpcResult as { success: boolean; error?: string; client_id?: string };
 
-		if (updateError) {
-			return { success: false, error: updateError.message };
+		if (!result.success) {
+			return { success: false, error: result.error || 'Failed to approve reschedule' };
 		}
-
-		// Update history record
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		await (supabase as any)
-			.from('service_reschedule_history')
-			.update({
-				approval_status: 'approved',
-				approved_by: user.id,
-				approved_at: new Date().toISOString()
-			})
-			.eq('service_id', serviceId)
-			.eq('approval_status', 'pending');
 
 		// Notify client
-		if (service.client_id) {
+		if (result.client_id) {
 			await notifyClient(
 				session,
-				service.client_id,
+				result.client_id,
 				serviceId,
 				'Reagendamento Aprovado',
 				'O seu pedido de reagendamento foi aprovado.'
@@ -415,52 +384,31 @@ export const actions: Actions = {
 			return { success: false, error: 'Service ID required' };
 		}
 
-		// Get the service
-		const { data: serviceData2 } = await supabase
-			.from('services')
-			.select('client_id')
-			.eq('id', serviceId)
-			.single();
-
-		const service = serviceData2 as Pick<Service, 'client_id'> | null;
-
-		// Clear pending reschedule fields
+		// Use RPC function to atomically deny reschedule
+		// This updates both services and service_reschedule_history in a single transaction
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error: updateError } = await (supabase as any)
-			.from('services')
-			.update({
-				pending_reschedule_date: null,
-				pending_reschedule_time_slot: null,
-				pending_reschedule_time: null,
-				pending_reschedule_reason: null,
-				pending_reschedule_requested_at: null,
-				pending_reschedule_requested_by: null
-			})
-			.eq('id', serviceId);
+		const { data: rpcResult, error: rpcError } = await (supabase as any).rpc('deny_reschedule', {
+			p_service_id: serviceId,
+			p_denied_by: user.id,
+			p_denial_reason: denialReason || null
+		});
 
-		if (updateError) {
-			return { success: false, error: updateError.message };
+		if (rpcError) {
+			return { success: false, error: rpcError.message };
 		}
 
-		// Update history record
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		await (supabase as any)
-			.from('service_reschedule_history')
-			.update({
-				approval_status: 'denied',
-				approved_by: user.id,
-				approved_at: new Date().toISOString(),
-				denial_reason: denialReason || null
-			})
-			.eq('service_id', serviceId)
-			.eq('approval_status', 'pending');
+		const result = rpcResult as { success: boolean; error?: string; client_id?: string };
+
+		if (!result.success) {
+			return { success: false, error: result.error || 'Failed to deny reschedule' };
+		}
 
 		// Notify client
-		if (service?.client_id) {
+		if (result.client_id) {
 			const reasonText = denialReason ? ` Motivo: ${denialReason}` : '';
 			await notifyClient(
 				session,
-				service.client_id,
+				result.client_id,
 				serviceId,
 				'Reagendamento Recusado',
 				`O seu pedido de reagendamento foi recusado.${reasonText}`

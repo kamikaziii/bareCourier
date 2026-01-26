@@ -156,21 +156,9 @@ export const actions: Actions = {
 	},
 
 	reschedule: async ({ params, request, locals: { supabase, safeGetSession } }) => {
-		const { session, user } = await safeGetSession();
-		if (!session || !user) {
+		const { session } = await safeGetSession();
+		if (!session) {
 			return { success: false, error: 'Not authenticated' };
-		}
-
-		// Verify user is courier
-		const { data: profile } = await supabase
-			.from('profiles')
-			.select('role')
-			.eq('id', user.id)
-			.single();
-
-		const userProfile = profile as { role: string } | null;
-		if (userProfile?.role !== 'courier') {
-			return { success: false, error: 'Unauthorized' };
 		}
 
 		const formData = await request.formData();
@@ -194,54 +182,6 @@ export const actions: Actions = {
 			return { success: false, error: 'Invalid time slot' };
 		}
 
-		// Get current service for notification
-		const { data: serviceData } = await supabase
-			.from('services')
-			.select('*, profiles!client_id(id, name)')
-			.eq('id', params.id)
-			.single();
-
-		const service = serviceData as (Service & { profiles: Pick<Profile, 'id' | 'name'> }) | null;
-
-		if (!service) {
-			return { success: false, error: 'Service not found' };
-		}
-
-		// Update service with new schedule and reschedule tracking
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error: updateError } = await (supabase as any)
-			.from('services')
-			.update({
-				scheduled_date: newDate,
-				scheduled_time_slot: newTimeSlot,
-				scheduled_time: newTime || null,
-				reschedule_count: (service.reschedule_count || 0) + 1,
-				last_rescheduled_at: new Date().toISOString(),
-				last_rescheduled_by: user.id
-			})
-			.eq('id', params.id);
-
-		if (updateError) {
-			return { success: false, error: updateError.message };
-		}
-
-		// Create history record for courier-initiated reschedule
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		await (supabase as any).from('service_reschedule_history').insert({
-			service_id: params.id,
-			initiated_by: user.id,
-			initiated_by_role: 'courier',
-			old_date: service.scheduled_date,
-			old_time_slot: service.scheduled_time_slot,
-			old_time: service.scheduled_time,
-			new_date: newDate,
-			new_time_slot: newTimeSlot,
-			new_time: newTime || null,
-			reason: reason || null,
-			approval_status: 'auto_approved'
-		});
-
-		// Create notification for client
 		// Format date nicely for Portuguese users (primary user base)
 		const formattedDate = new Date(newDate).toLocaleDateString('pt-PT', {
 			day: 'numeric',
@@ -249,18 +189,28 @@ export const actions: Actions = {
 			year: 'numeric'
 		});
 		const reasonText = reason ? ` Motivo: ${reason}` : '';
+		const notificationMessage = `A sua entrega foi reagendada para ${formattedDate}.${reasonText}`;
+
+		// Call RPC that handles all operations atomically in a transaction
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error: notifyError } = await (supabase as any).from('notifications').insert({
-			user_id: service.client_id,
-			type: 'schedule_change',
-			title: 'Entrega Reagendada',
-			message: `A sua entrega foi reagendada para ${formattedDate}.${reasonText}`,
-			service_id: params.id
+		const { data, error: rpcError } = await (supabase as any).rpc('reschedule_service', {
+			p_service_id: params.id,
+			p_new_date: newDate,
+			p_new_time_slot: newTimeSlot,
+			p_new_time: newTime || null,
+			p_reason: reason || null,
+			p_notification_title: 'Entrega Reagendada',
+			p_notification_message: notificationMessage
 		});
 
-		if (notifyError) {
-			console.error('Failed to create reschedule notification:', notifyError);
-			// Still return success since the reschedule itself worked
+		if (rpcError) {
+			return { success: false, error: rpcError.message };
+		}
+
+		// RPC returns jsonb with success/error info
+		const result = data as { success: boolean; error?: string };
+		if (!result.success) {
+			return { success: false, error: result.error || 'Reschedule failed' };
 		}
 
 		return { success: true };
