@@ -79,6 +79,7 @@ export const actions: Actions = {
 		// Call the bulk reschedule RPC function (single atomic operation)
 		// The RPC handles validation, updates services, and creates history records atomically
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		// RPC uses auth.uid() internally for security - no need to pass user ID
 		const { data: rpcResult, error: rpcError } = await (supabase as any).rpc(
 			'bulk_reschedule_services',
 			{
@@ -86,8 +87,7 @@ export const actions: Actions = {
 				p_new_date: newDate,
 				p_new_time_slot: newTimeSlot,
 				p_new_time: newTime || null,
-				p_reason: reason || 'Batch reschedule',
-				p_user_id: user.id
+				p_reason: reason || 'Batch reschedule'
 			}
 		);
 

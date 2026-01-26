@@ -194,6 +194,11 @@ export const actions: Actions = {
 			return { success: false, error: rpcError.message };
 		}
 
+		// Check RPC-level success (auth check or other validation failure)
+		if (result && !result.success) {
+			return { success: false, error: result.error || 'Recalculation failed' };
+		}
+
 		return { success: true, recalculated: result?.updated || 0 };
 	},
 
@@ -261,6 +266,11 @@ export const actions: Actions = {
 
 		if (rpcError) {
 			return { success: false, error: rpcError.message };
+		}
+
+		// Check RPC-level success (auth check or other validation failure)
+		if (result && !result.success) {
+			return { success: false, error: result.error || 'Recalculation failed' };
 		}
 
 		return { success: true, recalculated: result?.updated || 0 };
