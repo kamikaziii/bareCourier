@@ -1,8 +1,15 @@
 # Phase 5: Advanced Features - Implementation Plan
 
-> **Status:** Complete (2026-01-26)
+> **Status:** Complete (2026-01-26) - with post-review fixes applied
 >
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+## Post-Implementation Review Fixes (2026-01-26)
+
+1. **CRITICAL:** Fixed Edge Function stateless cache bug - now uses `last_past_due_notification_at` DB column
+2. **HIGH:** Added user feedback for batch reschedule operations (success/error messages)
+3. **HIGH:** Added JSON.parse error handling in batchReschedule server action
+4. Migration 029 adds the tracking column to services table
 
 **Goal:** Add batch reschedule operations and automated past-due/daily summary notifications to help the courier manage deliveries proactively.
 
