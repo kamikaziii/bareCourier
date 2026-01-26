@@ -9,7 +9,7 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 		redirect(303, localizeHref('/login'));
 	}
 
-	// Load client profile
+	// First: validate client exists (must complete before other queries)
 	const { data: client, error: clientError } = await supabase
 		.from('profiles')
 		.select('*')
@@ -21,27 +21,21 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 		error(404, 'Client not found');
 	}
 
-	// Load client's services
-	const { data: services } = await supabase
-		.from('services')
-		.select('*')
-		.eq('client_id', params.id)
-		.is('deleted_at', null)
-		.order('created_at', { ascending: false });
+	// Then: parallel queries for remaining data
+	const [servicesResult, pricingResult, zonesResult] = await Promise.all([
+		supabase
+			.from('services')
+			.select('*')
+			.eq('client_id', params.id)
+			.is('deleted_at', null)
+			.order('created_at', { ascending: false }),
+		supabase.from('client_pricing').select('*').eq('client_id', params.id).single(),
+		supabase.from('pricing_zones').select('*').eq('client_id', params.id).order('min_km')
+	]);
 
-	// Load client's pricing configuration
-	const { data: pricing } = await supabase
-		.from('client_pricing')
-		.select('*')
-		.eq('client_id', params.id)
-		.single();
-
-	// Load pricing zones if zone pricing model
-	const { data: zones } = await supabase
-		.from('pricing_zones')
-		.select('*')
-		.eq('client_id', params.id)
-		.order('min_km');
+	const { data: services } = servicesResult;
+	const { data: pricing } = pricingResult;
+	const { data: zones } = zonesResult;
 
 	// Calculate statistics
 	const allServices = (services || []) as Service[];

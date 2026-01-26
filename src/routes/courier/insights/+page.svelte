@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -36,13 +36,13 @@
 	const validTabs = ['overview', 'charts', 'data'] as const;
 	type TabValue = (typeof validTabs)[number];
 
-	const tabParam = $page.url.searchParams.get('tab');
+	const tabParam = page.url.searchParams.get('tab');
 	const initialTab = validTabs.includes(tabParam as TabValue) ? (tabParam as TabValue) : 'overview';
 	let activeTab = $state<TabValue>(initialTab);
 
 	function handleTabChange(value: string) {
 		activeTab = value as TabValue;
-		const url = new URL($page.url);
+		const url = new URL(page.url);
 		url.searchParams.set('tab', value);
 		goto(url.toString(), { replaceState: true, noScroll: true });
 	}

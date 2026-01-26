@@ -1,16 +1,19 @@
 ---
-status: ready
+status: complete
 priority: p3
 issue_id: "050"
-tags: [code-review, security, authorization]
+tags: [code-review, consistency, authorization]
 dependencies: []
+resolution: "NOT A SECURITY ISSUE - All actions have role checks, just using inline pattern instead of requireCourier() helper. Code consistency issue only. Verified 2026-01-26."
 ---
 
 # Missing Role Checks in Settings Server Actions
 
 ## Problem Statement
 
-Multiple settings server actions in `/src/routes/courier/settings/+page.server.ts` verify authentication but don't verify the courier role. While the `/courier/*` routes have layout-level protection, a malicious client could craft direct POST requests to these endpoints.
+~~Multiple settings server actions in `/src/routes/courier/settings/+page.server.ts` verify authentication but don't verify the courier role.~~
+
+**VERIFIED 2026-01-26**: All 15 actions DO have courier role verification. The urgency fee actions (updateUrgencyFee, createUrgencyFee, toggleUrgencyFee, deleteUrgencyFee) use inline role checks at lines 109-117, 153-161, 203-211, 237-245 instead of the `requireCourier()` helper used by other actions. This is a CODE CONSISTENCY issue, not a security issue.
 
 ## Findings
 

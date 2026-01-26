@@ -2,6 +2,7 @@
 	import type { Component } from 'svelte';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { formatBadge } from '$lib/utils.js';
 
 	interface SidebarItemProps {
 		href: string;
@@ -13,12 +14,6 @@
 	}
 
 	let { href, label, icon: Icon, isActive, collapsed, badge }: SidebarItemProps = $props();
-
-	function formatBadge(count: number | undefined): string | null {
-		if (!count || count <= 0) return null;
-		if (count > 99) return '99+';
-		return count.toString();
-	}
 
 	const displayBadge = $derived(formatBadge(badge));
 </script>

@@ -1,11 +1,12 @@
 # Unused goto Import in Client Form
 
 ---
-status: ready
+status: complete
 priority: p3
 issue_id: "046"
 tags: [code-cleanup, imports, pr-4]
 dependencies: []
+resolution: "INVALID - goto IS used at line 308 for cancel button navigation. Verified 2026-01-26."
 ---
 
 **Priority**: P3 (Nice-to-have)

@@ -247,7 +247,7 @@
 		<div>
 			<h1 class="text-2xl font-bold">{m.requests_title()}</h1>
 			<p class="text-muted-foreground">
-				{data.pendingRequests.length} {data.pendingRequests.length === 1 ? 'pedido' : 'pedidos'}
+				{data.pendingRequests.length === 1 ? m.requests_count_one({ count: data.pendingRequests.length }) : m.requests_count_other({ count: data.pendingRequests.length })}
 			</p>
 		</div>
 	</div>
@@ -364,7 +364,7 @@
 									</div>
 
 									<div class="text-sm">
-										<span class="text-muted-foreground">Atual:</span>
+										<span class="text-muted-foreground">{m.reschedule_current()}</span>
 										{formatRequestDate(service.scheduled_date)}
 										{#if service.scheduled_time_slot}
 											- {formatTimeSlot(service.scheduled_time_slot)}
@@ -372,7 +372,7 @@
 									</div>
 
 									<div class="text-sm font-medium text-orange-600">
-										<span>Novo:</span>
+										<span>{m.reschedule_new()}</span>
 										{formatRequestDate(service.pending_reschedule_date)}
 										{#if service.pending_reschedule_time_slot}
 											- {formatTimeSlot(service.pending_reschedule_time_slot)}

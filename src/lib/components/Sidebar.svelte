@@ -3,6 +3,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { ChevronLeft, ChevronRight } from '@lucide/svelte';
 	import { type NavItem, isItemActive } from '$lib/types/navigation.js';
+	import * as m from '$lib/paraglide/messages.js';
 	import SidebarItem from './SidebarItem.svelte';
 
 	interface SidebarProps {
@@ -65,7 +66,7 @@
 				<ChevronRight class="size-4" />
 			{:else}
 				<ChevronLeft class="size-4 mr-2" />
-				<span>Collapse</span>
+				<span>{m.sidebar_collapse()}</span>
 			{/if}
 		</Button>
 	</div>

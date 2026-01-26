@@ -1,0 +1,348 @@
+{
+  "review_date": "2026-01-26",
+  "files_analyzed": 99,
+  "migrations_analyzed": 15,
+  "agents_used": 6,
+  "summary": {
+    "critical": 9,
+    "warnings": 38,
+    "info": 28
+  },
+  "critical_findings": [
+    {
+      "id": "CRIT-001",
+      "domain": "data",
+      "severity": "critical",
+      "file": "src/routes/courier/+page.server.ts:96",
+      "title": "N+1 query in batchReschedule",
+      "description": "Iterating over services array executing individual UPDATE + INSERT queries per service",
+      "fix": "Use batch update with .in() filter or create Postgres function for bulk reschedule",
+      "impact": "Performance degrades linearly with service count"
+    },
+    {
+      "id": "CRIT-002",
+      "domain": "data",
+      "severity": "critical",
+      "file": "src/routes/courier/billing/[client_id]/+page.server.ts:182",
+      "title": "N+1 query in recalculateMissing",
+      "description": "Executes calculateServicePrice + UPDATE for each service in parallel, causing query explosion",
+      "fix": "Batch pricing calculation by fetching config once, then batch update via RPC",
+      "impact": "At 100 services: ~300 database queries"
+    },
+    {
+      "id": "CRIT-003",
+      "domain": "data",
+      "severity": "critical",
+      "file": "src/routes/courier/billing/[client_id]/+page.server.ts:264",
+      "title": "N+1 query in recalculateAll",
+      "description": "Same unbounded parallel queries as recalculateMissing",
+      "fix": "Create RPC function for bulk price recalculation",
+      "impact": "Scales poorly with service count"
+    },
+    {
+      "id": "CRIT-004",
+      "domain": "data",
+      "severity": "critical",
+      "file": "src/routes/courier/clients/[id]/+page.server.ts:25",
+      "title": "Sequential queries in load function",
+      "description": "Four sequential queries: profiles, services, client_pricing, pricing_zones",
+      "fix": "Use Promise.all to parallelize all four queries",
+      "impact": "Unnecessary latency on page load"
+    },
+    {
+      "id": "CRIT-005",
+      "domain": "data",
+      "severity": "critical",
+      "file": "src/routes/courier/clients/[id]/edit/+page.server.ts:13",
+      "title": "Sequential queries in load function",
+      "description": "Three sequential queries: profiles, client_pricing, pricing_zones",
+      "fix": "Use Promise.all to parallelize all three queries",
+      "impact": "Unnecessary latency on page load"
+    },
+    {
+      "id": "CRIT-006",
+      "domain": "migrations",
+      "severity": "critical",
+      "file": "supabase/migrations/004_fix_rls_infinite_recursion.sql:6",
+      "title": "SECURITY DEFINER function missing search_path",
+      "description": "is_courier() function has no SET search_path",
+      "fix": "Add 'SET search_path = ''''' to prevent search path injection",
+      "impact": "Potential privilege escalation via schema poisoning"
+    },
+    {
+      "id": "CRIT-007",
+      "domain": "migrations",
+      "severity": "critical",
+      "file": "supabase/migrations/014_create_client_pricing.sql:70",
+      "title": "Mutable search_path in SECURITY DEFINER function",
+      "description": "update_client_pricing_updated_at() uses 'search_path = public' which is mutable",
+      "fix": "Use 'SET search_path = ''''' (empty) instead",
+      "impact": "Potential privilege escalation"
+    },
+    {
+      "id": "CRIT-008",
+      "domain": "migrations",
+      "severity": "critical",
+      "file": "supabase/migrations/023_restrict_client_service_updates.sql:17",
+      "title": "Mutable search_path in SECURITY DEFINER function",
+      "description": "check_client_service_update_fields() uses 'search_path = public'",
+      "fix": "Use 'SET search_path = ''''' (empty) instead",
+      "impact": "Potential privilege escalation"
+    },
+    {
+      "id": "CRIT-009",
+      "domain": "migrations",
+      "severity": "critical",
+      "file": "supabase/migrations/016_create_urgency_fees.sql:26",
+      "title": "Unauthenticated access to urgency_fees",
+      "description": "RLS policy urgency_fees_select_all allows reads with USING (true)",
+      "fix": "Change to 'USING (auth.uid() IS NOT NULL)' or add 'TO authenticated'",
+      "impact": "Data exposure to unauthenticated users"
+    }
+  ],
+  "warnings_by_domain": {
+    "security": [
+      {
+        "file": "src/routes/+layout.server.ts:8",
+        "issue": "Session data returned to client without filtering sensitive fields",
+        "fix": "Only return necessary session fields (user ID, email, role)"
+      },
+      {
+        "file": "src/routes/api/reports/csv/+server.ts:47",
+        "issue": "Database error message exposed directly to client",
+        "fix": "Return generic error message, log detailed error server-side"
+      },
+      {
+        "file": "src/routes/api/reports/csv/+server.ts:23",
+        "issue": "Date parameters used without format validation",
+        "fix": "Validate ISO 8601 date format before query"
+      },
+      {
+        "file": "src/routes/api/reports/csv/+server.ts:41",
+        "issue": "UUID parameter not validated before query",
+        "fix": "Validate UUID format with regex"
+      },
+      {
+        "file": "src/routes/login/+page.svelte:29",
+        "issue": "Raw auth error message displayed to user",
+        "fix": "Map error codes to user-friendly messages"
+      },
+      {
+        "file": "src/routes/api/reports/csv/+server.ts:68",
+        "issue": "Filename includes unvalidated date values (header injection risk)",
+        "fix": "Sanitize date values in Content-Disposition header"
+      }
+    ],
+    "data": [
+      {
+        "file": "src/routes/courier/services/[id]/+page.server.ts:44",
+        "issue": "Redundant profile role check in every action",
+        "fix": "Use layout-cached profile or shared auth guard"
+      },
+      {
+        "file": "src/routes/courier/requests/+page.server.ts:77",
+        "issue": "Repeated profile verification in 6 actions",
+        "fix": "Create shared helper function for courier validation"
+      },
+      {
+        "file": "src/routes/courier/settings/+page.server.ts:109",
+        "issue": "13 actions each query profiles table",
+        "fix": "Use requireCourier helper consistently"
+      },
+      {
+        "file": "src/routes/courier/calendar/+page.server.ts:40",
+        "issue": "Complex OR query may not use indexes efficiently",
+        "fix": "Consider composite index on (scheduled_date, created_at, deleted_at)"
+      },
+      {
+        "file": "src/routes/courier/requests/+page.server.ts:48",
+        "issue": "Missing index on request_status",
+        "fix": "Add index on services(request_status) WHERE deleted_at IS NULL"
+      },
+      {
+        "file": "src/routes/courier/requests/+page.server.ts:56",
+        "issue": "Missing partial index for pending_reschedule_date",
+        "fix": "Add partial index WHERE pending_reschedule_date IS NOT NULL"
+      },
+      {
+        "file": "src/routes/courier/services/[id]/+page.server.ts:198",
+        "issue": "Missing transaction boundary in reschedule action",
+        "fix": "Wrap multi-table operations in transaction or RPC"
+      },
+      {
+        "file": "src/routes/courier/requests/+page.server.ts:344",
+        "issue": "Missing transaction boundary in approveReschedule",
+        "fix": "Use RPC function for atomicity"
+      },
+      {
+        "file": "src/routes/client/+page.server.ts:16",
+        "issue": "notifyCourier queries profiles every time",
+        "fix": "Cache courier ID (only one courier in system)"
+      }
+    ],
+    "frontend": [
+      {
+        "file": "src/routes/courier/insights/+page.svelte:3",
+        "issue": "Using deprecated $app/stores instead of $app/state",
+        "fix": "Import from '$app/state'"
+      },
+      {
+        "file": "src/routes/+layout.svelte:4",
+        "issue": "Using deprecated $app/stores instead of $app/state",
+        "fix": "Import from '$app/state'"
+      },
+      {
+        "file": "src/lib/components/OfflineIndicator.svelte:3",
+        "issue": "Inconsistent lucide import path",
+        "fix": "Change 'lucide-svelte' to '@lucide/svelte'"
+      },
+      {
+        "file": "Multiple files",
+        "issue": "formatBadge duplicated in 3 components",
+        "fix": "Extract to $lib/utils.js"
+      },
+      {
+        "file": "Multiple files",
+        "issue": "formatTimeSlot duplicated in 2 client pages",
+        "fix": "Extract to $lib/utils.js"
+      },
+      {
+        "file": "Multiple files",
+        "issue": "Hardcoded Portuguese/English text not using i18n",
+        "fix": "Create i18n message keys"
+      },
+      {
+        "file": "Multiple files",
+        "issue": "Inline SVGs instead of Lucide components",
+        "fix": "Import from @lucide/svelte for consistency"
+      },
+      {
+        "file": "src/routes/courier/+page.svelte:398",
+        "issue": "Div with click handlers (a11y)",
+        "fix": "Use semantic button or anchor element"
+      },
+      {
+        "file": "src/routes/client/settings/+page.svelte:212",
+        "issue": "Direct DOM manipulation instead of Svelte refs",
+        "fix": "Use bind:this on form element"
+      }
+    ],
+    "architecture": [
+      {
+        "file": "src/routes/courier/+page.ts",
+        "issue": "Redundant pass-through load function",
+        "fix": "Delete file - SvelteKit inherits parent data automatically"
+      },
+      {
+        "file": "src/routes/courier/services/+page.ts",
+        "issue": "Redundant pass-through load function",
+        "fix": "Delete file"
+      },
+      {
+        "file": "src/routes/client/+page.ts",
+        "issue": "Redundant pass-through load function",
+        "fix": "Delete file"
+      },
+      {
+        "file": "src/routes/client/new/+page.ts",
+        "issue": "Redundant pass-through load function",
+        "fix": "Delete file"
+      },
+      {
+        "file": "src/routes/client/+layout.ts",
+        "issue": "Identical duplicate of courier layout",
+        "fix": "Extract shared logic to $lib helper"
+      },
+      {
+        "file": "src/lib/index.ts",
+        "issue": "Empty barrel export file",
+        "fix": "Export common utilities or delete"
+      },
+      {
+        "file": "src/app.d.ts:15",
+        "issue": "App.PageData incomplete (missing supabase, profile, navCounts)",
+        "fix": "Extend PageData interface for full type safety"
+      }
+    ],
+    "migrations": [
+      {
+        "file": "supabase/migrations/001_initial_schema.sql:21",
+        "issue": "CASCADE delete on services.client_id could cause silent data loss",
+        "fix": "Consider RESTRICT or SET NULL with explicit cleanup"
+      },
+      {
+        "file": "supabase/migrations/001_initial_schema.sql:154",
+        "issue": "handle_new_user() trusts raw_user_meta_data for role",
+        "fix": "Validate role is only 'client' or use separate courier onboarding"
+      },
+      {
+        "file": "supabase/migrations/026_create_reschedule_history.sql:42",
+        "issue": "Insert policy does not verify user has access to service_id",
+        "fix": "Add EXISTS check for service ownership"
+      },
+      {
+        "file": "supabase/migrations/024_add_reschedule_tracking.sql:9",
+        "issue": "Foreign key missing ON DELETE action",
+        "fix": "Add ON DELETE SET NULL"
+      },
+      {
+        "file": "supabase/migrations/027_add_pending_reschedule_fields.sql:7",
+        "issue": "Foreign key missing ON DELETE action",
+        "fix": "Add ON DELETE SET NULL"
+      },
+      {
+        "file": "Multiple pricing migrations",
+        "issue": "Inconsistent use of is_courier() helper vs inline subquery",
+        "fix": "Use public.is_courier() consistently"
+      }
+    ]
+  },
+  "priority_recommendations": [
+    {
+      "priority": "P1",
+      "category": "Security",
+      "items": [
+        "Fix SECURITY DEFINER functions with missing/mutable search_path (CRIT-006, CRIT-007, CRIT-008)",
+        "Restrict urgency_fees RLS to authenticated users (CRIT-009)",
+        "Validate inputs in CSV export endpoint"
+      ]
+    },
+    {
+      "priority": "P1",
+      "category": "Performance",
+      "items": [
+        "Convert batch operations to RPC functions (CRIT-001, CRIT-002, CRIT-003)",
+        "Parallelize sequential queries in load functions (CRIT-004, CRIT-005)",
+        "Add missing indexes on request_status and pending_reschedule_date"
+      ]
+    },
+    {
+      "priority": "P2",
+      "category": "Data Integrity",
+      "items": [
+        "Add transaction boundaries for multi-table operations",
+        "Fix foreign key ON DELETE actions",
+        "Add service ownership check to reschedule_history insert policy"
+      ]
+    },
+    {
+      "priority": "P2",
+      "category": "Code Quality",
+      "items": [
+        "Remove redundant +page.ts pass-through files",
+        "Extract duplicated utility functions (formatBadge, formatTimeSlot)",
+        "Complete App.PageData type definition"
+      ]
+    },
+    {
+      "priority": "P3",
+      "category": "Consistency",
+      "items": [
+        "Migrate from $app/stores to $app/state",
+        "Standardize Lucide icon imports",
+        "Replace inline SVGs with Lucide components",
+        "Complete i18n coverage for hardcoded strings"
+      ]
+    }
+  ]
+}

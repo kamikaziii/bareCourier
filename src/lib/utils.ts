@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { getLocale } from '$lib/paraglide/runtime.js';
+import * as m from '$lib/paraglide/messages.js';
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -70,6 +71,25 @@ export function formatMonthYear(date: Date | string): string {
 	});
 }
 
+/**
+ * Format a time slot value to a localized display string
+ */
+export function formatTimeSlot(slot: string | null): string {
+	if (!slot) return '';
+	switch (slot) {
+		case 'morning':
+			return m.time_slot_morning();
+		case 'afternoon':
+			return m.time_slot_afternoon();
+		case 'evening':
+			return m.time_slot_evening();
+		case 'specific':
+			return m.time_slot_specific();
+		default:
+			return slot;
+	}
+}
+
 // Type helpers for shadcn-svelte components
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type WithoutChild<T> = T extends { child?: any } ? Omit<T, 'child'> : T;
@@ -102,5 +122,37 @@ export function debounce<T extends (...args: Parameters<T>) => ReturnType<T>>(
 	return (...args: Parameters<T>) => {
 		clearTimeout(timeoutId);
 		timeoutId = setTimeout(() => fn(...args), delay);
+	};
+}
+
+/**
+ * Format a badge count for display.
+ * Returns null if count is falsy or <= 0.
+ * Returns "{max}+" if count exceeds max threshold.
+ * @param count - The badge count to format
+ * @param max - Maximum value before showing "max+" (default: 99)
+ */
+export function formatBadge(count: number | undefined, max: number = 99): string | null {
+	if (!count || count <= 0) return null;
+	if (count > max) return `${max}+`;
+	return count.toString();
+}
+
+/**
+ * Creates a layout load function that merges parent data with route-specific data.
+ * Used by both courier and client protected route layouts.
+ */
+export function createProtectedLayoutLoad<
+	T extends { profile: unknown; navCounts: unknown }
+>(): (params: { parent: () => Promise<Record<string, unknown>>; data: T }) => Promise<
+	Record<string, unknown> & { profile: T['profile']; navCounts: T['navCounts'] }
+> {
+	return async ({ parent, data }) => {
+		const parentData = await parent();
+		return {
+			...parentData,
+			profile: data.profile,
+			navCounts: data.navCounts
+		};
 	};
 }

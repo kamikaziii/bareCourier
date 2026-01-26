@@ -1,7 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import { invalidate } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import type { LayoutData } from './$types';
@@ -26,7 +26,7 @@
 	});
 
 	// Get delocalized pathname for hreflang tags using Paraglide's proper function
-	const basePathname = $derived(deLocalizeUrl($page.url).pathname);
+	const basePathname = $derived(deLocalizeUrl(page.url).pathname);
 </script>
 
 <svelte:head>

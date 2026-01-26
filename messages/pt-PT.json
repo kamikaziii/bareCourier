@@ -523,5 +523,12 @@
 	"notification_past_due_title": "Entrega Atrasada",
 	"notification_past_due_body": "Entrega de {clientName} está {time} atrasada",
 	"notification_daily_summary_title": "Entregas de Hoje",
-	"notification_daily_summary_body": "Tem {total} entregas hoje: {pending} pendentes, {urgent} urgentes"
+	"notification_daily_summary_body": "Tem {total} entregas hoje: {pending} pendentes, {urgent} urgentes",
+
+	"requests_count_one": "{count} pedido",
+	"requests_count_other": "{count} pedidos",
+	"reschedule_current": "Atual:",
+	"reschedule_new": "Novo:",
+	"schedule_clear_date": "Limpar data",
+	"sidebar_collapse": "Recolher"
 }

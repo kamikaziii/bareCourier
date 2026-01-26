@@ -395,9 +395,9 @@
 			</Card.Root>
 		{:else}
 			{#each sortedServices as service (service.id)}
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
-				<div
-					class="block group cursor-pointer"
+				<button
+					type="button"
+					class="block w-full text-left bg-transparent border-0 p-0 group cursor-pointer"
 					onclick={(e: MouseEvent) => {
 						if (selectionMode && service.status === 'pending') {
 							e.preventDefault();
@@ -406,18 +406,6 @@
 							window.location.href = localizeHref(`/courier/services/${service.id}`);
 						}
 					}}
-					onkeydown={(e: KeyboardEvent) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							if (selectionMode && service.status === 'pending') {
-								toggleServiceSelection(service.id);
-							} else {
-								window.location.href = localizeHref(`/courier/services/${service.id}`);
-							}
-						}
-					}}
-					role="button"
-					tabindex="0"
 				>
 					<Card.Root class="overflow-hidden transition-colors group-hover:bg-muted/50 {selectedIds.has(service.id) ? 'ring-2 ring-primary' : ''}">
 						<Card.Content class="flex items-start gap-4 p-4">
@@ -483,7 +471,7 @@
 							</div>
 						</Card.Content>
 					</Card.Root>
-				</div>
+				</button>
 			{/each}
 		{/if}
 	</div>

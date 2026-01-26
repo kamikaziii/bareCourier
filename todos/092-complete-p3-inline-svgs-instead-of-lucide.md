@@ -12,12 +12,11 @@ dependencies: []
 Multiple files use inline SVG icons instead of importing from @lucide/svelte.
 
 ## Findings
-- Locations:
-  - src/routes/courier/calendar/+page.svelte:173 - chevron icons
-  - src/routes/courier/calendar/+page.svelte:342 - chevron-right
-  - src/routes/courier/settings/PricingTab.svelte:342 - edit icon
-  - src/lib/components/SchedulePicker.svelte:117 - calendar icon
-  - src/routes/client/+page.svelte:272 - alert symbol
+
+**VERIFIED 2026-01-26**: Only 1 inline SVG found (not 5 as originally stated):
+- src/routes/courier/settings/PricingTab.svelte:342 - edit icon
+
+Other locations appear to have been fixed or were incorrect.
 
 ## Proposed Solutions
 

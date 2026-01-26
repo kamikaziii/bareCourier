@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
-	import { WifiOff, RefreshCw, Check, AlertTriangle } from 'lucide-svelte';
+	import { WifiOff, RefreshCw, Check, AlertTriangle } from '@lucide/svelte';
 	import * as m from '$lib/paraglide/messages.js';
 
 	// Online/offline state

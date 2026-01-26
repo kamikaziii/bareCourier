@@ -12,7 +12,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
-import { formatDate, formatDateTime } from '$lib/utils.js';
+import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	import type { PageData } from './$types';
 	import type { TimeSlot } from '$lib/database.types.js';
 	import { PUBLIC_MAPBOX_TOKEN } from '$env/static/public';
@@ -21,22 +21,6 @@ import { formatDate, formatDateTime } from '$lib/utils.js';
 	const hasMapbox = !!PUBLIC_MAPBOX_TOKEN;
 
 	let { data }: { data: PageData } = $props();
-
-	function formatTimeSlot(slot: string | null): string {
-		if (!slot) return '';
-		switch (slot) {
-			case 'morning':
-				return m.time_slot_morning();
-			case 'afternoon':
-				return m.time_slot_afternoon();
-			case 'evening':
-				return m.time_slot_evening();
-			case 'specific':
-				return m.time_slot_specific();
-			default:
-				return slot;
-		}
-	}
 
 	const service = $derived(data.service);
 	const statusHistory = $derived(data.statusHistory);

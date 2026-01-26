@@ -27,6 +27,9 @@
 	let pushError = $state('');
 	let pushSupported = $state(false);
 
+	// Form ref for email notifications auto-submit
+	let emailNotificationFormRef = $state<HTMLFormElement | null>(null);
+
 	// Check push subscription status on mount
 	$effect(() => {
 		if (typeof window !== 'undefined') {
@@ -199,7 +202,13 @@
 			<Separator />
 
 			<!-- Email Notifications -->
-			<form method="POST" action="?/updateNotificationPreferences" use:enhance class="flex items-center justify-between">
+			<form
+				bind:this={emailNotificationFormRef}
+				method="POST"
+				action="?/updateNotificationPreferences"
+				use:enhance
+				class="flex items-center justify-between"
+			>
 				<div class="space-y-0.5">
 					<Label class="text-base">{m.settings_email_notifications()}</Label>
 					<p class="text-sm text-muted-foreground">{m.settings_email_desc()}</p>
@@ -209,12 +218,13 @@
 					checked={emailEnabled}
 					onCheckedChange={(checked) => {
 						emailEnabled = checked;
-						// Auto-submit the form
-						const form = document.querySelector('form[action="?/updateNotificationPreferences"]') as HTMLFormElement;
-						if (form) {
-							const input = form.querySelector('input[name="email_notifications_enabled"]') as HTMLInputElement;
+						// Auto-submit the form using ref (available after mount)
+						if (emailNotificationFormRef) {
+							const input = emailNotificationFormRef.querySelector(
+								'input[name="email_notifications_enabled"]'
+							) as HTMLInputElement;
 							if (input) input.value = checked.toString();
-							form.requestSubmit();
+							emailNotificationFormRef.requestSubmit();
 						}
 					}}
 				/>

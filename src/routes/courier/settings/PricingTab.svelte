@@ -8,7 +8,7 @@
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import * as m from '$lib/paraglide/messages.js';
-	import { Zap, Plus, Trash2, Power, MapPin, Warehouse, Calculator } from '@lucide/svelte';
+	import { Zap, Plus, Trash2, Power, MapPin, Warehouse, Calculator, Pencil } from '@lucide/svelte';
 	import type { Profile, UrgencyFee } from '$lib/database.types.js';
 
 	interface Props {
@@ -339,7 +339,7 @@
 								<!-- Edit -->
 								<Button variant="ghost" size="icon" onclick={() => (editingFeeId = fee.id)}>
 									<span class="sr-only">{m.action_edit()}</span>
-									<svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+									<Pencil class="size-4" />
 								</Button>
 								<!-- Delete -->
 								<Button

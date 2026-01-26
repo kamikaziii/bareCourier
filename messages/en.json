@@ -523,5 +523,12 @@
 	"notification_past_due_title": "Delivery Past Due",
 	"notification_past_due_body": "{clientName} delivery is {time} overdue",
 	"notification_daily_summary_title": "Today's Deliveries",
-	"notification_daily_summary_body": "You have {total} deliveries today: {pending} pending, {urgent} urgent"
+	"notification_daily_summary_body": "You have {total} deliveries today: {pending} pending, {urgent} urgent",
+
+	"requests_count_one": "{count} request",
+	"requests_count_other": "{count} requests",
+	"reschedule_current": "Current:",
+	"reschedule_new": "New:",
+	"schedule_clear_date": "Clear date",
+	"sidebar_collapse": "Collapse"
 }

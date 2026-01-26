@@ -4,6 +4,7 @@
 	import { MoreHorizontal } from '@lucide/svelte';
 	import { type NavItem, isItemActive } from '$lib/types/navigation.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { formatBadge } from '$lib/utils.js';
 	import MoreDrawer from './MoreDrawer.svelte';
 
 	interface MobileBottomNavProps {
@@ -24,11 +25,8 @@
 		moreItems.reduce((sum, item) => sum + (item.badge || 0), 0)
 	);
 
-	function formatBadge(count: number | undefined): string | null {
-		if (!count || count <= 0) return null;
-		if (count > 9) return '9+';
-		return count.toString();
-	}
+	// Mobile bottom nav uses smaller badges (max 9)
+	const formatMobileBadge = (count: number | undefined) => formatBadge(count, 9);
 </script>
 
 <nav
@@ -39,7 +37,7 @@
 		{#each mainItems as item (item.href)}
 			{@const Icon = item.icon}
 			{@const active = isItemActive(item.href, currentPath)}
-			{@const displayBadge = formatBadge(item.badge)}
+			{@const displayBadge = formatMobileBadge(item.badge)}
 			<a
 				href={localizeHref(item.href)}
 				class="flex flex-1 flex-col items-center gap-1 py-2 text-xs transition-colors
@@ -62,7 +60,7 @@
 		{/each}
 
 		{#if moreItems.length > 0}
-			{@const moreDisplayBadge = formatBadge(moreBadgeCount)}
+			{@const moreDisplayBadge = formatMobileBadge(moreBadgeCount)}
 			<button
 				onclick={() => (drawerOpen = true)}
 				class="flex flex-1 flex-col items-center gap-1 py-2 text-xs transition-colors

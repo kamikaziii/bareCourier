@@ -5,6 +5,7 @@
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { type NavItem, isItemActive } from '$lib/types/navigation.js';
+	import { formatBadge } from '$lib/utils.js';
 
 	interface MoreDrawerProps {
 		items: NavItem[];
@@ -17,12 +18,6 @@
 	function handleItemClick(href: string) {
 		open = false;
 		goto(localizeHref(href));
-	}
-
-	function formatBadge(count: number | undefined): string | null {
-		if (!count || count <= 0) return null;
-		if (count > 99) return '99+';
-		return count.toString();
 	}
 </script>
 

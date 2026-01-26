@@ -18,14 +18,17 @@ Four sequential queries in load function: profiles, services, client_pricing, pr
 
 ## Proposed Solutions
 
-### Option 1: Promise.all
-- **Pros**: Simple fix, no schema changes
-- **Cons**: None
+### Option 1: Partial Promise.all (Recommended)
+- **Pros**: Reduces latency while maintaining error handling
+- **Cons**: Client query must run first (dependency)
 - **Effort**: Small
 - **Risk**: Low
 
+**VERIFIED 2026-01-26**: Cannot fully parallelize - client query must succeed first (error 404 if not found). After client succeeds, the remaining 3 queries (services, pricing, zones) can run in parallel.
+
 ## Recommended Action
-Wrap all four queries in Promise.all for parallel execution
+1. Fetch client profile first (need to validate it exists)
+2. Then Promise.all for services, client_pricing, pricing_zones
 
 ## Technical Details
 - **Affected Files**: src/routes/courier/clients/[id]/+page.server.ts

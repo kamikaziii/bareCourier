@@ -145,7 +145,7 @@
 				{#if calendarValue}
 					<div class="border-t p-2">
 						<Button variant="ghost" size="sm" class="w-full" onclick={clearDate}>
-							Limpar data
+							{m.schedule_clear_date()}
 						</Button>
 					</div>
 				{/if}

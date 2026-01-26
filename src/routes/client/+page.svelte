@@ -9,7 +9,7 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
-import { formatDate, formatDateTime } from '$lib/utils.js';
+import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	import type { PageData } from './$types';
 	import type { Service } from '$lib/database.types.js';
 	import { Search, X, Filter } from '@lucide/svelte';
@@ -128,22 +128,6 @@ import { formatDate, formatDateTime } from '$lib/utils.js';
 				return 'border-orange-500 text-orange-500';
 			default:
 				return '';
-		}
-	}
-
-	function formatTimeSlot(slot: string | null): string {
-		if (!slot) return '';
-		switch (slot) {
-			case 'morning':
-				return m.time_slot_morning();
-			case 'afternoon':
-				return m.time_slot_afternoon();
-			case 'evening':
-				return m.time_slot_evening();
-			case 'specific':
-				return m.time_slot_specific();
-			default:
-				return slot;
 		}
 	}
 

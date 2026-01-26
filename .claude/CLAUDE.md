@@ -148,6 +148,16 @@ Client creates → pending → Courier accepts/rejects/suggests
 
 See @docs/IMPLEMENTATION_PLAN.md for current progress.
 
+## Code Review Guidelines
+
+For multi-agent code reviews, see @docs/multi-agent-review-patterns.md for:
+- Context window management strategies
+- Agent scoping patterns (avoid context exhaustion)
+- Two-phase review workflow (discovery → focused analysis)
+- Checklist template at @docs/templates/code-review-template.md
+
+**Key rule**: Always scope agents to specific files/directories. Never ask an agent to "review the entire app" without boundaries.
+
 ---
 
 **Repository**: https://github.com/kamikaziii/bareCourier
