@@ -461,5 +461,27 @@
 	"reschedule_denied": "Reschedule denied",
 	"reschedule_history": "Reschedule History",
 	"reschedule_by_client": "Requested by client",
-	"reschedule_by_courier": "Changed by courier"
+	"reschedule_by_courier": "Changed by courier",
+
+	"settings_automated_notifications": "Automated Notifications",
+	"settings_automated_notifications_desc": "Configure automatic reminders and daily summaries",
+	"settings_past_due_reminder_interval": "Past Due Reminder Interval",
+	"settings_past_due_reminder_interval_desc": "How often to send reminders for past due deliveries",
+	"settings_reminder_disabled": "Disabled",
+	"settings_daily_summary": "Daily Summary",
+	"settings_daily_summary_desc": "Receive a morning summary of today's deliveries",
+	"settings_daily_summary_time": "Summary Time",
+	"minutes": "minutes",
+	"hour": "hour",
+	"hours": "hours",
+	"batch_reschedule": "Reschedule Selected",
+	"batch_reschedule_desc": "Move {count} services to a new date",
+	"batch_select_all": "Select All",
+	"batch_deselect_all": "Deselect All",
+	"batch_selected_count": "{count} selected",
+	"batch_selection_mode": "Selection Mode",
+	"notification_past_due_title": "Delivery Past Due",
+	"notification_past_due_body": "{clientName} delivery is {time} overdue",
+	"notification_daily_summary_title": "Today's Deliveries",
+	"notification_daily_summary_body": "You have {total} deliveries today: {pending} pending, {urgent} urgent"
 }

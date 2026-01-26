@@ -432,5 +432,46 @@ export const actions: Actions = {
 		}
 
 		return { success: true, message: 'client_reschedule_settings_updated' };
+	},
+
+	updateNotificationSettings: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const formData = await request.formData();
+		const pastDueReminderInterval = parseInt(formData.get('pastDueReminderInterval') as string) || 0;
+		const dailySummaryEnabled = formData.get('dailySummaryEnabled') === 'true';
+		const dailySummaryTime = (formData.get('dailySummaryTime') as string) || '08:00';
+
+		// Get current settings
+		const { data: currentProfile } = await supabase
+			.from('profiles')
+			.select('past_due_settings')
+			.eq('id', user.id)
+			.single();
+
+		const currentSettings = (currentProfile as unknown as { past_due_settings: Record<string, unknown> | null })?.past_due_settings || {};
+
+		// Merge with new notification settings
+		const updatedSettings = {
+			...currentSettings,
+			pastDueReminderInterval,
+			dailySummaryEnabled,
+			dailySummaryTime
+		};
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error } = await (supabase as any)
+			.from('profiles')
+			.update({ past_due_settings: updatedSettings })
+			.eq('id', user.id);
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		return { success: true, message: 'notification_settings_updated' };
 	}
 };

@@ -461,5 +461,27 @@
 	"reschedule_denied": "Reagendamento recusado",
 	"reschedule_history": "Histórico de Reagendamentos",
 	"reschedule_by_client": "Pedido pelo cliente",
-	"reschedule_by_courier": "Alterado pelo estafeta"
+	"reschedule_by_courier": "Alterado pelo estafeta",
+
+	"settings_automated_notifications": "Notificações Automáticas",
+	"settings_automated_notifications_desc": "Configure lembretes automáticos e resumos diários",
+	"settings_past_due_reminder_interval": "Intervalo de Lembrete de Atrasos",
+	"settings_past_due_reminder_interval_desc": "Com que frequência enviar lembretes para entregas atrasadas",
+	"settings_reminder_disabled": "Desativado",
+	"settings_daily_summary": "Resumo Diário",
+	"settings_daily_summary_desc": "Receba um resumo matinal das entregas de hoje",
+	"settings_daily_summary_time": "Hora do Resumo",
+	"minutes": "minutos",
+	"hour": "hora",
+	"hours": "horas",
+	"batch_reschedule": "Reagendar Selecionados",
+	"batch_reschedule_desc": "Mover {count} serviços para uma nova data",
+	"batch_select_all": "Selecionar Todos",
+	"batch_deselect_all": "Desselecionar Todos",
+	"batch_selected_count": "{count} selecionados",
+	"batch_selection_mode": "Modo de Seleção",
+	"notification_past_due_title": "Entrega Atrasada",
+	"notification_past_due_body": "Entrega de {clientName} está {time} atrasada",
+	"notification_daily_summary_title": "Entregas de Hoje",
+	"notification_daily_summary_body": "Tem {total} entregas hoje: {pending} pendentes, {urgent} urgentes"
 }

@@ -21,6 +21,10 @@ export type PastDueSettings = {
 	allowClientReschedule: boolean; // whether clients can request reschedules
 	clientMinNoticeHours: number; // minimum hours notice for client reschedule
 	clientMaxReschedules: number; // maximum reschedules per service
+	// Phase 5: Notification settings
+	pastDueReminderInterval: number; // minutes between reminders (0 = disabled, default: 60)
+	dailySummaryEnabled: boolean; // whether to send daily summary (default: true)
+	dailySummaryTime: string; // time to send daily summary HH:MM (default: "08:00")
 };
 
 // Phase 4 Past Due: Reschedule history tracking

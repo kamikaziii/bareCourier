@@ -73,7 +73,11 @@
 		thresholdCriticalHours: 24,
 		allowClientReschedule: true,
 		clientMinNoticeHours: 24,
-		clientMaxReschedules: 3
+		clientMaxReschedules: 3,
+		// Phase 5 defaults
+		pastDueReminderInterval: 60,
+		dailySummaryEnabled: true,
+		dailySummaryTime: '08:00'
 	};
 	// svelte-ignore state_referenced_locally
 	let pastDueSettings = $state<PastDueSettings>(
@@ -607,6 +611,72 @@
 						<p class="text-xs text-muted-foreground">{m.settings_client_max_reschedules_desc()}</p>
 					</div>
 				{/if}
+
+				<Button type="submit">{m.action_save()}</Button>
+			</form>
+		</Card.Content>
+	</Card.Root>
+
+	<!-- Automated Notifications -->
+	<Card.Root>
+		<Card.Header>
+			<Card.Title class="flex items-center gap-2">
+				<Bell class="size-5" />
+				{m.settings_automated_notifications()}
+			</Card.Title>
+			<Card.Description>{m.settings_automated_notifications_desc()}</Card.Description>
+		</Card.Header>
+		<Card.Content>
+			<form method="POST" action="?/updateNotificationSettings" use:enhance class="space-y-6">
+				<!-- Past Due Reminder Interval -->
+				<div class="space-y-2">
+					<Label for="pastDueReminderInterval">{m.settings_past_due_reminder_interval()}</Label>
+					<select
+						id="pastDueReminderInterval"
+						name="pastDueReminderInterval"
+						class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+						value={pastDueSettings.pastDueReminderInterval}
+					>
+						<option value="0">{m.settings_reminder_disabled()}</option>
+						<option value="15">15 {m.minutes()}</option>
+						<option value="30">30 {m.minutes()}</option>
+						<option value="60">1 {m.hour()}</option>
+						<option value="120">2 {m.hours()}</option>
+					</select>
+					<p class="text-xs text-muted-foreground">{m.settings_past_due_reminder_interval_desc()}</p>
+				</div>
+
+				<Separator />
+
+				<!-- Daily Summary -->
+				<div class="space-y-4">
+					<div class="flex items-center justify-between">
+						<div>
+							<Label>{m.settings_daily_summary()}</Label>
+							<p class="text-xs text-muted-foreground">{m.settings_daily_summary_desc()}</p>
+						</div>
+						<input type="hidden" name="dailySummaryEnabled" value={pastDueSettings.dailySummaryEnabled.toString()} />
+						<Switch
+							checked={pastDueSettings.dailySummaryEnabled}
+							onCheckedChange={(checked) => {
+								pastDueSettings.dailySummaryEnabled = checked;
+							}}
+						/>
+					</div>
+
+					{#if pastDueSettings.dailySummaryEnabled}
+						<div class="space-y-2">
+							<Label for="dailySummaryTime">{m.settings_daily_summary_time()}</Label>
+							<Input
+								id="dailySummaryTime"
+								name="dailySummaryTime"
+								type="time"
+								bind:value={pastDueSettings.dailySummaryTime}
+								class="w-32"
+							/>
+						</div>
+					{/if}
+				</div>
 
 				<Button type="submit">{m.action_save()}</Button>
 			</form>
