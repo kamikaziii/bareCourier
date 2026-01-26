@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p3
 issue_id: "108"
 tags: [frontend, i18n]
@@ -40,15 +40,22 @@ Hardcoded Portuguese strings `De:` (From) and `Para:` (To) in requests page not 
 - **Database Changes**: No
 
 ## Acceptance Criteria
-- [ ] Message keys added to both language files
-- [ ] Both occurrences in requests page use i18n functions
-- [ ] No hardcoded De:/Para: remain
+- [x] Message keys added to both language files
+- [x] Both occurrences in requests page use i18n functions
+- [x] No hardcoded De:/Para: remain
 
 ## Work Log
 
 ### 2026-01-26 - Issue Created
 **By:** Claude Review
 **Source:** Discovered during P3 fix review - these strings were missed when fixing TODO #091
+
+### 2026-01-26 - Fixed
+**By:** Claude
+**Changes:**
+- Added `location_from` and `location_to` keys to en.json and pt-PT.json
+- Updated lines 286, 290 (route display) to use m.location_from()/m.location_to()
+- Updated lines 419, 420 (accept dialog) to use m.location_from()/m.location_to()
 
 ## Notes
 Related to TODO #091 (hardcoded i18n strings) - same file, different strings that were overlooked.

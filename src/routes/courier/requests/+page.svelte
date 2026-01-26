@@ -283,11 +283,11 @@
 								<!-- Route -->
 								<div class="text-sm space-y-1">
 									<div class="flex items-start gap-2">
-										<span class="text-blue-500 font-medium">De:</span>
+										<span class="text-blue-500 font-medium">{m.location_from()}</span>
 										<span>{service.pickup_location}</span>
 									</div>
 									<div class="flex items-start gap-2">
-										<span class="text-green-500 font-medium">Para:</span>
+										<span class="text-green-500 font-medium">{m.location_to()}</span>
 										<span>{service.delivery_location}</span>
 									</div>
 								</div>
@@ -416,8 +416,8 @@
 		{#if selectedService}
 			<div class="space-y-2 text-sm">
 				<p><strong>{selectedService.profiles.name}</strong></p>
-				<p>De: {selectedService.pickup_location}</p>
-				<p>Para: {selectedService.delivery_location}</p>
+				<p>{m.location_from()} {selectedService.pickup_location}</p>
+				<p>{m.location_to()} {selectedService.delivery_location}</p>
 				{#if selectedService.requested_date || selectedService.requested_time_slot}
 					<p>
 						{formatRequestDate(selectedService.requested_date)}

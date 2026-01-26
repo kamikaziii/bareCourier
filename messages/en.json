@@ -530,5 +530,8 @@
 	"reschedule_current": "Current:",
 	"reschedule_new": "New:",
 	"schedule_clear_date": "Clear date",
-	"sidebar_collapse": "Collapse"
+	"sidebar_collapse": "Collapse",
+
+	"location_from": "From:",
+	"location_to": "To:"
 }

@@ -530,5 +530,8 @@
 	"reschedule_current": "Atual:",
 	"reschedule_new": "Novo:",
 	"schedule_clear_date": "Limpar data",
-	"sidebar_collapse": "Recolher"
+	"sidebar_collapse": "Recolher",
+
+	"location_from": "De:",
+	"location_to": "Para:"
 }
