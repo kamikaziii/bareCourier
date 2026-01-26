@@ -12,9 +12,13 @@
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	let loading = $state(false);
+	// svelte-ignore state_referenced_locally - intentional: capture initial value for form editing
 	let clientId = $state(data.service.client_id);
+	// svelte-ignore state_referenced_locally
 	let pickupLocation = $state(data.service.pickup_location);
+	// svelte-ignore state_referenced_locally
 	let deliveryLocation = $state(data.service.delivery_location);
+	// svelte-ignore state_referenced_locally
 	let notes = $state(data.service.notes || '');
 
 	function handleClientChange() {

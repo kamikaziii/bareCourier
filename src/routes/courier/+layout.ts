@@ -4,6 +4,7 @@ export const load: LayoutLoad = async ({ parent, data }) => {
 	const parentData = await parent();
 	return {
 		...parentData,
-		profile: data.profile
+		profile: data.profile,
+		navCounts: data.navCounts
 	};
 };

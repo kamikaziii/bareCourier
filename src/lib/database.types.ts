@@ -15,6 +15,52 @@ export type PriceBreakdown = {
 	pickup_to_delivery_km?: number;
 };
 
+// Phase 3 Past Due: Configurable settings
+export type PastDueSettings = {
+	gracePeriodStandard: number; // minutes after slot end (default: 30)
+	gracePeriodSpecific: number; // minutes after specific time (default: 15)
+	thresholdApproaching: number; // minutes before deadline to show "approaching" (default: 120)
+	thresholdUrgent: number; // minutes before deadline to show "urgent" (default: 60)
+	thresholdCriticalHours: number; // hours after past due to show "critical" (default: 24)
+	allowClientReschedule: boolean; // whether clients can request reschedules
+	clientMinNoticeHours: number; // minimum hours notice for client reschedule
+	clientMaxReschedules: number; // maximum reschedules per service
+	// Phase 5: Notification settings
+	pastDueReminderInterval: number; // minutes between reminders (0 = disabled, default: 60)
+	dailySummaryEnabled: boolean; // whether to send daily summary (default: true)
+	dailySummaryTime: string; // time to send daily summary HH:MM (default: "08:00")
+};
+
+// Time slot configuration for scheduling
+export type TimeSlotDefinitions = {
+	morning: { start: string; end: string };
+	afternoon: { start: string; end: string };
+	evening: { start: string; end: string };
+};
+
+// Working days configuration
+export type WorkingDay = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+
+// Phase 4 Past Due: Reschedule history tracking
+export type ServiceRescheduleHistory = {
+	id: string;
+	service_id: string;
+	initiated_by: string;
+	initiated_by_role: 'courier' | 'client';
+	old_date: string | null;
+	old_time_slot: string | null;
+	old_time: string | null;
+	new_date: string;
+	new_time_slot: string;
+	new_time: string | null;
+	reason: string | null;
+	approval_status: 'auto_approved' | 'pending' | 'approved' | 'denied';
+	approved_by: string | null;
+	approved_at: string | null;
+	denial_reason: string | null;
+	created_at: string;
+};
+
 export type Database = {
 	public: {
 		Tables: {
@@ -41,6 +87,12 @@ export type Database = {
 					default_urgency_fee_id: string | null;
 					minimum_charge: number | null;
 					round_distance: boolean | null;
+					// Past due settings (Phase 3 Past Due)
+					past_due_settings: PastDueSettings | null;
+					// Scheduling settings (Settings Page Improvements)
+					timezone: string;
+					time_slots: TimeSlotDefinitions | null;
+					working_days: WorkingDay[] | null;
 				};
 				Insert: {
 					id: string;
@@ -60,6 +112,11 @@ export type Database = {
 					default_urgency_fee_id?: string | null;
 					minimum_charge?: number | null;
 					round_distance?: boolean | null;
+					past_due_settings?: PastDueSettings | null;
+					// Scheduling settings (Settings Page Improvements)
+					timezone?: string;
+					time_slots?: TimeSlotDefinitions | null;
+					working_days?: WorkingDay[] | null;
 				};
 				Update: {
 					id?: string;
@@ -79,6 +136,11 @@ export type Database = {
 					default_urgency_fee_id?: string | null;
 					minimum_charge?: number | null;
 					round_distance?: boolean | null;
+					past_due_settings?: PastDueSettings | null;
+					// Scheduling settings (Settings Page Improvements)
+					timezone?: string;
+					time_slots?: TimeSlotDefinitions | null;
+					working_days?: WorkingDay[] | null;
 				};
 			};
 			services: {
@@ -115,6 +177,17 @@ export type Database = {
 					calculated_price: number | null;
 					price_breakdown: PriceBreakdown | null;
 					price_override_reason: string | null;
+					// Reschedule tracking (Phase 2 Past Due)
+					reschedule_count: number;
+					last_rescheduled_at: string | null;
+					last_rescheduled_by: string | null;
+					// Pending reschedule request (Phase 4 Past Due)
+					pending_reschedule_date: string | null;
+					pending_reschedule_time_slot: string | null;
+					pending_reschedule_time: string | null;
+					pending_reschedule_reason: string | null;
+					pending_reschedule_requested_at: string | null;
+					pending_reschedule_requested_by: string | null;
 				};
 				Insert: {
 					id?: string;
@@ -149,6 +222,17 @@ export type Database = {
 					calculated_price?: number | null;
 					price_breakdown?: PriceBreakdown | null;
 					price_override_reason?: string | null;
+					// Reschedule tracking (Phase 2 Past Due)
+					reschedule_count?: number;
+					last_rescheduled_at?: string | null;
+					last_rescheduled_by?: string | null;
+					// Pending reschedule request (Phase 4 Past Due)
+					pending_reschedule_date?: string | null;
+					pending_reschedule_time_slot?: string | null;
+					pending_reschedule_time?: string | null;
+					pending_reschedule_reason?: string | null;
+					pending_reschedule_requested_at?: string | null;
+					pending_reschedule_requested_by?: string | null;
 				};
 				Update: {
 					id?: string;
@@ -183,6 +267,17 @@ export type Database = {
 					calculated_price?: number | null;
 					price_breakdown?: PriceBreakdown | null;
 					price_override_reason?: string | null;
+					// Reschedule tracking (Phase 2 Past Due)
+					reschedule_count?: number;
+					last_rescheduled_at?: string | null;
+					last_rescheduled_by?: string | null;
+					// Pending reschedule request (Phase 4 Past Due)
+					pending_reschedule_date?: string | null;
+					pending_reschedule_time_slot?: string | null;
+					pending_reschedule_time?: string | null;
+					pending_reschedule_reason?: string | null;
+					pending_reschedule_requested_at?: string | null;
+					pending_reschedule_requested_by?: string | null;
 				};
 			};
 			service_status_history: {

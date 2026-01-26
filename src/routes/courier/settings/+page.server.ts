@@ -3,6 +3,27 @@ import type { PageServerLoad, Actions } from './$types';
 import type { Profile, UrgencyFee } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 
+// Validation helpers
+const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
+const VALID_DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
+const VALID_TIMEZONES = ['Europe/Lisbon', 'Europe/London', 'Europe/Paris', 'Europe/Madrid', 'Atlantic/Azores', 'Atlantic/Madeira'] as const;
+
+function isValidTime(time: string): boolean {
+	return TIME_REGEX.test(time);
+}
+
+function isValidTimeRange(start: string, end: string): boolean {
+	return isValidTime(start) && isValidTime(end) && start < end;
+}
+
+function isValidWorkingDay(day: string): day is (typeof VALID_DAYS)[number] {
+	return VALID_DAYS.includes(day as (typeof VALID_DAYS)[number]);
+}
+
+function isValidTimezone(tz: string): tz is (typeof VALID_TIMEZONES)[number] {
+	return VALID_TIMEZONES.includes(tz as (typeof VALID_TIMEZONES)[number]);
+}
+
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
 	const { session, user } = await safeGetSession();
 	if (!session || !user) {
@@ -68,7 +89,7 @@ export const actions: Actions = {
 			.from('profiles')
 			.select('role')
 			.eq('id', user.id)
-			.single();
+			.single() as { data: { role: string } | null };
 
 		if (profile?.role !== 'courier') {
 			return { success: false, error: 'Unauthorized' };
@@ -112,7 +133,7 @@ export const actions: Actions = {
 			.from('profiles')
 			.select('role')
 			.eq('id', user.id)
-			.single();
+			.single() as { data: { role: string } | null };
 
 		if (profile?.role !== 'courier') {
 			return { success: false, error: 'Unauthorized' };
@@ -162,7 +183,7 @@ export const actions: Actions = {
 			.from('profiles')
 			.select('role')
 			.eq('id', user.id)
-			.single();
+			.single() as { data: { role: string } | null };
 
 		if (profile?.role !== 'courier') {
 			return { success: false, error: 'Unauthorized' };
@@ -196,7 +217,7 @@ export const actions: Actions = {
 			.from('profiles')
 			.select('role')
 			.eq('id', user.id)
-			.single();
+			.single() as { data: { role: string } | null };
 
 		if (profile?.role !== 'courier') {
 			return { success: false, error: 'Unauthorized' };
@@ -207,12 +228,12 @@ export const actions: Actions = {
 
 		// Check if this urgency fee is in use by any services
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { data: usageCount } = await (supabase as any)
+		const { count } = await (supabase as any)
 			.from('services')
 			.select('id', { count: 'exact', head: true })
 			.eq('urgency_fee_id', id);
 
-		if (usageCount && usageCount.length > 0) {
+		if (count && count > 0) {
 			return { success: false, error: 'urgency_in_use' };
 		}
 
@@ -332,5 +353,245 @@ export const actions: Actions = {
 		}
 
 		return { success: true, message: 'pricing_preferences_updated' };
+	},
+
+	updatePastDueSettings: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const formData = await request.formData();
+
+		// Helper to parse int with bounds validation (handles 0 correctly, unlike || default)
+		const parseIntWithBounds = (value: FormDataEntryValue | null, min: number, max: number, defaultVal: number): number => {
+			if (value === null || value === '') return defaultVal;
+			const parsed = parseInt(value as string, 10);
+			if (Number.isNaN(parsed)) return defaultVal;
+			return Math.max(min, Math.min(max, parsed));
+		};
+
+		const gracePeriodStandard = parseIntWithBounds(formData.get('gracePeriodStandard'), 0, 60, 30);
+		const gracePeriodSpecific = parseIntWithBounds(formData.get('gracePeriodSpecific'), 0, 30, 15);
+		const thresholdApproaching = parseIntWithBounds(formData.get('thresholdApproaching'), 30, 180, 120);
+		const thresholdUrgent = parseIntWithBounds(formData.get('thresholdUrgent'), 15, 120, 60);
+		const thresholdCriticalHours = parseIntWithBounds(formData.get('thresholdCriticalHours'), 1, 72, 24);
+
+		// Get current settings to preserve client reschedule fields
+		const { data: currentProfile } = await supabase
+			.from('profiles')
+			.select('past_due_settings')
+			.eq('id', user.id)
+			.single();
+
+		const currentSettings = (currentProfile as unknown as { past_due_settings: Record<string, unknown> | null })?.past_due_settings || {};
+
+		const updatedSettings = {
+			...currentSettings,
+			gracePeriodStandard,
+			gracePeriodSpecific,
+			thresholdApproaching,
+			thresholdUrgent,
+			thresholdCriticalHours
+		};
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error } = await (supabase as any)
+			.from('profiles')
+			.update({ past_due_settings: updatedSettings })
+			.eq('id', user.id);
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		return { success: true, message: 'past_due_settings_updated' };
+	},
+
+	updateClientRescheduleSettings: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const formData = await request.formData();
+		const allowClientReschedule = formData.get('allowClientReschedule') === 'true';
+
+		// Helper to parse int with bounds validation
+		const parseIntWithBounds = (value: FormDataEntryValue | null, min: number, max: number, defaultVal: number): number => {
+			if (value === null || value === '') return defaultVal;
+			const parsed = parseInt(value as string, 10);
+			if (Number.isNaN(parsed)) return defaultVal;
+			return Math.max(min, Math.min(max, parsed));
+		};
+
+		const clientMinNoticeHours = parseIntWithBounds(formData.get('clientMinNoticeHours'), 1, 72, 24);
+		const clientMaxReschedules = parseIntWithBounds(formData.get('clientMaxReschedules'), 1, 10, 3);
+
+		// Get current settings to preserve threshold fields
+		const { data: currentProfile } = await supabase
+			.from('profiles')
+			.select('past_due_settings')
+			.eq('id', user.id)
+			.single();
+
+		const currentSettings = (currentProfile as unknown as { past_due_settings: Record<string, unknown> | null })?.past_due_settings || {};
+
+		const updatedSettings = {
+			...currentSettings,
+			allowClientReschedule,
+			clientMinNoticeHours,
+			clientMaxReschedules
+		};
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error } = await (supabase as any)
+			.from('profiles')
+			.update({ past_due_settings: updatedSettings })
+			.eq('id', user.id);
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		return { success: true, message: 'client_reschedule_settings_updated' };
+	},
+
+	updateNotificationSettings: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const formData = await request.formData();
+		const pastDueReminderInterval = parseInt(formData.get('pastDueReminderInterval') as string) || 0;
+		const dailySummaryEnabled = formData.get('dailySummaryEnabled') === 'true';
+		const dailySummaryTime = (formData.get('dailySummaryTime') as string) || '08:00';
+
+		// Get current settings
+		const { data: currentProfile } = await supabase
+			.from('profiles')
+			.select('past_due_settings')
+			.eq('id', user.id)
+			.single();
+
+		const currentSettings = (currentProfile as unknown as { past_due_settings: Record<string, unknown> | null })?.past_due_settings || {};
+
+		// Merge with new notification settings
+		const updatedSettings = {
+			...currentSettings,
+			pastDueReminderInterval,
+			dailySummaryEnabled,
+			dailySummaryTime
+		};
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error } = await (supabase as any)
+			.from('profiles')
+			.update({ past_due_settings: updatedSettings })
+			.eq('id', user.id);
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		return { success: true, message: 'notification_settings_updated' };
+	},
+
+	updateTimeSlots: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const formData = await request.formData();
+		const timeSlots = {
+			morning: {
+				start: formData.get('morning_start') as string,
+				end: formData.get('morning_end') as string
+			},
+			afternoon: {
+				start: formData.get('afternoon_start') as string,
+				end: formData.get('afternoon_end') as string
+			},
+			evening: {
+				start: formData.get('evening_start') as string,
+				end: formData.get('evening_end') as string
+			}
+		};
+
+		// Validate all time slots
+		for (const [slot, times] of Object.entries(timeSlots)) {
+			if (!isValidTimeRange(times.start, times.end)) {
+				return { success: false, error: `Invalid time range for ${slot}` };
+			}
+		}
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error } = await (supabase as any)
+			.from('profiles')
+			.update({ time_slots: timeSlots })
+			.eq('id', user.id);
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		return { success: true, message: 'time_slots_updated' };
+	},
+
+	updateWorkingDays: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const formData = await request.formData();
+		const workingDays = formData.getAll('working_days') as string[];
+
+		// Validate all days
+		const invalidDays = workingDays.filter((day) => !isValidWorkingDay(day));
+		if (invalidDays.length > 0) {
+			return { success: false, error: `Invalid working days: ${invalidDays.join(', ')}` };
+		}
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error } = await (supabase as any)
+			.from('profiles')
+			.update({ working_days: workingDays })
+			.eq('id', user.id);
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		return { success: true, message: 'working_days_updated' };
+	},
+
+	updateTimezone: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const formData = await request.formData();
+		const timezone = formData.get('timezone') as string;
+
+		// Validate timezone
+		if (!isValidTimezone(timezone)) {
+			return { success: false, error: 'Invalid timezone' };
+		}
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error } = await (supabase as any)
+			.from('profiles')
+			.update({ timezone })
+			.eq('id', user.id);
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		return { success: true, message: 'timezone_updated' };
 	}
 };

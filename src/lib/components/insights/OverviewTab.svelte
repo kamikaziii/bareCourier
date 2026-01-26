@@ -1,7 +1,6 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card/index.js';
-	import BarChart from '$lib/components/charts/BarChart.svelte';
-	import DoughnutChart from '$lib/components/charts/DoughnutChart.svelte';
+	import Chart from '$lib/components/charts/Chart.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import { TrendingUp, MapPin, Euro, Package } from '@lucide/svelte';
 	import type { Totals, StatusData, MonthlyData } from '$lib/services/insights-data';
@@ -94,7 +93,7 @@
 			</Card.Header>
 			<Card.Content>
 				{#if statusData.pending > 0 || statusData.delivered > 0}
-					<DoughnutChart data={statusChartData} height="200px" />
+					<Chart type="doughnut" data={statusChartData} height="200px" />
 				{:else}
 					<p class="py-8 text-center text-muted-foreground">{m.analytics_no_data()}</p>
 				{/if}
@@ -107,7 +106,7 @@
 			</Card.Header>
 			<Card.Content>
 				{#if monthlyData.length > 0}
-					<BarChart data={servicesChartData} height="200px" />
+					<Chart type="bar" data={servicesChartData} height="200px" />
 				{:else}
 					<p class="py-8 text-center text-muted-foreground">{m.analytics_no_data()}</p>
 				{/if}

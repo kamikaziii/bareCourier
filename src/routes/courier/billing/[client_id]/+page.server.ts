@@ -53,7 +53,7 @@ export const actions: Actions = {
 			.from('profiles')
 			.select('role')
 			.eq('id', user.id)
-			.single();
+			.single() as { data: { role: string } | null };
 
 		if (profile?.role !== 'courier') {
 			return { success: false, error: 'Unauthorized' };
@@ -96,7 +96,7 @@ export const actions: Actions = {
 			.from('profiles')
 			.select('role')
 			.eq('id', user.id)
-			.single();
+			.single() as { data: { role: string } | null };
 
 		if (profile?.role !== 'courier') {
 			return { success: false, error: 'Unauthorized' };

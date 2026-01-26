@@ -9,6 +9,7 @@
 	import AddressInput from '$lib/components/AddressInput.svelte';
 	import RouteMap from '$lib/components/RouteMap.svelte';
 	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
+	import UrgencyBadge from '$lib/components/UrgencyBadge.svelte';
 	import {
 		calculateRoute,
 		calculateHaversineDistance,
@@ -19,6 +20,7 @@
 		getCourierPricingSettings,
 		type CourierPricingSettings
 	} from '$lib/services/pricing.js';
+	import { sortByUrgency, settingsToConfig, type PastDueConfig } from '$lib/utils/past-due.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData } from './$types';
@@ -27,6 +29,8 @@
 	import PullToRefresh from '$lib/components/PullToRefresh.svelte';
 
 	let { data }: { data: PageData } = $props();
+
+	const pastDueConfig = $derived(settingsToConfig(data.profile.past_due_settings, data.profile.time_slots));
 
 	let services = $state<any[]>([]);
 	let clients = $state<any[]>([]);
@@ -199,18 +203,21 @@
 	});
 
 	const filteredServices = $derived(
-		services.filter((s) => {
-			if (statusFilter !== 'all' && s.status !== statusFilter) return false;
-			if (clientFilter !== 'all' && s.client_id !== clientFilter) return false;
-			if (searchQuery) {
-				const query = searchQuery.toLowerCase();
-				const matchesClient = s.profiles?.name?.toLowerCase().includes(query);
-				const matchesPickup = s.pickup_location?.toLowerCase().includes(query);
-				const matchesDelivery = s.delivery_location?.toLowerCase().includes(query);
-				if (!matchesClient && !matchesPickup && !matchesDelivery) return false;
-			}
-			return true;
-		})
+		sortByUrgency(
+			services.filter((s) => {
+				if (statusFilter !== 'all' && s.status !== statusFilter) return false;
+				if (clientFilter !== 'all' && s.client_id !== clientFilter) return false;
+				if (searchQuery) {
+					const query = searchQuery.toLowerCase();
+					const matchesClient = s.profiles?.name?.toLowerCase().includes(query);
+					const matchesPickup = s.pickup_location?.toLowerCase().includes(query);
+					const matchesDelivery = s.delivery_location?.toLowerCase().includes(query);
+					if (!matchesClient && !matchesPickup && !matchesDelivery) return false;
+				}
+				return true;
+			}),
+			pastDueConfig
+		)
 	);
 
 	function getStatusLabel(status: string): string {
@@ -466,6 +473,7 @@
 										{service.profiles?.name || m.unknown_client()}
 									</p>
 									<div class="flex items-center gap-2">
+										<UrgencyBadge service={service} size="sm" config={pastDueConfig} />
 										<span class="text-xs text-muted-foreground">
 											{formatDate(service.created_at)}
 										</span>

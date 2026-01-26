@@ -18,9 +18,12 @@
 		goto(localizeHref('/login'));
 	}
 
+	// Badge count for services awaiting response
+	const suggestedServices = $derived(data.navCounts?.suggestedServices ?? 0);
+
 	// All navigation items with icons (4 items for client)
 	const navItems = $derived([
-		{ href: '/client', label: m.nav_my_services(), icon: Package },
+		{ href: '/client', label: m.nav_my_services(), icon: Package, badge: suggestedServices },
 		{ href: '/client/new', label: m.nav_new_request(), icon: PlusCircle },
 		{ href: '/client/billing', label: m.nav_billing(), icon: Receipt },
 		{ href: '/client/settings', label: m.nav_settings(), icon: Settings }
@@ -65,7 +68,7 @@
 						{/each}
 					</div>
 					{#if data.profile?.id}
-						<NotificationBell supabase={data.supabase} userId={data.profile.id} />
+						<NotificationBell supabase={data.supabase} userId={data.profile.id} userRole="client" />
 					{/if}
 					<span class="hidden text-sm text-muted-foreground sm:inline">{data.profile?.name}</span>
 					<Button variant="ghost" size="sm" onclick={handleLogout}>

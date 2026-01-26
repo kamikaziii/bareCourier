@@ -13,12 +13,16 @@
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
-	// State for pricing form
+	// State for pricing form - svelte-ignore state_referenced_locally for all: intentional initial value capture
+	// svelte-ignore state_referenced_locally
 	let pricingModel = $state<PricingModel>(data.pricing?.pricing_model || 'per_km');
+	// svelte-ignore state_referenced_locally
 	let baseFee = $state(data.pricing?.base_fee?.toString() || '0');
+	// svelte-ignore state_referenced_locally
 	let perKmRate = $state(data.pricing?.per_km_rate?.toString() || '0');
 
 	// State for zones (for zone pricing)
+	// svelte-ignore state_referenced_locally
 	let zones = $state(
 		data.zones.length > 0
 			? data.zones.map((z) => ({ min_km: z.min_km, max_km: z.max_km, price: z.price }))

@@ -1,4 +1,7 @@
 import type { RequestHandler } from './$types';
+import type { Service } from '$lib/database.types';
+
+type ServiceWithProfile = Service & { profiles: { name: string } | null };
 
 export const GET: RequestHandler = async ({ url, locals: { supabase, safeGetSession } }) => {
 	const { session, user } = await safeGetSession();
@@ -11,7 +14,7 @@ export const GET: RequestHandler = async ({ url, locals: { supabase, safeGetSess
 		.from('profiles')
 		.select('role')
 		.eq('id', user.id)
-		.single();
+		.single() as { data: { role: string } | null };
 
 	if (profile?.role !== 'courier') {
 		return new Response('Forbidden', { status: 403 });
@@ -38,7 +41,7 @@ export const GET: RequestHandler = async ({ url, locals: { supabase, safeGetSess
 		query = query.eq('client_id', clientId);
 	}
 
-	const { data: services, error } = await query;
+	const { data: services, error } = await query as { data: ServiceWithProfile[] | null; error: { message: string } | null };
 
 	if (error) {
 		return new Response(error.message, { status: 500 });

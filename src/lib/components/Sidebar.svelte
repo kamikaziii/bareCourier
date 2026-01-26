@@ -36,6 +36,7 @@
 
 <aside
 	class="hidden md:flex flex-col border-r bg-background transition-all duration-300 ease-in-out
+		sticky top-0 h-screen overflow-y-auto
 		{collapsed ? 'w-16' : 'w-56'}"
 >
 	<!-- Navigation items -->
@@ -45,6 +46,7 @@
 				href={item.href}
 				label={item.label}
 				icon={item.icon}
+				badge={item.badge}
 				isActive={isItemActive(item.href, currentPath)}
 				{collapsed}
 			/>

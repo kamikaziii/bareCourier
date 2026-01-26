@@ -43,6 +43,7 @@
 		});
 
 	// Use a derived value for calendar that syncs with selectedDate prop
+	// svelte-ignore state_referenced_locally - intentional: initial value from prop, synced via $effect below
 	let calendarValue = $state<DateValue | undefined>(
 		selectedDate ? parseDate(selectedDate) : undefined
 	);
