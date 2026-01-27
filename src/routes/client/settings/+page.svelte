@@ -1,17 +1,31 @@
 <script lang="ts">
+	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
+	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Textarea } from '$lib/components/ui/textarea/index.js';
-	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import type { PageData, ActionData } from './$types';
 	import { Settings, User, MapPin } from '@lucide/svelte';
 	import NotificationsTab from '$lib/components/NotificationsTab.svelte';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+
+	const activeTab = $derived(page.url.searchParams.get('tab') || 'profile');
+
+	function setTab(tab: string) {
+		const url = new URL(page.url);
+		if (tab === 'profile') {
+			url.searchParams.delete('tab');
+		} else {
+			url.searchParams.set('tab', tab);
+		}
+		goto(url.toString(), { replaceState: true, noScroll: true, keepFocus: true });
+	}
 </script>
 
 <div class="space-y-6">
@@ -32,7 +46,52 @@
 		</div>
 	{/if}
 
-	<!-- Profile Settings -->
+	<!-- Desktop: Tabs -->
+	<div class="hidden md:block">
+		<Tabs.Root value={activeTab} onValueChange={setTab} class="w-full">
+			<Tabs.List class="grid w-full grid-cols-3">
+				<Tabs.Trigger value="profile">{m.settings_profile()}</Tabs.Trigger>
+				<Tabs.Trigger value="location">{m.settings_default_location()}</Tabs.Trigger>
+				<Tabs.Trigger value="notifications">{m.settings_tab_notifications()}</Tabs.Trigger>
+			</Tabs.List>
+
+			<Tabs.Content value="profile" class="mt-6 space-y-6">
+				{@render profileContent()}
+			</Tabs.Content>
+
+			<Tabs.Content value="location" class="mt-6 space-y-6">
+				{@render locationContent()}
+			</Tabs.Content>
+
+			<Tabs.Content value="notifications" class="mt-6 space-y-6">
+				<NotificationsTab profile={data.profile} supabase={data.supabase} role="client" />
+			</Tabs.Content>
+		</Tabs.Root>
+	</div>
+
+	<!-- Mobile: Dropdown -->
+	<div class="md:hidden space-y-6">
+		<select
+			value={activeTab}
+			onchange={(e) => setTab(e.currentTarget.value)}
+			class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+		>
+			<option value="profile">{m.settings_profile()}</option>
+			<option value="location">{m.settings_default_location()}</option>
+			<option value="notifications">{m.settings_tab_notifications()}</option>
+		</select>
+
+		{#if activeTab === 'profile'}
+			{@render profileContent()}
+		{:else if activeTab === 'location'}
+			{@render locationContent()}
+		{:else if activeTab === 'notifications'}
+			<NotificationsTab profile={data.profile} supabase={data.supabase} role="client" />
+		{/if}
+	</div>
+</div>
+
+{#snippet profileContent()}
 	<Card.Root>
 		<Card.Header>
 			<Card.Title class="flex items-center gap-2">
@@ -62,8 +121,9 @@
 			</form>
 		</Card.Content>
 	</Card.Root>
+{/snippet}
 
-	<!-- Default Location -->
+{#snippet locationContent()}
 	<Card.Root>
 		<Card.Header>
 			<Card.Title class="flex items-center gap-2">
@@ -91,9 +151,4 @@
 			</form>
 		</Card.Content>
 	</Card.Root>
-
-	<Separator />
-
-	<!-- Notification Preferences (shared component) -->
-	<NotificationsTab profile={data.profile} supabase={data.supabase} role="client" />
-</div>
+{/snippet}
