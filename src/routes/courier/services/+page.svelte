@@ -459,37 +459,32 @@ import { formatDate, formatTimeSlot } from '$lib/utils.js';
 			{#each filteredServices as service (service.id)}
 				<a href={localizeHref(`/courier/services/${service.id}`)} class="block">
 					<Card.Root class="overflow-hidden transition-colors hover:bg-muted/50">
-						<Card.Content class="flex items-start gap-4 p-4">
+						<Card.Content class="flex items-start gap-3 p-4">
 							<div
-								class="mt-1 size-4 shrink-0 rounded-full {service.status === 'pending'
+								class="mt-1.5 size-3 shrink-0 rounded-full {service.status === 'pending'
 									? 'bg-blue-500'
 									: 'bg-green-500'}"
 							></div>
-							<div class="min-w-0 flex-1">
+							<div class="min-w-0 flex-1 space-y-1">
 								<div class="flex items-center justify-between gap-2">
-									<p class="font-medium truncate">
+									<p class="font-semibold truncate">
 										{service.profiles?.name || m.unknown_client()}
 									</p>
-									<div class="flex items-center gap-2">
-										<UrgencyBadge service={service} size="sm" config={pastDueConfig} />
-										<span class="text-xs text-muted-foreground">
-											{formatDate(service.created_at)}
-										</span>
-										<Badge
-											variant="outline"
-											class={service.status === 'pending'
-												? 'border-blue-500 text-blue-500'
-												: 'border-green-500 text-green-500'}
-										>
-											{getStatusLabel(service.status)}
-										</Badge>
-									</div>
+									<Badge
+										variant="outline"
+										class="shrink-0 {service.status === 'pending'
+											? 'border-blue-500 text-blue-500'
+											: 'border-green-500 text-green-500'}"
+									>
+										{getStatusLabel(service.status)}
+									</Badge>
 								</div>
+								<UrgencyBadge service={service} size="sm" config={pastDueConfig} />
 								<p class="text-sm text-muted-foreground truncate">
 									{service.pickup_location} &rarr; {service.delivery_location}
 								</p>
 								{#if service.scheduled_date}
-									<p class="mt-1 flex items-center gap-1 text-sm font-medium text-foreground">
+									<p class="flex items-center gap-1 text-sm font-medium text-foreground">
 										<CalendarClock class="size-3.5 shrink-0" />
 										{formatDate(service.scheduled_date)}
 										{#if service.scheduled_time_slot}
@@ -498,8 +493,11 @@ import { formatDate, formatTimeSlot } from '$lib/utils.js';
 									</p>
 								{/if}
 								{#if service.notes}
-									<p class="mt-1 text-sm text-muted-foreground truncate">{service.notes}</p>
+									<p class="text-sm text-amber-600 truncate">{service.notes}</p>
 								{/if}
+								<p class="text-xs text-muted-foreground/60">
+									{formatDate(service.created_at)}
+								</p>
 							</div>
 						</Card.Content>
 					</Card.Root>

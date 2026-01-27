@@ -12,7 +12,7 @@
 import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	import type { PageData } from './$types';
 	import type { Service } from '$lib/database.types.js';
-	import { Search, X, Filter } from '@lucide/svelte';
+	import { Search, X, Filter, CalendarClock } from '@lucide/svelte';
 	import PullToRefresh from '$lib/components/PullToRefresh.svelte';
 
 	let { data }: { data: PageData } = $props();
@@ -433,18 +433,34 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 			{#each filteredServices as service (service.id)}
 				<a href={localizeHref(`/client/services/${service.id}`)} class="block">
 					<Card.Root class="transition-colors hover:bg-muted/50">
-						<Card.Content class="flex items-start gap-4 p-4">
+						<Card.Content class="flex items-start gap-3 p-4">
 							<div
-								class="mt-1 size-4 shrink-0 rounded-full {service.status === 'pending'
+								class="mt-1.5 size-3 shrink-0 rounded-full {service.status === 'pending'
 									? 'bg-blue-500'
 									: 'bg-green-500'}"
 							></div>
-							<div class="min-w-0 flex-1">
+							<div class="min-w-0 flex-1 space-y-1">
 								<div class="flex items-center justify-between gap-2">
-									<p class="font-medium">
-										{formatDate(service.created_at)}
+									<p class="font-semibold truncate">
+										{service.pickup_location} → {service.delivery_location}
 									</p>
+									<Badge
+										variant="outline"
+										class="shrink-0 {service.status === 'pending'
+											? 'border-blue-500 text-blue-500'
+											: 'border-green-500 text-green-500'}"
+									>
+										{getStatusLabel(service.status)}
+									</Badge>
+								</div>
+								{#if service.request_status && service.request_status !== 'accepted'}
 									<div class="flex items-center gap-2">
+										<Badge
+											variant="outline"
+											class={getRequestStatusColor(service.request_status)}
+										>
+											{getRequestStatusLabel(service.request_status)}
+										</Badge>
 										{#if service.request_status === 'pending' && service.status === 'pending'}
 											<Button
 												variant="ghost"
@@ -455,43 +471,27 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 												{m.action_cancel_request()}
 											</Button>
 										{/if}
-										{#if service.request_status && service.request_status !== 'accepted'}
-											<Badge
-												variant="outline"
-												class={getRequestStatusColor(service.request_status)}
-											>
-												{getRequestStatusLabel(service.request_status)}
-											</Badge>
-										{/if}
-										<Badge
-											variant="outline"
-											class={service.status === 'pending'
-												? 'border-blue-500 text-blue-500'
-												: 'border-green-500 text-green-500'}
-										>
-											{getStatusLabel(service.status)}
-										</Badge>
 									</div>
-								</div>
-								<p class="text-sm text-muted-foreground truncate">
-									{service.pickup_location} → {service.delivery_location}
-								</p>
-								{#if service.notes}
-									<p class="mt-1 text-sm text-muted-foreground truncate">{service.notes}</p>
 								{/if}
 								{#if service.scheduled_date}
-									<p class="mt-1 text-xs text-muted-foreground">
-										{m.requests_scheduled()}: {formatDate(service.scheduled_date)}
+									<p class="flex items-center gap-1 text-sm font-medium text-foreground">
+										<CalendarClock class="size-3.5 shrink-0" />
+										{formatDate(service.scheduled_date)}
 										{#if service.scheduled_time_slot}
-											- {formatTimeSlot(service.scheduled_time_slot)}
+											— {formatTimeSlot(service.scheduled_time_slot)}
 										{/if}
 									</p>
 								{/if}
-								{#if service.delivered_at}
-									<p class="mt-1 text-xs text-muted-foreground">
-										{m.client_delivered_at({ datetime: formatDateTime(service.delivered_at) })}
-									</p>
+								{#if service.notes}
+									<p class="text-sm text-amber-600 truncate">{service.notes}</p>
 								{/if}
+								<p class="text-xs text-muted-foreground/60">
+									{#if service.delivered_at}
+										{m.client_delivered_at({ datetime: formatDateTime(service.delivered_at) })}
+									{:else}
+										{formatDate(service.created_at)}
+									{/if}
+								</p>
 							</div>
 						</Card.Content>
 					</Card.Root>
