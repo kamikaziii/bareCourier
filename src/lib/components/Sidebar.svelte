@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { ChevronLeft, ChevronRight } from '@lucide/svelte';
 	import { type NavItem, isItemActive } from '$lib/types/navigation.js';
@@ -9,29 +8,16 @@
 	interface SidebarProps {
 		items: NavItem[];
 		currentPath: string;
+		initialCollapsed?: boolean;
 	}
 
-	let { items, currentPath }: SidebarProps = $props();
+	let { items, currentPath, initialCollapsed = false }: SidebarProps = $props();
 
-	// Load initial state from localStorage
-	const STORAGE_KEY = 'sidebar-collapsed';
-	let collapsed = $state(false);
-
-	// Initialize from localStorage on mount
-	$effect(() => {
-		if (browser) {
-			const stored = localStorage.getItem(STORAGE_KEY);
-			if (stored !== null) {
-				collapsed = stored === 'true';
-			}
-		}
-	});
+	let collapsed = $state(initialCollapsed);
 
 	function toggleCollapsed() {
 		collapsed = !collapsed;
-		if (browser) {
-			localStorage.setItem(STORAGE_KEY, String(collapsed));
-		}
+		document.cookie = `sidebar-collapsed=${collapsed}; path=/; max-age=31536000; SameSite=Lax`;
 	}
 </script>
 

@@ -51,6 +51,7 @@
 	sidebarItems={allNavItems}
 	{bottomNavItems}
 	{moreItems}
+	sidebarCollapsed={data.sidebarCollapsed}
 >
 	{@render children()}
 </AppShell>

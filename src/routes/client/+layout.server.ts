@@ -3,7 +3,7 @@ import type { LayoutServerLoad } from './$types';
 import type { Profile, ClientLayoutProfile } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 
-export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabase }, depends }) => {
+export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabase }, depends, cookies }) => {
 	const { session, user } = await safeGetSession();
 
 	if (!session || !user) {
@@ -48,6 +48,7 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
 		.is('deleted_at', null);
 
 	return {
+		sidebarCollapsed: cookies.get('sidebar-collapsed') === 'true',
 		profile: {
 			id: profile.id,
 			role: 'client' as const,

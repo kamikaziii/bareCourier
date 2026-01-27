@@ -5,6 +5,7 @@ export const load: LayoutLoad = async ({ parent, data }) => {
 	return {
 		...parentData,
 		profile: data.profile,
-		navCounts: data.navCounts
+		navCounts: data.navCounts,
+		sidebarCollapsed: data.sidebarCollapsed
 	};
 };

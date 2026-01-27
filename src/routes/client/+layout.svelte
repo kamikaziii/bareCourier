@@ -23,6 +23,7 @@
 	supabase={data.supabase}
 	sidebarItems={navItems}
 	bottomNavItems={navItems}
+	sidebarCollapsed={data.sidebarCollapsed}
 >
 	{@render children()}
 </AppShell>

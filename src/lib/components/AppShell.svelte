@@ -24,6 +24,7 @@
 		sidebarItems: NavItem[];
 		bottomNavItems: NavItem[];
 		moreItems?: NavItem[];
+		sidebarCollapsed?: boolean;
 		children: Snippet;
 	}
 
@@ -34,6 +35,7 @@
 		sidebarItems,
 		bottomNavItems,
 		moreItems = [],
+		sidebarCollapsed = false,
 		children
 	}: AppShellProps = $props();
 
@@ -55,7 +57,7 @@
 
 <div class="flex min-h-screen bg-background">
 	<!-- Desktop Sidebar -->
-	<Sidebar items={sidebarItems} {currentPath} />
+	<Sidebar items={sidebarItems} {currentPath} initialCollapsed={sidebarCollapsed} />
 
 	<!-- Main content area -->
 	<div class="flex min-w-0 flex-1 flex-col">

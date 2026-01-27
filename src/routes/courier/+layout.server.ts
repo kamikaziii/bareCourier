@@ -3,7 +3,7 @@ import type { LayoutServerLoad } from './$types';
 import type { Profile, CourierLayoutProfile } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 
-export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabase }, depends }) => {
+export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabase }, depends, cookies }) => {
 	const { session, user } = await safeGetSession();
 
 	if (!session || !user) {
@@ -35,6 +35,7 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
 	}
 
 	return {
+		sidebarCollapsed: cookies.get('sidebar-collapsed') === 'true',
 		profile: {
 			id: profile.id,
 			role: 'courier' as const,
