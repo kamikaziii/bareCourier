@@ -69,7 +69,7 @@
 	<div class="md:hidden space-y-6">
 		<select
 			bind:value={mobileTab}
-			class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+			class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
 		>
 			<option value="account">{m.settings_tab_account()}</option>
 			<option value="pricing">{m.settings_tab_pricing()}</option>

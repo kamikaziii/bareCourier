@@ -333,7 +333,7 @@ import { formatDate } from '$lib/utils.js';
 							id="pricing_model"
 							name="pricing_model"
 							bind:value={pricingModel}
-							class="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+							class="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
 						>
 							<option value="per_km">{m.billing_model_per_km()}</option>
 							<option value="flat_plus_km">{m.billing_model_flat_plus_km()}</option>

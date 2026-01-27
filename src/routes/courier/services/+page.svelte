@@ -258,7 +258,7 @@ import { formatDate, formatTimeSlot } from '$lib/utils.js';
 							onchange={handleClientSelect}
 							required
 							disabled={formLoading}
-							class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+							class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
 						>
 							<option value="">{m.form_select_client()}</option>
 							{#each clients as client (client.id)}
@@ -332,7 +332,7 @@ import { formatDate, formatTimeSlot } from '$lib/utils.js';
 							id="urgency"
 							name="urgency_fee_id"
 							bind:value={selectedUrgencyFeeId}
-							class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+							class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
 							disabled={formLoading}
 						>
 							<option value="">{m.urgency_standard()}</option>
@@ -405,11 +405,12 @@ import { formatDate, formatTimeSlot } from '$lib/utils.js';
 				type="search"
 				placeholder={m.services_search()}
 				bind:value={searchQuery}
+				class="focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
 		<select
 			bind:value={statusFilter}
-			class="h-10 rounded-md border border-input bg-background px-3 text-sm"
+			class="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
 		>
 			<option value="all">{m.services_all_status()}</option>
 			<option value="pending">{m.status_pending()}</option>
@@ -417,7 +418,7 @@ import { formatDate, formatTimeSlot } from '$lib/utils.js';
 		</select>
 		<select
 			bind:value={clientFilter}
-			class="h-10 rounded-md border border-input bg-background px-3 text-sm"
+			class="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
 		>
 			<option value="all">{m.services_all_clients()}</option>
 			{#each clients as client (client.id)}

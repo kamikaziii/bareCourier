@@ -352,7 +352,7 @@
 				<select
 					id="pastDueReminderInterval"
 					name="pastDueReminderInterval"
-					class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+					class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
 					value={pastDueSettings.pastDueReminderInterval}
 					onchange={(e) => pastDueSettings.pastDueReminderInterval = parseInt((e.target as HTMLSelectElement).value)}
 				>
@@ -416,7 +416,7 @@
 		<form method="POST" action="?/updateTimezone" use:enhance class="space-y-4">
 			<select
 				name="timezone"
-				class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+				class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
 				bind:value={timezone}
 			>
 				<option value="Europe/Lisbon">Europe/Lisbon (Portugal)</option>

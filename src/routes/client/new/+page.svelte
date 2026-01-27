@@ -257,7 +257,7 @@
 							id="urgency"
 							name="urgency_fee_id"
 							bind:value={selectedUrgencyFeeId}
-							class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+							class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
 							disabled={loading}
 						>
 							<option value="">{m.urgency_standard()}</option>
