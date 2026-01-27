@@ -9,8 +9,7 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
-import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
-	import { getStatusLabel, getRequestStatusLabel, getRequestStatusColor } from '$lib/utils/status.js';
+	import { formatDate, formatTimeSlot } from '$lib/utils.js';
 	import type { PageData } from './$types';
 	import type { Service } from '$lib/database.types.js';
 	import { Search, X, Filter, CalendarClock } from '@lucide/svelte';
