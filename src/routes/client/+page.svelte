@@ -131,6 +131,20 @@
 
 	const sortedServices = $derived(sortServices(filteredServices));
 
+	// Pagination
+	const PAGE_SIZE = 20;
+	let currentPage = $state(1);
+	const totalPages = $derived(Math.ceil(sortedServices.length / PAGE_SIZE));
+	const paginatedServices = $derived(
+		sortedServices.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+	);
+
+	// Reset page on filter/sort change
+	$effect(() => {
+		statusFilter; dateFilter; searchQuery; dateFrom; dateTo; sortBy;
+		currentPage = 1;
+	});
+
 	// Check if any filter is active
 	const hasActiveFilters = $derived(
 		statusFilter !== 'all' || dateFilter !== 'all' || searchQuery.trim() !== '' || dateFrom !== '' || dateTo !== ''
@@ -165,6 +179,7 @@
 		searchQuery = '';
 		dateFrom = '';
 		dateTo = '';
+		currentPage = 1;
 	}
 
 	async function handleCancelRequest() {
@@ -528,7 +543,7 @@
 				</Card.Content>
 			</Card.Root>
 		{:else}
-			{#each sortedServices as service (service.id)}
+			{#each paginatedServices as service (service.id)}
 				<ServiceCard
 					{service}
 					showClientName={false}
@@ -550,6 +565,29 @@
 					{/snippet}
 				</ServiceCard>
 			{/each}
+			{#if totalPages > 1}
+				<div class="flex items-center justify-center gap-2 py-4">
+					<Button
+						variant="outline"
+						size="sm"
+						disabled={currentPage === 1}
+						onclick={() => (currentPage = currentPage - 1)}
+					>
+						Previous
+					</Button>
+					<span class="text-muted-foreground text-sm">
+						Page {currentPage} of {totalPages}
+					</span>
+					<Button
+						variant="outline"
+						size="sm"
+						disabled={currentPage === totalPages}
+						onclick={() => (currentPage = currentPage + 1)}
+					>
+						Next
+					</Button>
+				</div>
+			{/if}
 		{/if}
 	</div>
 </div>
