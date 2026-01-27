@@ -424,13 +424,12 @@
 										: 'bg-green-500'}"
 								></div>
 							{/if}
-							<div class="min-w-0 flex-1">
+							<div class="min-w-0 flex-1 space-y-1">
 								<div class="flex items-center justify-between gap-2">
-									<p class="font-medium truncate">
+									<p class="font-semibold truncate">
 										{service.profiles?.name || m.unknown_client()}
 									</p>
 									<div class="flex items-center gap-2">
-										<UrgencyBadge service={service} size="sm" config={pastDueConfig} />
 										<span
 											class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium {service.status ===
 											'pending'
@@ -464,11 +463,12 @@
 										{/if}
 									</div>
 								</div>
+								<UrgencyBadge service={service} size="sm" config={pastDueConfig} />
 								<p class="text-sm text-muted-foreground truncate">
 									{service.pickup_location} &rarr; {service.delivery_location}
 								</p>
 								{#if service.scheduled_date}
-									<p class="mt-1 flex items-center gap-1 text-sm font-medium text-foreground">
+									<p class="flex items-center gap-1 text-sm font-medium text-foreground">
 										<CalendarClock class="size-3.5 shrink-0" />
 										{formatDate(service.scheduled_date)}
 										{#if service.scheduled_time_slot}
@@ -477,8 +477,11 @@
 									</p>
 								{/if}
 								{#if service.notes}
-									<p class="mt-1 text-sm text-muted-foreground">{service.notes}</p>
+									<p class="text-sm text-amber-600 truncate">{service.notes}</p>
 								{/if}
+								<p class="text-xs text-muted-foreground/60">
+									{formatDate(service.created_at)}
+								</p>
 							</div>
 						</Card.Content>
 					</Card.Root>
