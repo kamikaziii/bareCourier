@@ -8,9 +8,10 @@
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import { getLocale } from '$lib/paraglide/runtime.js';
-	import { Bell, Globe } from '@lucide/svelte';
-	import type { Profile, PastDueSettings } from '$lib/database.types.js';
-	import { DEFAULT_PAST_DUE_SETTINGS } from '$lib/constants/scheduling.js';
+	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
+	import { Bell, Globe, Clock } from '@lucide/svelte';
+	import type { Profile, PastDueSettings, NotificationPreferences } from '$lib/database.types.js';
+	import { DEFAULT_PAST_DUE_SETTINGS, DEFAULT_NOTIFICATION_PREFERENCES } from '$lib/constants/scheduling.js';
 	import type { SupabaseClient } from '@supabase/supabase-js';
 	import {
 		isPushSupported,
@@ -44,6 +45,38 @@
 		...defaultPastDueSettings,
 		...(profile.past_due_settings ?? {})
 	});
+
+	// Notification preferences state (merge defaults with existing)
+	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
+	let notificationPrefs = $state<NotificationPreferences>({
+		...DEFAULT_NOTIFICATION_PREFERENCES,
+		...((profile.notification_preferences as NotificationPreferences | null) ?? {}),
+		categories: {
+			...DEFAULT_NOTIFICATION_PREFERENCES.categories,
+			...((profile.notification_preferences as NotificationPreferences | null)?.categories ?? {})
+		},
+		quietHours: {
+			...DEFAULT_NOTIFICATION_PREFERENCES.quietHours,
+			...((profile.notification_preferences as NotificationPreferences | null)?.quietHours ?? {})
+		}
+	});
+
+	function updateCategoryPref(
+		category: keyof NotificationPreferences['categories'],
+		channel: 'inApp' | 'push' | 'email',
+		value: boolean
+	) {
+		notificationPrefs = {
+			...notificationPrefs,
+			categories: {
+				...notificationPrefs.categories,
+				[category]: {
+					...notificationPrefs.categories[category],
+					[channel]: value
+				}
+			}
+		};
+	}
 
 	// Timezone state
 	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
@@ -160,6 +193,240 @@
 					}
 				}}
 			/>
+		</form>
+	</Card.Content>
+</Card.Root>
+
+<!-- Notification Preferences Matrix -->
+<Card.Root>
+	<Card.Header>
+		<Card.Title class="flex items-center gap-2">
+			<Bell class="size-5" />
+			{m.settings_notification_preferences()}
+		</Card.Title>
+		<Card.Description>{m.settings_notification_preferences_desc()}</Card.Description>
+	</Card.Header>
+	<Card.Content>
+		<form method="POST" action="?/updateNotificationPreferences" use:enhance class="space-y-4">
+			<input type="hidden" name="notification_preferences" value={JSON.stringify(notificationPrefs)} />
+
+			<!-- Header row -->
+			<div class="grid grid-cols-4 gap-4 text-sm font-medium text-muted-foreground border-b pb-2">
+				<div></div>
+				<div class="text-center">{m.settings_channel_in_app()}</div>
+				<div class="text-center">{m.settings_channel_push()}</div>
+				<div class="text-center">{m.settings_channel_email()}</div>
+			</div>
+
+			<!-- New requests -->
+			<div class="grid grid-cols-4 gap-4 items-center">
+				<div>
+					<p class="text-sm font-medium">{m.settings_category_new_request()}</p>
+					<p class="text-xs text-muted-foreground">{m.settings_category_new_request_desc()}</p>
+				</div>
+				<div class="flex justify-center">
+					<Checkbox checked={notificationPrefs.categories.new_request.inApp} disabled />
+				</div>
+				<div class="flex justify-center">
+					<Checkbox
+						checked={notificationPrefs.categories.new_request.push}
+						onCheckedChange={(v) => updateCategoryPref('new_request', 'push', v === true)}
+						disabled={!pushSupported || !pushEnabled}
+					/>
+				</div>
+				<div class="flex justify-center">
+					<Checkbox
+						checked={notificationPrefs.categories.new_request.email}
+						onCheckedChange={(v) => updateCategoryPref('new_request', 'email', v === true)}
+						disabled={!emailEnabled}
+					/>
+				</div>
+			</div>
+
+			<!-- Schedule changes -->
+			<div class="grid grid-cols-4 gap-4 items-center">
+				<div>
+					<p class="text-sm font-medium">{m.settings_category_schedule_change()}</p>
+					<p class="text-xs text-muted-foreground">{m.settings_category_schedule_change_desc()}</p>
+				</div>
+				<div class="flex justify-center">
+					<Checkbox checked={notificationPrefs.categories.schedule_change.inApp} disabled />
+				</div>
+				<div class="flex justify-center">
+					<Checkbox
+						checked={notificationPrefs.categories.schedule_change.push}
+						onCheckedChange={(v) => updateCategoryPref('schedule_change', 'push', v === true)}
+						disabled={!pushSupported || !pushEnabled}
+					/>
+				</div>
+				<div class="flex justify-center">
+					<Checkbox
+						checked={notificationPrefs.categories.schedule_change.email}
+						onCheckedChange={(v) => updateCategoryPref('schedule_change', 'email', v === true)}
+						disabled={!emailEnabled}
+					/>
+				</div>
+			</div>
+
+			<!-- Past due -->
+			<div class="grid grid-cols-4 gap-4 items-center">
+				<div>
+					<p class="text-sm font-medium">{m.settings_category_past_due()}</p>
+					<p class="text-xs text-muted-foreground">{m.settings_category_past_due_desc()}</p>
+				</div>
+				<div class="flex justify-center">
+					<Checkbox checked={notificationPrefs.categories.past_due.inApp} disabled />
+				</div>
+				<div class="flex justify-center">
+					<Checkbox
+						checked={notificationPrefs.categories.past_due.push}
+						onCheckedChange={(v) => updateCategoryPref('past_due', 'push', v === true)}
+						disabled={!pushSupported || !pushEnabled}
+					/>
+				</div>
+				<div class="flex justify-center">
+					<Checkbox
+						checked={notificationPrefs.categories.past_due.email}
+						onCheckedChange={(v) => updateCategoryPref('past_due', 'email', v === true)}
+						disabled={!emailEnabled}
+					/>
+				</div>
+			</div>
+
+			<!-- Daily summary -->
+			<div class="grid grid-cols-4 gap-4 items-center">
+				<div>
+					<p class="text-sm font-medium">{m.settings_category_daily_summary()}</p>
+					<p class="text-xs text-muted-foreground">{m.settings_category_daily_summary_desc()}</p>
+				</div>
+				<div class="flex justify-center">
+					<Checkbox checked={notificationPrefs.categories.daily_summary.inApp} disabled />
+				</div>
+				<div class="flex justify-center">
+					<Checkbox
+						checked={notificationPrefs.categories.daily_summary.push}
+						onCheckedChange={(v) => updateCategoryPref('daily_summary', 'push', v === true)}
+						disabled={!pushSupported || !pushEnabled}
+					/>
+				</div>
+				<div class="flex justify-center">
+					<Checkbox
+						checked={notificationPrefs.categories.daily_summary.email}
+						onCheckedChange={(v) => updateCategoryPref('daily_summary', 'email', v === true)}
+						disabled={!emailEnabled}
+					/>
+				</div>
+			</div>
+
+			<!-- Service status -->
+			<div class="grid grid-cols-4 gap-4 items-center">
+				<div>
+					<p class="text-sm font-medium">{m.settings_category_service_status()}</p>
+					<p class="text-xs text-muted-foreground">{m.settings_category_service_status_desc()}</p>
+				</div>
+				<div class="flex justify-center">
+					<Checkbox checked={notificationPrefs.categories.service_status.inApp} disabled />
+				</div>
+				<div class="flex justify-center">
+					<Checkbox
+						checked={notificationPrefs.categories.service_status.push}
+						onCheckedChange={(v) => updateCategoryPref('service_status', 'push', v === true)}
+						disabled={!pushSupported || !pushEnabled}
+					/>
+				</div>
+				<div class="flex justify-center">
+					<Checkbox
+						checked={notificationPrefs.categories.service_status.email}
+						onCheckedChange={(v) => updateCategoryPref('service_status', 'email', v === true)}
+						disabled={!emailEnabled}
+					/>
+				</div>
+			</div>
+
+			<Button type="submit" class="mt-4">{m.action_save()}</Button>
+		</form>
+	</Card.Content>
+</Card.Root>
+
+<!-- Quiet Hours -->
+<Card.Root>
+	<Card.Header>
+		<Card.Title class="flex items-center gap-2">
+			<Clock class="size-5" />
+			{m.settings_quiet_hours()}
+		</Card.Title>
+		<Card.Description>{m.settings_quiet_hours_desc()}</Card.Description>
+	</Card.Header>
+	<Card.Content>
+		<form method="POST" action="?/updateNotificationPreferences" use:enhance class="space-y-4">
+			<input type="hidden" name="notification_preferences" value={JSON.stringify(notificationPrefs)} />
+
+			<!-- Enable toggle -->
+			<div class="flex items-center justify-between">
+				<Label>{m.settings_quiet_hours_enabled()}</Label>
+				<Switch
+					checked={notificationPrefs.quietHours.enabled}
+					onCheckedChange={(checked) => {
+						notificationPrefs = {
+							...notificationPrefs,
+							quietHours: { ...notificationPrefs.quietHours, enabled: checked }
+						};
+					}}
+				/>
+			</div>
+
+			{#if notificationPrefs.quietHours.enabled}
+				<div class="flex items-center gap-4">
+					<div class="space-y-1">
+						<Label>{m.settings_quiet_hours_from()}</Label>
+						<Input
+							type="time"
+							lang={getLocale()}
+							value={notificationPrefs.quietHours.start}
+							onchange={(e) => {
+								notificationPrefs = {
+									...notificationPrefs,
+									quietHours: { ...notificationPrefs.quietHours, start: (e.currentTarget as HTMLInputElement).value }
+								};
+							}}
+							class="w-28"
+						/>
+					</div>
+					<div class="space-y-1">
+						<Label>{m.settings_quiet_hours_to()}</Label>
+						<Input
+							type="time"
+							lang={getLocale()}
+							value={notificationPrefs.quietHours.end}
+							onchange={(e) => {
+								notificationPrefs = {
+									...notificationPrefs,
+									quietHours: { ...notificationPrefs.quietHours, end: (e.currentTarget as HTMLInputElement).value }
+								};
+							}}
+							class="w-28"
+						/>
+					</div>
+				</div>
+			{/if}
+
+			<Separator />
+
+			<!-- Working days only -->
+			<div class="flex items-center justify-between">
+				<div>
+					<Label>{m.settings_working_days_only()}</Label>
+					<p class="text-xs text-muted-foreground">{m.settings_working_days_only_desc()}</p>
+				</div>
+				<Switch
+					checked={notificationPrefs.workingDaysOnly}
+					onCheckedChange={(checked) => {
+						notificationPrefs = { ...notificationPrefs, workingDaysOnly: checked };
+					}}
+				/>
+			</div>
+
+			<Button type="submit">{m.action_save()}</Button>
 		</form>
 	</Card.Content>
 </Card.Root>

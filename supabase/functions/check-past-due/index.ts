@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { dispatchNotification } from '../_shared/notify.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -216,16 +217,17 @@ Deno.serve(async (req: Request) => {
 			const clientName = service.profiles?.name || 'Cliente';
 			const overdueText = formatOverdueTime(overdueMinutes);
 
-			// Create in-app notification for courier
-			const { error: notifError } = await supabase.from('notifications').insert({
-				user_id: courier.id,
-				type: 'service_status',
+			// Dispatch notification through all enabled channels
+			const dispatchResult = await dispatchNotification({
+				supabase,
+				userId: courier.id,
+				category: 'past_due',
 				title: 'Entrega Atrasada',
 				message: `Entrega de ${clientName} está ${overdueText} atrasada`,
-				service_id: service.id
+				serviceId: service.id
 			});
 
-			if (!notifError) {
+			if (dispatchResult.inApp.success) {
 				// Persist notification timestamp to database for deduplication
 				await supabase
 					.from('services')

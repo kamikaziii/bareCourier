@@ -3,7 +3,7 @@
  * Single source of truth for time slots, working days, and past due settings.
  */
 
-import type { TimeSlotDefinitions, WorkingDay, PastDueSettings } from '$lib/database.types';
+import type { TimeSlotDefinitions, WorkingDay, PastDueSettings, NotificationPreferences } from '$lib/database.types';
 
 export const DEFAULT_TIME_SLOTS: TimeSlotDefinitions = {
 	morning: { start: '08:00', end: '12:00' },
@@ -32,6 +32,22 @@ export const DEFAULT_PAST_DUE_SETTINGS: PastDueSettings = {
 	pastDueReminderInterval: 60,
 	dailySummaryEnabled: true,
 	dailySummaryTime: '08:00'
+};
+
+export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
+	categories: {
+		new_request: { inApp: true, push: true, email: true },
+		schedule_change: { inApp: true, push: true, email: false },
+		past_due: { inApp: true, push: true, email: false },
+		daily_summary: { inApp: true, push: false, email: true },
+		service_status: { inApp: true, push: false, email: true }
+	},
+	quietHours: {
+		enabled: false,
+		start: '21:00',
+		end: '08:00'
+	},
+	workingDaysOnly: true
 };
 
 export const VALID_DAYS: readonly WorkingDay[] = [

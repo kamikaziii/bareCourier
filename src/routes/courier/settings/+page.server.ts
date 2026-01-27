@@ -279,19 +279,41 @@ export const actions: Actions = {
 		if (roleError) return roleError;
 
 		const formData = await request.formData();
-		const emailNotificationsEnabled = formData.get('email_notifications_enabled') === 'true';
+
+		// Handle both the old email toggle and the new full preferences
+		const notificationPrefsJson = formData.get('notification_preferences') as string | null;
+		const emailEnabledStr = formData.get('email_notifications_enabled') as string | null;
+
+		const updateData: Record<string, unknown> = {};
+
+		if (notificationPrefsJson) {
+			try {
+				const prefs = JSON.parse(notificationPrefsJson);
+				updateData.notification_preferences = prefs;
+			} catch {
+				return { success: false, error: 'Invalid notification preferences' };
+			}
+		}
+
+		if (emailEnabledStr !== null) {
+			updateData.email_notifications_enabled = emailEnabledStr === 'true';
+		}
+
+		if (Object.keys(updateData).length === 0) {
+			return { success: false, error: 'No data to update' };
+		}
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const { error } = await (supabase as any)
 			.from('profiles')
-			.update({ email_notifications_enabled: emailNotificationsEnabled })
+			.update(updateData)
 			.eq('id', user.id);
 
 		if (error) {
 			return { success: false, error: error.message };
 		}
 
-		return { success: true, message: 'notifications_updated' };
+		return { success: true, message: 'preferences_updated' };
 	},
 
 	updatePricingMode: async ({ request, locals: { supabase, safeGetSession } }) => {

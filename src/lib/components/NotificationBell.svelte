@@ -8,7 +8,7 @@
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime.js';
 	import type { Notification } from '$lib/database.types';
 	import type { SupabaseClient } from '@supabase/supabase-js';
-	import { Bell, CheckCheck, Package, Clock, CalendarClock } from '@lucide/svelte';
+	import { Bell, CheckCheck, Package, Clock, CalendarClock, Settings, AlertTriangle, BarChart3 } from '@lucide/svelte';
 
 	let {
 		supabase,
@@ -24,7 +24,44 @@
 	let loading = $state(true);
 	let open = $state(false);
 
+	type TabFilter = 'all' | 'requests' | 'alerts';
+	let activeTab = $state<TabFilter>('all');
+	let showUnreadOnly = $state(false);
+
 	const unreadCount = $derived(notifications.filter((n) => !n.read).length);
+
+	const filteredNotifications = $derived.by(() => {
+		let filtered = notifications;
+
+		if (activeTab === 'requests') {
+			filtered = filtered.filter((n) => ['new_request', 'schedule_change'].includes(n.type));
+		} else if (activeTab === 'alerts') {
+			filtered = filtered.filter((n) => ['past_due', 'service_status', 'daily_summary'].includes(n.type));
+		}
+
+		if (showUnreadOnly) {
+			filtered = filtered.filter((n) => !n.read);
+		}
+
+		return filtered;
+	});
+
+	const groupedNotifications = $derived.by(() => {
+		const today: Notification[] = [];
+		const earlier: Notification[] = [];
+		const now = new Date();
+		const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+		for (const n of filteredNotifications) {
+			if (new Date(n.created_at) >= todayStart) {
+				today.push(n);
+			} else {
+				earlier.push(n);
+			}
+		}
+
+		return { today, earlier };
+	});
 
 	async function loadNotifications() {
 		loading = true;
@@ -80,6 +117,10 @@
 				return Package;
 			case 'schedule_change':
 				return CalendarClock;
+			case 'past_due':
+				return AlertTriangle;
+			case 'daily_summary':
+				return BarChart3;
 			default:
 				return Clock;
 		}
@@ -138,56 +179,152 @@
 		{/snippet}
 	</DropdownMenu.Trigger>
 	<DropdownMenu.Content align="end" class="w-80">
+		<!-- Header with settings link -->
 		<div class="flex items-center justify-between px-3 py-2">
 			<span class="font-semibold">{m.notifications()}</span>
-			{#if unreadCount > 0}
-				<Button variant="ghost" size="sm" class="h-auto p-0 text-xs" onclick={markAllAsRead}>
-					{m.mark_all_read()}
+			<div class="flex items-center gap-2">
+				{#if unreadCount > 0}
+					<Button variant="ghost" size="sm" class="h-auto p-0 text-xs" onclick={markAllAsRead}>
+						{m.mark_all_read()}
+					</Button>
+				{/if}
+				<Button
+					variant="ghost"
+					size="icon"
+					class="size-6"
+					onclick={() => {
+						open = false;
+						goto(localizeHref(userRole === 'courier' ? '/courier/settings' : '/client/settings'));
+					}}
+				>
+					<Settings class="size-4" />
 				</Button>
-			{/if}
+			</div>
 		</div>
 		<Separator />
+
+		<!-- Tabs and unread filter -->
+		<div class="flex items-center justify-between px-3 py-2 border-b">
+			<div class="flex gap-1">
+				<Button
+					variant={activeTab === 'all' ? 'secondary' : 'ghost'}
+					size="sm"
+					class="h-7 text-xs"
+					onclick={() => activeTab = 'all'}
+				>
+					{m.notification_tab_all()}
+				</Button>
+				<Button
+					variant={activeTab === 'requests' ? 'secondary' : 'ghost'}
+					size="sm"
+					class="h-7 text-xs"
+					onclick={() => activeTab = 'requests'}
+				>
+					{m.notification_tab_requests()}
+				</Button>
+				<Button
+					variant={activeTab === 'alerts' ? 'secondary' : 'ghost'}
+					size="sm"
+					class="h-7 text-xs"
+					onclick={() => activeTab = 'alerts'}
+				>
+					{m.notification_tab_alerts()}
+				</Button>
+			</div>
+			<label class="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+				<input
+					type="checkbox"
+					bind:checked={showUnreadOnly}
+					class="size-3 rounded"
+				/>
+				{m.notification_filter_unread()}
+			</label>
+		</div>
+
+		<!-- Notification list with time grouping -->
 		<div class="max-h-80 overflow-y-auto">
 			{#if loading}
 				<div class="px-3 py-4 text-center text-sm text-muted-foreground">
 					{m.loading()}
 				</div>
-			{:else if notifications.length === 0}
+			{:else if groupedNotifications.today.length === 0 && groupedNotifications.earlier.length === 0}
 				<div class="px-3 py-4 text-center text-sm text-muted-foreground">
 					{m.no_notifications()}
 				</div>
 			{:else}
-				{#each notifications as notification (notification.id)}
-					{@const Icon = getNotificationIcon(notification.type)}
-					<button
-						class="flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-muted {!notification.read
-							? 'bg-muted/50'
-							: ''}"
-						onclick={() => handleNotificationClick(notification)}
-					>
-						<div
-							class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full {!notification.read
-								? 'bg-primary/10 text-primary'
-								: 'bg-muted text-muted-foreground'}"
+				{#if groupedNotifications.today.length > 0}
+					<div class="px-3 py-1.5 text-xs font-medium text-muted-foreground bg-muted/50">
+						{m.notification_time_today()}
+					</div>
+					{#each groupedNotifications.today as notification (notification.id)}
+						{@const Icon = getNotificationIcon(notification.type)}
+						<button
+							class="flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-muted {!notification.read
+								? 'bg-muted/50'
+								: ''}"
+							onclick={() => handleNotificationClick(notification)}
 						>
-							<Icon class="size-4" />
-						</div>
-						<div class="min-w-0 flex-1">
-							<p class="text-sm font-medium {!notification.read ? '' : 'text-muted-foreground'}">
-								{notification.title}
-							</p>
-							<p class="text-xs text-muted-foreground line-clamp-2">
-								{notification.message}
-							</p>
-							<p class="mt-1 text-xs text-muted-foreground">
-								{formatRelativeTime(notification.created_at)}
-							</p>
-						</div>
-						{#if !notification.read}
-							<div class="mt-2 size-2 shrink-0 rounded-full bg-primary"></div>
-						{/if}
-					</button>
-				{/each}
+							<div
+								class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full {!notification.read
+									? 'bg-primary/10 text-primary'
+									: 'bg-muted text-muted-foreground'}"
+							>
+								<Icon class="size-4" />
+							</div>
+							<div class="min-w-0 flex-1">
+								<p class="text-sm font-medium {!notification.read ? '' : 'text-muted-foreground'}">
+									{notification.title}
+								</p>
+								<p class="text-xs text-muted-foreground line-clamp-2">
+									{notification.message}
+								</p>
+								<p class="mt-1 text-xs text-muted-foreground">
+									{formatRelativeTime(notification.created_at)}
+								</p>
+							</div>
+							{#if !notification.read}
+								<div class="mt-2 size-2 shrink-0 rounded-full bg-primary"></div>
+							{/if}
+						</button>
+					{/each}
+				{/if}
+
+				{#if groupedNotifications.earlier.length > 0}
+					<div class="px-3 py-1.5 text-xs font-medium text-muted-foreground bg-muted/50">
+						{m.notification_time_earlier()}
+					</div>
+					{#each groupedNotifications.earlier as notification (notification.id)}
+						{@const Icon = getNotificationIcon(notification.type)}
+						<button
+							class="flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-muted {!notification.read
+								? 'bg-muted/50'
+								: ''}"
+							onclick={() => handleNotificationClick(notification)}
+						>
+							<div
+								class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full {!notification.read
+									? 'bg-primary/10 text-primary'
+									: 'bg-muted text-muted-foreground'}"
+							>
+								<Icon class="size-4" />
+							</div>
+							<div class="min-w-0 flex-1">
+								<p class="text-sm font-medium {!notification.read ? '' : 'text-muted-foreground'}">
+									{notification.title}
+								</p>
+								<p class="text-xs text-muted-foreground line-clamp-2">
+									{notification.message}
+								</p>
+								<p class="mt-1 text-xs text-muted-foreground">
+									{formatRelativeTime(notification.created_at)}
+								</p>
+							</div>
+							{#if !notification.read}
+								<div class="mt-2 size-2 shrink-0 rounded-full bg-primary"></div>
+							{/if}
+						</button>
+					{/each}
+				{/if}
 			{/if}
 		</div>
 	</DropdownMenu.Content>

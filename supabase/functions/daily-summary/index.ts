@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { dispatchNotification } from '../_shared/notify.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -152,12 +153,12 @@ Deno.serve(async (req: Request) => {
 			message += '.';
 		}
 
-		await supabase.from('notifications').insert({
-			user_id: courier.id,
-			type: 'service_status',
+		await dispatchNotification({
+			supabase,
+			userId: courier.id,
+			category: 'daily_summary',
 			title: 'Resumo do Dia',
-			message,
-			service_id: null
+			message
 		});
 
 		return new Response(

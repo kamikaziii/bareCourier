@@ -31,6 +31,30 @@ export type PastDueSettings = {
 	dailySummaryTime: string; // time to send daily summary HH:MM (default: "08:00")
 };
 
+// Notification channel preferences per category
+export type NotificationCategory =
+	| 'new_request'
+	| 'schedule_change'
+	| 'past_due'
+	| 'daily_summary'
+	| 'service_status';
+
+export type ChannelPreferences = {
+	inApp: boolean;
+	push: boolean;
+	email: boolean;
+};
+
+export type NotificationPreferences = {
+	categories: Record<NotificationCategory, ChannelPreferences>;
+	quietHours: {
+		enabled: boolean;
+		start: string; // "HH:MM" format
+		end: string; // "HH:MM" format
+	};
+	workingDaysOnly: boolean;
+};
+
 // Time slot configuration for scheduling
 export type TimeSlotDefinitions = {
 	morning: { start: string; end: string };
@@ -93,6 +117,7 @@ export type Database = {
 					timezone: string;
 					time_slots: TimeSlotDefinitions | null;
 					working_days: WorkingDay[] | null;
+					notification_preferences: NotificationPreferences | null;
 				};
 				Insert: {
 					id: string;
@@ -117,6 +142,7 @@ export type Database = {
 					timezone?: string;
 					time_slots?: TimeSlotDefinitions | null;
 					working_days?: WorkingDay[] | null;
+					notification_preferences?: NotificationPreferences | null;
 				};
 				Update: {
 					id?: string;
@@ -141,6 +167,7 @@ export type Database = {
 					timezone?: string;
 					time_slots?: TimeSlotDefinitions | null;
 					working_days?: WorkingDay[] | null;
+					notification_preferences?: NotificationPreferences | null;
 				};
 			};
 			services: {
@@ -313,7 +340,7 @@ export type Database = {
 				Row: {
 					id: string;
 					user_id: string;
-					type: 'service_status' | 'new_request' | 'schedule_change' | 'service_created';
+					type: 'service_status' | 'new_request' | 'schedule_change' | 'service_created' | 'past_due' | 'daily_summary';
 					title: string;
 					message: string;
 					service_id: string | null;
@@ -323,7 +350,7 @@ export type Database = {
 				Insert: {
 					id?: string;
 					user_id: string;
-					type: 'service_status' | 'new_request' | 'schedule_change' | 'service_created';
+					type: 'service_status' | 'new_request' | 'schedule_change' | 'service_created' | 'past_due' | 'daily_summary';
 					title: string;
 					message: string;
 					service_id?: string | null;
@@ -333,7 +360,7 @@ export type Database = {
 				Update: {
 					id?: string;
 					user_id?: string;
-					type?: 'service_status' | 'new_request' | 'schedule_change' | 'service_created';
+					type?: 'service_status' | 'new_request' | 'schedule_change' | 'service_created' | 'past_due' | 'daily_summary';
 					title?: string;
 					message?: string;
 					service_id?: string | null;
