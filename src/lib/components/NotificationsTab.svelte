@@ -24,9 +24,10 @@
 	interface Props {
 		profile: Profile;
 		supabase: SupabaseClient;
+		role?: 'courier' | 'client';
 	}
 
-	let { profile, supabase }: Props = $props();
+	let { profile, supabase, role = 'courier' }: Props = $props();
 
 	// Use shared defaults from constants
 	const defaultPastDueSettings = DEFAULT_PAST_DUE_SETTINGS;
@@ -243,8 +244,10 @@
 
 			{@render categoryRow('new_request', m.settings_category_new_request, m.settings_category_new_request_desc)}
 			{@render categoryRow('schedule_change', m.settings_category_schedule_change, m.settings_category_schedule_change_desc)}
-			{@render categoryRow('past_due', m.settings_category_past_due, m.settings_category_past_due_desc)}
-			{@render categoryRow('daily_summary', m.settings_category_daily_summary, m.settings_category_daily_summary_desc)}
+			{#if role === 'courier'}
+				{@render categoryRow('past_due', m.settings_category_past_due, m.settings_category_past_due_desc)}
+				{@render categoryRow('daily_summary', m.settings_category_daily_summary, m.settings_category_daily_summary_desc)}
+			{/if}
 			{@render categoryRow('service_status', m.settings_category_service_status, m.settings_category_service_status_desc)}
 
 			<Separator />
@@ -335,73 +338,75 @@
 	</Card.Root>
 </form>
 
-<!-- Automated Notifications -->
-<Card.Root>
-	<Card.Header>
-		<Card.Title class="flex items-center gap-2">
-			<Timer class="size-5" />
-			{m.settings_automated_notifications()}
-		</Card.Title>
-		<Card.Description>{m.settings_automated_notifications_desc()}</Card.Description>
-	</Card.Header>
-	<Card.Content>
-		<form method="POST" action="?/updateNotificationSettings" use:enhance class="space-y-6">
-			<!-- Past Due Reminder Interval -->
-			<div class="space-y-2">
-				<Label for="pastDueReminderInterval">{m.settings_past_due_reminder_interval()}</Label>
-				<select
-					id="pastDueReminderInterval"
-					name="pastDueReminderInterval"
-					class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-					value={pastDueSettings.pastDueReminderInterval}
-					onchange={(e) => pastDueSettings.pastDueReminderInterval = parseInt((e.target as HTMLSelectElement).value)}
-				>
-					<option value="0">{m.settings_reminder_disabled()}</option>
-					<option value="15">15 {m.minutes()}</option>
-					<option value="30">30 {m.minutes()}</option>
-					<option value="60">1 {m.hour()}</option>
-					<option value="120">2 {m.hours()}</option>
-				</select>
-				<p class="text-xs text-muted-foreground">{m.settings_past_due_reminder_interval_desc()}</p>
-			</div>
-
-			<Separator />
-
-			<!-- Daily Summary -->
-			<div class="space-y-4">
-				<div class="flex items-center justify-between">
-					<div>
-						<Label>{m.settings_daily_summary()}</Label>
-						<p class="text-xs text-muted-foreground">{m.settings_daily_summary_desc()}</p>
-					</div>
-					<input type="hidden" name="dailySummaryEnabled" value={pastDueSettings.dailySummaryEnabled.toString()} />
-					<Switch
-						checked={pastDueSettings.dailySummaryEnabled}
-						onCheckedChange={(checked) => {
-							pastDueSettings.dailySummaryEnabled = checked;
-						}}
-					/>
+{#if role === 'courier'}
+	<!-- Automated Notifications -->
+	<Card.Root>
+		<Card.Header>
+			<Card.Title class="flex items-center gap-2">
+				<Timer class="size-5" />
+				{m.settings_automated_notifications()}
+			</Card.Title>
+			<Card.Description>{m.settings_automated_notifications_desc()}</Card.Description>
+		</Card.Header>
+		<Card.Content>
+			<form method="POST" action="?/updateNotificationSettings" use:enhance class="space-y-6">
+				<!-- Past Due Reminder Interval -->
+				<div class="space-y-2">
+					<Label for="pastDueReminderInterval">{m.settings_past_due_reminder_interval()}</Label>
+					<select
+						id="pastDueReminderInterval"
+						name="pastDueReminderInterval"
+						class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+						value={pastDueSettings.pastDueReminderInterval}
+						onchange={(e) => pastDueSettings.pastDueReminderInterval = parseInt((e.target as HTMLSelectElement).value)}
+					>
+						<option value="0">{m.settings_reminder_disabled()}</option>
+						<option value="15">15 {m.minutes()}</option>
+						<option value="30">30 {m.minutes()}</option>
+						<option value="60">1 {m.hour()}</option>
+						<option value="120">2 {m.hours()}</option>
+					</select>
+					<p class="text-xs text-muted-foreground">{m.settings_past_due_reminder_interval_desc()}</p>
 				</div>
 
-				{#if pastDueSettings.dailySummaryEnabled}
-					<div class="space-y-2">
-						<Label for="dailySummaryTime">{m.settings_daily_summary_time()}</Label>
-						<Input
-							id="dailySummaryTime"
-							name="dailySummaryTime"
-							type="time"
-							lang={getLocale()}
-							bind:value={pastDueSettings.dailySummaryTime}
-							class="w-32"
+				<Separator />
+
+				<!-- Daily Summary -->
+				<div class="space-y-4">
+					<div class="flex items-center justify-between">
+						<div>
+							<Label>{m.settings_daily_summary()}</Label>
+							<p class="text-xs text-muted-foreground">{m.settings_daily_summary_desc()}</p>
+						</div>
+						<input type="hidden" name="dailySummaryEnabled" value={pastDueSettings.dailySummaryEnabled.toString()} />
+						<Switch
+							checked={pastDueSettings.dailySummaryEnabled}
+							onCheckedChange={(checked) => {
+								pastDueSettings.dailySummaryEnabled = checked;
+							}}
 						/>
 					</div>
-				{/if}
-			</div>
 
-			<Button type="submit">{m.action_save()}</Button>
-		</form>
-	</Card.Content>
-</Card.Root>
+					{#if pastDueSettings.dailySummaryEnabled}
+						<div class="space-y-2">
+							<Label for="dailySummaryTime">{m.settings_daily_summary_time()}</Label>
+							<Input
+								id="dailySummaryTime"
+								name="dailySummaryTime"
+								type="time"
+								lang={getLocale()}
+								bind:value={pastDueSettings.dailySummaryTime}
+								class="w-32"
+							/>
+						</div>
+					{/if}
+				</div>
+
+				<Button type="submit">{m.action_save()}</Button>
+			</form>
+		</Card.Content>
+	</Card.Root>
+{/if}
 
 <!-- Timezone -->
 <Card.Root>

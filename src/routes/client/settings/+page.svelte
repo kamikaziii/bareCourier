@@ -5,76 +5,13 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Textarea } from '$lib/components/ui/textarea/index.js';
-	import { Switch } from '$lib/components/ui/switch/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import type { PageData, ActionData } from './$types';
-	import { Settings, User, MapPin, Bell } from '@lucide/svelte';
-	import {
-		isPushSupported,
-		subscribeToPush,
-		unsubscribeFromPush,
-		isSubscribedToPush
-	} from '$lib/services/push';
+	import { Settings, User, MapPin } from '@lucide/svelte';
+	import NotificationsTab from '$lib/components/NotificationsTab.svelte';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
-
-	// Notification preferences state
-	let pushEnabled = $state(false);
-	// svelte-ignore state_referenced_locally - intentional: capture initial preference for toggle
-	let emailEnabled = $state(data.profile.email_notifications_enabled ?? true);
-	let pushLoading = $state(false);
-	let pushError = $state('');
-	let pushSupported = $state(false);
-
-	// Form ref for email notifications auto-submit
-	let emailNotificationFormRef = $state<HTMLFormElement | null>(null);
-
-	// Check push subscription status on mount
-	$effect(() => {
-		if (typeof window !== 'undefined') {
-			pushSupported = isPushSupported();
-			if (pushSupported) {
-				isSubscribedToPush().then((subscribed) => {
-					pushEnabled = subscribed;
-				});
-			}
-		}
-	});
-
-	async function togglePushNotifications() {
-		if (pushLoading) return;
-		pushLoading = true;
-		pushError = '';
-
-		try {
-			if (pushEnabled) {
-				// Unsubscribe
-				const result = await unsubscribeFromPush(data.supabase, data.profile.id);
-				if (result.success) {
-					pushEnabled = false;
-				} else {
-					pushError = result.error || 'Failed to disable push notifications';
-				}
-			} else {
-				// Subscribe
-				const result = await subscribeToPush(data.supabase, data.profile.id);
-				if (result.success) {
-					pushEnabled = true;
-				} else {
-					if (result.error?.includes('permission')) {
-						pushError = m.push_permission_denied();
-					} else {
-						pushError = result.error || 'Failed to enable push notifications';
-					}
-				}
-			}
-		} catch (error) {
-			pushError = (error as Error).message;
-		} finally {
-			pushLoading = false;
-		}
-	}
 </script>
 
 <div class="space-y-6">
@@ -157,78 +94,6 @@
 
 	<Separator />
 
-	<!-- Notification Preferences -->
-	<Card.Root>
-		<Card.Header>
-			<Card.Title class="flex items-center gap-2">
-				<Bell class="size-5" />
-				{m.settings_notifications()}
-			</Card.Title>
-			<Card.Description>{m.settings_notifications_desc()}</Card.Description>
-		</Card.Header>
-		<Card.Content class="space-y-6">
-			{#if pushError}
-				<div class="rounded-md bg-destructive/10 p-3 text-destructive text-sm">
-					{pushError}
-				</div>
-			{/if}
-
-			<!-- Push Notifications -->
-			<div class="flex items-center justify-between">
-				<div class="space-y-0.5">
-					<Label class="text-base">{m.settings_push_notifications()}</Label>
-					<p class="text-sm text-muted-foreground">
-						{#if !pushSupported}
-							{m.push_not_supported()}
-						{:else}
-							{m.settings_push_desc()}
-						{/if}
-					</p>
-				</div>
-				<div class="flex items-center gap-2">
-					{#if pushLoading}
-						<span class="text-xs text-muted-foreground">
-							{pushEnabled ? m.push_disabling() : m.push_enabling()}
-						</span>
-					{/if}
-					<Switch
-						checked={pushEnabled}
-						onCheckedChange={togglePushNotifications}
-						disabled={!pushSupported || pushLoading}
-					/>
-				</div>
-			</div>
-
-			<Separator />
-
-			<!-- Email Notifications -->
-			<form
-				bind:this={emailNotificationFormRef}
-				method="POST"
-				action="?/updateNotificationPreferences"
-				use:enhance
-				class="flex items-center justify-between"
-			>
-				<div class="space-y-0.5">
-					<Label class="text-base">{m.settings_email_notifications()}</Label>
-					<p class="text-sm text-muted-foreground">{m.settings_email_desc()}</p>
-				</div>
-				<input type="hidden" name="email_notifications_enabled" value={emailEnabled.toString()} />
-				<Switch
-					checked={emailEnabled}
-					onCheckedChange={(checked) => {
-						emailEnabled = checked;
-						// Auto-submit the form using ref (available after mount)
-						if (emailNotificationFormRef) {
-							const input = emailNotificationFormRef.querySelector(
-								'input[name="email_notifications_enabled"]'
-							) as HTMLInputElement;
-							if (input) input.value = checked.toString();
-							emailNotificationFormRef.requestSubmit();
-						}
-					}}
-				/>
-			</form>
-		</Card.Content>
-	</Card.Root>
+	<!-- Notification Preferences (shared component) -->
+	<NotificationsTab profile={data.profile} supabase={data.supabase} role="client" />
 </div>

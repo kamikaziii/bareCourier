@@ -5,7 +5,7 @@
 	import AccountTab from './AccountTab.svelte';
 	import PricingTab from './PricingTab.svelte';
 	import SchedulingTab from './SchedulingTab.svelte';
-	import NotificationsTab from './NotificationsTab.svelte';
+	import NotificationsTab from '$lib/components/NotificationsTab.svelte';
 	import { Settings } from '@lucide/svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import type { PageData, ActionData } from './$types';
@@ -70,7 +70,7 @@
 			</Tabs.Content>
 
 			<Tabs.Content value="notifications" class="mt-6 space-y-6">
-				<NotificationsTab profile={data.profile} supabase={data.supabase} />
+				<NotificationsTab profile={data.profile} supabase={data.supabase} role="courier" />
 			</Tabs.Content>
 		</Tabs.Root>
 	</div>
@@ -95,7 +95,7 @@
 		{:else if activeTab === 'scheduling'}
 			<SchedulingTab profile={data.profile} />
 		{:else if activeTab === 'notifications'}
-			<NotificationsTab profile={data.profile} supabase={data.supabase} />
+			<NotificationsTab profile={data.profile} supabase={data.supabase} role="courier" />
 		{/if}
 	</div>
 </div>
