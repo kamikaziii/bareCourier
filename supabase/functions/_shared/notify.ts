@@ -1,5 +1,7 @@
 import { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 
+// SYNC WARNING: These notification types (NotificationCategory, ChannelPreferences, NotificationPreferences)
+// must match the definitions in src/lib/database.types.ts
 export type NotificationCategory =
 	| 'new_request'
 	| 'schedule_change'
@@ -38,8 +40,10 @@ interface DispatchParams {
 	serviceId?: string;
 	emailTemplate?: string;
 	emailData?: Record<string, string>;
+	profile?: Record<string, unknown>; // Pre-fetched profile to avoid redundant queries
 }
 
+// SYNC WARNING: Default values must match DEFAULT_NOTIFICATION_PREFERENCES in src/lib/constants/scheduling.ts
 const DEFAULT_PREFS: NotificationPreferences = {
 	categories: {
 		new_request: { inApp: true, push: true, email: true },
@@ -97,14 +101,14 @@ export async function dispatchNotification(params: DispatchParams): Promise<Disp
 		params;
 	const now = new Date();
 
-	// Load user profile
-	const { data: profile } = await supabase
+	// Load user profile (use pre-fetched if available)
+	const profile = params.profile ?? (await supabase
 		.from('profiles')
 		.select(
 			'notification_preferences, timezone, working_days, push_notifications_enabled, email_notifications_enabled'
 		)
 		.eq('id', userId)
-		.single();
+		.single()).data;
 
 	const prefs: NotificationPreferences = profile?.notification_preferences ?? DEFAULT_PREFS;
 	const timezone = profile?.timezone || 'Europe/Lisbon';

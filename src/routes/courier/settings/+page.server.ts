@@ -24,6 +24,46 @@ function isValidTimezone(tz: string): tz is (typeof VALID_TIMEZONES)[number] {
 	return VALID_TIMEZONES.includes(tz as (typeof VALID_TIMEZONES)[number]);
 }
 
+const NOTIFICATION_CATEGORY_KEYS = ['new_request', 'schedule_change', 'past_due', 'daily_summary', 'service_status'] as const;
+const TIME_FORMAT_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+function validateNotificationPreferences(prefs: unknown): prefs is {
+	categories: Record<string, { inApp: boolean; push: boolean; email: boolean }>;
+	quietHours: { enabled: boolean; start: string; end: string };
+	workingDaysOnly: boolean;
+} {
+	if (typeof prefs !== 'object' || prefs === null || Array.isArray(prefs)) return false;
+
+	const obj = prefs as Record<string, unknown>;
+	const allowedKeys = ['categories', 'quietHours', 'workingDaysOnly'];
+	const topKeys = Object.keys(obj);
+	if (topKeys.length !== allowedKeys.length || !topKeys.every((k) => allowedKeys.includes(k))) return false;
+
+	// Validate categories
+	if (typeof obj.categories !== 'object' || obj.categories === null || Array.isArray(obj.categories)) return false;
+	const cats = obj.categories as Record<string, unknown>;
+	const catKeys = Object.keys(cats);
+	if (catKeys.length !== NOTIFICATION_CATEGORY_KEYS.length || !NOTIFICATION_CATEGORY_KEYS.every((k) => catKeys.includes(k))) return false;
+	for (const key of NOTIFICATION_CATEGORY_KEYS) {
+		const cat = cats[key];
+		if (typeof cat !== 'object' || cat === null || Array.isArray(cat)) return false;
+		const c = cat as Record<string, unknown>;
+		if (typeof c.inApp !== 'boolean' || typeof c.push !== 'boolean' || typeof c.email !== 'boolean') return false;
+	}
+
+	// Validate quietHours
+	if (typeof obj.quietHours !== 'object' || obj.quietHours === null || Array.isArray(obj.quietHours)) return false;
+	const qh = obj.quietHours as Record<string, unknown>;
+	if (typeof qh.enabled !== 'boolean') return false;
+	if (typeof qh.start !== 'string' || !TIME_FORMAT_REGEX.test(qh.start)) return false;
+	if (typeof qh.end !== 'string' || !TIME_FORMAT_REGEX.test(qh.end)) return false;
+
+	// Validate workingDaysOnly
+	if (typeof obj.workingDaysOnly !== 'boolean') return false;
+
+	return true;
+}
+
 // Helper to verify courier role - returns error object if not courier, null if authorized
 async function requireCourier(
 	supabase: App.Locals['supabase'],
@@ -289,6 +329,9 @@ export const actions: Actions = {
 		if (notificationPrefsJson) {
 			try {
 				const prefs = JSON.parse(notificationPrefsJson);
+				if (!validateNotificationPreferences(prefs)) {
+					return { success: false, error: 'Invalid notification preferences' };
+				}
 				updateData.notification_preferences = prefs;
 			} catch {
 				return { success: false, error: 'Invalid notification preferences' };

@@ -197,7 +197,10 @@
 	</Card.Content>
 </Card.Root>
 
-<!-- Notification Preferences Matrix -->
+<!-- Notification Preferences & Quiet Hours (single form) -->
+<form method="POST" action="?/updateNotificationPreferences" use:enhance class="space-y-6">
+	<input type="hidden" name="notification_preferences" value={JSON.stringify(notificationPrefs)} />
+
 <Card.Root>
 	<Card.Header>
 		<Card.Title class="flex items-center gap-2">
@@ -206,10 +209,7 @@
 		</Card.Title>
 		<Card.Description>{m.settings_notification_preferences_desc()}</Card.Description>
 	</Card.Header>
-	<Card.Content>
-		<form method="POST" action="?/updateNotificationPreferences" use:enhance class="space-y-4">
-			<input type="hidden" name="notification_preferences" value={JSON.stringify(notificationPrefs)} />
-
+	<Card.Content class="space-y-4">
 			<!-- Header row -->
 			<div class="grid grid-cols-4 gap-4 text-sm font-medium text-muted-foreground border-b pb-2">
 				<div></div>
@@ -343,8 +343,6 @@
 				</div>
 			</div>
 
-			<Button type="submit" class="mt-4">{m.action_save()}</Button>
-		</form>
 	</Card.Content>
 </Card.Root>
 
@@ -357,10 +355,7 @@
 		</Card.Title>
 		<Card.Description>{m.settings_quiet_hours_desc()}</Card.Description>
 	</Card.Header>
-	<Card.Content>
-		<form method="POST" action="?/updateNotificationPreferences" use:enhance class="space-y-4">
-			<input type="hidden" name="notification_preferences" value={JSON.stringify(notificationPrefs)} />
-
+	<Card.Content class="space-y-4">
 			<!-- Enable toggle -->
 			<div class="flex items-center justify-between">
 				<Label>{m.settings_quiet_hours_enabled()}</Label>
@@ -426,10 +421,11 @@
 				/>
 			</div>
 
-			<Button type="submit">{m.action_save()}</Button>
-		</form>
 	</Card.Content>
 </Card.Root>
+
+	<Button type="submit">{m.action_save()}</Button>
+</form>
 
 <!-- Automated Notifications -->
 <Card.Root>

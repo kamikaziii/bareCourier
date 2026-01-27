@@ -213,6 +213,13 @@ Deno.serve(async (req: Request) => {
 		// Send notifications for past due services
 		let notifiedCount = 0;
 
+		// Pre-fetch courier profile once for all dispatches (avoids N+1 query)
+		const { data: courierProfile } = await supabase
+			.from('profiles')
+			.select('notification_preferences, timezone, working_days, push_notifications_enabled, email_notifications_enabled')
+			.eq('id', courier.id)
+			.single();
+
 		for (const { service, overdueMinutes } of pastDueServices) {
 			const clientName = service.profiles?.name || 'Cliente';
 			const overdueText = formatOverdueTime(overdueMinutes);
@@ -224,7 +231,8 @@ Deno.serve(async (req: Request) => {
 				category: 'past_due',
 				title: 'Entrega Atrasada',
 				message: `Entrega de ${clientName} está ${overdueText} atrasada`,
-				serviceId: service.id
+				serviceId: service.id,
+				profile: courierProfile
 			});
 
 			if (dispatchResult.inApp.success) {

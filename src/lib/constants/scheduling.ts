@@ -34,6 +34,7 @@ export const DEFAULT_PAST_DUE_SETTINGS: PastDueSettings = {
 	dailySummaryTime: '08:00'
 };
 
+// SYNC WARNING: Default values must match DEFAULT_PREFS in supabase/functions/_shared/notify.ts
 export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
 	categories: {
 		new_request: { inApp: true, push: true, email: true },

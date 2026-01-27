@@ -31,6 +31,8 @@ export type PastDueSettings = {
 	dailySummaryTime: string; // time to send daily summary HH:MM (default: "08:00")
 };
 
+// SYNC WARNING: These notification types (NotificationCategory, ChannelPreferences, NotificationPreferences)
+// must match the definitions in supabase/functions/_shared/notify.ts
 // Notification channel preferences per category
 export type NotificationCategory =
 	| 'new_request'
