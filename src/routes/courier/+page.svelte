@@ -278,29 +278,29 @@
 	</div>
 
 	<!-- Stats -->
-	<div class="grid gap-4 md:grid-cols-2">
+	<div class="grid grid-cols-2 gap-3">
 		{#if loading}
 			<SkeletonCard variant="stat" />
 			<SkeletonCard variant="stat" />
 		{:else}
 			<Card.Root>
-				<Card.Content class="flex items-center gap-4 p-6">
-					<div class="size-12 rounded-full bg-blue-500/10 flex items-center justify-center">
-						<div class="size-4 rounded-full bg-blue-500"></div>
+				<Card.Content class="flex items-center gap-3 p-4">
+					<div class="size-8 rounded-full bg-blue-500/10 flex items-center justify-center">
+						<div class="size-3 rounded-full bg-blue-500"></div>
 					</div>
 					<div>
-						<p class="text-2xl font-bold">{pendingCount}</p>
+						<p class="text-xl font-bold">{pendingCount}</p>
 						<p class="text-sm text-muted-foreground">{m.status_pending()}</p>
 					</div>
 				</Card.Content>
 			</Card.Root>
 			<Card.Root>
-				<Card.Content class="flex items-center gap-4 p-6">
-					<div class="size-12 rounded-full bg-green-500/10 flex items-center justify-center">
-						<div class="size-4 rounded-full bg-green-500"></div>
+				<Card.Content class="flex items-center gap-3 p-4">
+					<div class="size-8 rounded-full bg-green-500/10 flex items-center justify-center">
+						<div class="size-3 rounded-full bg-green-500"></div>
 					</div>
 					<div>
-						<p class="text-2xl font-bold">{deliveredCount}</p>
+						<p class="text-xl font-bold">{deliveredCount}</p>
 						<p class="text-sm text-muted-foreground">{m.status_delivered()}</p>
 					</div>
 				</Card.Content>
@@ -309,7 +309,7 @@
 	</div>
 
 	<!-- Filters -->
-	<div class="flex flex-wrap items-center gap-2">
+	<div class="flex items-center gap-2">
 		<Button
 			variant={filter === 'today' ? 'default' : 'outline'}
 			size="sm"
@@ -340,8 +340,8 @@
 			size="sm"
 			onclick={toggleSelectionMode}
 		>
-			<CheckSquare class="size-4 mr-1" />
-			{selectionMode ? m.batch_deselect_all() : m.batch_selection_mode()}
+			<CheckSquare class="size-4 sm:mr-1" />
+			<span class="hidden sm:inline">{selectionMode ? m.batch_deselect_all() : m.batch_selection_mode()}</span>
 		</Button>
 	</div>
 

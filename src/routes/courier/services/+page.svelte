@@ -227,7 +227,7 @@ import { formatDate } from '$lib/utils.js';
 </script>
 
 <PullToRefresh>
-<div class="space-y-6">
+<div class="min-w-0 space-y-6">
 	<div class="flex items-center justify-between">
 		<h1 class="text-2xl font-bold">{m.services_title()}</h1>
 		<Button onclick={() => (showForm = !showForm)}>
@@ -398,8 +398,8 @@ import { formatDate } from '$lib/utils.js';
 	{/if}
 
 	<!-- Filters -->
-	<div class="flex flex-wrap gap-4">
-		<div class="flex-1 min-w-[200px]">
+	<div class="flex flex-col gap-4 sm:flex-row">
+		<div class="flex-1">
 			<Input
 				type="search"
 				placeholder={m.services_search()}

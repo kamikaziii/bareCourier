@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import AccountTab from './AccountTab.svelte';
 	import PricingTab from './PricingTab.svelte';
@@ -9,6 +10,9 @@
 	import type { PageData, ActionData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+
+	const activeTab = $derived(page.url.searchParams.get('tab') || 'account');
+	let mobileTab = $state(page.url.searchParams.get('tab') || 'account');
 </script>
 
 <div class="space-y-6">
@@ -33,28 +37,54 @@
 		</div>
 	{/if}
 
-	<Tabs.Root value="account" class="w-full">
-		<Tabs.List class="grid w-full grid-cols-4">
-			<Tabs.Trigger value="account">{m.settings_tab_account()}</Tabs.Trigger>
-			<Tabs.Trigger value="pricing">{m.settings_tab_pricing()}</Tabs.Trigger>
-			<Tabs.Trigger value="scheduling">{m.settings_tab_scheduling()}</Tabs.Trigger>
-			<Tabs.Trigger value="notifications">{m.settings_tab_notifications()}</Tabs.Trigger>
-		</Tabs.List>
+	<!-- Desktop: Tabs -->
+	<div class="hidden md:block">
+		<Tabs.Root value={activeTab} class="w-full">
+			<Tabs.List class="grid w-full grid-cols-4">
+				<Tabs.Trigger value="account">{m.settings_tab_account()}</Tabs.Trigger>
+				<Tabs.Trigger value="pricing">{m.settings_tab_pricing()}</Tabs.Trigger>
+				<Tabs.Trigger value="scheduling">{m.settings_tab_scheduling()}</Tabs.Trigger>
+				<Tabs.Trigger value="notifications">{m.settings_tab_notifications()}</Tabs.Trigger>
+			</Tabs.List>
 
-		<Tabs.Content value="account" class="mt-6">
+			<Tabs.Content value="account" class="mt-6 space-y-6">
+				<AccountTab profile={data.profile} session={data.session} />
+			</Tabs.Content>
+
+			<Tabs.Content value="pricing" class="mt-6 space-y-6">
+				<PricingTab profile={data.profile} urgencyFees={data.urgencyFees} />
+			</Tabs.Content>
+
+			<Tabs.Content value="scheduling" class="mt-6 space-y-6">
+				<SchedulingTab profile={data.profile} />
+			</Tabs.Content>
+
+			<Tabs.Content value="notifications" class="mt-6 space-y-6">
+				<NotificationsTab profile={data.profile} supabase={data.supabase} />
+			</Tabs.Content>
+		</Tabs.Root>
+	</div>
+
+	<!-- Mobile: Dropdown -->
+	<div class="md:hidden space-y-6">
+		<select
+			bind:value={mobileTab}
+			class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+		>
+			<option value="account">{m.settings_tab_account()}</option>
+			<option value="pricing">{m.settings_tab_pricing()}</option>
+			<option value="scheduling">{m.settings_tab_scheduling()}</option>
+			<option value="notifications">{m.settings_tab_notifications()}</option>
+		</select>
+
+		{#if mobileTab === 'account'}
 			<AccountTab profile={data.profile} session={data.session} />
-		</Tabs.Content>
-
-		<Tabs.Content value="pricing" class="mt-6">
+		{:else if mobileTab === 'pricing'}
 			<PricingTab profile={data.profile} urgencyFees={data.urgencyFees} />
-		</Tabs.Content>
-
-		<Tabs.Content value="scheduling" class="mt-6">
+		{:else if mobileTab === 'scheduling'}
 			<SchedulingTab profile={data.profile} />
-		</Tabs.Content>
-
-		<Tabs.Content value="notifications" class="mt-6">
+		{:else if mobileTab === 'notifications'}
 			<NotificationsTab profile={data.profile} supabase={data.supabase} />
-		</Tabs.Content>
-	</Tabs.Root>
+		{/if}
+	</div>
 </div>

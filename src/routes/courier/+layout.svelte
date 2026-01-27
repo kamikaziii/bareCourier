@@ -74,7 +74,7 @@
 	<Sidebar items={allNavItems} {currentPath} />
 
 	<!-- Main content area -->
-	<div class="flex flex-1 flex-col">
+	<div class="flex min-w-0 flex-1 flex-col">
 		<!-- Header -->
 		<header class="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
 			<div class="flex h-14 items-center justify-between px-4">

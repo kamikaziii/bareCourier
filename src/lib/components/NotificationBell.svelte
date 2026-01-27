@@ -229,7 +229,7 @@
 					class="size-6"
 					onclick={() => {
 						open = false;
-						goto(localizeHref(userRole === 'courier' ? '/courier/settings' : '/client/settings'));
+						goto(localizeHref(userRole === 'courier' ? '/courier/settings?tab=notifications' : '/client/settings'));
 					}}
 				>
 					<Settings class="size-4" />

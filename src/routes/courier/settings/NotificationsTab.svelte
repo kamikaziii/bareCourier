@@ -9,7 +9,7 @@
 	import * as m from '$lib/paraglide/messages.js';
 	import { getLocale } from '$lib/paraglide/runtime.js';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
-	import { Bell, Globe, Clock } from '@lucide/svelte';
+	import { Bell, Globe, BellOff, SlidersHorizontal, Timer } from '@lucide/svelte';
 	import type { Profile, PastDueSettings, NotificationPreferences } from '$lib/database.types.js';
 	import { DEFAULT_PAST_DUE_SETTINGS, DEFAULT_NOTIFICATION_PREFERENCES } from '$lib/constants/scheduling.js';
 	import type { SupabaseClient } from '@supabase/supabase-js';
@@ -37,6 +37,9 @@
 	let pushLoading = $state(false);
 	let pushError = $state('');
 	let pushSupported = $state(false);
+
+	// Form ref for email notifications auto-submit
+	let emailFormRef = $state<HTMLFormElement | null>(null);
 
 	// Past due settings for automated notifications
 	// Merge defaults with existing settings to handle partial data from older records
@@ -92,7 +95,6 @@
 
 		try {
 			if (pushEnabled) {
-				// Unsubscribe
 				const result = await unsubscribeFromPush(supabase, profile.id);
 				if (result.success) {
 					pushEnabled = false;
@@ -100,7 +102,6 @@
 					pushError = result.error || 'Failed to disable push notifications';
 				}
 			} else {
-				// Subscribe
 				const result = await subscribeToPush(supabase, profile.id);
 				if (result.success) {
 					pushEnabled = true;
@@ -120,7 +121,33 @@
 	}
 </script>
 
-<!-- Notification Preferences -->
+{#snippet categoryRow(category: keyof typeof notificationPrefs.categories, titleMsg: () => string, descMsg: () => string)}
+	<div class="grid grid-cols-4 gap-4 items-center">
+		<div>
+			<p class="text-sm font-medium">{titleMsg()}</p>
+			<p class="text-xs text-muted-foreground">{descMsg()}</p>
+		</div>
+		<div class="flex justify-center">
+			<Checkbox checked={notificationPrefs.categories[category].inApp} disabled />
+		</div>
+		<div class="flex justify-center">
+			<Checkbox
+				checked={notificationPrefs.categories[category].push}
+				onCheckedChange={(v) => updateCategoryPref(category, 'push', v === true)}
+				disabled={!pushSupported || !pushEnabled}
+			/>
+		</div>
+		<div class="flex justify-center">
+			<Checkbox
+				checked={notificationPrefs.categories[category].email}
+				onCheckedChange={(v) => updateCategoryPref(category, 'email', v === true)}
+				disabled={!emailEnabled}
+			/>
+		</div>
+	</div>
+{/snippet}
+
+<!-- Notification Channels -->
 <Card.Root>
 	<Card.Header>
 		<Card.Title class="flex items-center gap-2">
@@ -165,7 +192,13 @@
 		<Separator />
 
 		<!-- Email Notifications -->
-		<form method="POST" action="?/updateNotificationPreferences" use:enhance class="flex items-center justify-between">
+		<form
+			bind:this={emailFormRef}
+			method="POST"
+			action="?/updateNotificationPreferences"
+			use:enhance
+			class="flex items-center justify-between"
+		>
 			<div class="space-y-0.5">
 				<Label class="text-base">{m.settings_email_notifications()}</Label>
 				<p class="text-sm text-muted-foreground">{m.settings_email_desc()}</p>
@@ -175,12 +208,10 @@
 				checked={emailEnabled}
 				onCheckedChange={(checked) => {
 					emailEnabled = checked;
-					// Auto-submit the form
-					const form = document.querySelector('form[action="?/updateNotificationPreferences"]') as HTMLFormElement;
-					if (form) {
-						const input = form.querySelector('input[name="email_notifications_enabled"]') as HTMLInputElement;
+					if (emailFormRef) {
+						const input = emailFormRef.querySelector('input[name="email_notifications_enabled"]') as HTMLInputElement;
 						if (input) input.value = checked.toString();
-						form.requestSubmit();
+						emailFormRef.requestSubmit();
 					}
 				}}
 			/>
@@ -188,45 +219,20 @@
 	</Card.Content>
 </Card.Root>
 
-{#snippet categoryRow(category: keyof typeof notificationPrefs.categories, titleMsg: () => string, descMsg: () => string)}
-	<div class="grid grid-cols-4 gap-4 items-center">
-		<div>
-			<p class="text-sm font-medium">{titleMsg()}</p>
-			<p class="text-xs text-muted-foreground">{descMsg()}</p>
-		</div>
-		<div class="flex justify-center">
-			<Checkbox checked={notificationPrefs.categories[category].inApp} disabled />
-		</div>
-		<div class="flex justify-center">
-			<Checkbox
-				checked={notificationPrefs.categories[category].push}
-				onCheckedChange={(v) => updateCategoryPref(category, 'push', v === true)}
-				disabled={!pushSupported || !pushEnabled}
-			/>
-		</div>
-		<div class="flex justify-center">
-			<Checkbox
-				checked={notificationPrefs.categories[category].email}
-				onCheckedChange={(v) => updateCategoryPref(category, 'email', v === true)}
-				disabled={!emailEnabled}
-			/>
-		</div>
-	</div>
-{/snippet}
-
-<!-- Notification Preferences & Quiet Hours (single form) -->
+<!-- Category Preferences & Quiet Hours (single form) -->
 <form method="POST" action="?/updateNotificationPreferences" use:enhance class="space-y-6">
 	<input type="hidden" name="notification_preferences" value={JSON.stringify(notificationPrefs)} />
 
-<Card.Root>
-	<Card.Header>
-		<Card.Title class="flex items-center gap-2">
-			<Bell class="size-5" />
-			{m.settings_notification_preferences()}
-		</Card.Title>
-		<Card.Description>{m.settings_notification_preferences_desc()}</Card.Description>
-	</Card.Header>
-	<Card.Content class="space-y-4">
+	<!-- Category Preferences -->
+	<Card.Root>
+		<Card.Header>
+			<Card.Title class="flex items-center gap-2">
+				<SlidersHorizontal class="size-5" />
+				{m.settings_notification_preferences()}
+			</Card.Title>
+			<Card.Description>{m.settings_notification_preferences_desc()}</Card.Description>
+		</Card.Header>
+		<Card.Content class="space-y-4">
 			<!-- Header row -->
 			<div class="grid grid-cols-4 gap-4 text-sm font-medium text-muted-foreground border-b pb-2">
 				<div></div>
@@ -241,19 +247,22 @@
 			{@render categoryRow('daily_summary', m.settings_category_daily_summary, m.settings_category_daily_summary_desc)}
 			{@render categoryRow('service_status', m.settings_category_service_status, m.settings_category_service_status_desc)}
 
-	</Card.Content>
-</Card.Root>
+			<Separator />
 
-<!-- Quiet Hours -->
-<Card.Root>
-	<Card.Header>
-		<Card.Title class="flex items-center gap-2">
-			<Clock class="size-5" />
-			{m.settings_quiet_hours()}
-		</Card.Title>
-		<Card.Description>{m.settings_quiet_hours_desc()}</Card.Description>
-	</Card.Header>
-	<Card.Content class="space-y-4">
+			<Button type="submit">{m.action_save()}</Button>
+		</Card.Content>
+	</Card.Root>
+
+	<!-- Quiet Hours & Delivery Schedule -->
+	<Card.Root>
+		<Card.Header>
+			<Card.Title class="flex items-center gap-2">
+				<BellOff class="size-5" />
+				{m.settings_quiet_hours()}
+			</Card.Title>
+			<Card.Description>{m.settings_quiet_hours_desc()}</Card.Description>
+		</Card.Header>
+		<Card.Content class="space-y-4">
 			<!-- Enable toggle -->
 			<div class="flex items-center justify-between">
 				<Label>{m.settings_quiet_hours_enabled()}</Label>
@@ -319,17 +328,18 @@
 				/>
 			</div>
 
-	</Card.Content>
-</Card.Root>
+			<Separator />
 
-	<Button type="submit">{m.action_save()}</Button>
+			<Button type="submit">{m.action_save()}</Button>
+		</Card.Content>
+	</Card.Root>
 </form>
 
 <!-- Automated Notifications -->
 <Card.Root>
 	<Card.Header>
 		<Card.Title class="flex items-center gap-2">
-			<Bell class="size-5" />
+			<Timer class="size-5" />
 			{m.settings_automated_notifications()}
 		</Card.Title>
 		<Card.Description>{m.settings_automated_notifications_desc()}</Card.Description>

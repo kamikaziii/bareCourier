@@ -168,7 +168,7 @@
 	}
 </script>
 
-<div class="space-y-6">
+<div class="min-w-0 space-y-6">
 	<div class="flex items-center justify-between">
 		<h1 class="text-2xl font-bold">{m.billing_title()}</h1>
 		<Button onclick={exportCSV} disabled={sortedBilling.length === 0}>

@@ -142,7 +142,7 @@ import { formatDate } from '$lib/utils.js';
 	}
 </script>
 
-<div class="space-y-6">
+<div class="min-w-0 space-y-6">
 	<div class="flex items-center justify-between">
 		<div class="flex items-center gap-2">
 			<Receipt class="size-6" />
