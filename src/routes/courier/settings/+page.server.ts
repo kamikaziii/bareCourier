@@ -64,7 +64,7 @@ function validateNotificationPreferences(prefs: unknown): prefs is {
 	return true;
 }
 
-// Helper to verify courier role - throws fail() if not courier
+// Helper to verify courier role - redirects to login if not courier
 async function requireCourier(
 	supabase: App.Locals['supabase'],
 	userId: string
@@ -76,7 +76,7 @@ async function requireCourier(
 		.single() as { data: { role: string } | null };
 
 	if (profile?.role !== 'courier') {
-		throw fail(403, { error: 'Unauthorized' });
+		redirect(303, localizeHref('/login'));
 	}
 }
 
