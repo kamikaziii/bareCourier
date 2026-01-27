@@ -122,7 +122,8 @@ export const actions: Actions = {
 			.eq('id', params.id);
 
 		if (updateError) {
-			return { success: false, error: updateError.message };
+			console.error('Failed to toggle client active:', updateError);
+			return { success: false, error: 'Failed to update client status' };
 		}
 
 		return { success: true };
@@ -165,7 +166,8 @@ export const actions: Actions = {
 		);
 
 		if (upsertError) {
-			return { success: false, error: upsertError.message };
+			console.error('Failed to save pricing:', upsertError);
+			return { success: false, error: 'Failed to save pricing configuration' };
 		}
 
 		// If zone pricing, save zones using atomic RPC
@@ -183,7 +185,8 @@ export const actions: Actions = {
 			});
 
 			if (rpcError) {
-				return { success: false, error: rpcError.message };
+				console.error('Failed to save pricing zones:', rpcError);
+				return { success: false, error: 'Failed to save pricing zones' };
 			}
 		}
 

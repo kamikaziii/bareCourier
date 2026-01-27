@@ -123,7 +123,8 @@ export const actions: Actions = {
 			.eq('id', serviceId);
 
 		if (updateError) {
-			return { success: false, error: updateError.message };
+			console.error('Failed to update request:', updateError);
+			return { success: false, error: 'Failed to update request' };
 		}
 
 		// Notify client
@@ -183,7 +184,8 @@ export const actions: Actions = {
 			.eq('id', serviceId);
 
 		if (updateError) {
-			return { success: false, error: updateError.message };
+			console.error('Failed to update request:', updateError);
+			return { success: false, error: 'Failed to update request' };
 		}
 
 		// Notify client
@@ -258,7 +260,8 @@ export const actions: Actions = {
 			.eq('id', serviceId);
 
 		if (updateError) {
-			return { success: false, error: updateError.message };
+			console.error('Failed to update request:', updateError);
+			return { success: false, error: 'Failed to update request' };
 		}
 
 		// Notify client
@@ -344,7 +347,8 @@ export const actions: Actions = {
 		});
 
 		if (rpcError) {
-			return { success: false, error: rpcError.message };
+			console.error('Failed RPC call:', rpcError);
+			return { success: false, error: 'An unexpected error occurred' };
 		}
 
 		const result = rpcResult as { success: boolean; error?: string; client_id?: string };
@@ -469,7 +473,8 @@ export const actions: Actions = {
 		});
 
 		if (rpcError) {
-			return { success: false, error: rpcError.message };
+			console.error('Failed RPC call:', rpcError);
+			return { success: false, error: 'An unexpected error occurred' };
 		}
 
 		const result = rpcResult as { success: boolean; error?: string; client_id?: string };

@@ -31,6 +31,8 @@ export interface ServiceDistanceResult {
 	distanceMode: 'warehouse' | 'zone' | 'fallback';
 	warehouseToPickupKm?: number;
 	pickupToDeliveryKm: number;
+	/** Encoded polyline geometry for the pickup → delivery leg (for map display) */
+	geometry?: string;
 }
 
 const ORS_DIRECTIONS_URL = 'https://api.openrouteservice.org/v2/directions/driving-car';
@@ -169,9 +171,11 @@ export async function calculateServiceDistance(
 
 	// Calculate pickup → delivery (always needed)
 	let pickupToDeliveryKm: number;
+	let geometry: string | undefined;
 	const pickupDeliveryRoute = await calculateRoute(pickupCoords, deliveryCoords);
 	if (pickupDeliveryRoute) {
 		pickupToDeliveryKm = pickupDeliveryRoute.distanceKm;
+		geometry = pickupDeliveryRoute.geometry;
 	} else {
 		// Haversine fallback
 		pickupToDeliveryKm = calculateHaversineDistance(pickupCoords, deliveryCoords);
@@ -198,7 +202,8 @@ export async function calculateServiceDistance(
 			totalDistanceKm,
 			distanceMode: 'warehouse',
 			warehouseToPickupKm,
-			pickupToDeliveryKm
+			pickupToDeliveryKm,
+			geometry
 		};
 	}
 
@@ -213,6 +218,7 @@ export async function calculateServiceDistance(
 		totalDistanceKm,
 		distanceMode:
 			warehouseCoords === null && pricingMode === 'warehouse' ? 'fallback' : 'zone',
-		pickupToDeliveryKm
+		pickupToDeliveryKm,
+		geometry
 	};
 }

@@ -143,7 +143,8 @@ export const actions: Actions = {
 				.eq('id', params.id);
 
 			if (updateError) {
-				return { success: false, error: updateError.message };
+				console.error('Failed to create pending reschedule:', updateError);
+				return { success: false, error: 'Failed to submit reschedule request' };
 			}
 
 			// Create history record
@@ -191,7 +192,8 @@ export const actions: Actions = {
 				.eq('id', params.id);
 
 			if (updateError) {
-				return { success: false, error: updateError.message };
+				console.error('Failed to auto-approve reschedule:', updateError);
+				return { success: false, error: 'Failed to reschedule service' };
 			}
 
 			// Create history record
@@ -238,7 +240,8 @@ export const actions: Actions = {
 		});
 
 		if (rpcError) {
-			return { success: false, error: rpcError.message };
+			console.error('Failed to approve reschedule:', rpcError);
+			return { success: false, error: 'Failed to approve reschedule' };
 		}
 
 		const result = data as { success: boolean; error?: string };
@@ -283,7 +286,8 @@ export const actions: Actions = {
 		});
 
 		if (rpcError) {
-			return { success: false, error: rpcError.message };
+			console.error('Failed to decline reschedule:', rpcError);
+			return { success: false, error: 'Failed to decline reschedule' };
 		}
 
 		const result = data as { success: boolean; error?: string };

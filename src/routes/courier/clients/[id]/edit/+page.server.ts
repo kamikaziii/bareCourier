@@ -80,7 +80,8 @@ export const actions: Actions = {
 			.eq('id', params.id);
 
 		if (updateError) {
-			return { success: false, error: updateError.message };
+			console.error('Failed to update client profile:', updateError);
+			return { success: false, error: 'Failed to update client' };
 		}
 
 		// Save pricing configuration if provided
@@ -97,7 +98,8 @@ export const actions: Actions = {
 			);
 
 			if (pricingError) {
-				return { success: false, error: pricingError.message };
+				console.error('Failed to save client pricing:', pricingError);
+				return { success: false, error: 'Failed to save pricing configuration' };
 			}
 
 			// If zone pricing, save zones using atomic RPC
@@ -115,7 +117,8 @@ export const actions: Actions = {
 				});
 
 				if (rpcError) {
-					return { success: false, error: rpcError.message };
+					console.error('Failed to save pricing zones:', rpcError);
+					return { success: false, error: 'Failed to save pricing zones' };
 				}
 			}
 		}

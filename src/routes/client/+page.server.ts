@@ -100,7 +100,8 @@ export const actions: Actions = {
 			.eq('id', serviceId);
 
 		if (updateError) {
-			return { success: false, error: updateError.message };
+			console.error('Failed to accept suggestion:', updateError);
+			return { success: false, error: 'Failed to accept suggestion' };
 		}
 
 		// Notify courier
@@ -158,7 +159,8 @@ export const actions: Actions = {
 			.eq('id', serviceId);
 
 		if (updateError) {
-			return { success: false, error: updateError.message };
+			console.error('Failed to decline suggestion:', updateError);
+			return { success: false, error: 'Failed to decline suggestion' };
 		}
 
 		// Notify courier
@@ -218,7 +220,8 @@ export const actions: Actions = {
 			.eq('id', serviceId);
 
 		if (updateError) {
-			return { success: false, error: updateError.message };
+			console.error('Failed to cancel request:', updateError);
+			return { success: false, error: 'Failed to cancel request' };
 		}
 
 		// Notify courier

@@ -96,7 +96,8 @@ export const actions: Actions = {
 		);
 
 		if (rpcError) {
-			return { success: false, error: rpcError.message };
+			console.error('Failed to bulk reschedule services:', rpcError);
+			return { success: false, error: 'Failed to reschedule services' };
 		}
 
 		const bulkResult = rpcResult as {

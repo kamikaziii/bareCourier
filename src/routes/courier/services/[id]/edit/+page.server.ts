@@ -153,7 +153,8 @@ export const actions: Actions = {
 			.eq('id', params.id);
 
 		if (updateError) {
-			return { success: false, error: updateError.message };
+			console.error('Failed to update service:', updateError);
+			return { success: false, error: 'Failed to update service' };
 		}
 
 		redirect(303, localizeHref(`/courier/services/${params.id}`));

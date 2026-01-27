@@ -75,7 +75,8 @@ export const actions: Actions = {
 			.eq('id', params.id);
 
 		if (updateError) {
-			return { success: false, error: updateError.message };
+			console.error('Failed to update service status:', updateError);
+			return { success: false, error: 'Failed to update service status' };
 		}
 
 		return { success: true };
@@ -107,7 +108,8 @@ export const actions: Actions = {
 			.eq('id', params.id);
 
 		if (deleteError) {
-			return { success: false, error: deleteError.message };
+			console.error('Failed to delete service:', deleteError);
+			return { success: false, error: 'Failed to delete service' };
 		}
 
 		redirect(303, localizeHref('/courier/services'));
@@ -220,7 +222,8 @@ export const actions: Actions = {
 			}).eq('id', params.id);
 
 			if (updateError) {
-				return { success: false, error: updateError.message };
+				console.error('Failed to create pending reschedule:', updateError);
+				return { success: false, error: 'Failed to submit reschedule' };
 			}
 
 			// Create history record
@@ -274,7 +277,8 @@ export const actions: Actions = {
 			});
 
 			if (rpcError) {
-				return { success: false, error: rpcError.message };
+				console.error('Failed to reschedule service:', rpcError);
+				return { success: false, error: 'Failed to reschedule service' };
 			}
 
 			const result = data as { success: boolean; error?: string };

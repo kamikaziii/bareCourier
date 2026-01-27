@@ -46,6 +46,8 @@ export async function calculateRouteIfReady(
 	let distanceResult: ServiceDistanceResult | null = null;
 
 	try {
+		let routeGeometry: string | null = null;
+
 		if (courierSettings) {
 			const result = await calculateServiceDistance({
 				pickupCoords,
@@ -56,18 +58,16 @@ export async function calculateRouteIfReady(
 			});
 			distanceResult = result;
 			distanceKm = result.totalDistanceKm;
+			routeGeometry = result.geometry || null;
 		} else {
 			const result = await calculateRoute(pickupCoords, deliveryCoords);
 			if (result) {
 				distanceKm = result.distanceKm;
+				routeGeometry = result.geometry || null;
 			} else {
 				distanceKm = calculateHaversineDistance(pickupCoords, deliveryCoords);
 			}
 		}
-
-		// Get route geometry for map display
-		const routeResult = await calculateRoute(pickupCoords, deliveryCoords);
-		const routeGeometry = routeResult?.geometry || null;
 
 		return { distanceKm, routeGeometry, distanceResult };
 	} catch {

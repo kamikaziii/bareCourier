@@ -79,7 +79,8 @@ export const actions: Actions = {
 		);
 
 		if (upsertError) {
-			return { success: false, error: upsertError.message };
+			console.error('Failed to save pricing:', upsertError);
+			return { success: false, error: 'Failed to save pricing configuration' };
 		}
 
 		return { success: true };
@@ -121,7 +122,8 @@ export const actions: Actions = {
 		});
 
 		if (rpcError) {
-			return { success: false, error: rpcError.message };
+			console.error('Failed RPC call:', rpcError);
+			return { success: false, error: 'An unexpected error occurred' };
 		}
 
 		return { success: true };
@@ -191,7 +193,8 @@ export const actions: Actions = {
 		);
 
 		if (rpcError) {
-			return { success: false, error: rpcError.message };
+			console.error('Failed RPC call:', rpcError);
+			return { success: false, error: 'An unexpected error occurred' };
 		}
 
 		// Check RPC-level success (auth check or other validation failure)
@@ -265,7 +268,8 @@ export const actions: Actions = {
 		);
 
 		if (rpcError) {
-			return { success: false, error: rpcError.message };
+			console.error('Failed RPC call:', rpcError);
+			return { success: false, error: 'An unexpected error occurred' };
 		}
 
 		// Check RPC-level success (auth check or other validation failure)
