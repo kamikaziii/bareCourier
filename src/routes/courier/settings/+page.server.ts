@@ -133,7 +133,7 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return { success: false, error: error.message };
+			return { success: false, error: 'Failed to update profile' };
 		}
 
 		return { success: true, message: 'profile_updated' };
@@ -177,7 +177,7 @@ export const actions: Actions = {
 			.eq('id', id);
 
 		if (error) {
-			return { success: false, error: error.message };
+			return { success: false, error: 'Failed to update urgency fee' };
 		}
 
 		return { success: true, message: 'urgency_updated' };
@@ -227,7 +227,7 @@ export const actions: Actions = {
 		});
 
 		if (error) {
-			return { success: false, error: error.message };
+			return { success: false, error: 'Failed to create urgency fee' };
 		}
 
 		return { success: true, message: 'urgency_created' };
@@ -261,7 +261,7 @@ export const actions: Actions = {
 			.eq('id', id);
 
 		if (error) {
-			return { success: false, error: error.message };
+			return { success: false, error: 'Failed to toggle urgency fee' };
 		}
 
 		return { success: true, message: 'urgency_toggled' };
@@ -302,7 +302,7 @@ export const actions: Actions = {
 		const { error } = await (supabase as any).from('urgency_fees').delete().eq('id', id);
 
 		if (error) {
-			return { success: false, error: error.message };
+			return { success: false, error: 'Failed to delete urgency fee' };
 		}
 
 		return { success: true, message: 'urgency_deleted' };
@@ -353,7 +353,7 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return { success: false, error: error.message };
+			return { success: false, error: 'Failed to update notification preferences' };
 		}
 
 		return { success: true, message: 'preferences_updated' };
@@ -383,7 +383,7 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return { success: false, error: error.message };
+			return { success: false, error: 'Failed to update pricing mode' };
 		}
 
 		return { success: true, message: 'pricing_mode_updated' };
@@ -415,7 +415,7 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return { success: false, error: error.message };
+			return { success: false, error: 'Failed to update warehouse location' };
 		}
 
 		return { success: true, message: 'warehouse_updated' };
@@ -437,10 +437,6 @@ export const actions: Actions = {
 		const default_urgency_fee_id = (formData.get('default_urgency_fee_id') as string) || null;
 		const minimum_charge = parseFloat(formData.get('minimum_charge') as string) || 0;
 		const round_distance = formData.get('round_distance') === 'true';
-		const vat_enabled = formData.get('vat_enabled') === 'true';
-		const vat_rate_raw = parseFloat(formData.get('vat_rate') as string);
-		const vat_rate = vat_enabled && !isNaN(vat_rate_raw) ? vat_rate_raw : null;
-		const prices_include_vat = formData.get('prices_include_vat') === 'true';
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const { error } = await (supabase as any)
@@ -450,7 +446,42 @@ export const actions: Actions = {
 				show_price_to_client,
 				default_urgency_fee_id: default_urgency_fee_id || null,
 				minimum_charge,
-				round_distance,
+				round_distance
+			})
+			.eq('id', user.id);
+
+		if (error) {
+			return { success: false, error: 'Failed to update pricing preferences' };
+		}
+
+		return { success: true, message: 'pricing_preferences_updated' };
+	},
+
+	updateVatSettings: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		// Verify courier role
+		const roleError = await requireCourier(supabase, user.id);
+		if (roleError) return roleError;
+
+		const formData = await request.formData();
+		const vat_enabled = formData.get('vat_enabled') === 'true';
+		const vat_rate_raw = parseFloat(formData.get('vat_rate') as string);
+		const vat_rate = !isNaN(vat_rate_raw) ? vat_rate_raw : null;
+		const prices_include_vat = formData.get('prices_include_vat') === 'true';
+
+		// Validate VAT rate when enabled
+		if (vat_enabled && (vat_rate === null || vat_rate < 0 || vat_rate > 100)) {
+			return { success: false, error: 'VAT rate must be between 0 and 100' };
+		}
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { error } = await (supabase as any)
+			.from('profiles')
+			.update({
 				vat_enabled,
 				vat_rate,
 				prices_include_vat
@@ -458,10 +489,10 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return { success: false, error: error.message };
+			return { success: false, error: 'Failed to update VAT settings' };
 		}
 
-		return { success: true, message: 'pricing_preferences_updated' };
+		return { success: true, message: 'vat_settings_updated' };
 	},
 
 	updatePastDueSettings: async ({ request, locals: { supabase, safeGetSession } }) => {
@@ -515,7 +546,7 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return { success: false, error: error.message };
+			return { success: false, error: 'Failed to update past due settings' };
 		}
 
 		return { success: true, message: 'past_due_settings_updated' };
@@ -568,7 +599,7 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return { success: false, error: error.message };
+			return { success: false, error: 'Failed to update reschedule settings' };
 		}
 
 		return { success: true, message: 'client_reschedule_settings_updated' };
@@ -613,7 +644,7 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return { success: false, error: error.message };
+			return { success: false, error: 'Failed to update notification settings' };
 		}
 
 		return { success: true, message: 'notification_settings_updated' };
@@ -659,7 +690,7 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return { success: false, error: error.message };
+			return { success: false, error: 'Failed to update time slots' };
 		}
 
 		return { success: true, message: 'time_slots_updated' };
@@ -691,7 +722,7 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return { success: false, error: error.message };
+			return { success: false, error: 'Failed to update working days' };
 		}
 
 		return { success: true, message: 'working_days_updated' };
@@ -722,7 +753,7 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return { success: false, error: error.message };
+			return { success: false, error: 'Failed to update timezone' };
 		}
 
 		return { success: true, message: 'timezone_updated' };

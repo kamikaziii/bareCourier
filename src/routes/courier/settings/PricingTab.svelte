@@ -11,6 +11,9 @@
 	import { Zap, Plus, Trash2, Power, MapPin, Warehouse, Calculator, Pencil, Receipt } from '@lucide/svelte';
 	import type { Profile, UrgencyFee } from '$lib/database.types.js';
 
+	/** Portuguese standard VAT rate (%) */
+	const DEFAULT_VAT_RATE = 23;
+
 	interface Props {
 		profile: Profile;
 		urgencyFees: UrgencyFee[];
@@ -49,7 +52,7 @@
 	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
 	let vatEnabled = $state(profile.vat_enabled ?? false);
 	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
-	let vatRate = $state(profile.vat_rate ?? 23);
+	let vatRate = $state(profile.vat_rate ?? DEFAULT_VAT_RATE);
 	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
 	let pricesIncludeVat = $state(profile.prices_include_vat ?? false);
 
@@ -228,14 +231,7 @@
 		<Card.Description>{m.settings_vat_desc()}</Card.Description>
 	</Card.Header>
 	<Card.Content>
-		<form method="POST" action="?/updatePricingPreferences" use:enhance class="space-y-6">
-			<!-- Pass all pricing preferences alongside VAT fields -->
-			<input type="hidden" name="show_price_to_courier" value={showPriceToCourier.toString()} />
-			<input type="hidden" name="show_price_to_client" value={showPriceToClient.toString()} />
-			<input type="hidden" name="default_urgency_fee_id" value={defaultUrgencyFeeId || ''} />
-			<input type="hidden" name="minimum_charge" value={minimumCharge.toString()} />
-			<input type="hidden" name="round_distance" value={roundDistance.toString()} />
-
+		<form method="POST" action="?/updateVatSettings" use:enhance class="space-y-6">
 			<!-- VAT enabled toggle -->
 			<div class="flex items-center justify-between">
 				<div class="space-y-0.5">

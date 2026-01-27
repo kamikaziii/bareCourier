@@ -45,7 +45,9 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
 			timezone: profile.timezone,
 			vat_enabled: profile.vat_enabled,
 			vat_rate: profile.vat_rate,
-			prices_include_vat: profile.prices_include_vat
+			prices_include_vat: profile.prices_include_vat,
+			show_price_to_courier: profile.show_price_to_courier,
+			show_price_to_client: profile.show_price_to_client
 		},
 		navCounts: {
 			pendingRequests: (pendingRequestsResult.count ?? 0) + (pendingReschedulesResult.count ?? 0)

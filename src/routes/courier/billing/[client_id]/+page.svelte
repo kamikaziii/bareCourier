@@ -201,83 +201,45 @@ import { formatDate } from '$lib/utils.js';
 	function exportClientCSV() {
 		const locale = getLocale();
 
-		if (vatEnabled) {
-			const headers = [
-				m.reports_table_date(),
-				m.form_pickup_location(),
-				m.form_delivery_location(),
-				m.billing_distance(),
-				m.billing_net(),
-				m.billing_vat(),
-				m.billing_gross(),
-				m.reports_status()
-			];
-
-			const rows = services.map((s) => {
-				const vb = calculateVat(s.calculated_price || 0, s.vat_rate_snapshot, s.prices_include_vat_snapshot);
-				return [
-					new Date(s.created_at).toLocaleDateString(locale),
-					s.pickup_location,
-					s.delivery_location,
-					(s.distance_km || 0).toFixed(1),
-					vb.net.toFixed(2),
-					vb.vat.toFixed(2),
-					vb.gross.toFixed(2),
-					s.status === 'delivered' ? m.status_delivered() : m.status_pending()
-				];
-			});
-
-			rows.push(['', '', '', '', '', '', '', '']);
-			rows.push([
-				m.billing_total(),
-				'',
-				'',
-				totalStats.km.toFixed(1),
-				totalStats.totalNet.toFixed(2),
-				totalStats.totalVat.toFixed(2),
-				totalStats.totalGross.toFixed(2),
-				''
-			]);
-
-			const csvContent = [
-				headers.join(','),
-				...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-			].join('\n');
-
-			const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-			const link = document.createElement('a');
-			link.href = URL.createObjectURL(blob);
-			link.download = `billing_${data.client.name.replace(/\s+/g, '_')}_${startDate}_to_${endDate}.csv`;
-			link.click();
-			return;
-		}
-
 		const headers = [
 			m.reports_table_date(),
 			m.form_pickup_location(),
 			m.form_delivery_location(),
 			m.billing_distance(),
-			m.billing_price(),
+			...(vatEnabled
+				? [m.billing_net(), m.billing_vat(), m.billing_gross()]
+				: [m.billing_price()]),
 			m.reports_status()
 		];
 
-		const rows = services.map((s) => [
-			new Date(s.created_at).toLocaleDateString(locale),
-			s.pickup_location,
-			s.delivery_location,
-			(s.distance_km || 0).toFixed(1),
-			(s.calculated_price || 0).toFixed(2),
-			s.status === 'delivered' ? m.status_delivered() : m.status_pending()
-		]);
+		const rows = services.map((s) => {
+			const priceColumns = vatEnabled
+				? (() => {
+						const vb = calculateVat(s.calculated_price || 0, s.vat_rate_snapshot, s.prices_include_vat_snapshot);
+						return [vb.net.toFixed(2), vb.vat.toFixed(2), vb.gross.toFixed(2)];
+					})()
+				: [(s.calculated_price || 0).toFixed(2)];
 
-		// Add totals
-		rows.push(['', '', '', '', '', '']);
+			return [
+				new Date(s.created_at).toLocaleDateString(locale),
+				s.pickup_location,
+				s.delivery_location,
+				(s.distance_km || 0).toFixed(1),
+				...priceColumns,
+				s.status === 'delivered' ? m.status_delivered() : m.status_pending()
+			];
+		});
+
+		const emptyPriceColumns = vatEnabled ? ['', '', ''] : [''];
+		rows.push(['', '', '', '', ...emptyPriceColumns, '']);
 		rows.push([
 			m.billing_total(),
 			'',
 			'',
 			totalStats.km.toFixed(1),
-			totalStats.revenue.toFixed(2),
+			...(vatEnabled
+				? [totalStats.totalNet.toFixed(2), totalStats.totalVat.toFixed(2), totalStats.totalGross.toFixed(2)]
+				: [totalStats.revenue.toFixed(2)]),
 			''
 		]);
 
@@ -289,7 +251,7 @@ import { formatDate } from '$lib/utils.js';
 		const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
 		const link = document.createElement('a');
 		link.href = URL.createObjectURL(blob);
-		link.download = `billing_${data.client.name.replace(/\s+/g, '_')}_${startDate}_to_${endDate}.csv`;
+		link.download = `billing_${data.client.name.replace(/[^a-zA-Z0-9_-]/g, '_')}_${startDate}_to_${endDate}.csv`;
 		link.click();
 	}
 </script>
@@ -523,20 +485,20 @@ import { formatDate } from '$lib/utils.js';
 		</Card.Root>
 
 		<!-- Summary -->
-		{#if vatEnabled}
-			<div class="grid gap-4 md:grid-cols-5">
-				<Card.Root>
-					<Card.Content class="p-4 text-center">
-						<p class="text-2xl font-bold">{totalStats.services}</p>
-						<p class="text-sm text-muted-foreground">{m.billing_services()}</p>
-					</Card.Content>
-				</Card.Root>
-				<Card.Root>
-					<Card.Content class="p-4 text-center">
-						<p class="text-2xl font-bold">{totalStats.km} km</p>
-						<p class="text-sm text-muted-foreground">{m.billing_total_km()}</p>
-					</Card.Content>
-				</Card.Root>
+		<div class="grid gap-4 {vatEnabled ? 'md:grid-cols-5' : 'md:grid-cols-3'}">
+			<Card.Root>
+				<Card.Content class="p-4 text-center">
+					<p class="text-2xl font-bold">{totalStats.services}</p>
+					<p class="text-sm text-muted-foreground">{m.billing_services()}</p>
+				</Card.Content>
+			</Card.Root>
+			<Card.Root>
+				<Card.Content class="p-4 text-center">
+					<p class="text-2xl font-bold">{totalStats.km} km</p>
+					<p class="text-sm text-muted-foreground">{m.billing_total_km()}</p>
+				</Card.Content>
+			</Card.Root>
+			{#if vatEnabled}
 				<Card.Root>
 					<Card.Content class="p-4 text-center">
 						<p class="text-2xl font-bold">{formatCurrency(totalStats.totalNet)}</p>
@@ -555,29 +517,15 @@ import { formatDate } from '$lib/utils.js';
 						<p class="text-sm text-muted-foreground">{m.billing_total_gross()}</p>
 					</Card.Content>
 				</Card.Root>
-			</div>
-		{:else}
-			<div class="grid gap-4 md:grid-cols-3">
-				<Card.Root>
-					<Card.Content class="p-4 text-center">
-						<p class="text-2xl font-bold">{totalStats.services}</p>
-						<p class="text-sm text-muted-foreground">{m.billing_services()}</p>
-					</Card.Content>
-				</Card.Root>
-				<Card.Root>
-					<Card.Content class="p-4 text-center">
-						<p class="text-2xl font-bold">{totalStats.km} km</p>
-						<p class="text-sm text-muted-foreground">{m.billing_total_km()}</p>
-					</Card.Content>
-				</Card.Root>
+			{:else}
 				<Card.Root>
 					<Card.Content class="p-4 text-center">
 						<p class="text-2xl font-bold">{formatCurrency(totalStats.revenue)}</p>
 						<p class="text-sm text-muted-foreground">{m.billing_estimated_cost()}</p>
 					</Card.Content>
 				</Card.Root>
-			</div>
-		{/if}
+			{/if}
+		</div>
 
 		<!-- Services Table -->
 		<Card.Root>
