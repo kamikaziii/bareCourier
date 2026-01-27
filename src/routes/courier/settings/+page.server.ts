@@ -1,4 +1,4 @@
-import { redirect } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import type { Profile, UrgencyFee } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
@@ -64,11 +64,11 @@ function validateNotificationPreferences(prefs: unknown): prefs is {
 	return true;
 }
 
-// Helper to verify courier role - returns error object if not courier, null if authorized
+// Helper to verify courier role - throws fail() if not courier
 async function requireCourier(
 	supabase: App.Locals['supabase'],
 	userId: string
-): Promise<{ success: false; error: string } | null> {
+): Promise<void> {
 	const { data: profile } = await supabase
 		.from('profiles')
 		.select('role')
@@ -76,9 +76,8 @@ async function requireCourier(
 		.single() as { data: { role: string } | null };
 
 	if (profile?.role !== 'courier') {
-		return { success: false, error: 'Unauthorized' };
+		throw fail(403, { error: 'Unauthorized' });
 	}
-	return null;
 }
 
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
@@ -115,12 +114,11 @@ export const actions: Actions = {
 	updateProfile: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {
-			return { success: false, error: 'Not authenticated' };
+			return fail(401, { error: 'Not authenticated' });
 		}
 
 		// Verify courier role
-		const roleError = await requireCourier(supabase, user.id);
-		if (roleError) return roleError;
+		await requireCourier(supabase, user.id);
 
 		const formData = await request.formData();
 		const name = formData.get('name') as string;
@@ -133,7 +131,7 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return { success: false, error: 'Failed to update profile' };
+			return fail(500, { error: 'Failed to update profile' });
 		}
 
 		return { success: true, message: 'profile_updated' };
@@ -142,19 +140,10 @@ export const actions: Actions = {
 	updateUrgencyFee: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {
-			return { success: false, error: 'Not authenticated' };
+			return fail(401, { error: 'Not authenticated' });
 		}
 
-		// Verify courier role
-		const { data: profile } = await supabase
-			.from('profiles')
-			.select('role')
-			.eq('id', user.id)
-			.single() as { data: { role: string } | null };
-
-		if (profile?.role !== 'courier') {
-			return { success: false, error: 'Unauthorized' };
-		}
+		await requireCourier(supabase, user.id);
 
 		const formData = await request.formData();
 		const id = formData.get('id') as string;
@@ -177,7 +166,7 @@ export const actions: Actions = {
 			.eq('id', id);
 
 		if (error) {
-			return { success: false, error: 'Failed to update urgency fee' };
+			return fail(500, { error: 'Failed to update urgency fee' });
 		}
 
 		return { success: true, message: 'urgency_updated' };
@@ -186,19 +175,10 @@ export const actions: Actions = {
 	createUrgencyFee: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {
-			return { success: false, error: 'Not authenticated' };
+			return fail(401, { error: 'Not authenticated' });
 		}
 
-		// Verify courier role
-		const { data: profile } = await supabase
-			.from('profiles')
-			.select('role')
-			.eq('id', user.id)
-			.single() as { data: { role: string } | null };
-
-		if (profile?.role !== 'courier') {
-			return { success: false, error: 'Unauthorized' };
-		}
+		await requireCourier(supabase, user.id);
 
 		const formData = await request.formData();
 		const name = formData.get('name') as string;
@@ -227,7 +207,7 @@ export const actions: Actions = {
 		});
 
 		if (error) {
-			return { success: false, error: 'Failed to create urgency fee' };
+			return fail(500, { error: 'Failed to create urgency fee' });
 		}
 
 		return { success: true, message: 'urgency_created' };
@@ -236,19 +216,10 @@ export const actions: Actions = {
 	toggleUrgencyFee: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {
-			return { success: false, error: 'Not authenticated' };
+			return fail(401, { error: 'Not authenticated' });
 		}
 
-		// Verify courier role
-		const { data: profile } = await supabase
-			.from('profiles')
-			.select('role')
-			.eq('id', user.id)
-			.single() as { data: { role: string } | null };
-
-		if (profile?.role !== 'courier') {
-			return { success: false, error: 'Unauthorized' };
-		}
+		await requireCourier(supabase, user.id);
 
 		const formData = await request.formData();
 		const id = formData.get('id') as string;
@@ -261,7 +232,7 @@ export const actions: Actions = {
 			.eq('id', id);
 
 		if (error) {
-			return { success: false, error: 'Failed to toggle urgency fee' };
+			return fail(500, { error: 'Failed to toggle urgency fee' });
 		}
 
 		return { success: true, message: 'urgency_toggled' };
@@ -270,19 +241,10 @@ export const actions: Actions = {
 	deleteUrgencyFee: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {
-			return { success: false, error: 'Not authenticated' };
+			return fail(401, { error: 'Not authenticated' });
 		}
 
-		// Verify courier role
-		const { data: profile } = await supabase
-			.from('profiles')
-			.select('role')
-			.eq('id', user.id)
-			.single() as { data: { role: string } | null };
-
-		if (profile?.role !== 'courier') {
-			return { success: false, error: 'Unauthorized' };
-		}
+		await requireCourier(supabase, user.id);
 
 		const formData = await request.formData();
 		const id = formData.get('id') as string;
@@ -295,14 +257,14 @@ export const actions: Actions = {
 			.eq('urgency_fee_id', id);
 
 		if (count && count > 0) {
-			return { success: false, error: 'urgency_in_use' };
+			return fail(409, { error: 'urgency_in_use' });
 		}
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const { error } = await (supabase as any).from('urgency_fees').delete().eq('id', id);
 
 		if (error) {
-			return { success: false, error: 'Failed to delete urgency fee' };
+			return fail(500, { error: 'Failed to delete urgency fee' });
 		}
 
 		return { success: true, message: 'urgency_deleted' };
@@ -311,12 +273,11 @@ export const actions: Actions = {
 	updateNotificationPreferences: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {
-			return { success: false, error: 'Not authenticated' };
+			return fail(401, { error: 'Not authenticated' });
 		}
 
 		// Verify courier role
-		const roleError = await requireCourier(supabase, user.id);
-		if (roleError) return roleError;
+		await requireCourier(supabase, user.id);
 
 		const formData = await request.formData();
 
@@ -330,11 +291,11 @@ export const actions: Actions = {
 			try {
 				const prefs = JSON.parse(notificationPrefsJson);
 				if (!validateNotificationPreferences(prefs)) {
-					return { success: false, error: 'Invalid notification preferences' };
+					return fail(400, { error: 'Invalid notification preferences' });
 				}
 				updateData.notification_preferences = prefs;
 			} catch {
-				return { success: false, error: 'Invalid notification preferences' };
+				return fail(400, { error: 'Invalid notification preferences' });
 			}
 		}
 
@@ -343,7 +304,7 @@ export const actions: Actions = {
 		}
 
 		if (Object.keys(updateData).length === 0) {
-			return { success: false, error: 'No data to update' };
+			return fail(400, { error: 'No data to update' });
 		}
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -353,7 +314,7 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return { success: false, error: 'Failed to update notification preferences' };
+			return fail(500, { error: 'Failed to update notification preferences' });
 		}
 
 		return { success: true, message: 'preferences_updated' };
@@ -362,18 +323,17 @@ export const actions: Actions = {
 	updatePricingMode: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {
-			return { success: false, error: 'Not authenticated' };
+			return fail(401, { error: 'Not authenticated' });
 		}
 
 		// Verify courier role
-		const roleError = await requireCourier(supabase, user.id);
-		if (roleError) return roleError;
+		await requireCourier(supabase, user.id);
 
 		const formData = await request.formData();
 		const pricingMode = formData.get('pricing_mode') as 'warehouse' | 'zone';
 
 		if (!['warehouse', 'zone'].includes(pricingMode)) {
-			return { success: false, error: 'Invalid pricing mode' };
+			return fail(400, { error: 'Invalid pricing mode' });
 		}
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -383,7 +343,7 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return { success: false, error: 'Failed to update pricing mode' };
+			return fail(500, { error: 'Failed to update pricing mode' });
 		}
 
 		return { success: true, message: 'pricing_mode_updated' };
@@ -392,12 +352,11 @@ export const actions: Actions = {
 	updateWarehouseLocation: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {
-			return { success: false, error: 'Not authenticated' };
+			return fail(401, { error: 'Not authenticated' });
 		}
 
 		// Verify courier role
-		const roleError = await requireCourier(supabase, user.id);
-		if (roleError) return roleError;
+		await requireCourier(supabase, user.id);
 
 		const formData = await request.formData();
 		const default_pickup_location = formData.get('default_pickup_location') as string;
@@ -415,7 +374,7 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return { success: false, error: 'Failed to update warehouse location' };
+			return fail(500, { error: 'Failed to update warehouse location' });
 		}
 
 		return { success: true, message: 'warehouse_updated' };
@@ -424,12 +383,11 @@ export const actions: Actions = {
 	updatePricingPreferences: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {
-			return { success: false, error: 'Not authenticated' };
+			return fail(401, { error: 'Not authenticated' });
 		}
 
 		// Verify courier role
-		const roleError = await requireCourier(supabase, user.id);
-		if (roleError) return roleError;
+		await requireCourier(supabase, user.id);
 
 		const formData = await request.formData();
 		const show_price_to_courier = formData.get('show_price_to_courier') === 'true';
@@ -451,7 +409,7 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return { success: false, error: 'Failed to update pricing preferences' };
+			return fail(500, { error: 'Failed to update pricing preferences' });
 		}
 
 		return { success: true, message: 'pricing_preferences_updated' };
@@ -460,12 +418,11 @@ export const actions: Actions = {
 	updateVatSettings: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {
-			return { success: false, error: 'Not authenticated' };
+			return fail(401, { error: 'Not authenticated' });
 		}
 
 		// Verify courier role
-		const roleError = await requireCourier(supabase, user.id);
-		if (roleError) return roleError;
+		await requireCourier(supabase, user.id);
 
 		const formData = await request.formData();
 		const vat_enabled = formData.get('vat_enabled') === 'true';
@@ -475,7 +432,7 @@ export const actions: Actions = {
 
 		// Validate VAT rate when enabled
 		if (vat_enabled && (vat_rate === null || vat_rate < 0 || vat_rate > 100)) {
-			return { success: false, error: 'VAT rate must be between 0 and 100' };
+			return fail(400, { error: 'VAT rate must be between 0 and 100' });
 		}
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -489,7 +446,7 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return { success: false, error: 'Failed to update VAT settings' };
+			return fail(500, { error: 'Failed to update VAT settings' });
 		}
 
 		return { success: true, message: 'vat_settings_updated' };
@@ -498,12 +455,11 @@ export const actions: Actions = {
 	updatePastDueSettings: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {
-			return { success: false, error: 'Not authenticated' };
+			return fail(401, { error: 'Not authenticated' });
 		}
 
 		// Verify courier role
-		const roleError = await requireCourier(supabase, user.id);
-		if (roleError) return roleError;
+		await requireCourier(supabase, user.id);
 
 		const formData = await request.formData();
 
@@ -546,7 +502,7 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return { success: false, error: 'Failed to update past due settings' };
+			return fail(500, { error: 'Failed to update past due settings' });
 		}
 
 		return { success: true, message: 'past_due_settings_updated' };
@@ -555,12 +511,11 @@ export const actions: Actions = {
 	updateClientRescheduleSettings: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {
-			return { success: false, error: 'Not authenticated' };
+			return fail(401, { error: 'Not authenticated' });
 		}
 
 		// Verify courier role
-		const roleError = await requireCourier(supabase, user.id);
-		if (roleError) return roleError;
+		await requireCourier(supabase, user.id);
 
 		const formData = await request.formData();
 		const allowClientReschedule = formData.get('allowClientReschedule') === 'true';
@@ -599,7 +554,7 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return { success: false, error: 'Failed to update reschedule settings' };
+			return fail(500, { error: 'Failed to update reschedule settings' });
 		}
 
 		return { success: true, message: 'client_reschedule_settings_updated' };
@@ -608,12 +563,11 @@ export const actions: Actions = {
 	updateNotificationSettings: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {
-			return { success: false, error: 'Not authenticated' };
+			return fail(401, { error: 'Not authenticated' });
 		}
 
 		// Verify courier role
-		const roleError = await requireCourier(supabase, user.id);
-		if (roleError) return roleError;
+		await requireCourier(supabase, user.id);
 
 		const formData = await request.formData();
 		const pastDueReminderInterval = parseInt(formData.get('pastDueReminderInterval') as string) || 0;
@@ -644,7 +598,7 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return { success: false, error: 'Failed to update notification settings' };
+			return fail(500, { error: 'Failed to update notification settings' });
 		}
 
 		return { success: true, message: 'notification_settings_updated' };
@@ -653,12 +607,11 @@ export const actions: Actions = {
 	updateTimeSlots: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {
-			return { success: false, error: 'Not authenticated' };
+			return fail(401, { error: 'Not authenticated' });
 		}
 
 		// Verify courier role
-		const roleError = await requireCourier(supabase, user.id);
-		if (roleError) return roleError;
+		await requireCourier(supabase, user.id);
 
 		const formData = await request.formData();
 		const timeSlots = {
@@ -679,7 +632,7 @@ export const actions: Actions = {
 		// Validate all time slots
 		for (const [slot, times] of Object.entries(timeSlots)) {
 			if (!isValidTimeRange(times.start, times.end)) {
-				return { success: false, error: `Invalid time range for ${slot}` };
+				return fail(400, { error: `Invalid time range for ${slot}` });
 			}
 		}
 
@@ -690,7 +643,7 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return { success: false, error: 'Failed to update time slots' };
+			return fail(500, { error: 'Failed to update time slots' });
 		}
 
 		return { success: true, message: 'time_slots_updated' };
@@ -699,12 +652,11 @@ export const actions: Actions = {
 	updateWorkingDays: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {
-			return { success: false, error: 'Not authenticated' };
+			return fail(401, { error: 'Not authenticated' });
 		}
 
 		// Verify courier role
-		const roleError = await requireCourier(supabase, user.id);
-		if (roleError) return roleError;
+		await requireCourier(supabase, user.id);
 
 		const formData = await request.formData();
 		const workingDays = formData.getAll('working_days') as string[];
@@ -712,7 +664,7 @@ export const actions: Actions = {
 		// Validate all days
 		const invalidDays = workingDays.filter((day) => !isValidWorkingDay(day));
 		if (invalidDays.length > 0) {
-			return { success: false, error: `Invalid working days: ${invalidDays.join(', ')}` };
+			return fail(400, { error: `Invalid working days: ${invalidDays.join(', ')}` });
 		}
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -722,7 +674,7 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return { success: false, error: 'Failed to update working days' };
+			return fail(500, { error: 'Failed to update working days' });
 		}
 
 		return { success: true, message: 'working_days_updated' };
@@ -731,19 +683,18 @@ export const actions: Actions = {
 	updateTimezone: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {
-			return { success: false, error: 'Not authenticated' };
+			return fail(401, { error: 'Not authenticated' });
 		}
 
 		// Verify courier role
-		const roleError = await requireCourier(supabase, user.id);
-		if (roleError) return roleError;
+		await requireCourier(supabase, user.id);
 
 		const formData = await request.formData();
 		const timezone = formData.get('timezone') as string;
 
 		// Validate timezone
 		if (!isValidTimezone(timezone)) {
-			return { success: false, error: 'Invalid timezone' };
+			return fail(400, { error: 'Invalid timezone' });
 		}
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -753,7 +704,7 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return { success: false, error: 'Failed to update timezone' };
+			return fail(500, { error: 'Failed to update timezone' });
 		}
 
 		return { success: true, message: 'timezone_updated' };

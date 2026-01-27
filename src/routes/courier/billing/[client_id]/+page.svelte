@@ -16,7 +16,7 @@ import { formatDate } from '$lib/utils.js';
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	// VAT settings from courier profile (via parent layout)
-	const vatEnabled = data.profile.vat_enabled ?? false;
+	const vatEnabled = $derived(data.profile.vat_enabled ?? false);
 
 	// State for pricing form - svelte-ignore state_referenced_locally for all: intentional initial value capture
 	// svelte-ignore state_referenced_locally

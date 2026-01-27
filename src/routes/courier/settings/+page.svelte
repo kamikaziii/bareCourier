@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import AccountTab from './AccountTab.svelte';
 	import PricingTab from './PricingTab.svelte';
@@ -12,7 +13,16 @@
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	const activeTab = $derived(page.url.searchParams.get('tab') || 'account');
-	let mobileTab = $state(page.url.searchParams.get('tab') || 'account');
+
+	function setTab(tab: string) {
+		const url = new URL(page.url);
+		if (tab === 'account') {
+			url.searchParams.delete('tab');
+		} else {
+			url.searchParams.set('tab', tab);
+		}
+		goto(url.toString(), { replaceState: true, noScroll: true, keepFocus: true });
+	}
 </script>
 
 <div class="space-y-6">
@@ -39,7 +49,7 @@
 
 	<!-- Desktop: Tabs -->
 	<div class="hidden md:block">
-		<Tabs.Root value={activeTab} class="w-full">
+		<Tabs.Root value={activeTab} onValueChange={setTab} class="w-full">
 			<Tabs.List class="grid w-full grid-cols-4">
 				<Tabs.Trigger value="account">{m.settings_tab_account()}</Tabs.Trigger>
 				<Tabs.Trigger value="pricing">{m.settings_tab_pricing()}</Tabs.Trigger>
@@ -68,7 +78,8 @@
 	<!-- Mobile: Dropdown -->
 	<div class="md:hidden space-y-6">
 		<select
-			bind:value={mobileTab}
+			value={activeTab}
+			onchange={(e) => setTab(e.currentTarget.value)}
 			class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
 		>
 			<option value="account">{m.settings_tab_account()}</option>
@@ -77,13 +88,13 @@
 			<option value="notifications">{m.settings_tab_notifications()}</option>
 		</select>
 
-		{#if mobileTab === 'account'}
+		{#if activeTab === 'account'}
 			<AccountTab profile={data.profile} session={data.session} />
-		{:else if mobileTab === 'pricing'}
+		{:else if activeTab === 'pricing'}
 			<PricingTab profile={data.profile} urgencyFees={data.urgencyFees} />
-		{:else if mobileTab === 'scheduling'}
+		{:else if activeTab === 'scheduling'}
 			<SchedulingTab profile={data.profile} />
-		{:else if mobileTab === 'notifications'}
+		{:else if activeTab === 'notifications'}
 			<NotificationsTab profile={data.profile} supabase={data.supabase} />
 		{/if}
 	</div>

@@ -310,7 +310,7 @@
 	</Card.Header>
 	<Card.Content class="space-y-4">
 		{#if showNewUrgencyForm}
-			<form method="POST" action="?/createUrgencyFee" use:enhance class="space-y-4 rounded-lg border p-4">
+			<form method="POST" action="?/createUrgencyFee" use:enhance={() => { return async ({ result, update }) => { if (result.type === 'success') { showNewUrgencyForm = false; newUrgency = { name: '', description: '', multiplier: '1.0', flat_fee: '0' }; } await update(); }; }} class="space-y-4 rounded-lg border p-4">
 				<h4 class="font-medium">{m.settings_new_urgency()}</h4>
 				<div class="grid gap-4 md:grid-cols-2">
 					<div class="space-y-2">
@@ -358,7 +358,7 @@
 			{#each urgencyFees as fee (fee.id)}
 				<div class="rounded-lg border p-4 {fee.active ? '' : 'opacity-60'}">
 					{#if editingFeeId === fee.id}
-						<form method="POST" action="?/updateUrgencyFee" use:enhance>
+						<form method="POST" action="?/updateUrgencyFee" use:enhance={() => { return async ({ result, update }) => { if (result.type === 'success') { editingFeeId = null; } await update(); }; }}>
 							<input type="hidden" name="id" value={fee.id} />
 							<input type="hidden" name="active" value={fee.active.toString()} />
 							<div class="grid gap-4 md:grid-cols-4">
@@ -453,7 +453,7 @@
 			<AlertDialog.Cancel onclick={() => (deleteDialogOpen = false)}>
 				{m.action_cancel()}
 			</AlertDialog.Cancel>
-			<form method="POST" action="?/deleteUrgencyFee" use:enhance class="inline">
+			<form method="POST" action="?/deleteUrgencyFee" use:enhance={() => { return async ({ update }) => { deleteDialogOpen = false; deletingFeeId = null; await update(); }; }} class="inline">
 				<input type="hidden" name="id" value={deletingFeeId} />
 				<AlertDialog.Action type="submit" class="bg-destructive text-destructive-foreground hover:bg-destructive/90">
 					{m.action_delete()}

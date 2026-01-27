@@ -23,8 +23,8 @@
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 import { formatDate, formatTimeSlot } from '$lib/utils.js';
 	import ServiceCard from '$lib/components/ServiceCard.svelte';
-	import { CalendarClock, CheckSquare, Check, Download } from '@lucide/svelte';
-	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
+	import { CheckSquare, Check, Download, EllipsisVertical, Users } from '@lucide/svelte';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { useBatchSelection } from '$lib/composables/use-batch-selection.svelte.js';
 	import type { PageData } from './$types';
 	import type { TimeSlot, UrgencyFee } from '$lib/database.types.js';
@@ -412,49 +412,81 @@ import { formatDate, formatTimeSlot } from '$lib/utils.js';
 	{/if}
 
 	<!-- Filters -->
-	<div class="flex flex-col gap-4 sm:flex-row">
-		<div class="flex-1">
+	<div class="space-y-2">
+		<!-- Row 1: Search + kebab menu -->
+		<div class="flex gap-2">
 			<Input
 				type="search"
 				placeholder={m.services_search()}
 				bind:value={searchQuery}
-				class="focus-visible:ring-0 focus-visible:ring-offset-0"
+				class="flex-1 focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger>
+					{#snippet child({ props })}
+						<Button variant="outline" size="icon" {...props} class="relative shrink-0">
+							<EllipsisVertical class="size-4" />
+							{#if clientFilter !== 'all'}
+								<span class="absolute -top-1 -right-1 size-2.5 rounded-full bg-primary"></span>
+							{/if}
+						</Button>
+					{/snippet}
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content align="end">
+					<DropdownMenu.Item onclick={exportCSV} disabled={filteredServices.length === 0}>
+						<Download class="size-4 mr-2" />
+						Export CSV
+					</DropdownMenu.Item>
+					<DropdownMenu.Item onclick={batch.toggleSelectionMode}>
+						<CheckSquare class="size-4 mr-2" />
+						{batch.selectionMode ? m.batch_deselect_all() : m.batch_selection_mode()}
+					</DropdownMenu.Item>
+					<DropdownMenu.Separator />
+					<DropdownMenu.Sub>
+						<DropdownMenu.SubTrigger>
+							<Users class="size-4 mr-2" />
+							{clientFilter !== 'all' ? clients.find(c => c.id === clientFilter)?.name : m.services_all_clients()}
+						</DropdownMenu.SubTrigger>
+						<DropdownMenu.SubContent>
+							<DropdownMenu.RadioGroup bind:value={clientFilter}>
+								<DropdownMenu.RadioItem value="all">{m.services_all_clients()}</DropdownMenu.RadioItem>
+								{#each clients as client (client.id)}
+									<DropdownMenu.RadioItem value={client.id}>{client.name}</DropdownMenu.RadioItem>
+								{/each}
+							</DropdownMenu.RadioGroup>
+						</DropdownMenu.SubContent>
+					</DropdownMenu.Sub>
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
 		</div>
-		<select
-			bind:value={statusFilter}
-			class="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-		>
-			<option value="all">{m.services_all_status()}</option>
-			<option value="pending">{m.status_pending()}</option>
-			<option value="delivered">{m.status_delivered()}</option>
-		</select>
-		<select
-			bind:value={clientFilter}
-			class="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-		>
-			<option value="all">{m.services_all_clients()}</option>
-			{#each clients as client (client.id)}
-				<option value={client.id}>{client.name}</option>
-			{/each}
-		</select>
-		<Button
-			variant="outline"
-			onclick={exportCSV}
-			disabled={filteredServices.length === 0}
-			class="shrink-0"
-		>
-			<Download class="size-4 sm:mr-1" />
-			<span class="hidden sm:inline">CSV</span>
-		</Button>
-		<Button
-			variant={batch.selectionMode ? 'default' : 'outline'}
-			onclick={batch.toggleSelectionMode}
-			class="shrink-0"
-		>
-			<CheckSquare class="size-4 sm:mr-1" />
-			<span class="hidden sm:inline">{batch.selectionMode ? m.batch_deselect_all() : m.batch_selection_mode()}</span>
-		</Button>
+
+		<!-- Row 2: Status filter chips -->
+		<div class="flex gap-1.5">
+			<Button
+				variant={statusFilter === 'all' ? 'default' : 'outline'}
+				size="sm"
+				class="rounded-full"
+				onclick={() => (statusFilter = 'all')}
+			>
+				{m.services_all_status()}
+			</Button>
+			<Button
+				variant={statusFilter === 'pending' ? 'default' : 'outline'}
+				size="sm"
+				class="rounded-full"
+				onclick={() => (statusFilter = 'pending')}
+			>
+				{m.status_pending()}
+			</Button>
+			<Button
+				variant={statusFilter === 'delivered' ? 'default' : 'outline'}
+				size="sm"
+				class="rounded-full"
+				onclick={() => (statusFilter = 'delivered')}
+			>
+				{m.status_delivered()}
+			</Button>
+		</div>
 	</div>
 
 	<!-- Selection Toolbar -->
