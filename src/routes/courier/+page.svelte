@@ -11,6 +11,7 @@
 	import type { PageData } from './$types';
 	import type { Service, TimeSlot } from '$lib/database.types';
 	import { Check, RotateCcw, Loader2, CheckSquare, CalendarClock } from '@lucide/svelte';
+	import { formatDate, formatTimeSlot } from '$lib/utils.js';
 	import { cacheServices, applyOptimisticUpdate, rollbackOptimisticUpdate } from '$lib/services/offline-store';
 	import SkeletonCard from '$lib/components/SkeletonCard.svelte';
 	import SkeletonList from '$lib/components/SkeletonList.svelte';
@@ -465,6 +466,14 @@
 								<p class="text-sm text-muted-foreground truncate">
 									{service.pickup_location} &rarr; {service.delivery_location}
 								</p>
+								{#if service.scheduled_date}
+									<p class="mt-1 text-xs text-muted-foreground">
+										{m.requests_scheduled()}: {formatDate(service.scheduled_date)}
+										{#if service.scheduled_time_slot}
+											— {formatTimeSlot(service.scheduled_time_slot)}
+										{/if}
+									</p>
+								{/if}
 								{#if service.notes}
 									<p class="mt-1 text-sm text-muted-foreground">{service.notes}</p>
 								{/if}

@@ -23,7 +23,7 @@
 	import { sortByUrgency, settingsToConfig, type PastDueConfig } from '$lib/utils/past-due.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
-import { formatDate } from '$lib/utils.js';
+import { formatDate, formatTimeSlot } from '$lib/utils.js';
 	import type { PageData } from './$types';
 	import type { TimeSlot, UrgencyFee } from '$lib/database.types.js';
 	import SkeletonList from '$lib/components/SkeletonList.svelte';
@@ -487,6 +487,14 @@ import { formatDate } from '$lib/utils.js';
 								<p class="text-sm text-muted-foreground truncate">
 									{service.pickup_location} &rarr; {service.delivery_location}
 								</p>
+								{#if service.scheduled_date}
+									<p class="mt-1 text-xs text-muted-foreground">
+										{m.requests_scheduled()}: {formatDate(service.scheduled_date)}
+										{#if service.scheduled_time_slot}
+											— {formatTimeSlot(service.scheduled_time_slot)}
+										{/if}
+									</p>
+								{/if}
 								{#if service.notes}
 									<p class="mt-1 text-sm text-muted-foreground truncate">{service.notes}</p>
 								{/if}

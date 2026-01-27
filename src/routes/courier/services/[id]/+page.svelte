@@ -13,7 +13,7 @@
 	import RouteMap from '$lib/components/RouteMap.svelte';
 	import UrgencyBadge from '$lib/components/UrgencyBadge.svelte';
 	import { settingsToConfig } from '$lib/utils/past-due.js';
-import { formatDate, formatDateTime } from '$lib/utils.js';
+import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	import RescheduleDialog from '$lib/components/RescheduleDialog.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import type { TimeSlot } from '$lib/database.types.js';
@@ -234,6 +234,53 @@ import { formatDate, formatDateTime } from '$lib/utils.js';
 			</div>
 		</Card.Content>
 	</Card.Root>
+
+	{#if service.scheduled_date || service.requested_date}
+		<Card.Root>
+			<Card.Header>
+				<Card.Title class="flex items-center gap-2">
+					<CalendarClock class="size-5" />
+					{m.schedule_title()}
+				</Card.Title>
+			</Card.Header>
+			<Card.Content class="space-y-3">
+				{#if service.requested_date}
+					<div>
+						<p class="text-sm text-muted-foreground">{m.requests_requested_schedule()}</p>
+						<p>
+							{formatDate(service.requested_date)}
+							{#if service.requested_time_slot}
+								— {formatTimeSlot(service.requested_time_slot)}
+							{/if}
+						</p>
+					</div>
+				{/if}
+				{#if service.scheduled_date}
+					<div>
+						<p class="text-sm text-muted-foreground">{m.schedule_date()}</p>
+						<p>{formatDate(service.scheduled_date)}</p>
+					</div>
+					{#if service.scheduled_time_slot}
+						<div>
+							<p class="text-sm text-muted-foreground">{m.schedule_time_slot()}</p>
+							<p>
+								{formatTimeSlot(service.scheduled_time_slot)}
+								{#if service.scheduled_time_slot === 'specific' && service.scheduled_time}
+									— {service.scheduled_time}
+								{/if}
+							</p>
+						</div>
+					{/if}
+				{/if}
+				{#if service.request_status && service.request_status !== 'accepted'}
+					<div>
+						<p class="text-sm text-muted-foreground">{m.requests_requested_schedule()}</p>
+						<Badge variant="outline">{service.request_status}</Badge>
+					</div>
+				{/if}
+			</Card.Content>
+		</Card.Root>
+	{/if}
 
 	<Tabs.Root value="details">
 		<Tabs.List>
