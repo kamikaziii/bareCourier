@@ -130,6 +130,10 @@
 
 	// Filter services by type
 	const suggestedServices = $derived(services.filter((s) => s.request_status === 'suggested'));
+	const rejectedServices = $derived(
+		services.filter((s) => s.request_status === 'rejected' && s.status === 'pending')
+	);
+	const attentionServices = $derived([...suggestedServices, ...rejectedServices]);
 	const pendingCount = $derived(filteredServices.filter((s) => s.status === 'pending').length);
 	const deliveredCount = $derived(filteredServices.filter((s) => s.status === 'delivered').length);
 
@@ -252,53 +256,46 @@
 		<Button onclick={() => goto(localizeHref('/client/new'))}>{m.client_new_request()}</Button>
 	</div>
 
-	<!-- Suggested Services Alert -->
-	{#if suggestedServices.length > 0}
-		<Card.Root class="border-orange-500 bg-orange-500/5">
-			<Card.Header class="pb-3">
-				<Card.Title class="text-orange-600 flex items-center gap-2">
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="20"
-						height="20"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					>
-						<circle cx="12" cy="12" r="10" />
-						<line x1="12" x2="12" y1="8" y2="12" />
-						<line x1="12" x2="12.01" y1="16" y2="16" />
-					</svg>
-					{m.client_suggestions_pending()}
-				</Card.Title>
-				<Card.Description>
-					{m.client_suggestions_description()}
-				</Card.Description>
-			</Card.Header>
-			<Card.Content class="space-y-3">
-				{#each suggestedServices as service (service.id)}
-					<div class="flex items-center justify-between gap-4 p-3 rounded-lg bg-background border">
-						<div class="min-w-0 flex-1">
-							<p class="text-sm font-medium truncate">
-								{service.pickup_location} → {service.delivery_location}
-							</p>
-							<p class="text-sm text-muted-foreground">
-								{m.requests_suggested_date()}: {formatDate(service.suggested_date || '')}
-								{#if service.suggested_time_slot}
-									- {formatTimeSlot(service.suggested_time_slot)}
+	<!-- Needs Attention Section -->
+	{#if attentionServices.length > 0}
+		<div class="space-y-3">
+			<h2 class="text-sm font-semibold text-orange-600 dark:text-orange-400">
+				Needs your attention ({attentionServices.length})
+			</h2>
+			{#each attentionServices as service (service.id)}
+				<Card.Root class="border-orange-200 bg-orange-50 dark:border-orange-900 dark:bg-orange-950/30">
+					<Card.Content class="p-4">
+						<div class="flex items-start justify-between gap-3">
+							<div class="min-w-0 flex-1">
+								<p class="truncate text-sm font-medium">
+									{service.pickup_location} → {service.delivery_location}
+								</p>
+								{#if service.request_status === 'suggested'}
+									<p class="text-muted-foreground mt-1 text-xs">
+										Courier suggested a new date
+									</p>
+								{:else if service.request_status === 'rejected'}
+									<p class="text-muted-foreground mt-1 text-xs">
+										Request was declined
+									</p>
 								{/if}
-							</p>
+							</div>
+							<div class="flex gap-2">
+								{#if service.request_status === 'suggested'}
+									<Button size="sm" onclick={() => openSuggestionDialog(service)}>
+										Respond
+									</Button>
+								{:else if service.request_status === 'rejected'}
+									<Button size="sm" variant="outline" href={localizeHref('/client/new')}>
+										Re-submit
+									</Button>
+								{/if}
+							</div>
 						</div>
-						<Button size="sm" onclick={() => openSuggestionDialog(service)}>
-							{m.action_respond()}
-						</Button>
-					</div>
-				{/each}
-			</Card.Content>
-		</Card.Root>
+					</Card.Content>
+				</Card.Root>
+			{/each}
+		</div>
 	{/if}
 
 	<!-- Stats -->
