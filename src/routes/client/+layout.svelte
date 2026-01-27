@@ -79,7 +79,7 @@
 		</header>
 
 		<!-- Main content -->
-		<main class="flex-1 px-4 py-6 pb-24 md:pb-6">
+		<main class="flex-1 px-5 py-6 pb-24 md:pb-6">
 			<div class="mx-auto max-w-6xl">
 				{@render children()}
 			</div>
