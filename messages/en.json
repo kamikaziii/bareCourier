@@ -176,6 +176,7 @@
 	"request_status_accepted": "Accepted",
 	"request_status_rejected": "Rejected",
 	"request_status_suggested": "Alternative suggested",
+	"request_status_label": "Request status",
 
 	"requests_title": "Pending Requests",
 	"requests_no_pending": "No pending requests",
@@ -576,5 +577,12 @@
 	"notification_tab_alerts": "Alerts",
 	"notification_filter_unread": "Unread",
 	"notification_time_today": "Today",
-	"notification_time_earlier": "Earlier"
+	"notification_time_earlier": "Earlier",
+
+	"reschedule_request_approval": "Request client approval",
+	"client_reschedule_courier_proposes": "The courier proposes a new schedule",
+	"client_accept_reschedule": "Accept",
+	"client_decline_reschedule": "Decline",
+	"client_reschedule_accepted": "Reschedule accepted",
+	"client_reschedule_declined": "Reschedule declined"
 }

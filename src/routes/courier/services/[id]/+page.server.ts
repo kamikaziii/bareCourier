@@ -156,8 +156,8 @@ export const actions: Actions = {
 	},
 
 	reschedule: async ({ params, request, locals: { supabase, safeGetSession } }) => {
-		const { session } = await safeGetSession();
-		if (!session) {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
 			return { success: false, error: 'Not authenticated' };
 		}
 
@@ -187,37 +187,101 @@ export const actions: Actions = {
 			return { success: false, error: 'Specific time is required when "specific" time slot is selected' };
 		}
 
-		// Format date nicely for Portuguese users (primary user base)
-		const formattedDate = new Date(newDate).toLocaleDateString('pt-PT', {
-			day: 'numeric',
-			month: 'long',
-			year: 'numeric'
-		});
-		const reasonText = reason ? ` Motivo: ${reason}` : '';
-		const notificationMessage = `A sua entrega foi reagendada para ${formattedDate}.${reasonText}`;
+		const requestApproval = formData.get('request_approval') === '1';
 
-		// Call RPC that handles all operations atomically in a transaction
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { data, error: rpcError } = await (supabase as any).rpc('reschedule_service', {
-			p_service_id: params.id,
-			p_new_date: newDate,
-			p_new_time_slot: newTimeSlot,
-			p_new_time: newTime || null,
-			p_reason: reason || null,
-			p_notification_title: 'Entrega Reagendada',
-			p_notification_message: notificationMessage
-		});
+		if (requestApproval) {
+			// Pending reschedule: store in pending fields, client must approve
+			const { data: serviceData } = await supabase
+				.from('services')
+				.select('*')
+				.eq('id', params.id)
+				.single();
 
-		if (rpcError) {
-			return { success: false, error: rpcError.message };
+			if (!serviceData) {
+				return { success: false, error: 'Service not found' };
+			}
+			const service = serviceData as Service;
+
+			// Guard: don't overwrite an existing pending reschedule
+			if (service.pending_reschedule_date) {
+				return { success: false, error: 'A pending reschedule already exists for this service' };
+			}
+
+			// Set pending fields (don't change scheduled_*)
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const { error: updateError } = await (supabase as any).from('services').update({
+				pending_reschedule_date: newDate,
+				pending_reschedule_time_slot: newTimeSlot,
+				pending_reschedule_time: newTime || null,
+				pending_reschedule_reason: reason || null,
+				pending_reschedule_requested_at: new Date().toISOString(),
+				pending_reschedule_requested_by: user.id
+			}).eq('id', params.id);
+
+			if (updateError) {
+				return { success: false, error: updateError.message };
+			}
+
+			// Create history record
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			await (supabase as any).from('service_reschedule_history').insert({
+				service_id: params.id,
+				initiated_by: user.id,
+				initiated_by_role: 'courier',
+				old_date: service.scheduled_date,
+				old_time_slot: service.scheduled_time_slot,
+				old_time: service.scheduled_time,
+				new_date: newDate,
+				new_time_slot: newTimeSlot,
+				new_time: newTime || null,
+				reason: reason || null,
+				approval_status: 'pending'
+			});
+
+			// Notify client
+			const formattedDate = new Date(newDate).toLocaleDateString('pt-PT', {
+				day: 'numeric', month: 'long', year: 'numeric'
+			});
+			const reasonText = reason ? ` Motivo: ${reason}` : '';
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			await (supabase as any).from('notifications').insert({
+				user_id: service.client_id,
+				type: 'schedule_change',
+				title: 'Proposta de Reagendamento',
+				message: `O estafeta propõe reagendar para ${formattedDate}.${reasonText}`,
+				service_id: params.id
+			});
+
+			return { success: true, pendingApproval: true };
+		} else {
+			// Immediate reschedule (existing flow)
+			const formattedDate = new Date(newDate).toLocaleDateString('pt-PT', {
+				day: 'numeric', month: 'long', year: 'numeric'
+			});
+			const reasonText = reason ? ` Motivo: ${reason}` : '';
+			const notificationMessage = `A sua entrega foi reagendada para ${formattedDate}.${reasonText}`;
+
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const { data, error: rpcError } = await (supabase as any).rpc('reschedule_service', {
+				p_service_id: params.id,
+				p_new_date: newDate,
+				p_new_time_slot: newTimeSlot,
+				p_new_time: newTime || null,
+				p_reason: reason || null,
+				p_notification_title: 'Entrega Reagendada',
+				p_notification_message: notificationMessage
+			});
+
+			if (rpcError) {
+				return { success: false, error: rpcError.message };
+			}
+
+			const result = data as { success: boolean; error?: string };
+			if (!result.success) {
+				return { success: false, error: result.error || 'Reschedule failed' };
+			}
+
+			return { success: true };
 		}
-
-		// RPC returns jsonb with success/error info
-		const result = data as { success: boolean; error?: string };
-		if (!result.success) {
-			return { success: false, error: result.error || 'Reschedule failed' };
-		}
-
-		return { success: true };
 	}
 };

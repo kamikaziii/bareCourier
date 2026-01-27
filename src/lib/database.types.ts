@@ -519,6 +519,14 @@ export type Database = {
 				Args: { p_service_id: string; p_denied_by: string; p_denial_reason?: string | null };
 				Returns: Json;
 			};
+			client_approve_reschedule: {
+				Args: { p_service_id: string };
+				Returns: Json;
+			};
+			client_deny_reschedule: {
+				Args: { p_service_id: string; p_denial_reason?: string | null };
+				Returns: Json;
+			};
 			bulk_recalculate_service_prices: {
 				Args: {
 					p_client_id: string;

@@ -224,5 +224,92 @@ export const actions: Actions = {
 
 			return { success: true, needsApproval: false };
 		}
+	},
+
+	acceptReschedule: async ({ params, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { data, error: rpcError } = await (supabase as any).rpc('client_approve_reschedule', {
+			p_service_id: params.id
+		});
+
+		if (rpcError) {
+			return { success: false, error: rpcError.message };
+		}
+
+		const result = data as { success: boolean; error?: string };
+		if (!result.success) {
+			return { success: false, error: result.error || 'Failed to approve' };
+		}
+
+		// Notify courier
+		const { data: courierData } = await supabase
+			.from('profiles')
+			.select('id')
+			.eq('role', 'courier')
+			.single();
+
+		if (courierData) {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			await (supabase as any).from('notifications').insert({
+				user_id: (courierData as { id: string }).id,
+				type: 'schedule_change',
+				title: 'Reagendamento Aceite',
+				message: 'O cliente aceitou a proposta de reagendamento.',
+				service_id: params.id
+			});
+		}
+
+		return { success: true };
+	},
+
+	declineReschedule: async ({ params, request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const formData = await request.formData();
+		const reason = (formData.get('reason') as string) || null;
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const { data, error: rpcError } = await (supabase as any).rpc('client_deny_reschedule', {
+			p_service_id: params.id,
+			p_denial_reason: reason
+		});
+
+		if (rpcError) {
+			return { success: false, error: rpcError.message };
+		}
+
+		const result = data as { success: boolean; error?: string };
+		if (!result.success) {
+			return { success: false, error: result.error || 'Failed to decline' };
+		}
+
+		// Notify courier
+		const { data: courierData } = await supabase
+			.from('profiles')
+			.select('id')
+			.eq('role', 'courier')
+			.single();
+
+		if (courierData) {
+			const reasonText = reason ? ` Motivo: ${reason}` : '';
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			await (supabase as any).from('notifications').insert({
+				user_id: (courierData as { id: string }).id,
+				type: 'schedule_change',
+				title: 'Reagendamento Recusado',
+				message: `O cliente recusou a proposta de reagendamento.${reasonText}`,
+				service_id: params.id
+			});
+		}
+
+		return { success: true };
 	}
 };

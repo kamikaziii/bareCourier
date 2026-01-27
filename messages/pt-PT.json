@@ -176,6 +176,7 @@
 	"request_status_accepted": "Aceite",
 	"request_status_rejected": "Rejeitado",
 	"request_status_suggested": "Alternativa sugerida",
+	"request_status_label": "Estado do pedido",
 
 	"requests_title": "Pedidos Pendentes",
 	"requests_no_pending": "Sem pedidos pendentes",
@@ -576,5 +577,12 @@
 	"notification_tab_alerts": "Alertas",
 	"notification_filter_unread": "Não lidas",
 	"notification_time_today": "Hoje",
-	"notification_time_earlier": "Anteriores"
+	"notification_time_earlier": "Anteriores",
+
+	"reschedule_request_approval": "Pedir aprovação ao cliente",
+	"client_reschedule_courier_proposes": "O estafeta propõe um novo agendamento",
+	"client_accept_reschedule": "Aceitar",
+	"client_decline_reschedule": "Recusar",
+	"client_reschedule_accepted": "Reagendamento aceite",
+	"client_reschedule_declined": "Reagendamento recusado"
 }

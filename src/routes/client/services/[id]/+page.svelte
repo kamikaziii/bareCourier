@@ -34,6 +34,9 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	let rescheduleLoading = $state(false);
 	let rescheduleError = $state('');
 	let rescheduleSuccess = $state<'auto_approved' | 'pending' | null>(null);
+	let rescheduleActionLoading = $state(false);
+	let showDeclineDialog = $state(false);
+	let declineReason = $state('');
 
 	// Reschedule availability checks
 	const canReschedule = $derived(() => {
@@ -93,6 +96,34 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 
 		rescheduleLoading = false;
 	}
+
+	async function handleAcceptReschedule() {
+		rescheduleActionLoading = true;
+		try {
+			const response = await fetch('?/acceptReschedule', { method: 'POST' });
+			const result = await response.json();
+			if (result.data?.success) {
+				await invalidateAll();
+			}
+		} catch { /* ignore */ }
+		rescheduleActionLoading = false;
+	}
+
+	async function handleDeclineReschedule() {
+		rescheduleActionLoading = true;
+		const formData = new FormData();
+		if (declineReason) formData.set('reason', declineReason);
+		try {
+			const response = await fetch('?/declineReschedule', { method: 'POST', body: formData });
+			const result = await response.json();
+			if (result.data?.success) {
+				showDeclineDialog = false;
+				declineReason = '';
+				await invalidateAll();
+			}
+		} catch { /* ignore */ }
+		rescheduleActionLoading = false;
+	}
 </script>
 
 <div class="space-y-6">
@@ -143,21 +174,55 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	{#if service.status === 'pending'}
 		<!-- Pending Reschedule Banner -->
 		{#if service.pending_reschedule_date}
-			<Card.Root class="border-orange-200 bg-orange-50">
-				<Card.Content class="flex items-start gap-3 p-4">
-					<AlertCircle class="size-5 text-orange-600 mt-0.5" />
-					<div>
-						<p class="font-medium text-orange-800">{m.client_reschedule_pending()}</p>
-						<p class="text-sm text-orange-700 mt-1">{m.client_reschedule_pending_desc()}</p>
-						<p class="text-sm text-orange-600 mt-2">
-							{formatDate(service.pending_reschedule_date)}
-							{#if service.pending_reschedule_time_slot}
-								- {formatTimeSlot(service.pending_reschedule_time_slot)}
-							{/if}
-						</p>
-					</div>
-				</Card.Content>
-			</Card.Root>
+			{#if service.pending_reschedule_requested_by !== data.session?.user?.id}
+				<!-- Courier-initiated: show accept/decline buttons -->
+				<Card.Root class="border-orange-200 bg-orange-50">
+					<Card.Content class="p-4 space-y-3">
+						<div class="flex items-start gap-3">
+							<AlertCircle class="size-5 text-orange-600 mt-0.5" />
+							<div class="flex-1">
+								<p class="font-medium text-orange-800">{m.client_reschedule_courier_proposes()}</p>
+								<p class="text-sm text-orange-600 mt-2">
+									{formatDate(service.pending_reschedule_date)}
+									{#if service.pending_reschedule_time_slot}
+										- {service.pending_reschedule_time_slot === 'specific' && service.pending_reschedule_time
+											? service.pending_reschedule_time
+											: formatTimeSlot(service.pending_reschedule_time_slot)}
+									{/if}
+								</p>
+								{#if service.pending_reschedule_reason}
+									<p class="text-sm text-muted-foreground mt-1">{service.pending_reschedule_reason}</p>
+								{/if}
+							</div>
+						</div>
+						<div class="flex gap-2">
+							<Button size="sm" onclick={handleAcceptReschedule} disabled={rescheduleActionLoading}>
+								{m.client_accept_reschedule()}
+							</Button>
+							<Button variant="outline" size="sm" onclick={() => (showDeclineDialog = true)} disabled={rescheduleActionLoading}>
+								{m.client_decline_reschedule()}
+							</Button>
+						</div>
+					</Card.Content>
+				</Card.Root>
+			{:else}
+				<!-- Client-initiated: read-only banner -->
+				<Card.Root class="border-orange-200 bg-orange-50">
+					<Card.Content class="flex items-start gap-3 p-4">
+						<AlertCircle class="size-5 text-orange-600 mt-0.5" />
+						<div>
+							<p class="font-medium text-orange-800">{m.client_reschedule_pending()}</p>
+							<p class="text-sm text-orange-700 mt-1">{m.client_reschedule_pending_desc()}</p>
+							<p class="text-sm text-orange-600 mt-2">
+								{formatDate(service.pending_reschedule_date)}
+								{#if service.pending_reschedule_time_slot}
+									- {formatTimeSlot(service.pending_reschedule_time_slot)}
+								{/if}
+							</p>
+						</div>
+					</Card.Content>
+				</Card.Root>
+			{/if}
 		{:else}
 			<!-- Reschedule Button -->
 			{@const check = canReschedule()}
@@ -395,6 +460,34 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 			</Button>
 			<Button onclick={handleReschedule} disabled={!rescheduleDate || !rescheduleTimeSlot || (rescheduleTimeSlot === 'specific' && !rescheduleTime) || rescheduleLoading}>
 				{rescheduleLoading ? m.saving() : m.client_request_reschedule()}
+			</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
+
+<!-- Decline Reschedule Dialog -->
+<Dialog.Root bind:open={showDeclineDialog}>
+	<Dialog.Content class="sm:max-w-md">
+		<Dialog.Header>
+			<Dialog.Title>{m.client_decline_reschedule()}</Dialog.Title>
+		</Dialog.Header>
+		<div class="space-y-4 py-4">
+			<div class="space-y-2">
+				<Label for="decline-reason">{m.courier_deny_reason()}</Label>
+				<Textarea
+					id="decline-reason"
+					bind:value={declineReason}
+					placeholder={m.courier_deny_reason_placeholder()}
+					rows={2}
+				/>
+			</div>
+		</div>
+		<Dialog.Footer>
+			<Button variant="outline" onclick={() => (showDeclineDialog = false)} disabled={rescheduleActionLoading}>
+				{m.action_cancel()}
+			</Button>
+			<Button onclick={handleDeclineReschedule} disabled={rescheduleActionLoading}>
+				{rescheduleActionLoading ? m.saving() : m.client_decline_reschedule()}
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>

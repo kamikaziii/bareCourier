@@ -51,6 +51,26 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	let priceOverrideLoading = $state(false);
 	let priceOverrideError = $state('');
 
+	function getRequestStatusLabel(requestStatus: string): string {
+		switch (requestStatus) {
+			case 'pending': return m.request_status_pending();
+			case 'accepted': return m.request_status_accepted();
+			case 'rejected': return m.request_status_rejected();
+			case 'suggested': return m.request_status_suggested();
+			default: return requestStatus;
+		}
+	}
+
+	function getRequestStatusColor(requestStatus: string): string {
+		switch (requestStatus) {
+			case 'pending': return 'border-yellow-500 text-yellow-500';
+			case 'accepted': return 'border-green-500 text-green-500';
+			case 'rejected': return 'border-red-500 text-red-500';
+			case 'suggested': return 'border-orange-500 text-orange-500';
+			default: return '';
+		}
+	}
+
 	async function handleStatusChange() {
 		loading = true;
 		actionError = '';
@@ -115,12 +135,14 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 		timeSlot: TimeSlot;
 		time: string | null;
 		reason: string;
+		requestApproval: boolean;
 	}) {
 		const formData = new FormData();
 		formData.set('date', data.date);
 		formData.set('time_slot', data.timeSlot);
 		if (data.time) formData.set('time', data.time);
 		formData.set('reason', data.reason);
+		if (data.requestApproval) formData.set('request_approval', '1');
 
 		const response = await fetch('?/reschedule', {
 			method: 'POST',
@@ -200,8 +222,8 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 
 	<!-- Status Badge & Quick Actions -->
 	<Card.Root>
-		<Card.Content class="flex items-center justify-between p-4">
-			<div class="flex items-center gap-3">
+		<Card.Content class="space-y-3 p-4">
+			<div class="flex flex-wrap items-center gap-2">
 				<Badge
 					variant={service.status === 'pending' ? 'default' : 'secondary'}
 					class={service.status === 'pending'
@@ -215,12 +237,14 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 					{m.created_at({ date: formatDate(service.created_at) })}
 				</span>
 			</div>
-			<div class="flex gap-2">
+			<div class="flex flex-wrap gap-2">
 				{#if service.status === 'pending'}
-					<Button variant="outline" size="sm" onclick={() => (showRescheduleDialog = true)}>
-						<CalendarClock class="mr-2 size-4" />
-						{m.reschedule()}
-					</Button>
+					{#if !service.pending_reschedule_date}
+						<Button variant="outline" size="sm" onclick={() => (showRescheduleDialog = true)}>
+							<CalendarClock class="mr-2 size-4" />
+							{m.reschedule()}
+						</Button>
+					{/if}
 					<Button size="sm" onclick={() => confirmStatusChange('delivered')}>
 						<CheckCircle class="mr-2 size-4" />
 						{m.mark_delivered()}
@@ -264,9 +288,10 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 						<div>
 							<p class="text-sm text-muted-foreground">{m.schedule_time_slot()}</p>
 							<p>
-								{formatTimeSlot(service.scheduled_time_slot)}
 								{#if service.scheduled_time_slot === 'specific' && service.scheduled_time}
-									— {service.scheduled_time}
+									{service.scheduled_time}
+								{:else}
+									{formatTimeSlot(service.scheduled_time_slot)}
 								{/if}
 							</p>
 						</div>
@@ -274,8 +299,10 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 				{/if}
 				{#if service.request_status && service.request_status !== 'accepted'}
 					<div>
-						<p class="text-sm text-muted-foreground">{m.requests_requested_schedule()}</p>
-						<Badge variant="outline">{service.request_status}</Badge>
+						<p class="text-sm text-muted-foreground">{m.request_status_label()}</p>
+						<Badge variant="outline" class={getRequestStatusColor(service.request_status)}>
+							{getRequestStatusLabel(service.request_status)}
+						</Badge>
 					</div>
 				{/if}
 			</Card.Content>

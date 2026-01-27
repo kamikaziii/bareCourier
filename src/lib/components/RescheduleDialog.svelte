@@ -3,6 +3,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Textarea } from '$lib/components/ui/textarea/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
+	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import type { Service, TimeSlot } from '$lib/database.types.js';
@@ -16,6 +17,7 @@
 			timeSlot: TimeSlot;
 			time: string | null;
 			reason: string;
+			requestApproval: boolean;
 		}) => Promise<void>;
 	}
 
@@ -29,6 +31,7 @@
 	// svelte-ignore state_referenced_locally
 	let newTime = $state<string | null>(service.scheduled_time);
 	let reason = $state('');
+	let requestApproval = $state(false);
 	let loading = $state(false);
 	let error = $state('');
 
@@ -48,7 +51,8 @@
 				date: newDate,
 				timeSlot: newTimeSlot,
 				time: newTime,
-				reason
+				reason,
+				requestApproval
 			});
 			open = false;
 		} catch (e) {
@@ -63,6 +67,7 @@
 		newTimeSlot = service.scheduled_time_slot;
 		newTime = service.scheduled_time;
 		reason = '';
+		requestApproval = false;
 		error = '';
 		loading = false;
 	}
@@ -106,6 +111,13 @@
 					placeholder={m.reschedule_reason_placeholder()}
 					rows={2}
 				/>
+			</div>
+
+			<div class="flex items-center gap-2">
+				<Checkbox id="request-approval" bind:checked={requestApproval} />
+				<Label for="request-approval" class="text-sm font-normal">
+					{m.reschedule_request_approval()}
+				</Label>
 			</div>
 		</div>
 

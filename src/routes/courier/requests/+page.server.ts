@@ -39,8 +39,8 @@ async function notifyClient(
 }
 
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
-	const { session } = await safeGetSession();
-	if (!session) {
+	const { session, user } = await safeGetSession();
+	if (!session || !user) {
 		redirect(303, localizeHref('/login'));
 	}
 
@@ -52,11 +52,12 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 		.is('deleted_at', null)
 		.order('created_at', { ascending: false });
 
-	// Load services with pending reschedule requests
+	// Load services with pending reschedule requests (only client-initiated, not courier's own)
 	const { data: pendingReschedules } = await supabase
 		.from('services')
 		.select('*, profiles!client_id(id, name, phone)')
 		.not('pending_reschedule_date', 'is', null)
+		.neq('pending_reschedule_requested_by', user.id)
 		.is('deleted_at', null)
 		.order('pending_reschedule_requested_at', { ascending: true });
 
