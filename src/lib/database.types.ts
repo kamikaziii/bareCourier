@@ -120,6 +120,10 @@ export type Database = {
 					time_slots: TimeSlotDefinitions | null;
 					working_days: WorkingDay[] | null;
 					notification_preferences: NotificationPreferences | null;
+					// VAT settings
+					vat_enabled: boolean;
+					vat_rate: number | null;
+					prices_include_vat: boolean;
 				};
 				Insert: {
 					id: string;
@@ -145,6 +149,10 @@ export type Database = {
 					time_slots?: TimeSlotDefinitions | null;
 					working_days?: WorkingDay[] | null;
 					notification_preferences?: NotificationPreferences | null;
+					// VAT settings
+					vat_enabled?: boolean;
+					vat_rate?: number | null;
+					prices_include_vat?: boolean;
 				};
 				Update: {
 					id?: string;
@@ -170,6 +178,10 @@ export type Database = {
 					time_slots?: TimeSlotDefinitions | null;
 					working_days?: WorkingDay[] | null;
 					notification_preferences?: NotificationPreferences | null;
+					// VAT settings
+					vat_enabled?: boolean;
+					vat_rate?: number | null;
+					prices_include_vat?: boolean;
 				};
 			};
 			services: {
@@ -217,6 +229,9 @@ export type Database = {
 					pending_reschedule_reason: string | null;
 					pending_reschedule_requested_at: string | null;
 					pending_reschedule_requested_by: string | null;
+					// VAT snapshot
+					vat_rate_snapshot: number;
+					prices_include_vat_snapshot: boolean;
 				};
 				Insert: {
 					id?: string;
@@ -262,6 +277,9 @@ export type Database = {
 					pending_reschedule_reason?: string | null;
 					pending_reschedule_requested_at?: string | null;
 					pending_reschedule_requested_by?: string | null;
+					// VAT snapshot
+					vat_rate_snapshot?: number;
+					prices_include_vat_snapshot?: boolean;
 				};
 				Update: {
 					id?: string;
@@ -307,6 +325,9 @@ export type Database = {
 					pending_reschedule_reason?: string | null;
 					pending_reschedule_requested_at?: string | null;
 					pending_reschedule_requested_by?: string | null;
+					// VAT snapshot
+					vat_rate_snapshot?: number;
+					prices_include_vat_snapshot?: boolean;
 				};
 			};
 			service_status_history: {

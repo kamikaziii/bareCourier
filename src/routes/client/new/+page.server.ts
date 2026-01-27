@@ -121,7 +121,9 @@ export const actions: Actions = {
 			distance_km,
 			urgency_fee_id: urgency_fee_id || null,
 			calculated_price,
-			price_breakdown
+			price_breakdown,
+			vat_rate_snapshot: courierSettings.vatRate ?? 0,
+			prices_include_vat_snapshot: courierSettings.pricesIncludeVat
 		});
 
 		if (insertError) {

@@ -48,6 +48,42 @@ export interface CourierPricingSettings {
 	defaultUrgencyFeeId: string | null;
 	minimumCharge: number;
 	roundDistance: boolean;
+	vatEnabled: boolean;
+	vatRate: number | null;
+	pricesIncludeVat: boolean;
+}
+
+export interface VatBreakdown {
+	net: number;
+	vat: number;
+	gross: number;
+	rate: number;
+}
+
+/**
+ * Calculate VAT breakdown for a price.
+ * Pure function — no DB access. Called at display/export time.
+ */
+export function calculateVat(
+	price: number,
+	vatRate: number,
+	priceIncludesVat: boolean
+): VatBreakdown {
+	if (vatRate <= 0) {
+		return { net: price, vat: 0, gross: price, rate: 0 };
+	}
+
+	const rate = vatRate / 100;
+
+	if (priceIncludesVat) {
+		const net = Math.round((price / (1 + rate)) * 100) / 100;
+		const vat = Math.round((price - net) * 100) / 100;
+		return { net, vat, gross: price, rate: vatRate };
+	} else {
+		const vat = Math.round((price * rate) * 100) / 100;
+		const gross = Math.round((price + vat) * 100) / 100;
+		return { net: price, vat, gross, rate: vatRate };
+	}
 }
 
 export interface CalculatePriceResult {
@@ -82,7 +118,7 @@ export async function getCourierPricingSettings(
 	const { data: profile } = await supabase
 		.from('profiles')
 		.select(
-			'pricing_mode, warehouse_lat, warehouse_lng, show_price_to_courier, show_price_to_client, default_urgency_fee_id, minimum_charge, round_distance'
+			'pricing_mode, warehouse_lat, warehouse_lng, show_price_to_courier, show_price_to_client, default_urgency_fee_id, minimum_charge, round_distance, vat_enabled, vat_rate, prices_include_vat'
 		)
 		.eq('role', 'courier')
 		.limit(1)
@@ -98,7 +134,10 @@ export async function getCourierPricingSettings(
 		showPriceToClient: profile?.show_price_to_client ?? true,
 		defaultUrgencyFeeId: profile?.default_urgency_fee_id || null,
 		minimumCharge: profile?.minimum_charge || 0,
-		roundDistance: profile?.round_distance ?? false
+		roundDistance: profile?.round_distance ?? false,
+		vatEnabled: profile?.vat_enabled ?? false,
+		vatRate: profile?.vat_rate ?? null,
+		pricesIncludeVat: profile?.prices_include_vat ?? false
 	};
 }
 

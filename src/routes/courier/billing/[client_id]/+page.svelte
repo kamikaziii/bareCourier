@@ -11,8 +11,12 @@ import { formatDate } from '$lib/utils.js';
 	import type { PageData, ActionData } from './$types';
 	import type { PricingModel } from '$lib/database.types';
 	import { ArrowLeft, Euro, MapPin, Trash2, Plus, FileText, Calculator, AlertTriangle } from '@lucide/svelte';
+	import { calculateVat } from '$lib/services/pricing.js';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+
+	// VAT settings from courier profile (via parent layout)
+	const vatEnabled = data.profile.vat_enabled ?? false;
 
 	// State for pricing form - svelte-ignore state_referenced_locally for all: intentional initial value capture
 	// svelte-ignore state_referenced_locally
@@ -38,7 +42,7 @@ import { formatDate } from '$lib/utils.js';
 	// State for services list
 	let services = $state<any[]>([]);
 	let loadingServices = $state(true);
-	let totalStats = $state({ services: 0, km: 0, revenue: 0 });
+	let totalStats = $state({ services: 0, km: 0, revenue: 0, totalNet: 0, totalVat: 0, totalGross: 0 });
 	let recalculating = $state(false);
 	let missingPriceCount = $derived(services.filter(s => s.calculated_price === null).length);
 
@@ -66,18 +70,31 @@ import { formatDate } from '$lib/utils.js';
 
 		services = servicesData || [];
 
-		// Calculate totals
+		// Calculate totals (including VAT in single pass)
 		let totalKm = 0;
 		let totalRevenue = 0;
+		let totalNet = 0;
+		let totalVat = 0;
+		let totalGross = 0;
 		for (const s of services) {
 			totalKm += s.distance_km || 0;
-			totalRevenue += s.calculated_price || 0;
+			const price = s.calculated_price || 0;
+			totalRevenue += price;
+			if (vatEnabled) {
+				const vb = calculateVat(price, s.vat_rate_snapshot, s.prices_include_vat_snapshot);
+				totalNet += vb.net;
+				totalVat += vb.vat;
+				totalGross += vb.gross;
+			}
 		}
 
 		totalStats = {
 			services: services.length,
 			km: Math.round(totalKm * 10) / 10,
-			revenue: Math.round(totalRevenue * 100) / 100
+			revenue: Math.round(totalRevenue * 100) / 100,
+			totalNet: Math.round(totalNet * 100) / 100,
+			totalVat: Math.round(totalVat * 100) / 100,
+			totalGross: Math.round(totalGross * 100) / 100
 		};
 
 		loadingServices = false;
@@ -183,6 +200,58 @@ import { formatDate } from '$lib/utils.js';
 
 	function exportClientCSV() {
 		const locale = getLocale();
+
+		if (vatEnabled) {
+			const headers = [
+				m.reports_table_date(),
+				m.form_pickup_location(),
+				m.form_delivery_location(),
+				m.billing_distance(),
+				m.billing_net(),
+				m.billing_vat(),
+				m.billing_gross(),
+				m.reports_status()
+			];
+
+			const rows = services.map((s) => {
+				const vb = calculateVat(s.calculated_price || 0, s.vat_rate_snapshot, s.prices_include_vat_snapshot);
+				return [
+					new Date(s.created_at).toLocaleDateString(locale),
+					s.pickup_location,
+					s.delivery_location,
+					(s.distance_km || 0).toFixed(1),
+					vb.net.toFixed(2),
+					vb.vat.toFixed(2),
+					vb.gross.toFixed(2),
+					s.status === 'delivered' ? m.status_delivered() : m.status_pending()
+				];
+			});
+
+			rows.push(['', '', '', '', '', '', '', '']);
+			rows.push([
+				m.billing_total(),
+				'',
+				'',
+				totalStats.km.toFixed(1),
+				totalStats.totalNet.toFixed(2),
+				totalStats.totalVat.toFixed(2),
+				totalStats.totalGross.toFixed(2),
+				''
+			]);
+
+			const csvContent = [
+				headers.join(','),
+				...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+			].join('\n');
+
+			const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+			const link = document.createElement('a');
+			link.href = URL.createObjectURL(blob);
+			link.download = `billing_${data.client.name.replace(/\s+/g, '_')}_${startDate}_to_${endDate}.csv`;
+			link.click();
+			return;
+		}
+
 		const headers = [
 			m.reports_table_date(),
 			m.form_pickup_location(),
@@ -225,7 +294,7 @@ import { formatDate } from '$lib/utils.js';
 	}
 </script>
 
-<div class="space-y-6">
+<div class="min-w-0 space-y-6">
 	<!-- Header -->
 	<div class="flex items-center gap-3">
 		<Button variant="ghost" size="sm" href={localizeHref('/courier/billing')}>
@@ -454,26 +523,61 @@ import { formatDate } from '$lib/utils.js';
 		</Card.Root>
 
 		<!-- Summary -->
-		<div class="grid gap-4 md:grid-cols-3">
-			<Card.Root>
-				<Card.Content class="p-4 text-center">
-					<p class="text-2xl font-bold">{totalStats.services}</p>
-					<p class="text-sm text-muted-foreground">{m.billing_services()}</p>
-				</Card.Content>
-			</Card.Root>
-			<Card.Root>
-				<Card.Content class="p-4 text-center">
-					<p class="text-2xl font-bold">{totalStats.km} km</p>
-					<p class="text-sm text-muted-foreground">{m.billing_total_km()}</p>
-				</Card.Content>
-			</Card.Root>
-			<Card.Root>
-				<Card.Content class="p-4 text-center">
-					<p class="text-2xl font-bold">{formatCurrency(totalStats.revenue)}</p>
-					<p class="text-sm text-muted-foreground">{m.billing_estimated_cost()}</p>
-				</Card.Content>
-			</Card.Root>
-		</div>
+		{#if vatEnabled}
+			<div class="grid gap-4 md:grid-cols-5">
+				<Card.Root>
+					<Card.Content class="p-4 text-center">
+						<p class="text-2xl font-bold">{totalStats.services}</p>
+						<p class="text-sm text-muted-foreground">{m.billing_services()}</p>
+					</Card.Content>
+				</Card.Root>
+				<Card.Root>
+					<Card.Content class="p-4 text-center">
+						<p class="text-2xl font-bold">{totalStats.km} km</p>
+						<p class="text-sm text-muted-foreground">{m.billing_total_km()}</p>
+					</Card.Content>
+				</Card.Root>
+				<Card.Root>
+					<Card.Content class="p-4 text-center">
+						<p class="text-2xl font-bold">{formatCurrency(totalStats.totalNet)}</p>
+						<p class="text-sm text-muted-foreground">{m.billing_total_net()}</p>
+					</Card.Content>
+				</Card.Root>
+				<Card.Root>
+					<Card.Content class="p-4 text-center">
+						<p class="text-2xl font-bold">{formatCurrency(totalStats.totalVat)}</p>
+						<p class="text-sm text-muted-foreground">{m.billing_total_vat()}</p>
+					</Card.Content>
+				</Card.Root>
+				<Card.Root>
+					<Card.Content class="p-4 text-center">
+						<p class="text-2xl font-bold">{formatCurrency(totalStats.totalGross)}</p>
+						<p class="text-sm text-muted-foreground">{m.billing_total_gross()}</p>
+					</Card.Content>
+				</Card.Root>
+			</div>
+		{:else}
+			<div class="grid gap-4 md:grid-cols-3">
+				<Card.Root>
+					<Card.Content class="p-4 text-center">
+						<p class="text-2xl font-bold">{totalStats.services}</p>
+						<p class="text-sm text-muted-foreground">{m.billing_services()}</p>
+					</Card.Content>
+				</Card.Root>
+				<Card.Root>
+					<Card.Content class="p-4 text-center">
+						<p class="text-2xl font-bold">{totalStats.km} km</p>
+						<p class="text-sm text-muted-foreground">{m.billing_total_km()}</p>
+					</Card.Content>
+				</Card.Root>
+				<Card.Root>
+					<Card.Content class="p-4 text-center">
+						<p class="text-2xl font-bold">{formatCurrency(totalStats.revenue)}</p>
+						<p class="text-sm text-muted-foreground">{m.billing_estimated_cost()}</p>
+					</Card.Content>
+				</Card.Root>
+			</div>
+		{/if}
 
 		<!-- Services Table -->
 		<Card.Root>
@@ -490,12 +594,19 @@ import { formatDate } from '$lib/utils.js';
 									<th class="px-4 py-3 text-left text-sm font-medium">{m.reports_table_date()}</th>
 									<th class="px-4 py-3 text-left text-sm font-medium">{m.reports_table_route()}</th>
 									<th class="px-4 py-3 text-right text-sm font-medium">{m.billing_distance()}</th>
-									<th class="px-4 py-3 text-right text-sm font-medium">{m.billing_price()}</th>
+									{#if vatEnabled}
+										<th class="px-4 py-3 text-right text-sm font-medium">{m.billing_net()}</th>
+										<th class="px-4 py-3 text-right text-sm font-medium">{m.billing_vat()}</th>
+										<th class="px-4 py-3 text-right text-sm font-medium">{m.billing_gross()}</th>
+									{:else}
+										<th class="px-4 py-3 text-right text-sm font-medium">{m.billing_price()}</th>
+									{/if}
 									<th class="px-4 py-3 text-center text-sm font-medium">{m.reports_status()}</th>
 								</tr>
 							</thead>
 							<tbody>
 								{#each services as service (service.id)}
+									{@const vatBreakdown = vatEnabled ? calculateVat(service.calculated_price || 0, service.vat_rate_snapshot, service.prices_include_vat_snapshot) : null}
 									<tr class="border-b">
 										<td class="px-4 py-3 text-sm">{formatDate(service.created_at)}</td>
 										<td class="px-4 py-3 text-sm text-muted-foreground">
@@ -504,9 +615,15 @@ import { formatDate } from '$lib/utils.js';
 										<td class="px-4 py-3 text-right text-sm">
 											{(service.distance_km || 0).toFixed(1)} km
 										</td>
-										<td class="px-4 py-3 text-right text-sm font-medium">
-											{formatCurrency(service.calculated_price || 0)}
-										</td>
+										{#if vatEnabled && vatBreakdown}
+											<td class="px-4 py-3 text-right text-sm">{formatCurrency(vatBreakdown.net)}</td>
+											<td class="px-4 py-3 text-right text-sm text-muted-foreground">{formatCurrency(vatBreakdown.vat)}</td>
+											<td class="px-4 py-3 text-right text-sm font-medium">{formatCurrency(vatBreakdown.gross)}</td>
+										{:else}
+											<td class="px-4 py-3 text-right text-sm font-medium">
+												{formatCurrency(service.calculated_price || 0)}
+											</td>
+										{/if}
 										<td class="px-4 py-3 text-center">
 											<span
 												class="rounded-full px-2 py-0.5 text-xs font-medium {service.status ===

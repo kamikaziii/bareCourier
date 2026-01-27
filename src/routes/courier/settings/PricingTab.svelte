@@ -8,7 +8,7 @@
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import * as m from '$lib/paraglide/messages.js';
-	import { Zap, Plus, Trash2, Power, MapPin, Warehouse, Calculator, Pencil } from '@lucide/svelte';
+	import { Zap, Plus, Trash2, Power, MapPin, Warehouse, Calculator, Pencil, Receipt } from '@lucide/svelte';
 	import type { Profile, UrgencyFee } from '$lib/database.types.js';
 
 	interface Props {
@@ -44,6 +44,14 @@
 	let minimumCharge = $state(profile.minimum_charge ?? 0);
 	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
 	let roundDistance = $state(profile.round_distance ?? false);
+
+	// VAT state
+	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
+	let vatEnabled = $state(profile.vat_enabled ?? false);
+	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
+	let vatRate = $state(profile.vat_rate ?? 23);
+	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
+	let pricesIncludeVat = $state(profile.prices_include_vat ?? false);
 
 	function openDeleteDialog(feeId: string) {
 		deletingFeeId = feeId;
@@ -204,6 +212,83 @@
 					}}
 				/>
 			</div>
+
+			<Button type="submit">{m.action_save()}</Button>
+		</form>
+	</Card.Content>
+</Card.Root>
+
+<!-- VAT Settings -->
+<Card.Root>
+	<Card.Header>
+		<Card.Title class="flex items-center gap-2">
+			<Receipt class="size-5" />
+			{m.settings_vat_title()}
+		</Card.Title>
+		<Card.Description>{m.settings_vat_desc()}</Card.Description>
+	</Card.Header>
+	<Card.Content>
+		<form method="POST" action="?/updatePricingPreferences" use:enhance class="space-y-6">
+			<!-- Pass all pricing preferences alongside VAT fields -->
+			<input type="hidden" name="show_price_to_courier" value={showPriceToCourier.toString()} />
+			<input type="hidden" name="show_price_to_client" value={showPriceToClient.toString()} />
+			<input type="hidden" name="default_urgency_fee_id" value={defaultUrgencyFeeId || ''} />
+			<input type="hidden" name="minimum_charge" value={minimumCharge.toString()} />
+			<input type="hidden" name="round_distance" value={roundDistance.toString()} />
+
+			<!-- VAT enabled toggle -->
+			<div class="flex items-center justify-between">
+				<div class="space-y-0.5">
+					<Label>{m.settings_vat_enabled()}</Label>
+					<p class="text-sm text-muted-foreground">{m.settings_vat_enabled_desc()}</p>
+				</div>
+				<input type="hidden" name="vat_enabled" value={vatEnabled.toString()} />
+				<Switch
+					checked={vatEnabled}
+					onCheckedChange={(checked) => {
+						vatEnabled = checked;
+					}}
+				/>
+			</div>
+
+			{#if vatEnabled}
+				<Separator />
+
+				<!-- VAT rate input -->
+				<div class="space-y-2">
+					<Label for="vat_rate">{m.settings_vat_rate()}</Label>
+					<Input
+						id="vat_rate"
+						name="vat_rate"
+						type="number"
+						min="0"
+						max="100"
+						step="0.01"
+						bind:value={vatRate}
+					/>
+					<p class="text-xs text-muted-foreground">{m.settings_vat_rate_desc()}</p>
+				</div>
+
+				<Separator />
+
+				<!-- Prices include VAT toggle -->
+				<div class="flex items-center justify-between">
+					<div class="space-y-0.5">
+						<Label>{m.settings_prices_include_vat()}</Label>
+						<p class="text-sm text-muted-foreground">{m.settings_prices_include_vat_desc()}</p>
+					</div>
+					<input type="hidden" name="prices_include_vat" value={pricesIncludeVat.toString()} />
+					<Switch
+						checked={pricesIncludeVat}
+						onCheckedChange={(checked) => {
+							pricesIncludeVat = checked;
+						}}
+					/>
+				</div>
+			{:else}
+				<input type="hidden" name="vat_rate" value={vatRate.toString()} />
+				<input type="hidden" name="prices_include_vat" value={pricesIncludeVat.toString()} />
+			{/if}
 
 			<Button type="submit">{m.action_save()}</Button>
 		</form>

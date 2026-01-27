@@ -437,6 +437,10 @@ export const actions: Actions = {
 		const default_urgency_fee_id = (formData.get('default_urgency_fee_id') as string) || null;
 		const minimum_charge = parseFloat(formData.get('minimum_charge') as string) || 0;
 		const round_distance = formData.get('round_distance') === 'true';
+		const vat_enabled = formData.get('vat_enabled') === 'true';
+		const vat_rate_raw = parseFloat(formData.get('vat_rate') as string);
+		const vat_rate = vat_enabled && !isNaN(vat_rate_raw) ? vat_rate_raw : null;
+		const prices_include_vat = formData.get('prices_include_vat') === 'true';
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const { error } = await (supabase as any)
@@ -446,7 +450,10 @@ export const actions: Actions = {
 				show_price_to_client,
 				default_urgency_fee_id: default_urgency_fee_id || null,
 				minimum_charge,
-				round_distance
+				round_distance,
+				vat_enabled,
+				vat_rate,
+				prices_include_vat
 			})
 			.eq('id', user.id);
 

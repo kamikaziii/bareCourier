@@ -116,7 +116,9 @@ export const actions: Actions = {
 			urgency_fee_id: urgency_fee_id || null,
 			calculated_price,
 			price_breakdown,
-			request_status: 'accepted' // Courier-created services are auto-accepted
+			request_status: 'accepted', // Courier-created services are auto-accepted
+			vat_rate_snapshot: courierSettings.vatRate ?? 0,
+			prices_include_vat_snapshot: courierSettings.pricesIncludeVat
 		});
 
 		if (insertError) {
