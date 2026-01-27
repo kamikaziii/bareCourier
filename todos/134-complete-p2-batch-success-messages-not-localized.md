@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "134"
 tags: [i18n, batch-selection]

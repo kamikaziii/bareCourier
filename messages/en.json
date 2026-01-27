@@ -265,6 +265,7 @@
 	"billing_services_history": "Services History",
 	"billing_no_services": "No services in this period",
 	"billing_distance": "Distance",
+	"billing_distance_km": "Distance (km)",
 	"billing_price": "Price",
 	"billing_net": "Net",
 	"billing_vat": "VAT",
@@ -586,5 +587,12 @@
 	"client_accept_reschedule": "Accept",
 	"client_decline_reschedule": "Decline",
 	"client_reschedule_accepted": "Reschedule accepted",
-	"client_reschedule_declined": "Reschedule declined"
+	"client_reschedule_declined": "Reschedule declined",
+
+	"pagination_previous": "Previous",
+	"pagination_next": "Next",
+	"pagination_page_of": "Page {current} of {total}",
+
+	"batch_mark_delivered_success": "{count} services marked as delivered",
+	"batch_accept_success": "{count} requests accepted"
 }

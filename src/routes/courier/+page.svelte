@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
+	import { getStatusLabel } from '$lib/utils/status.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
@@ -18,6 +19,7 @@
 	import PullToRefresh from '$lib/components/PullToRefresh.svelte';
 	import UrgencyBadge from '$lib/components/UrgencyBadge.svelte';
 	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
+	import { useBatchSelection } from '$lib/composables/use-batch-selection.svelte.js';
 	import { sortByUrgency, settingsToConfig, type PastDueConfig } from '$lib/utils/past-due.js';
 
 	let { data }: { data: PageData } = $props();
@@ -33,38 +35,12 @@
 	// Track which services are currently syncing
 	let syncingIds = $state<Set<string>>(new Set());
 
-	// Batch selection state
-	let selectionMode = $state(false);
-	let selectedIds = $state<Set<string>>(new Set());
-
-	function toggleSelectionMode() {
-		selectionMode = !selectionMode;
-		if (!selectionMode) {
-			selectedIds = new Set();
-		}
-	}
-
-	function toggleServiceSelection(serviceId: string) {
-		const newSet = new Set(selectedIds);
-		if (newSet.has(serviceId)) {
-			newSet.delete(serviceId);
-		} else {
-			newSet.add(serviceId);
-		}
-		selectedIds = newSet;
-	}
+	// Batch selection
+	const batch = useBatchSelection();
 
 	function selectAllVisible() {
-		const pendingServices = sortedServices.filter(s => s.status === 'pending');
-		selectedIds = new Set(pendingServices.map(s => s.id));
+		batch.selectAll(sortedServices.filter(s => s.status === 'pending').map(s => s.id));
 	}
-
-	function deselectAll() {
-		selectedIds = new Set();
-	}
-
-	const selectedCount = $derived(selectedIds.size);
-	const hasSelection = $derived(selectedCount > 0);
 
 	// Batch reschedule dialog state
 	let showBatchRescheduleDialog = $state(false);
@@ -85,7 +61,7 @@
 	}
 
 	async function handleBatchReschedule() {
-		if (!batchRescheduleDate || !batchRescheduleTimeSlot || selectedIds.size === 0) return;
+		if (!batchRescheduleDate || !batchRescheduleTimeSlot || !batch.hasSelection) return;
 		if (batchRescheduleTimeSlot === 'specific' && !batchRescheduleTime) return;
 
 		batchRescheduleLoading = true;
@@ -93,7 +69,7 @@
 		batchRescheduleSuccess = null;
 
 		const formData = new FormData();
-		formData.set('service_ids', JSON.stringify(Array.from(selectedIds)));
+		formData.set('service_ids', JSON.stringify(Array.from(batch.selectedIds)));
 		formData.set('date', batchRescheduleDate);
 		formData.set('time_slot', batchRescheduleTimeSlot);
 		if (batchRescheduleTime) formData.set('time', batchRescheduleTime);
@@ -107,12 +83,10 @@
 
 			const result = await response.json();
 			if (result.data?.success) {
-				const count = selectedIds.size;
 				batchRescheduleSuccess = m.reschedule_success();
 				await loadServices();
 				showBatchRescheduleDialog = false;
-				selectionMode = false;
-				selectedIds = new Set();
+				batch.reset();
 				// Clear success message after 3 seconds
 				setTimeout(() => {
 					batchRescheduleSuccess = null;
@@ -268,9 +242,6 @@
 	const deliveredCount = $derived(services.filter((s) => s.status === 'delivered').length);
 	const sortedServices = $derived(sortByUrgency(services, pastDueConfig));
 
-	function getStatusLabel(status: string): string {
-		return status === 'pending' ? m.status_pending() : m.status_delivered();
-	}
 </script>
 
 <PullToRefresh>
@@ -338,17 +309,17 @@
 
 		<!-- Selection Mode Toggle -->
 		<Button
-			variant={selectionMode ? 'default' : 'outline'}
+			variant={batch.selectionMode ? 'default' : 'outline'}
 			size="sm"
-			onclick={toggleSelectionMode}
+			onclick={batch.toggleSelectionMode}
 		>
 			<CheckSquare class="size-4 sm:mr-1" />
-			<span class="hidden sm:inline">{selectionMode ? m.batch_deselect_all() : m.batch_selection_mode()}</span>
+			<span class="hidden sm:inline">{batch.selectionMode ? m.batch_deselect_all() : m.batch_selection_mode()}</span>
 		</Button>
 	</div>
 
 	<!-- Selection Toolbar (when selection mode active) -->
-	{#if selectionMode}
+	{#if batch.selectionMode}
 		<div class="flex items-center gap-2 flex-wrap rounded-lg border bg-muted/50 p-2">
 			<Button
 				variant="outline"
@@ -358,15 +329,15 @@
 				{m.batch_select_all()}
 			</Button>
 
-			{#if hasSelection}
+			{#if batch.hasSelection}
 				<span class="text-sm text-muted-foreground">
-					{m.batch_selected_count({ count: selectedCount })}
+					{m.batch_selected_count({ count: batch.selectedCount })}
 				</span>
 				<Button size="sm" onclick={openBatchRescheduleDialog}>
 					<CalendarClock class="size-4 mr-1" />
 					{m.batch_reschedule()}
 				</Button>
-				<Button size="sm" variant="ghost" onclick={deselectAll}>
+				<Button size="sm" variant="ghost" onclick={batch.deselectAll}>
 					{m.batch_deselect_all()}
 				</Button>
 			{/if}
@@ -401,20 +372,20 @@
 					type="button"
 					class="block w-full text-left bg-transparent border-0 p-0 group cursor-pointer"
 					onclick={(e: MouseEvent) => {
-						if (selectionMode && service.status === 'pending') {
+						if (batch.selectionMode && service.status === 'pending') {
 							e.preventDefault();
-							toggleServiceSelection(service.id);
+							batch.toggle(service.id);
 						} else {
 							window.location.href = localizeHref(`/courier/services/${service.id}`);
 						}
 					}}
 				>
-					<Card.Root class="overflow-hidden transition-colors group-hover:bg-muted/50 {selectedIds.has(service.id) ? 'ring-2 ring-primary' : ''}">
+					<Card.Root class="overflow-hidden transition-colors group-hover:bg-muted/50 {batch.has(service.id) ? 'ring-2 ring-primary' : ''}">
 						<Card.Content class="flex items-start gap-4 p-4">
-							{#if selectionMode && service.status === 'pending'}
+							{#if batch.selectionMode && service.status === 'pending'}
 								<Checkbox
-									checked={selectedIds.has(service.id)}
-									onCheckedChange={() => toggleServiceSelection(service.id)}
+									checked={batch.has(service.id)}
+									onCheckedChange={() => batch.toggle(service.id)}
 									class="mt-1"
 								/>
 							{:else}
@@ -438,7 +409,7 @@
 										>
 											{getStatusLabel(service.status)}
 										</span>
-										{#if !selectionMode}
+										{#if !batch.selectionMode}
 											<button
 												type="button"
 												onclick={(e: Event) => toggleStatus(service, e)}
@@ -500,7 +471,7 @@
 				{m.batch_reschedule()}
 			</Dialog.Title>
 			<Dialog.Description>
-				{m.batch_reschedule_desc({ count: selectedCount })}
+				{m.batch_reschedule_desc({ count: batch.selectedCount })}
 			</Dialog.Description>
 		</Dialog.Header>
 

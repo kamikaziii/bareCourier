@@ -149,7 +149,8 @@ export const actions: Actions = {
 			.eq('id', params.id);
 
 		if (updateError) {
-			return fail(500, { error: updateError.message });
+			console.error('Failed to update service price:', updateError);
+			return fail(500, { error: 'Failed to update service price' });
 		}
 
 		return { success: true, message: 'price_updated' };

@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "138"
 tags: [security, service-worker, privacy]

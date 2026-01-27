@@ -9,12 +9,8 @@
 	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
 	import AddressInput from '$lib/components/AddressInput.svelte';
 	import RouteMap from '$lib/components/RouteMap.svelte';
-	import {
-		calculateRoute,
-		calculateHaversineDistance,
-		calculateServiceDistance,
-		type ServiceDistanceResult
-	} from '$lib/services/distance.js';
+	import { type ServiceDistanceResult } from '$lib/services/distance.js';
+	import { calculateRouteIfReady as calculateRouteShared } from '$lib/services/route.js';
 	import {
 		getCourierPricingSettings,
 		type CourierPricingSettings
@@ -90,43 +86,11 @@
 	}
 
 	async function calculateDistanceIfReady() {
-		if (!pickupCoords || !deliveryCoords) return;
-
 		calculatingDistance = true;
-		distanceKm = null;
-		routeGeometry = null;
-		distanceResult = null;
-
-		try {
-			// Use service distance calculation with warehouse mode support
-			if (courierSettings) {
-				const result = await calculateServiceDistance({
-					pickupCoords,
-					deliveryCoords,
-					warehouseCoords: courierSettings.warehouseCoords,
-					pricingMode: courierSettings.pricingMode,
-					roundDistance: courierSettings.roundDistance
-				});
-				distanceResult = result;
-				distanceKm = result.totalDistanceKm;
-			} else {
-				// Fallback to direct route calculation
-				const result = await calculateRoute(pickupCoords, deliveryCoords);
-				if (result) {
-					distanceKm = result.distanceKm;
-				} else {
-					distanceKm = calculateHaversineDistance(pickupCoords, deliveryCoords);
-				}
-			}
-
-			// Get route geometry for map display
-			const routeResult = await calculateRoute(pickupCoords, deliveryCoords);
-			routeGeometry = routeResult?.geometry || null;
-		} catch {
-			// Fallback to Haversine distance
-			distanceKm = calculateHaversineDistance(pickupCoords, deliveryCoords);
-		}
-
+		const result = await calculateRouteShared(pickupCoords, deliveryCoords, courierSettings);
+		distanceKm = result.distanceKm;
+		routeGeometry = result.routeGeometry;
+		distanceResult = result.distanceResult;
 		calculatingDistance = false;
 	}
 

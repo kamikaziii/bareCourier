@@ -132,7 +132,8 @@ export const actions: Actions = {
 		});
 
 		if (insertError) {
-			return fail(500, { error: insertError.message });
+			console.error('Failed to create client service request:', insertError);
+			return fail(500, { error: 'Failed to create service request' });
 		}
 
 		redirect(303, localizeHref('/client'));

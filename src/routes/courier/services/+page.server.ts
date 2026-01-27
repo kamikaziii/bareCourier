@@ -126,7 +126,8 @@ export const actions: Actions = {
 		});
 
 		if (insertError) {
-			return fail(500, { error: insertError.message });
+			console.error('Failed to create service:', insertError);
+			return fail(500, { error: 'Failed to create service' });
 		}
 
 		return { success: true, warning };
@@ -176,7 +177,8 @@ export const actions: Actions = {
 			.in('id', serviceIds);
 
 		if (updateError) {
-			return fail(500, { error: updateError.message });
+			console.error('Failed to update batch service status:', updateError);
+			return fail(500, { error: 'Failed to update service status' });
 		}
 
 		return { success: true };

@@ -24,7 +24,9 @@ import { formatDate } from '$lib/utils.js';
 		Clock,
 		UserX,
 		UserCheck,
-		Euro
+		Euro,
+		ChevronLeft,
+		ChevronRight
 	} from '@lucide/svelte';
 
 	let { data }: { data: PageData } = $props();
@@ -60,6 +62,7 @@ import { formatDate } from '$lib/utils.js';
 	const client = $derived(data.client);
 	const services = $derived(data.services);
 	const stats = $derived(data.stats);
+	const pagination = $derived(data.pagination);
 	const pricing = $derived(data.pricing);
 	const zones = $derived(data.zones);
 
@@ -150,7 +153,7 @@ import { formatDate } from '$lib/utils.js';
 	<Tabs.Root value="info">
 		<Tabs.List>
 			<Tabs.Trigger value="info">{m.tab_info()}</Tabs.Trigger>
-			<Tabs.Trigger value="services">{m.tab_services()} ({services.length})</Tabs.Trigger>
+			<Tabs.Trigger value="services">{m.tab_services()} ({stats.total})</Tabs.Trigger>
 			<Tabs.Trigger value="billing">{m.nav_billing()}</Tabs.Trigger>
 		</Tabs.List>
 
@@ -261,6 +264,32 @@ import { formatDate } from '$lib/utils.js';
 							</Card.Root>
 						</a>
 					{/each}
+				{/if}
+
+				{#if pagination.totalPages > 1}
+					<div class="flex items-center justify-between pt-4">
+						<Button
+							variant="outline"
+							size="sm"
+							disabled={pagination.page <= 1}
+							href={localizeHref(`/courier/clients/${client.id}?page=${pagination.page - 1}`)}
+						>
+							<ChevronLeft class="size-4 mr-1" />
+							{m.pagination_previous()}
+						</Button>
+						<span class="text-sm text-muted-foreground">
+							{m.pagination_page_of({ current: pagination.page.toString(), total: pagination.totalPages.toString() })}
+						</span>
+						<Button
+							variant="outline"
+							size="sm"
+							disabled={pagination.page >= pagination.totalPages}
+							href={localizeHref(`/courier/clients/${client.id}?page=${pagination.page + 1}`)}
+						>
+							{m.pagination_next()}
+							<ChevronRight class="size-4 ml-1" />
+						</Button>
+					</div>
 				{/if}
 			</div>
 		</Tabs.Content>

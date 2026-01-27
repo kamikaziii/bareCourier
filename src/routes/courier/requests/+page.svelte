@@ -10,6 +10,7 @@
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import { CheckSquare } from '@lucide/svelte';
 	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
+	import { useBatchSelection } from '$lib/composables/use-batch-selection.svelte.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import { formatDateWithWeekday, formatDate } from '$lib/utils.js';
@@ -30,44 +31,28 @@
 	let selectedService = $state<ServiceWithClient | null>(null);
 
 	// Batch selection
-	let selectionMode = $state(false);
-	let selectedIds = $state<Set<string>>(new Set());
+	const batch = useBatchSelection();
 	let batchLoading = $state(false);
 	let batchMessage = $state<{ type: 'success' | 'error'; text: string } | null>(null);
 
-	function toggleSelectionMode() {
-		selectionMode = !selectionMode;
-		if (!selectionMode) selectedIds = new Set();
-	}
-
-	function toggleRequestSelection(id: string) {
-		const s = new Set(selectedIds);
-		if (s.has(id)) s.delete(id); else s.add(id);
-		selectedIds = s;
-	}
-
 	function selectAllRequests() {
-		selectedIds = new Set(data.pendingRequests.map((s: ServiceWithClient) => s.id));
+		batch.selectAll(data.pendingRequests.map((s: ServiceWithClient) => s.id));
 	}
-
-	const selectedCount = $derived(selectedIds.size);
-	const hasSelection = $derived(selectedCount > 0);
 
 	async function handleBatchAccept() {
-		if (!hasSelection) return;
+		if (!batch.hasSelection) return;
 		batchLoading = true;
 		batchMessage = null;
 
 		const formData = new FormData();
-		formData.set('service_ids', JSON.stringify(Array.from(selectedIds)));
+		formData.set('service_ids', JSON.stringify(Array.from(batch.selectedIds)));
 
 		try {
 			const response = await fetch('?/batchAccept', { method: 'POST', body: formData });
 			const result = await response.json();
 			if (result.data?.success) {
-				batchMessage = { type: 'success', text: `${selectedCount} requests accepted` };
-				selectionMode = false;
-				selectedIds = new Set();
+				batchMessage = { type: 'success', text: m.batch_accept_success({ count: batch.selectedCount }) };
+				batch.reset();
 				await invalidateAll();
 				setTimeout(() => { batchMessage = null; }, 3000);
 			} else {
@@ -306,30 +291,30 @@
 		</div>
 		{#if data.pendingRequests.length > 0}
 			<Button
-				variant={selectionMode ? 'default' : 'outline'}
+				variant={batch.selectionMode ? 'default' : 'outline'}
 				size="sm"
-				onclick={toggleSelectionMode}
+				onclick={batch.toggleSelectionMode}
 			>
 				<CheckSquare class="size-4 sm:mr-1" />
-				<span class="hidden sm:inline">{selectionMode ? m.batch_deselect_all() : m.batch_selection_mode()}</span>
+				<span class="hidden sm:inline">{batch.selectionMode ? m.batch_deselect_all() : m.batch_selection_mode()}</span>
 			</Button>
 		{/if}
 	</div>
 
 	<!-- Selection Toolbar -->
-	{#if selectionMode}
+	{#if batch.selectionMode}
 		<div class="flex items-center gap-2 flex-wrap rounded-lg border bg-muted/50 p-2">
 			<Button variant="outline" size="sm" onclick={selectAllRequests}>
 				{m.batch_select_all()}
 			</Button>
-			{#if hasSelection}
+			{#if batch.hasSelection}
 				<span class="text-sm text-muted-foreground">
-					{m.batch_selected_count({ count: selectedCount })}
+					{m.batch_selected_count({ count: batch.selectedCount })}
 				</span>
 				<Button size="sm" onclick={handleBatchAccept} disabled={batchLoading}>
 					{batchLoading ? m.saving() : m.batch_accept()}
 				</Button>
-				<Button size="sm" variant="ghost" onclick={() => (selectedIds = new Set())}>
+				<Button size="sm" variant="ghost" onclick={batch.deselectAll}>
 					{m.batch_deselect_all()}
 				</Button>
 			{/if}
@@ -352,13 +337,13 @@
 	{:else}
 		<div class="grid gap-4">
 			{#each data.pendingRequests as service}
-				<Card.Root class={selectedIds.has(service.id) ? "ring-2 ring-primary" : ""}>
+				<Card.Root class={batch.has(service.id) ? "ring-2 ring-primary" : ""}>
 					<Card.Content class="pt-6">
 						<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-							{#if selectionMode}
+							{#if batch.selectionMode}
 								<Checkbox
-									checked={selectedIds.has(service.id)}
-									onCheckedChange={() => toggleRequestSelection(service.id)}
+									checked={batch.has(service.id)}
+									onCheckedChange={() => batch.toggle(service.id)}
 									class="mt-1 shrink-0"
 								/>
 							{/if}

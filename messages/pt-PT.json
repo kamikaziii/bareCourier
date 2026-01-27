@@ -265,6 +265,7 @@
 	"billing_services_history": "Histórico de Serviços",
 	"billing_no_services": "Sem serviços neste período",
 	"billing_distance": "Distância",
+	"billing_distance_km": "Distância (km)",
 	"billing_price": "Preço",
 	"billing_net": "Líquido",
 	"billing_vat": "IVA",
@@ -586,5 +587,12 @@
 	"client_accept_reschedule": "Aceitar",
 	"client_decline_reschedule": "Recusar",
 	"client_reschedule_accepted": "Reagendamento aceite",
-	"client_reschedule_declined": "Reagendamento recusado"
+	"client_reschedule_declined": "Reagendamento recusado",
+
+	"pagination_previous": "Anterior",
+	"pagination_next": "Seguinte",
+	"pagination_page_of": "Página {current} de {total}",
+
+	"batch_mark_delivered_success": "{count} serviços marcados como entregues",
+	"batch_accept_success": "{count} pedidos aceites"
 }

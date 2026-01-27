@@ -23,6 +23,7 @@
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
 	async function handleLogout() {
+		navigator.serviceWorker?.controller?.postMessage({ type: 'CLEAR_AUTH_CACHE' });
 		await data.supabase.auth.signOut();
 		goto(localizeHref('/login'));
 	}

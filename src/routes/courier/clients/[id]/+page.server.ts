@@ -3,11 +3,16 @@ import type { PageServerLoad, Actions } from './$types';
 import type { Profile, Service, ClientPricing, PricingZone } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 
-export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
+const PAGE_SIZE = 50;
+
+export const load: PageServerLoad = async ({ params, url, locals: { supabase, safeGetSession } }) => {
 	const { session } = await safeGetSession();
 	if (!session) {
 		redirect(303, localizeHref('/login'));
 	}
+
+	const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
+	const offset = (page - 1) * PAGE_SIZE;
 
 	// First: validate client exists (must complete before other queries)
 	const { data: client, error: clientError } = await supabase
@@ -21,14 +26,32 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 		error(404, 'Client not found');
 	}
 
-	// Then: parallel queries for remaining data
-	const [servicesResult, pricingResult, zonesResult] = await Promise.all([
+	// Then: parallel queries for remaining data + DB-side counts
+	const [servicesResult, totalCountResult, pendingCountResult, deliveredCountResult, pricingResult, zonesResult] = await Promise.all([
 		supabase
 			.from('services')
 			.select('*')
 			.eq('client_id', params.id)
 			.is('deleted_at', null)
-			.order('created_at', { ascending: false }),
+			.order('created_at', { ascending: false })
+			.range(offset, offset + PAGE_SIZE - 1),
+		supabase
+			.from('services')
+			.select('id', { count: 'exact', head: true })
+			.eq('client_id', params.id)
+			.is('deleted_at', null),
+		supabase
+			.from('services')
+			.select('id', { count: 'exact', head: true })
+			.eq('client_id', params.id)
+			.is('deleted_at', null)
+			.eq('status', 'pending'),
+		supabase
+			.from('services')
+			.select('id', { count: 'exact', head: true })
+			.eq('client_id', params.id)
+			.is('deleted_at', null)
+			.eq('status', 'delivered'),
 		supabase.from('client_pricing').select('*').eq('client_id', params.id).single(),
 		supabase.from('pricing_zones').select('*').eq('client_id', params.id).order('min_km')
 	]);
@@ -37,18 +60,24 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 	const { data: pricing } = pricingResult;
 	const { data: zones } = zonesResult;
 
-	// Calculate statistics
-	const allServices = (services || []) as Service[];
-	const pendingCount = allServices.filter((s) => s.status === 'pending').length;
-	const deliveredCount = allServices.filter((s) => s.status === 'delivered').length;
+	const totalCount = totalCountResult.count ?? 0;
+	const pendingCount = pendingCountResult.count ?? 0;
+	const deliveredCount = deliveredCountResult.count ?? 0;
+	const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
 	return {
 		client: client as Profile,
-		services: allServices,
+		services: (services || []) as Service[],
 		stats: {
-			total: allServices.length,
+			total: totalCount,
 			pending: pendingCount,
 			delivered: deliveredCount
+		},
+		pagination: {
+			page,
+			totalPages,
+			pageSize: PAGE_SIZE,
+			totalCount
 		},
 		pricing: pricing as ClientPricing | null,
 		zones: (zones || []) as PricingZone[]

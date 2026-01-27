@@ -2,6 +2,12 @@ import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import type { Service, Profile } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
+import {
+	calculateServicePrice,
+	getCourierPricingSettings,
+	getClientPricing
+} from '$lib/services/pricing.js';
+import { calculateServiceDistance } from '$lib/services/distance.js';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
 	const { session } = await safeGetSession();
@@ -77,6 +83,50 @@ export const actions: Actions = {
 			return { success: false, error: 'Specific time is required when "specific" time slot is selected' };
 		}
 
+		// Recalculate pricing
+		const courierSettings = await getCourierPricingSettings(supabase);
+
+		let recalculated_distance_km = distance_km;
+		let distanceResult: {
+			totalDistanceKm: number;
+			distanceMode: string;
+			warehouseToPickupKm?: number;
+			pickupToDeliveryKm: number;
+		} | null = null;
+
+		if (pickup_lat && pickup_lng && delivery_lat && delivery_lng) {
+			distanceResult = await calculateServiceDistance({
+				pickupCoords: [pickup_lng, pickup_lat],
+				deliveryCoords: [delivery_lng, delivery_lat],
+				warehouseCoords: courierSettings.warehouseCoords,
+				pricingMode: courierSettings.pricingMode,
+				roundDistance: courierSettings.roundDistance
+			});
+			recalculated_distance_km = distanceResult.totalDistanceKm;
+		}
+
+		const { config: pricingConfig } = await getClientPricing(supabase, client_id);
+
+		let calculated_price: number | null = null;
+		let price_breakdown: object | null = null;
+
+		if (pricingConfig && recalculated_distance_km !== null) {
+			const priceResult = await calculateServicePrice(supabase, {
+				clientId: client_id,
+				distanceKm: recalculated_distance_km,
+				urgencyFeeId: urgency_fee_id,
+				minimumCharge: courierSettings.minimumCharge,
+				distanceMode: distanceResult?.distanceMode as 'warehouse' | 'zone' | 'fallback',
+				warehouseToPickupKm: distanceResult?.warehouseToPickupKm,
+				pickupToDeliveryKm: distanceResult?.pickupToDeliveryKm
+			});
+
+			if (priceResult.success) {
+				calculated_price = priceResult.price;
+				price_breakdown = priceResult.breakdown;
+			}
+		}
+
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const { error: updateError } = await (supabase as any)
 			.from('services')
@@ -92,8 +142,12 @@ export const actions: Actions = {
 				pickup_lng,
 				delivery_lat,
 				delivery_lng,
-				distance_km,
+				distance_km: recalculated_distance_km,
 				urgency_fee_id: urgency_fee_id || null,
+				calculated_price,
+				price_breakdown,
+				vat_rate_snapshot: courierSettings.vatRate ?? 0,
+				prices_include_vat_snapshot: courierSettings.pricesIncludeVat,
 				updated_at: new Date().toISOString()
 			})
 			.eq('id', params.id);

@@ -10,11 +10,7 @@
 	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
-	import {
-		calculateRoute,
-		calculateHaversineDistance,
-		calculateServiceDistance
-	} from '$lib/services/distance.js';
+	import { calculateRouteIfReady as calculateRouteShared } from '$lib/services/route.js';
 	import { getCourierPricingSettings } from '$lib/services/pricing.js';
 	import type { PageData, ActionData } from './$types';
 	import type { TimeSlot, UrgencyFee } from '$lib/database.types.js';
@@ -75,12 +71,14 @@
 			});
 	});
 
-	// Load initial route geometry if coords exist
+	// Load initial route on mount if coords already exist (e.g. editing existing service)
+	let hasMountedRoute = false;
 	$effect(() => {
-		if (pickupCoords && deliveryCoords) {
-			calculateRoute(pickupCoords, deliveryCoords).then((result) => {
-				routeGeometry = result?.geometry || null;
-			});
+		if (!hasMountedRoute) {
+			hasMountedRoute = true;
+			if (pickupCoords && deliveryCoords) {
+				calculateRouteIfReady();
+			}
 		}
 	});
 
@@ -104,33 +102,12 @@
 	}
 
 	async function calculateRouteIfReady() {
-		if (pickupCoords && deliveryCoords) {
-			calculatingDistance = true;
-			try {
-				const settings = await getCourierPricingSettings(data.supabase);
-				if (settings) {
-					const result = await calculateServiceDistance({
-						pickupCoords,
-						deliveryCoords,
-						warehouseCoords: settings.warehouseCoords,
-						pricingMode: settings.pricingMode,
-						roundDistance: settings.roundDistance
-					});
-					distanceKm = result.totalDistanceKm;
-				} else {
-					const result = await calculateRoute(pickupCoords, deliveryCoords);
-					distanceKm = result ? result.distanceKm : calculateHaversineDistance(pickupCoords, deliveryCoords);
-				}
-				const routeResult = await calculateRoute(pickupCoords, deliveryCoords);
-				routeGeometry = routeResult?.geometry || null;
-			} catch {
-				distanceKm = calculateHaversineDistance(pickupCoords, deliveryCoords);
-			}
-			calculatingDistance = false;
-		} else {
-			distanceKm = null;
-			routeGeometry = null;
-		}
+		calculatingDistance = true;
+		const settings = await getCourierPricingSettings(data.supabase);
+		const result = await calculateRouteShared(pickupCoords, deliveryCoords, settings);
+		distanceKm = result.distanceKm;
+		routeGeometry = result.routeGeometry;
+		calculatingDistance = false;
 	}
 </script>
 

@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p1
 issue_id: "136"
 tags: [bug, pricing, edit-page]

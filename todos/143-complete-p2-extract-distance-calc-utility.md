@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "143"
 tags: [frontend, code-duplication, refactor]

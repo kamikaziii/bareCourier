@@ -6,16 +6,13 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
+	import { getStatusLabel } from '$lib/utils/status.js';
 	import AddressInput from '$lib/components/AddressInput.svelte';
 	import RouteMap from '$lib/components/RouteMap.svelte';
 	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
 	import UrgencyBadge from '$lib/components/UrgencyBadge.svelte';
-	import {
-		calculateRoute,
-		calculateHaversineDistance,
-		calculateServiceDistance,
-		type ServiceDistanceResult
-	} from '$lib/services/distance.js';
+	import { type ServiceDistanceResult } from '$lib/services/distance.js';
+	import { calculateRouteIfReady as calculateRouteShared } from '$lib/services/route.js';
 	import {
 		getCourierPricingSettings,
 		type CourierPricingSettings
@@ -26,6 +23,7 @@
 import { formatDate, formatTimeSlot } from '$lib/utils.js';
 	import { CalendarClock, CheckSquare, Check, Download } from '@lucide/svelte';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
+	import { useBatchSelection } from '$lib/composables/use-batch-selection.svelte.js';
 	import type { PageData } from './$types';
 	import type { TimeSlot, UrgencyFee } from '$lib/database.types.js';
 	import SkeletonList from '$lib/components/SkeletonList.svelte';
@@ -45,45 +43,29 @@ import { formatDate, formatTimeSlot } from '$lib/utils.js';
 	let searchQuery = $state('');
 
 	// Batch selection
-	let selectionMode = $state(false);
-	let selectedIds = $state<Set<string>>(new Set());
+	const batch = useBatchSelection();
 	let batchLoading = $state(false);
 	let batchMessage = $state<{ type: 'success' | 'error'; text: string } | null>(null);
 
-	function toggleSelectionMode() {
-		selectionMode = !selectionMode;
-		if (!selectionMode) selectedIds = new Set();
-	}
-
-	function toggleServiceSelection(id: string) {
-		const s = new Set(selectedIds);
-		if (s.has(id)) s.delete(id); else s.add(id);
-		selectedIds = s;
-	}
-
 	function selectAllVisible() {
-		selectedIds = new Set(filteredServices.filter(s => s.status === 'pending').map(s => s.id));
+		batch.selectAll(filteredServices.filter(s => s.status === 'pending').map(s => s.id));
 	}
-
-	const selectedCount = $derived(selectedIds.size);
-	const hasSelection = $derived(selectedCount > 0);
 
 	async function handleBatchMarkDelivered() {
-		if (!hasSelection) return;
+		if (!batch.hasSelection) return;
 		batchLoading = true;
 		batchMessage = null;
 
 		const formData = new FormData();
-		formData.set('service_ids', JSON.stringify(Array.from(selectedIds)));
+		formData.set('service_ids', JSON.stringify(Array.from(batch.selectedIds)));
 		formData.set('status', 'delivered');
 
 		try {
 			const response = await fetch('?/batchStatusChange', { method: 'POST', body: formData });
 			const result = await response.json();
 			if (result.data?.success) {
-				batchMessage = { type: 'success', text: `${selectedCount} services marked as delivered` };
-				selectionMode = false;
-				selectedIds = new Set();
+				batchMessage = { type: 'success', text: m.batch_mark_delivered_success({ count: batch.selectedCount }) };
+				batch.reset();
 				await loadData();
 				setTimeout(() => { batchMessage = null; }, 3000);
 			} else {
@@ -209,47 +191,12 @@ import { formatDate, formatTimeSlot } from '$lib/utils.js';
 	}
 
 	async function calculateRouteIfReady() {
-		if (pickupCoords && deliveryCoords) {
-			calculatingDistance = true;
-			distanceResult = null;
-
-			try {
-				// Use service distance calculation with warehouse mode support
-				if (courierSettings) {
-					const result = await calculateServiceDistance({
-						pickupCoords,
-						deliveryCoords,
-						warehouseCoords: courierSettings.warehouseCoords,
-						pricingMode: courierSettings.pricingMode,
-						roundDistance: courierSettings.roundDistance
-					});
-					distanceResult = result;
-					distanceKm = result.totalDistanceKm;
-				} else {
-					// Fallback to direct route calculation
-					const result = await calculateRoute(pickupCoords, deliveryCoords);
-					if (result) {
-						distanceKm = result.distanceKm;
-					} else {
-						// Haversine fallback
-						distanceKm = calculateHaversineDistance(pickupCoords, deliveryCoords);
-					}
-				}
-
-				// Get route geometry for map display
-				const routeResult = await calculateRoute(pickupCoords, deliveryCoords);
-				routeGeometry = routeResult?.geometry || null;
-			} catch {
-				// Haversine fallback
-				distanceKm = calculateHaversineDistance(pickupCoords, deliveryCoords);
-			}
-
-			calculatingDistance = false;
-		} else {
-			distanceKm = null;
-			routeGeometry = null;
-			distanceResult = null;
-		}
+		calculatingDistance = true;
+		const result = await calculateRouteShared(pickupCoords, deliveryCoords, courierSettings);
+		distanceKm = result.distanceKm;
+		routeGeometry = result.routeGeometry;
+		distanceResult = result.distanceResult;
+		calculatingDistance = false;
 	}
 
 	$effect(() => {
@@ -277,7 +224,15 @@ import { formatDate, formatTimeSlot } from '$lib/utils.js';
 
 	function exportCSV() {
 		const escapeCell = (val: string) => `"${String(val ?? '').replace(/"/g, '""')}"`;
-		const headers = ['Date', 'Client', 'Pickup', 'Delivery', 'Distance (km)', 'Price', 'Status'];
+		const headers = [
+			m.reports_table_date(),
+			m.billing_client(),
+			m.form_pickup_location(),
+			m.form_delivery_location(),
+			m.billing_distance_km(),
+			m.billing_price(),
+			m.reports_status()
+		];
 		const rows = filteredServices.map((s) => [
 			formatDate(s.scheduled_date || s.created_at),
 			s.profiles?.name || '',
@@ -297,9 +252,6 @@ import { formatDate, formatTimeSlot } from '$lib/utils.js';
 		link.click();
 	}
 
-	function getStatusLabel(status: string): string {
-		return status === 'pending' ? m.status_pending() : m.status_delivered();
-	}
 </script>
 
 <PullToRefresh>
@@ -510,30 +462,30 @@ import { formatDate, formatTimeSlot } from '$lib/utils.js';
 			<span class="hidden sm:inline">CSV</span>
 		</Button>
 		<Button
-			variant={selectionMode ? 'default' : 'outline'}
-			onclick={toggleSelectionMode}
+			variant={batch.selectionMode ? 'default' : 'outline'}
+			onclick={batch.toggleSelectionMode}
 			class="shrink-0"
 		>
 			<CheckSquare class="size-4 sm:mr-1" />
-			<span class="hidden sm:inline">{selectionMode ? m.batch_deselect_all() : m.batch_selection_mode()}</span>
+			<span class="hidden sm:inline">{batch.selectionMode ? m.batch_deselect_all() : m.batch_selection_mode()}</span>
 		</Button>
 	</div>
 
 	<!-- Selection Toolbar -->
-	{#if selectionMode}
+	{#if batch.selectionMode}
 		<div class="flex items-center gap-2 flex-wrap rounded-lg border bg-muted/50 p-2">
 			<Button variant="outline" size="sm" onclick={selectAllVisible}>
 				{m.batch_select_all()}
 			</Button>
-			{#if hasSelection}
+			{#if batch.hasSelection}
 				<span class="text-sm text-muted-foreground">
-					{m.batch_selected_count({ count: selectedCount })}
+					{m.batch_selected_count({ count: batch.selectedCount })}
 				</span>
 				<Button size="sm" onclick={handleBatchMarkDelivered} disabled={batchLoading}>
 					<Check class="size-4 mr-1" />
 					{batchLoading ? m.saving() : m.batch_mark_delivered()}
 				</Button>
-				<Button size="sm" variant="ghost" onclick={() => (selectedIds = new Set())}>
+				<Button size="sm" variant="ghost" onclick={batch.deselectAll}>
 					{m.batch_deselect_all()}
 				</Button>
 			{/if}
@@ -582,19 +534,19 @@ import { formatDate, formatTimeSlot } from '$lib/utils.js';
 					type="button"
 					class="block w-full text-left bg-transparent border-0 p-0 cursor-pointer"
 					onclick={() => {
-						if (selectionMode && service.status === 'pending') {
-							toggleServiceSelection(service.id);
+						if (batch.selectionMode && service.status === 'pending') {
+							batch.toggle(service.id);
 						} else {
 							window.location.href = localizeHref(`/courier/services/${service.id}`);
 						}
 					}}
 				>
-					<Card.Root class="overflow-hidden transition-colors hover:bg-muted/50 {selectedIds.has(service.id) ? 'ring-2 ring-primary' : ''}">
+					<Card.Root class="overflow-hidden transition-colors hover:bg-muted/50 {batch.has(service.id) ? 'ring-2 ring-primary' : ''}">
 						<Card.Content class="flex items-start gap-3 p-4">
-							{#if selectionMode && service.status === 'pending'}
+							{#if batch.selectionMode && service.status === 'pending'}
 								<Checkbox
-									checked={selectedIds.has(service.id)}
-									onCheckedChange={() => toggleServiceSelection(service.id)}
+									checked={batch.has(service.id)}
+									onCheckedChange={() => batch.toggle(service.id)}
 									class="mt-1"
 								/>
 							{:else}

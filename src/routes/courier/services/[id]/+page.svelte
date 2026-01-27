@@ -13,6 +13,7 @@
 	import RouteMap from '$lib/components/RouteMap.svelte';
 	import UrgencyBadge from '$lib/components/UrgencyBadge.svelte';
 	import { settingsToConfig } from '$lib/utils/past-due.js';
+	import { getRequestStatusLabel, getRequestStatusColor } from '$lib/utils/status.js';
 import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	import RescheduleDialog from '$lib/components/RescheduleDialog.svelte';
 	import * as m from '$lib/paraglide/messages.js';
@@ -51,25 +52,6 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	let priceOverrideLoading = $state(false);
 	let priceOverrideError = $state('');
 
-	function getRequestStatusLabel(requestStatus: string): string {
-		switch (requestStatus) {
-			case 'pending': return m.request_status_pending();
-			case 'accepted': return m.request_status_accepted();
-			case 'rejected': return m.request_status_rejected();
-			case 'suggested': return m.request_status_suggested();
-			default: return requestStatus;
-		}
-	}
-
-	function getRequestStatusColor(requestStatus: string): string {
-		switch (requestStatus) {
-			case 'pending': return 'border-yellow-500 text-yellow-500';
-			case 'accepted': return 'border-green-500 text-green-500';
-			case 'rejected': return 'border-red-500 text-red-500';
-			case 'suggested': return 'border-orange-500 text-orange-500';
-			default: return '';
-		}
-	}
 
 	async function handleStatusChange() {
 		loading = true;

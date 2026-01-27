@@ -10,6 +10,7 @@
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
+	import { getStatusLabel, getRequestStatusLabel, getRequestStatusColor } from '$lib/utils/status.js';
 	import type { PageData } from './$types';
 	import type { Service } from '$lib/database.types.js';
 	import { Search, X, Filter, CalendarClock } from '@lucide/svelte';
@@ -112,39 +113,6 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	const pendingCount = $derived(filteredServices.filter((s) => s.status === 'pending').length);
 	const deliveredCount = $derived(filteredServices.filter((s) => s.status === 'delivered').length);
 
-	function getStatusLabel(status: string): string {
-		return status === 'pending' ? m.status_pending() : m.status_delivered();
-	}
-
-	function getRequestStatusLabel(requestStatus: string): string {
-		switch (requestStatus) {
-			case 'pending':
-				return m.request_status_pending();
-			case 'accepted':
-				return m.request_status_accepted();
-			case 'rejected':
-				return m.request_status_rejected();
-			case 'suggested':
-				return m.request_status_suggested();
-			default:
-				return requestStatus;
-		}
-	}
-
-	function getRequestStatusColor(requestStatus: string): string {
-		switch (requestStatus) {
-			case 'pending':
-				return 'border-yellow-500 text-yellow-500';
-			case 'accepted':
-				return 'border-green-500 text-green-500';
-			case 'rejected':
-				return 'border-red-500 text-red-500';
-			case 'suggested':
-				return 'border-orange-500 text-orange-500';
-			default:
-				return '';
-		}
-	}
 
 	function openSuggestionDialog(service: Service) {
 		selectedService = service;
