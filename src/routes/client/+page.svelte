@@ -39,6 +39,7 @@
 	let dateFrom = $state('');
 	let dateTo = $state('');
 	let showFilters = $state(false);
+	let sortBy = $state<'newest' | 'oldest' | 'pending-first' | 'delivered-first'>('newest');
 
 	async function loadServices() {
 		loading = true;
@@ -102,6 +103,25 @@
 
 		return result;
 	});
+
+	function sortServices(list: typeof filteredServices) {
+		return [...list].sort((a, b) => {
+			switch (sortBy) {
+				case 'newest':
+					return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+				case 'oldest':
+					return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+				case 'pending-first':
+					return (a.status === 'pending' ? 0 : 1) - (b.status === 'pending' ? 0 : 1);
+				case 'delivered-first':
+					return (a.status === 'delivered' ? 0 : 1) - (b.status === 'delivered' ? 0 : 1);
+				default:
+					return 0;
+			}
+		});
+	}
+
+	const sortedServices = $derived(sortServices(filteredServices));
 
 	// Check if any filter is active
 	const hasActiveFilters = $derived(
@@ -354,6 +374,17 @@
 
 			<div class="flex-1"></div>
 
+			<!-- Sort dropdown -->
+			<select
+				class="border-input bg-background rounded-md border px-3 py-2 text-sm"
+				bind:value={sortBy}
+			>
+				<option value="newest">Newest first</option>
+				<option value="oldest">Oldest first</option>
+				<option value="pending-first">Pending first</option>
+				<option value="delivered-first">Delivered first</option>
+			</select>
+
 			<!-- Toggle advanced filters -->
 			<Button
 				variant="outline"
@@ -419,7 +450,7 @@
 	<div class="space-y-3">
 		{#if loading}
 			<SkeletonList variant="service" count={5} />
-		{:else if filteredServices.length === 0}
+		{:else if sortedServices.length === 0}
 			<Card.Root>
 				<Card.Content class="py-8 text-center">
 					{#if hasActiveFilters}
@@ -432,7 +463,7 @@
 				</Card.Content>
 			</Card.Root>
 		{:else}
-			{#each filteredServices as service (service.id)}
+			{#each sortedServices as service (service.id)}
 				<ServiceCard
 					{service}
 					showClientName={false}
