@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -554,7 +555,7 @@ import { formatDate, formatTimeSlot } from '$lib/utils.js';
 					selectable={batch.selectionMode}
 					selected={batch.has(service.id)}
 					onToggle={() => batch.toggle(service.id)}
-					onClick={() => { window.location.href = localizeHref(`/courier/services/${service.id}`); }}
+					onClick={() => { goto(localizeHref(`/courier/services/${service.id}`)); }}
 				>
 					{#snippet urgencyBadge()}
 						<UrgencyBadge service={service} size="sm" config={pastDueConfig} />

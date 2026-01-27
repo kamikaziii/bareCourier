@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
+	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
@@ -374,7 +375,7 @@
 					selectable={batch.selectionMode}
 					selected={batch.has(service.id)}
 					onToggle={() => batch.toggle(service.id)}
-					onClick={() => { window.location.href = localizeHref(`/courier/services/${service.id}`); }}
+					onClick={() => { goto(localizeHref(`/courier/services/${service.id}`)); }}
 				>
 					{#snippet headerActions()}
 						{#if !batch.selectionMode}
