@@ -16,6 +16,8 @@
 	import PullToRefresh from '$lib/components/PullToRefresh.svelte';
 	import SkeletonList from '$lib/components/SkeletonList.svelte';
 	import ServiceCard from '$lib/components/ServiceCard.svelte';
+	import { Textarea } from '$lib/components/ui/textarea/index.js';
+	import { useBatchSelection } from '$lib/composables/use-batch-selection.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -31,6 +33,12 @@
 	// Cancel dialog state
 	let showCancelDialog = $state(false);
 	let serviceToCancel = $state<Service | null>(null);
+
+	// Batch selection for suggestions
+	const suggestionBatch = useBatchSelection();
+	let showBatchDeclineDialog = $state(false);
+	let batchDeclineReason = $state('');
+	let batchActionLoading = $state(false);
 
 	// Filter state
 	let statusFilter = $state<'all' | 'pending' | 'delivered'>('all');
@@ -247,6 +255,43 @@
 		}
 		actionLoading = false;
 	}
+
+	async function handleBatchAcceptSuggestions() {
+		batchActionLoading = true;
+		const ids = [...suggestionBatch.selectedIds];
+		for (const id of ids) {
+			const svc = services.find((s) => s.id === id);
+			if (svc) {
+				await data.supabase
+					.from('services')
+					.update({
+						request_status: 'accepted',
+						scheduled_date: svc.suggested_date,
+						scheduled_time_slot: svc.suggested_time_slot
+					})
+					.eq('id', id);
+			}
+		}
+		suggestionBatch.reset();
+		batchActionLoading = false;
+		await loadServices();
+	}
+
+	async function handleBatchDeclineSuggestions() {
+		batchActionLoading = true;
+		const ids = [...suggestionBatch.selectedIds];
+		for (const id of ids) {
+			await data.supabase
+				.from('services')
+				.update({ request_status: 'pending' })
+				.eq('id', id);
+		}
+		suggestionBatch.reset();
+		showBatchDeclineDialog = false;
+		batchDeclineReason = '';
+		batchActionLoading = false;
+		await loadServices();
+	}
 </script>
 
 <PullToRefresh>
@@ -266,6 +311,14 @@
 				<Card.Root class="border-orange-200 bg-orange-50 dark:border-orange-900 dark:bg-orange-950/30">
 					<Card.Content class="p-4">
 						<div class="flex items-start justify-between gap-3">
+							{#if service.request_status === 'suggested'}
+								<input
+									type="checkbox"
+									checked={suggestionBatch.has(service.id)}
+									onchange={() => suggestionBatch.toggle(service.id)}
+									class="mt-1 shrink-0"
+								/>
+							{/if}
 							<div class="min-w-0 flex-1">
 								<p class="truncate text-sm font-medium">
 									{service.pickup_location} → {service.delivery_location}
@@ -295,6 +348,21 @@
 					</Card.Content>
 				</Card.Root>
 			{/each}
+			{#if suggestionBatch.hasSelection}
+				<div class="bg-background sticky bottom-16 z-10 flex items-center gap-2 rounded-lg border p-3 shadow-lg">
+					<span class="text-muted-foreground text-sm">
+						{suggestionBatch.selectedCount} selected
+					</span>
+					<div class="ml-auto flex gap-2">
+						<Button size="sm" disabled={batchActionLoading} onclick={handleBatchAcceptSuggestions}>
+							Accept all
+						</Button>
+						<Button size="sm" variant="outline" disabled={batchActionLoading} onclick={() => (showBatchDeclineDialog = true)}>
+							Decline all
+						</Button>
+					</div>
+				</div>
+			{/if}
 		</div>
 	{/if}
 
@@ -583,6 +651,30 @@
 			</Button>
 			<Button onclick={handleAcceptSuggestion} disabled={actionLoading}>
 				{actionLoading ? m.saving() : m.action_accept()}
+			</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
+
+<!-- Batch Decline Suggestions Dialog -->
+<Dialog.Root bind:open={showBatchDeclineDialog}>
+	<Dialog.Content>
+		<Dialog.Header>
+			<Dialog.Title>Decline Selected Suggestions</Dialog.Title>
+			<Dialog.Description>
+				This will reset {suggestionBatch.selectedCount} suggestion(s) back to pending.
+			</Dialog.Description>
+		</Dialog.Header>
+		<div class="space-y-2">
+			<Label for="batchDeclineReason">Reason (optional)</Label>
+			<Textarea id="batchDeclineReason" bind:value={batchDeclineReason} placeholder="Why are you declining these suggestions?" />
+		</div>
+		<Dialog.Footer class="flex-col sm:flex-row gap-2">
+			<Button variant="outline" onclick={() => (showBatchDeclineDialog = false)} disabled={batchActionLoading}>
+				Cancel
+			</Button>
+			<Button variant="destructive" onclick={handleBatchDeclineSuggestions} disabled={batchActionLoading}>
+				{batchActionLoading ? 'Declining...' : 'Decline'}
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
