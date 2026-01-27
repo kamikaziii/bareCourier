@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
-import type { Profile } from '$lib/database.types';
+import type { Profile, ClientLayoutProfile } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 
 export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabase }, depends }) => {
@@ -50,10 +50,10 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
 	return {
 		profile: {
 			id: profile.id,
-			role: profile.role,
+			role: 'client' as const,
 			name: profile.name,
 			default_pickup_location: profile.default_pickup_location
-		},
+		} satisfies ClientLayoutProfile,
 		navCounts: {
 			suggestedServices: suggestedCount ?? 0
 		}

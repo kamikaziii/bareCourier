@@ -90,9 +90,9 @@ export function isWithinQuietHours(
 }
 
 function isWorkingDay(now: Date, workingDays: string[], timezone: string): boolean {
-	const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-	const localDate = new Date(now.toLocaleString('en-US', { timeZone: timezone }));
-	const todayName = dayNames[localDate.getDay()];
+	const todayName = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: timezone })
+		.format(now)
+		.toLowerCase();
 	return workingDays.includes(todayName);
 }
 

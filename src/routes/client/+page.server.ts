@@ -3,24 +3,15 @@ import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/publi
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-// Cache courier ID at module level (only one courier in system)
-let cachedCourierId: string | null = null;
-
-// Helper to get courier ID with caching
+// Helper to get courier ID (single row by role, indexed)
 async function getCourierId(supabase: SupabaseClient): Promise<string | null> {
-	if (cachedCourierId) return cachedCourierId;
-
 	const { data: courierData } = await supabase
 		.from('profiles')
 		.select('id')
 		.eq('role', 'courier')
 		.single();
 
-	if (courierData) {
-		cachedCourierId = courierData.id;
-	}
-
-	return cachedCourierId;
+	return courierData?.id ?? null;
 }
 
 // Helper to notify courier

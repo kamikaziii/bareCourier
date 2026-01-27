@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p3
 issue_id: "116"
 tags: [robustness, edge-functions, code-review]

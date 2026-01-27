@@ -7,6 +7,7 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
+	import UrgencyFeeSelect from '$lib/components/UrgencyFeeSelect.svelte';
 	import AddressInput from '$lib/components/AddressInput.svelte';
 	import RouteMap from '$lib/components/RouteMap.svelte';
 	import { type ServiceDistanceResult } from '$lib/services/distance.js';
@@ -217,23 +218,7 @@
 					<Separator />
 					<div class="space-y-2">
 						<Label for="urgency">{m.form_urgency()}</Label>
-						<select
-							id="urgency"
-							name="urgency_fee_id"
-							bind:value={selectedUrgencyFeeId}
-							class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-							disabled={loading}
-						>
-							<option value="">{m.urgency_standard()}</option>
-							{#each urgencyFees as fee (fee.id)}
-								<option value={fee.id}>
-									{fee.name}
-									{#if fee.multiplier > 1 || fee.flat_fee > 0}
-										({fee.multiplier}x{fee.flat_fee > 0 ? ` + €${fee.flat_fee}` : ''})
-									{/if}
-								</option>
-							{/each}
-						</select>
+						<UrgencyFeeSelect fees={urgencyFees} bind:value={selectedUrgencyFeeId} disabled={loading} />
 					</div>
 				{/if}
 

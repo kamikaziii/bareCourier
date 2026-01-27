@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { tick } from 'svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -206,11 +207,10 @@
 			<input type="hidden" name="email_notifications_enabled" value={emailEnabled.toString()} />
 			<Switch
 				checked={emailEnabled}
-				onCheckedChange={(checked) => {
+				onCheckedChange={async (checked) => {
 					emailEnabled = checked;
 					if (emailFormRef) {
-						const input = emailFormRef.querySelector('input[name="email_notifications_enabled"]') as HTMLInputElement;
-						if (input) input.value = checked.toString();
+						await tick();
 						emailFormRef.requestSubmit();
 					}
 				}}

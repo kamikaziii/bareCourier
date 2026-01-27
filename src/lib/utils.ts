@@ -126,6 +126,28 @@ export function debounce<T extends (...args: Parameters<T>) => ReturnType<T>>(
 }
 
 /**
+ * Format a date string as relative time (e.g., "5 minutes ago", "2 hours ago").
+ * Falls back to locale-formatted date for dates older than 7 days.
+ */
+export function formatRelativeTime(dateStr: string): string {
+	const date = new Date(dateStr);
+	const now = new Date();
+	const diffMs = now.getTime() - date.getTime();
+	const diffMins = Math.floor(diffMs / 60000);
+	const diffHours = Math.floor(diffMs / 3600000);
+	const diffDays = Math.floor(diffMs / 86400000);
+
+	if (diffMins < 1) return m.time_just_now();
+	if (diffMins < 60)
+		return m.time_minutes_ago({ count: diffMins });
+	if (diffHours < 24)
+		return m.time_hours_ago({ count: diffHours });
+	if (diffDays < 7)
+		return m.time_days_ago({ count: diffDays });
+	return date.toLocaleDateString(getLocale());
+}
+
+/**
  * Format a badge count for display.
  * Returns null if count is falsy or <= 0.
  * Returns "{max}+" if count exceeds max threshold.

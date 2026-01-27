@@ -197,3 +197,32 @@ export type ClientPricing = Database['public']['Tables']['client_pricing']['Row'
 export type PricingZone = Database['public']['Tables']['pricing_zones']['Row'];
 export type UrgencyFee = Database['public']['Tables']['urgency_fees']['Row'];
 export type PricingModel = 'per_km' | 'zone' | 'flat_plus_km';
+
+// ─── Layout profile types (discriminated union) ─────────────────────────────
+
+/** Profile shape returned by courier +layout.server.ts */
+export type CourierLayoutProfile = {
+	id: string;
+	role: 'courier';
+	name: string;
+	past_due_settings: PastDueSettings | null;
+	time_slots: TimeSlotDefinitions | null;
+	working_days: WorkingDay[] | null;
+	timezone: string;
+	vat_enabled: boolean;
+	vat_rate: number | null;
+	prices_include_vat: boolean | null;
+	show_price_to_courier: boolean | null;
+	show_price_to_client: boolean | null;
+};
+
+/** Profile shape returned by client +layout.server.ts */
+export type ClientLayoutProfile = {
+	id: string;
+	role: 'client';
+	name: string;
+	default_pickup_location: string | null;
+};
+
+/** Discriminated union of layout profile shapes (discriminant: role) */
+export type LayoutProfile = CourierLayoutProfile | ClientLayoutProfile;

@@ -224,8 +224,29 @@ Deno.serve(async (req: Request) => {
 			const clientName = service.profiles?.name || 'Cliente';
 			const overdueText = formatOverdueTime(overdueMinutes);
 
-			// Dispatch notification through all enabled channels
-			const dispatchResult = await dispatchNotification({
+			// Atomic claim-then-dispatch: update timestamp FIRST with a WHERE condition
+			// checking the old value, so only one concurrent invocation can win the race.
+			const previousValue = service.last_past_due_notification_at;
+			let claimQuery = supabase
+				.from('services')
+				.update({ last_past_due_notification_at: now.toISOString() })
+				.eq('id', service.id);
+
+			if (previousValue) {
+				claimQuery = claimQuery.eq('last_past_due_notification_at', previousValue);
+			} else {
+				claimQuery = claimQuery.is('last_past_due_notification_at', null);
+			}
+
+			const { data: claimedRows } = await claimQuery.select('id');
+
+			// If no rows were updated, another invocation already claimed this service
+			if (\!claimedRows || claimedRows.length === 0) {
+				continue;
+			}
+
+			// We won the race — dispatch notification
+			await dispatchNotification({
 				supabase,
 				userId: courier.id,
 				category: 'past_due',
@@ -235,15 +256,7 @@ Deno.serve(async (req: Request) => {
 				profile: courierProfile
 			});
 
-			if (dispatchResult.inApp.success) {
-				// Persist notification timestamp to database for deduplication
-				await supabase
-					.from('services')
-					.update({ last_past_due_notification_at: now.toISOString() })
-					.eq('id', service.id);
-
-				notifiedCount++;
-			}
+			notifiedCount++;
 		}
 
 		return new Response(

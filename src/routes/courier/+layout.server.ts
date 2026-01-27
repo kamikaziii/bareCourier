@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
-import type { Profile } from '$lib/database.types';
+import type { Profile, CourierLayoutProfile } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 
 export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabase }, depends }) => {
@@ -37,7 +37,7 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
 	return {
 		profile: {
 			id: profile.id,
-			role: profile.role,
+			role: 'courier' as const,
 			name: profile.name,
 			past_due_settings: profile.past_due_settings,
 			time_slots: profile.time_slots,
@@ -48,7 +48,7 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
 			prices_include_vat: profile.prices_include_vat,
 			show_price_to_courier: profile.show_price_to_courier,
 			show_price_to_client: profile.show_price_to_client
-		},
+		} satisfies CourierLayoutProfile,
 		navCounts: {
 			pendingRequests: (pendingRequestsResult.count ?? 0) + (pendingReschedulesResult.count ?? 0)
 		}

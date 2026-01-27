@@ -9,7 +9,7 @@
 	import type { Notification } from '$lib/database.types';
 	import type { SupabaseClient } from '@supabase/supabase-js';
 	import { Bell, CheckCheck, Package, Clock, CalendarClock, Settings, AlertTriangle, BarChart3 } from '@lucide/svelte';
-	import { formatBadge } from '$lib/utils.js';
+	import { formatBadge, formatRelativeTime } from '$lib/utils.js';
 
 	let {
 		supabase,
@@ -92,24 +92,6 @@
 		notifications = notifications.map((n) => ({ ...n, read: true }));
 	}
 
-	function formatRelativeTime(dateStr: string): string {
-		const date = new Date(dateStr);
-		const now = new Date();
-		const diffMs = now.getTime() - date.getTime();
-		const diffMins = Math.floor(diffMs / 60000);
-		const diffHours = Math.floor(diffMs / 3600000);
-		const diffDays = Math.floor(diffMs / 86400000);
-
-		if (diffMins < 1) return m.time_just_now();
-		if (diffMins < 60)
-			return m.time_minutes_ago({ count: diffMins });
-		if (diffHours < 24)
-			return m.time_hours_ago({ count: diffHours });
-		if (diffDays < 7)
-			return m.time_days_ago({ count: diffDays });
-		return date.toLocaleDateString(getLocale());
-	}
-
 	function getNotificationIcon(type: string) {
 		switch (type) {
 			case 'service_status':
@@ -138,7 +120,22 @@
 	}
 
 	$effect(() => {
-		loadNotifications();
+		let canceled = false;
+
+		// Load notifications with cancellation guard
+		(async () => {
+			loading = true;
+			const { data } = await supabase
+				.from('notifications')
+				.select('*')
+				.eq('user_id', userId)
+				.order('created_at', { ascending: false })
+				.limit(20);
+
+			if (canceled) return;
+			notifications = (data || []) as Notification[];
+			loading = false;
+		})();
 
 		// Subscribe to real-time notifications
 		const channel = supabase
@@ -161,6 +158,7 @@
 			.subscribe();
 
 		return () => {
+			canceled = true;
 			supabase.removeChannel(channel);
 		};
 	});

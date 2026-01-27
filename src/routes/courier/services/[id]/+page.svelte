@@ -11,6 +11,8 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import RouteMap from '$lib/components/RouteMap.svelte';
+	import ServiceLocationCard from '$lib/components/ServiceLocationCard.svelte';
+	import StatusHistory from '$lib/components/StatusHistory.svelte';
 	import UrgencyBadge from '$lib/components/UrgencyBadge.svelte';
 	import { settingsToConfig } from '$lib/utils/past-due.js';
 	import { getRequestStatusLabel, getRequestStatusColor } from '$lib/utils/status.js';
@@ -324,41 +326,7 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 			</Card.Root>
 
 			<!-- Locations -->
-			<Card.Root>
-				<Card.Header>
-					<Card.Title class="flex items-center gap-2">
-						<MapPin class="size-5" />
-						{m.locations()}
-					</Card.Title>
-				</Card.Header>
-				<Card.Content class="space-y-4">
-					<div>
-						<p class="text-sm font-medium text-muted-foreground">{m.form_pickup_location()}</p>
-						<p class="mt-1">{service.pickup_location}</p>
-					</div>
-					<Separator />
-					<div>
-						<p class="text-sm font-medium text-muted-foreground">{m.form_delivery_location()}</p>
-						<p class="mt-1">{service.delivery_location}</p>
-					</div>
-
-					<!-- Route Map -->
-					{#if hasMapbox && service.pickup_lat && service.pickup_lng && service.delivery_lat && service.delivery_lng}
-						<Separator />
-						<RouteMap
-							pickupCoords={[service.pickup_lng, service.pickup_lat]}
-							deliveryCoords={[service.delivery_lng, service.delivery_lat]}
-							distanceKm={service.distance_km}
-							height="250px"
-						/>
-					{:else if service.distance_km}
-						<Separator />
-						<p class="text-sm text-muted-foreground">
-							{m.map_distance({ km: service.distance_km.toFixed(1) })}
-						</p>
-					{/if}
-				</Card.Content>
-			</Card.Root>
+			<ServiceLocationCard {service} {hasMapbox} />
 
 			<!-- Notes -->
 			{#if service.notes}
@@ -439,36 +407,7 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 					<Card.Title>{m.status_history()}</Card.Title>
 				</Card.Header>
 				<Card.Content>
-					{#if statusHistory.length === 0}
-						<p class="text-center text-muted-foreground py-4">{m.no_status_history()}</p>
-					{:else}
-						<div class="space-y-4">
-							{#each statusHistory as entry (entry.id)}
-								<div class="flex items-start gap-3">
-									<div
-										class="mt-1 size-3 rounded-full {entry.new_status === 'delivered'
-											? 'bg-green-500'
-											: 'bg-blue-500'}"
-									></div>
-									<div class="flex-1">
-										<p class="text-sm">
-											{#if entry.old_status}
-												<span class="capitalize">{entry.old_status}</span>
-												&rarr;
-											{/if}
-											<span class="font-medium capitalize">{entry.new_status}</span>
-										</p>
-										<p class="text-xs text-muted-foreground">
-											{formatDateTime(entry.changed_at)}
-											{#if entry.profiles?.name}
-												&middot; {entry.profiles.name}
-											{/if}
-										</p>
-									</div>
-								</div>
-							{/each}
-						</div>
-					{/if}
+					<StatusHistory {statusHistory} />
 				</Card.Content>
 			</Card.Root>
 		</Tabs.Content>

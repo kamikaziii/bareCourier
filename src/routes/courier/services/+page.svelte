@@ -10,6 +10,7 @@
 	import AddressInput from '$lib/components/AddressInput.svelte';
 	import RouteMap from '$lib/components/RouteMap.svelte';
 	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
+	import UrgencyFeeSelect from '$lib/components/UrgencyFeeSelect.svelte';
 	import UrgencyBadge from '$lib/components/UrgencyBadge.svelte';
 	import { type ServiceDistanceResult } from '$lib/services/distance.js';
 	import { calculateRouteIfReady as calculateRouteShared } from '$lib/services/route.js';
@@ -21,6 +22,7 @@
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 import { formatDate, formatTimeSlot } from '$lib/utils.js';
+	import ServiceCard from '$lib/components/ServiceCard.svelte';
 	import { CalendarClock, CheckSquare, Check, Download } from '@lucide/svelte';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import { useBatchSelection } from '$lib/composables/use-batch-selection.svelte.js';
@@ -355,23 +357,7 @@ import { formatDate, formatTimeSlot } from '$lib/utils.js';
 					<!-- Urgency fee selection -->
 					<div class="space-y-2">
 						<Label for="urgency">{m.form_urgency()}</Label>
-						<select
-							id="urgency"
-							name="urgency_fee_id"
-							bind:value={selectedUrgencyFeeId}
-							class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-							disabled={formLoading}
-						>
-							<option value="">{m.urgency_standard()}</option>
-							{#each urgencyFees as fee (fee.id)}
-								<option value={fee.id}>
-									{fee.name}
-									{#if fee.multiplier > 1 || fee.flat_fee > 0}
-										({fee.multiplier}x{fee.flat_fee > 0 ? ` + €${fee.flat_fee}` : ''})
-									{/if}
-								</option>
-							{/each}
-						</select>
+						<UrgencyFeeSelect fees={urgencyFees} bind:value={selectedUrgencyFeeId} disabled={formLoading} />
 					</div>
 
 					<!-- Distance breakdown for warehouse mode -->
@@ -530,69 +516,18 @@ import { formatDate, formatTimeSlot } from '$lib/utils.js';
 				{m.services_showing({ count: filteredServices.length })}
 			</p>
 			{#each filteredServices as service (service.id)}
-				<button
-					type="button"
-					class="block w-full text-left bg-transparent border-0 p-0 cursor-pointer"
-					onclick={() => {
-						if (batch.selectionMode && service.status === 'pending') {
-							batch.toggle(service.id);
-						} else {
-							window.location.href = localizeHref(`/courier/services/${service.id}`);
-						}
-					}}
+				<ServiceCard
+					{service}
+					showClientName={true}
+					selectable={batch.selectionMode}
+					selected={batch.has(service.id)}
+					onToggle={() => batch.toggle(service.id)}
+					onClick={() => { window.location.href = localizeHref(`/courier/services/${service.id}`); }}
 				>
-					<Card.Root class="overflow-hidden transition-colors hover:bg-muted/50 {batch.has(service.id) ? 'ring-2 ring-primary' : ''}">
-						<Card.Content class="flex items-start gap-3 p-4">
-							{#if batch.selectionMode && service.status === 'pending'}
-								<Checkbox
-									checked={batch.has(service.id)}
-									onCheckedChange={() => batch.toggle(service.id)}
-									class="mt-1"
-								/>
-							{:else}
-								<div
-									class="mt-1.5 size-3 shrink-0 rounded-full {service.status === 'pending'
-										? 'bg-blue-500'
-										: 'bg-green-500'}"
-								></div>
-							{/if}
-							<div class="min-w-0 flex-1 space-y-1">
-								<div class="flex items-center justify-between gap-2">
-									<p class="font-semibold truncate">
-										{service.profiles?.name || m.unknown_client()}
-									</p>
-									<Badge
-										variant="outline"
-										class="shrink-0 {service.status === 'pending'
-											? 'border-blue-500 text-blue-500'
-											: 'border-green-500 text-green-500'}"
-									>
-										{getStatusLabel(service.status)}
-									</Badge>
-								</div>
-								<UrgencyBadge service={service} size="sm" config={pastDueConfig} />
-								<p class="text-sm text-muted-foreground truncate">
-									{service.pickup_location} &rarr; {service.delivery_location}
-								</p>
-								{#if service.scheduled_date}
-									<p class="flex items-center gap-1 text-sm font-medium text-foreground">
-										<CalendarClock class="size-3.5 shrink-0" />
-										{formatDate(service.scheduled_date)}
-										{#if service.scheduled_time_slot}
-											— {service.scheduled_time_slot === 'specific' && service.scheduled_time ? service.scheduled_time : formatTimeSlot(service.scheduled_time_slot)}
-										{/if}
-									</p>
-								{/if}
-								{#if service.notes}
-									<p class="text-sm text-amber-600 truncate">{service.notes}</p>
-								{/if}
-								<p class="text-xs text-muted-foreground/60">
-									{formatDate(service.created_at)}
-								</p>
-							</div>
-						</Card.Content>
-					</Card.Root>
-				</button>
+					{#snippet urgencyBadge()}
+						<UrgencyBadge service={service} size="sm" config={pastDueConfig} />
+					{/snippet}
+				</ServiceCard>
 			{/each}
 		{/if}
 	</div>

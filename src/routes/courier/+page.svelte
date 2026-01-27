@@ -13,6 +13,7 @@
 	import type { Service, TimeSlot } from '$lib/database.types';
 	import { Check, RotateCcw, Loader2, CheckSquare, CalendarClock } from '@lucide/svelte';
 	import { formatDate, formatTimeSlot } from '$lib/utils.js';
+	import ServiceCard from '$lib/components/ServiceCard.svelte';
 	import { cacheServices, applyOptimisticUpdate, rollbackOptimisticUpdate } from '$lib/services/offline-store';
 	import SkeletonCard from '$lib/components/SkeletonCard.svelte';
 	import SkeletonList from '$lib/components/SkeletonList.svelte';
@@ -368,95 +369,43 @@
 			</Card.Root>
 		{:else}
 			{#each sortedServices as service (service.id)}
-				<button
-					type="button"
-					class="block w-full text-left bg-transparent border-0 p-0 group cursor-pointer"
-					onclick={(e: MouseEvent) => {
-						if (batch.selectionMode && service.status === 'pending') {
-							e.preventDefault();
-							batch.toggle(service.id);
-						} else {
-							window.location.href = localizeHref(`/courier/services/${service.id}`);
-						}
-					}}
+				<ServiceCard
+					{service}
+					showClientName={true}
+					selectable={batch.selectionMode}
+					selected={batch.has(service.id)}
+					onToggle={() => batch.toggle(service.id)}
+					onClick={() => { window.location.href = localizeHref(`/courier/services/${service.id}`); }}
 				>
-					<Card.Root class="overflow-hidden transition-colors group-hover:bg-muted/50 {batch.has(service.id) ? 'ring-2 ring-primary' : ''}">
-						<Card.Content class="flex items-start gap-4 p-4">
-							{#if batch.selectionMode && service.status === 'pending'}
-								<Checkbox
-									checked={batch.has(service.id)}
-									onCheckedChange={() => batch.toggle(service.id)}
-									class="mt-1"
-								/>
-							{:else}
-								<div
-									class="mt-1 size-4 shrink-0 rounded-full {service.status === 'pending'
-										? 'bg-blue-500'
-										: 'bg-green-500'}"
-								></div>
-							{/if}
-							<div class="min-w-0 flex-1 space-y-1">
-								<div class="flex items-center justify-between gap-2">
-									<p class="font-semibold truncate">
-										{service.profiles?.name || m.unknown_client()}
-									</p>
-									<div class="flex items-center gap-2">
-										<span
-											class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium {service.status ===
-											'pending'
-												? 'bg-blue-500/10 text-blue-500'
-												: 'bg-green-500/10 text-green-500'}"
-										>
-											{getStatusLabel(service.status)}
-										</span>
-										{#if !batch.selectionMode}
-											<button
-												type="button"
-												onclick={(e: Event) => toggleStatus(service, e)}
-												disabled={syncingIds.has(service.id)}
-												class="shrink-0 size-8 flex items-center justify-center rounded-md border transition-colors
-													{syncingIds.has(service.id)
-														? 'opacity-50 cursor-wait'
-														: service.status === 'pending'
-															? 'hover:bg-green-500/10 hover:border-green-500 hover:text-green-500'
-															: 'hover:bg-blue-500/10 hover:border-blue-500 hover:text-blue-500'}
-													text-muted-foreground"
-												title={service.status === 'pending' ? m.mark_delivered() : m.mark_pending()}
-											>
-												{#if syncingIds.has(service.id)}
-													<Loader2 class="size-4 animate-spin" />
-												{:else if service.status === 'pending'}
-													<Check class="size-4" />
-												{:else}
-													<RotateCcw class="size-4" />
-												{/if}
-											</button>
-										{/if}
-									</div>
-								</div>
-								<UrgencyBadge service={service} size="sm" config={pastDueConfig} />
-								<p class="text-sm text-muted-foreground truncate">
-									{service.pickup_location} &rarr; {service.delivery_location}
-								</p>
-								{#if service.scheduled_date}
-									<p class="flex items-center gap-1 text-sm font-medium text-foreground">
-										<CalendarClock class="size-3.5 shrink-0" />
-										{formatDate(service.scheduled_date)}
-										{#if service.scheduled_time_slot}
-											— {service.scheduled_time_slot === 'specific' && service.scheduled_time ? service.scheduled_time : formatTimeSlot(service.scheduled_time_slot)}
-										{/if}
-									</p>
+					{#snippet headerActions()}
+						{#if !batch.selectionMode}
+							<button
+								type="button"
+								onclick={(e: Event) => { e.stopPropagation(); toggleStatus(service, e); }}
+								disabled={syncingIds.has(service.id)}
+								class="shrink-0 size-8 flex items-center justify-center rounded-md border transition-colors
+									{syncingIds.has(service.id)
+										? 'opacity-50 cursor-wait'
+										: service.status === 'pending'
+											? 'hover:bg-green-500/10 hover:border-green-500 hover:text-green-500'
+											: 'hover:bg-blue-500/10 hover:border-blue-500 hover:text-blue-500'}
+									text-muted-foreground"
+								title={service.status === 'pending' ? m.mark_delivered() : m.mark_pending()}
+							>
+								{#if syncingIds.has(service.id)}
+									<Loader2 class="size-4 animate-spin" />
+								{:else if service.status === 'pending'}
+									<Check class="size-4" />
+								{:else}
+									<RotateCcw class="size-4" />
 								{/if}
-								{#if service.notes}
-									<p class="text-sm text-amber-600 truncate">{service.notes}</p>
-								{/if}
-								<p class="text-xs text-muted-foreground/60">
-									{formatDate(service.created_at)}
-								</p>
-							</div>
-						</Card.Content>
-					</Card.Root>
-				</button>
+							</button>
+						{/if}
+					{/snippet}
+					{#snippet urgencyBadge()}
+						<UrgencyBadge service={service} size="sm" config={pastDueConfig} />
+					{/snippet}
+				</ServiceCard>
 			{/each}
 		{/if}
 	</div>
