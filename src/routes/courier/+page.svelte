@@ -86,6 +86,7 @@
 
 	async function handleBatchReschedule() {
 		if (!batchRescheduleDate || !batchRescheduleTimeSlot || selectedIds.size === 0) return;
+		if (batchRescheduleTimeSlot === 'specific' && !batchRescheduleTime) return;
 
 		batchRescheduleLoading = true;
 		batchRescheduleError = null;
@@ -467,10 +468,11 @@
 									{service.pickup_location} &rarr; {service.delivery_location}
 								</p>
 								{#if service.scheduled_date}
-									<p class="mt-1 text-xs text-muted-foreground">
-										{m.requests_scheduled()}: {formatDate(service.scheduled_date)}
+									<p class="mt-1 flex items-center gap-1 text-sm font-medium text-foreground">
+										<CalendarClock class="size-3.5 shrink-0" />
+										{formatDate(service.scheduled_date)}
 										{#if service.scheduled_time_slot}
-											— {formatTimeSlot(service.scheduled_time_slot)}
+											— {service.scheduled_time_slot === 'specific' && service.scheduled_time ? service.scheduled_time : formatTimeSlot(service.scheduled_time_slot)}
 										{/if}
 									</p>
 								{/if}
@@ -524,7 +526,7 @@
 			<Button variant="outline" onclick={() => (showBatchRescheduleDialog = false)} disabled={batchRescheduleLoading}>
 				{m.action_cancel()}
 			</Button>
-			<Button onclick={handleBatchReschedule} disabled={!batchRescheduleDate || !batchRescheduleTimeSlot || batchRescheduleLoading}>
+			<Button onclick={handleBatchReschedule} disabled={!batchRescheduleDate || !batchRescheduleTimeSlot || (batchRescheduleTimeSlot === 'specific' && !batchRescheduleTime) || batchRescheduleLoading}>
 				{batchRescheduleLoading ? m.saving() : m.batch_reschedule()}
 			</Button>
 		</Dialog.Footer>

@@ -32,8 +32,13 @@
 	let loading = $state(false);
 	let error = $state('');
 
+	const canSubmit = $derived(
+		!!newDate && !!newTimeSlot && (newTimeSlot !== 'specific' || !!newTime) && !loading
+	);
+
 	async function handleSubmit() {
 		if (!newDate || !newTimeSlot) return;
+		if (newTimeSlot === 'specific' && !newTime) return;
 
 		loading = true;
 		error = '';
@@ -108,7 +113,7 @@
 			<Button variant="outline" onclick={() => (open = false)} disabled={loading}>
 				{m.action_cancel()}
 			</Button>
-			<Button onclick={handleSubmit} disabled={!newDate || !newTimeSlot || loading}>
+			<Button onclick={handleSubmit} disabled={!canSubmit}>
 				{loading ? m.saving() : m.reschedule()}
 			</Button>
 		</Dialog.Footer>

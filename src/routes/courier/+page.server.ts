@@ -76,6 +76,10 @@ export const actions: Actions = {
 			return { success: false, error: 'Date and time slot required' };
 		}
 
+		if (newTimeSlot === 'specific' && !newTime) {
+			return { success: false, error: 'Specific time is required when "specific" time slot is selected' };
+		}
+
 		// Call the bulk reschedule RPC function (single atomic operation)
 		// The RPC handles validation, updates services, and creates history records atomically
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any

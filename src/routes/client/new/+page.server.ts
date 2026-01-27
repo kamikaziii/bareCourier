@@ -55,6 +55,11 @@ export const actions: Actions = {
 			return fail(400, { error: 'Pickup and delivery locations are required' });
 		}
 
+		// Validate specific time slot requires a time value
+		if (requested_time_slot === 'specific' && !requested_time) {
+			return fail(400, { error: 'Specific time is required when "specific" time slot is selected' });
+		}
+
 		// Get courier settings
 		const courierSettings = await getCourierPricingSettings(supabase);
 

@@ -69,6 +69,11 @@ export const actions: Actions = {
 			return { success: false, error: 'Date and time slot required' };
 		}
 
+		// Validate specific time slot requires a time value
+		if (newTimeSlot === 'specific' && !newTime) {
+			return { success: false, error: 'Specific time is required when "specific" time slot is selected' };
+		}
+
 		// Get service and verify ownership
 		const { data: serviceData } = await supabase
 			.from('services')

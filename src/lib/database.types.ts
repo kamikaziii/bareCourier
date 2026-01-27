@@ -207,6 +207,7 @@ export type Database = {
 					rejection_reason: string | null;
 					suggested_date: string | null;
 					suggested_time_slot: 'morning' | 'afternoon' | 'evening' | 'specific' | null;
+					suggested_time: string | null;
 					// Coordinates (Phase 2)
 					pickup_lat: number | null;
 					pickup_lng: number | null;
@@ -255,6 +256,7 @@ export type Database = {
 					rejection_reason?: string | null;
 					suggested_date?: string | null;
 					suggested_time_slot?: 'morning' | 'afternoon' | 'evening' | 'specific' | null;
+					suggested_time?: string | null;
 					// Coordinates (Phase 2)
 					pickup_lat?: number | null;
 					pickup_lng?: number | null;
@@ -303,6 +305,7 @@ export type Database = {
 					rejection_reason?: string | null;
 					suggested_date?: string | null;
 					suggested_time_slot?: 'morning' | 'afternoon' | 'evening' | 'specific' | null;
+					suggested_time?: string | null;
 					// Coordinates (Phase 2)
 					pickup_lat?: number | null;
 					pickup_lng?: number | null;

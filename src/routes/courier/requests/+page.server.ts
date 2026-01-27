@@ -222,6 +222,7 @@ export const actions: Actions = {
 		const serviceId = formData.get('service_id') as string;
 		const suggestedDate = formData.get('suggested_date') as string;
 		const suggestedTimeSlot = formData.get('suggested_time_slot') as string;
+		const suggestedTime = (formData.get('suggested_time') as string) || null;
 
 		if (!serviceId) {
 			return { success: false, error: 'Service ID required' };
@@ -229,6 +230,10 @@ export const actions: Actions = {
 
 		if (!suggestedDate || !suggestedTimeSlot) {
 			return { success: false, error: 'Suggested date and time slot required' };
+		}
+
+		if (suggestedTimeSlot === 'specific' && !suggestedTime) {
+			return { success: false, error: 'Specific time is required when "specific" time slot is selected' };
 		}
 
 		// Get client_id before updating
@@ -246,7 +251,8 @@ export const actions: Actions = {
 			.update({
 				request_status: 'suggested',
 				suggested_date: suggestedDate,
-				suggested_time_slot: suggestedTimeSlot
+				suggested_time_slot: suggestedTimeSlot,
+				suggested_time: suggestedTime
 			})
 			.eq('id', serviceId);
 
@@ -274,7 +280,9 @@ export const actions: Actions = {
 				}
 			};
 			const labels = slotLabels[locale] || slotLabels['pt-PT'];
-			const slotText = labels[suggestedTimeSlot] || suggestedTimeSlot;
+			const slotText = suggestedTimeSlot === 'specific' && suggestedTime
+				? suggestedTime
+				: (labels[suggestedTimeSlot] || suggestedTimeSlot);
 
 			// Notification messages by locale
 			const messages: Record<string, { subject: string; body: string }> = {

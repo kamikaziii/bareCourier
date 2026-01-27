@@ -74,7 +74,7 @@ export const actions: Actions = {
 		// Get the service and verify ownership
 		const { data: serviceData } = await supabase
 			.from('services')
-			.select('client_id, suggested_date, suggested_time_slot')
+			.select('client_id, suggested_date, suggested_time_slot, suggested_time')
 			.eq('id', serviceId)
 			.single();
 
@@ -86,6 +86,7 @@ export const actions: Actions = {
 			client_id: string;
 			suggested_date: string | null;
 			suggested_time_slot: string | null;
+			suggested_time: string | null;
 		};
 
 		if (service.client_id !== user.id) {
@@ -100,8 +101,10 @@ export const actions: Actions = {
 				request_status: 'accepted',
 				scheduled_date: service.suggested_date,
 				scheduled_time_slot: service.suggested_time_slot,
+				scheduled_time: service.suggested_time,
 				suggested_date: null,
-				suggested_time_slot: null
+				suggested_time_slot: null,
+				suggested_time: null
 			})
 			.eq('id', serviceId);
 
@@ -158,7 +161,8 @@ export const actions: Actions = {
 			.update({
 				request_status: 'pending',
 				suggested_date: null,
-				suggested_time_slot: null
+				suggested_time_slot: null,
+				suggested_time: null
 			})
 			.eq('id', serviceId);
 

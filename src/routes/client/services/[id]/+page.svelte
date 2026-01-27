@@ -57,6 +57,7 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 
 	async function handleReschedule() {
 		if (!rescheduleDate || !rescheduleTimeSlot) return;
+		if (rescheduleTimeSlot === 'specific' && !rescheduleTime) return;
 
 		rescheduleLoading = true;
 		rescheduleError = '';
@@ -392,7 +393,7 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 			<Button variant="outline" onclick={() => (showRescheduleDialog = false)} disabled={rescheduleLoading}>
 				{m.action_cancel()}
 			</Button>
-			<Button onclick={handleReschedule} disabled={!rescheduleDate || !rescheduleTimeSlot || rescheduleLoading}>
+			<Button onclick={handleReschedule} disabled={!rescheduleDate || !rescheduleTimeSlot || (rescheduleTimeSlot === 'specific' && !rescheduleTime) || rescheduleLoading}>
 				{rescheduleLoading ? m.saving() : m.client_request_reschedule()}
 			</Button>
 		</Dialog.Footer>

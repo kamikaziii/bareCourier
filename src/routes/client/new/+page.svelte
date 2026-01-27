@@ -308,7 +308,7 @@
 					<Button type="button" variant="outline" class="flex-1" onclick={() => goto(localizeHref('/client'))}>
 						{m.services_cancel()}
 					</Button>
-					<Button type="submit" class="flex-1" disabled={loading || !pickupLocation || !deliveryLocation}>
+					<Button type="submit" class="flex-1" disabled={loading || !pickupLocation || !deliveryLocation || (requestedTimeSlot === 'specific' && !requestedTime)}>
 						{loading ? m.services_creating() : m.client_create_request()}
 					</Button>
 				</div>

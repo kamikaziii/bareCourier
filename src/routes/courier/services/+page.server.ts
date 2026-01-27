@@ -53,6 +53,10 @@ export const actions: Actions = {
 			return fail(400, { error: 'Client, pickup, and delivery are required' });
 		}
 
+		if (scheduled_time_slot === 'specific' && !scheduled_time) {
+			return fail(400, { error: 'Specific time is required when "specific" time slot is selected' });
+		}
+
 		const courierSettings = await getCourierPricingSettings(supabase);
 
 		let distance_km: number | null = null;

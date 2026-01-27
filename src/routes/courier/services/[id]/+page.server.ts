@@ -182,6 +182,11 @@ export const actions: Actions = {
 			return { success: false, error: 'Invalid time slot' };
 		}
 
+		// Validate specific time slot requires a time value
+		if (newTimeSlot === 'specific' && !newTime) {
+			return { success: false, error: 'Specific time is required when "specific" time slot is selected' };
+		}
+
 		// Format date nicely for Portuguese users (primary user base)
 		const formattedDate = new Date(newDate).toLocaleDateString('pt-PT', {
 			day: 'numeric',

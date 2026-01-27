@@ -141,6 +141,7 @@
 
 	async function handleSuggest() {
 		if (!selectedService || !suggestedDate || !suggestedTimeSlot) return;
+		if (suggestedTimeSlot === 'specific' && !suggestedTime) return;
 		loading = true;
 		actionError = '';
 
@@ -148,6 +149,7 @@
 		formData.set('service_id', selectedService.id);
 		formData.set('suggested_date', suggestedDate);
 		formData.set('suggested_time_slot', suggestedTimeSlot);
+		if (suggestedTime) formData.set('suggested_time', suggestedTime);
 
 		try {
 			const response = await fetch('?/suggest', {
@@ -533,7 +535,7 @@
 			<Button variant="outline" onclick={() => (showSuggestDialog = false)} disabled={loading}>
 				{m.action_cancel()}
 			</Button>
-			<Button onclick={handleSuggest} disabled={loading || !suggestedDate || !suggestedTimeSlot}>
+			<Button onclick={handleSuggest} disabled={loading || !suggestedDate || !suggestedTimeSlot || (suggestedTimeSlot === 'specific' && !suggestedTime)}>
 				{loading ? m.saving() : m.requests_confirm_suggest()}
 			</Button>
 		</Dialog.Footer>

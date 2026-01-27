@@ -24,6 +24,7 @@
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 import { formatDate, formatTimeSlot } from '$lib/utils.js';
+	import { CalendarClock } from '@lucide/svelte';
 	import type { PageData } from './$types';
 	import type { TimeSlot, UrgencyFee } from '$lib/database.types.js';
 	import SkeletonList from '$lib/components/SkeletonList.svelte';
@@ -389,7 +390,7 @@ import { formatDate, formatTimeSlot } from '$lib/utils.js';
 					<input type="hidden" name="scheduled_time_slot" value={scheduledTimeSlot ?? ''} />
 					<input type="hidden" name="scheduled_time" value={scheduledTime ?? ''} />
 
-					<Button type="submit" disabled={formLoading || !selectedClientId || !pickupLocation || !deliveryLocation}>
+					<Button type="submit" disabled={formLoading || !selectedClientId || !pickupLocation || !deliveryLocation || (scheduledTimeSlot === 'specific' && !scheduledTime)}>
 						{formLoading ? m.services_creating() : m.services_create()}
 					</Button>
 				</form>
@@ -488,10 +489,11 @@ import { formatDate, formatTimeSlot } from '$lib/utils.js';
 									{service.pickup_location} &rarr; {service.delivery_location}
 								</p>
 								{#if service.scheduled_date}
-									<p class="mt-1 text-xs text-muted-foreground">
-										{m.requests_scheduled()}: {formatDate(service.scheduled_date)}
+									<p class="mt-1 flex items-center gap-1 text-sm font-medium text-foreground">
+										<CalendarClock class="size-3.5 shrink-0" />
+										{formatDate(service.scheduled_date)}
 										{#if service.scheduled_time_slot}
-											— {formatTimeSlot(service.scheduled_time_slot)}
+											— {service.scheduled_time_slot === 'specific' && service.scheduled_time ? service.scheduled_time : formatTimeSlot(service.scheduled_time_slot)}
 										{/if}
 									</p>
 								{/if}
