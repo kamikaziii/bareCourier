@@ -367,6 +367,72 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
+	batchAccept: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const { data: profile } = await supabase
+			.from('profiles')
+			.select('role')
+			.eq('id', user.id)
+			.single();
+
+		if ((profile as { role: string } | null)?.role !== 'courier') {
+			return { success: false, error: 'Unauthorized' };
+		}
+
+		const formData = await request.formData();
+		let serviceIds: string[];
+		try {
+			serviceIds = JSON.parse(formData.get('service_ids') as string);
+		} catch {
+			return { success: false, error: 'Invalid service selection' };
+		}
+
+		if (!serviceIds?.length) {
+			return { success: false, error: 'No services selected' };
+		}
+
+		// Get all services to copy requested schedule to scheduled
+		const { data: servicesData } = await supabase
+			.from('services')
+			.select('id, client_id, requested_date, requested_time_slot, requested_time')
+			.in('id', serviceIds);
+
+		if (!servicesData?.length) {
+			return { success: false, error: 'Services not found' };
+		}
+
+		let accepted = 0;
+		for (const svc of servicesData as Array<{ id: string; client_id: string; requested_date: string | null; requested_time_slot: string | null; requested_time: string | null }>) {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const { error: updateError } = await (supabase as any)
+				.from('services')
+				.update({
+					request_status: 'accepted',
+					scheduled_date: svc.requested_date,
+					scheduled_time_slot: svc.requested_time_slot,
+					scheduled_time: svc.requested_time
+				})
+				.eq('id', svc.id);
+
+			if (!updateError) {
+				accepted++;
+				await notifyClient(
+					session,
+					svc.client_id,
+					svc.id,
+					'Pedido Aceite',
+					'O seu pedido de serviço foi aceite pelo estafeta. Verifique os detalhes na aplicação.'
+				);
+			}
+		}
+
+		return { success: true, accepted };
+	},
+
 	denyReschedule: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {

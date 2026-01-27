@@ -9,6 +9,7 @@
 	import type { PageData } from './$types';
 	import type { ClientPricing } from '$lib/database.types';
 	import { Euro, TrendingUp, MapPin, FileText } from '@lucide/svelte';
+	import SkeletonList from '$lib/components/SkeletonList.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -244,7 +245,7 @@
 		</Card.Header>
 		<Card.Content class="p-0">
 			{#if loading}
-				<p class="py-8 text-center text-muted-foreground">{m.loading()}</p>
+				<SkeletonList variant="service" count={5} />
 			{:else if sortedBilling.length === 0}
 				<p class="py-8 text-center text-muted-foreground">{m.billing_no_data()}</p>
 			{:else}

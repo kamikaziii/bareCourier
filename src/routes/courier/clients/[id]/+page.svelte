@@ -7,7 +7,6 @@
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
-	import PricingConfigForm from '$lib/components/PricingConfigForm.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 import { formatDate } from '$lib/utils.js';
@@ -33,7 +32,6 @@ import { formatDate } from '$lib/utils.js';
 	let showArchiveDialog = $state(false);
 	let loading = $state(false);
 	let actionError = $state('');
-	let pricingSuccess = $state(false);
 
 	async function handleToggleActive() {
 		loading = true;
@@ -76,32 +74,6 @@ import { formatDate } from '$lib/utils.js';
 		}
 	}
 
-	async function handleSavePricing(
-		config: { pricing_model: PricingModel; base_fee: number; per_km_rate: number },
-		pricingZones: { min_km: number; max_km: number | null; price: number }[]
-	) {
-		const formData = new FormData();
-		formData.append('pricing_model', config.pricing_model);
-		formData.append('base_fee', config.base_fee.toString());
-		formData.append('per_km_rate', config.per_km_rate.toString());
-		if (config.pricing_model === 'zone') {
-			formData.append('zones', JSON.stringify(pricingZones));
-		}
-
-		const response = await fetch('?/savePricing', {
-			method: 'POST',
-			body: formData
-		});
-
-		const result = await response.json();
-		if (result.type === 'success' || result.data?.success) {
-			pricingSuccess = true;
-			setTimeout(() => (pricingSuccess = false), 3000);
-			await invalidateAll();
-		} else {
-			throw new Error(result.data?.error || 'Failed to save pricing');
-		}
-	}
 </script>
 
 <div class="space-y-6">
@@ -294,12 +266,6 @@ import { formatDate } from '$lib/utils.js';
 		</Tabs.Content>
 
 		<Tabs.Content value="billing" class="space-y-4 pt-4">
-			{#if pricingSuccess}
-				<div class="rounded-md bg-green-500/10 p-3 text-sm text-green-600">
-					{m.billing_saved()}
-				</div>
-			{/if}
-
 			<!-- Current Pricing Summary -->
 			<Card.Root>
 				<Card.Header>
@@ -342,16 +308,12 @@ import { formatDate } from '$lib/utils.js';
 						<p class="mb-4 text-muted-foreground">{m.billing_not_configured()}</p>
 					{/if}
 
-					<PricingConfigForm
-						existingConfig={pricing}
-						existingZones={zones}
-						onSave={handleSavePricing}
-					/>
-				</Card.Content>
+					</Card.Content>
 			</Card.Root>
 
-			<!-- Link to full billing page -->
-			<Button variant="outline" href={localizeHref(`/courier/billing/${client.id}`)}>
+			<!-- Link to edit pricing in billing -->
+			<Button href={localizeHref(`/courier/billing/${client.id}`)}>
+				<Euro class="size-4 mr-2" />
 				{m.billing_client_detail()}
 			</Button>
 		</Tabs.Content>

@@ -9,6 +9,7 @@
 import { formatDate } from '$lib/utils.js';
 	import type { PageData } from './$types';
 	import { Euro, MapPin, Package, Receipt, Download } from '@lucide/svelte';
+	import SkeletonList from '$lib/components/SkeletonList.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -265,7 +266,7 @@ import { formatDate } from '$lib/utils.js';
 		</Card.Header>
 		<Card.Content class="p-0">
 			{#if loading}
-				<p class="py-8 text-center text-muted-foreground">{m.loading()}</p>
+				<SkeletonList variant="service" count={5} />
 			{:else if services.length === 0}
 				<p class="py-8 text-center text-muted-foreground">{m.client_no_services()}</p>
 			{:else}

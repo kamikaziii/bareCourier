@@ -4,9 +4,20 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
+	import { Separator } from '$lib/components/ui/separator/index.js';
+	import AddressInput from '$lib/components/AddressInput.svelte';
+	import RouteMap from '$lib/components/RouteMap.svelte';
+	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
+	import {
+		calculateRoute,
+		calculateHaversineDistance,
+		calculateServiceDistance
+	} from '$lib/services/distance.js';
+	import { getCourierPricingSettings } from '$lib/services/pricing.js';
 	import type { PageData, ActionData } from './$types';
+	import type { TimeSlot, UrgencyFee } from '$lib/database.types.js';
 	import { ArrowLeft } from '@lucide/svelte';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -21,10 +32,104 @@
 	// svelte-ignore state_referenced_locally
 	let notes = $state(data.service.notes || '');
 
+	// Coordinates and distance
+	// svelte-ignore state_referenced_locally
+	let pickupCoords = $state<[number, number] | null>(
+		data.service.pickup_lng && data.service.pickup_lat
+			? [data.service.pickup_lng, data.service.pickup_lat]
+			: null
+	);
+	// svelte-ignore state_referenced_locally
+	let deliveryCoords = $state<[number, number] | null>(
+		data.service.delivery_lng && data.service.delivery_lat
+			? [data.service.delivery_lng, data.service.delivery_lat]
+			: null
+	);
+	let routeGeometry = $state<string | null>(null);
+	// svelte-ignore state_referenced_locally
+	let distanceKm = $state<number | null>(data.service.distance_km);
+	let calculatingDistance = $state(false);
+
+	// Schedule
+	// svelte-ignore state_referenced_locally
+	let scheduledDate = $state<string | null>(data.service.scheduled_date);
+	// svelte-ignore state_referenced_locally
+	let scheduledTimeSlot = $state<TimeSlot | null>(data.service.scheduled_time_slot as TimeSlot | null);
+	// svelte-ignore state_referenced_locally
+	let scheduledTime = $state<string | null>(data.service.scheduled_time || null);
+
+	// Urgency fees
+	let urgencyFees = $state<UrgencyFee[]>([]);
+	// svelte-ignore state_referenced_locally
+	let selectedUrgencyFeeId = $state<string>(data.service.urgency_fee_id || '');
+
+	// Load urgency fees
+	$effect(() => {
+		data.supabase
+			.from('urgency_fees')
+			.select('*')
+			.eq('active', true)
+			.order('sort_order')
+			.then(({ data: fees }) => {
+				urgencyFees = (fees || []) as UrgencyFee[];
+			});
+	});
+
+	// Load initial route geometry if coords exist
+	$effect(() => {
+		if (pickupCoords && deliveryCoords) {
+			calculateRoute(pickupCoords, deliveryCoords).then((result) => {
+				routeGeometry = result?.geometry || null;
+			});
+		}
+	});
+
 	function handleClientChange() {
 		const client = data.clients.find((c) => c.id === clientId);
 		if (client?.default_pickup_location && !pickupLocation) {
 			pickupLocation = client.default_pickup_location;
+		}
+	}
+
+	function handlePickupSelect(address: string, coords: [number, number] | null) {
+		pickupLocation = address;
+		pickupCoords = coords;
+		calculateRouteIfReady();
+	}
+
+	function handleDeliverySelect(address: string, coords: [number, number] | null) {
+		deliveryLocation = address;
+		deliveryCoords = coords;
+		calculateRouteIfReady();
+	}
+
+	async function calculateRouteIfReady() {
+		if (pickupCoords && deliveryCoords) {
+			calculatingDistance = true;
+			try {
+				const settings = await getCourierPricingSettings(data.supabase);
+				if (settings) {
+					const result = await calculateServiceDistance({
+						pickupCoords,
+						deliveryCoords,
+						warehouseCoords: settings.warehouseCoords,
+						pricingMode: settings.pricingMode,
+						roundDistance: settings.roundDistance
+					});
+					distanceKm = result.totalDistanceKm;
+				} else {
+					const result = await calculateRoute(pickupCoords, deliveryCoords);
+					distanceKm = result ? result.distanceKm : calculateHaversineDistance(pickupCoords, deliveryCoords);
+				}
+				const routeResult = await calculateRoute(pickupCoords, deliveryCoords);
+				routeGeometry = routeResult?.geometry || null;
+			} catch {
+				distanceKm = calculateHaversineDistance(pickupCoords, deliveryCoords);
+			}
+			calculatingDistance = false;
+		} else {
+			distanceKm = null;
+			routeGeometry = null;
 		}
 	}
 </script>
@@ -70,7 +175,7 @@
 						onchange={handleClientChange}
 						required
 						disabled={loading}
-						class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+						class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
 					>
 						<option value="">{m.form_select_client()}</option>
 						{#each data.clients as client (client.id)}
@@ -82,35 +187,104 @@
 				<div class="grid gap-4 md:grid-cols-2">
 					<div class="space-y-2">
 						<Label for="pickup">{m.form_pickup_location()} *</Label>
-						<Input
+						<AddressInput
 							id="pickup"
-							name="pickup_location"
-							type="text"
 							bind:value={pickupLocation}
-							required
+							onSelect={handlePickupSelect}
+							placeholder={m.form_pickup_placeholder()}
 							disabled={loading}
 						/>
 					</div>
 					<div class="space-y-2">
 						<Label for="delivery">{m.form_delivery_location()} *</Label>
-						<Input
+						<AddressInput
 							id="delivery"
-							name="delivery_location"
-							type="text"
 							bind:value={deliveryLocation}
-							required
+							onSelect={handleDeliverySelect}
+							placeholder={m.form_delivery_placeholder()}
 							disabled={loading}
 						/>
 					</div>
 				</div>
+
+				<!-- Route Map Preview -->
+				{#if pickupCoords || deliveryCoords}
+					<div class="space-y-2">
+						<Label>{m.map_route()}</Label>
+						<RouteMap
+							{pickupCoords}
+							{deliveryCoords}
+							{routeGeometry}
+							{distanceKm}
+							height="200px"
+						/>
+						{#if calculatingDistance}
+							<p class="text-sm text-muted-foreground">{m.map_calculating()}</p>
+						{/if}
+					</div>
+				{/if}
+
+				<Separator />
+
+				<!-- Schedule -->
+				<div class="space-y-2">
+					<Label>{m.schedule_optional()}</Label>
+					<SchedulePicker
+						selectedDate={scheduledDate}
+						selectedTimeSlot={scheduledTimeSlot}
+						selectedTime={scheduledTime}
+						onDateChange={(date) => (scheduledDate = date)}
+						onTimeSlotChange={(slot) => (scheduledTimeSlot = slot)}
+						onTimeChange={(time) => (scheduledTime = time)}
+						disabled={loading}
+					/>
+				</div>
+
+				<Separator />
+
+				<!-- Urgency fee selection -->
+				<div class="space-y-2">
+					<Label for="urgency">{m.form_urgency()}</Label>
+					<select
+						id="urgency"
+						name="urgency_fee_id"
+						bind:value={selectedUrgencyFeeId}
+						class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+						disabled={loading}
+					>
+						<option value="">{m.urgency_standard()}</option>
+						{#each urgencyFees as fee (fee.id)}
+							<option value={fee.id}>
+								{fee.name}
+								{#if fee.multiplier > 1 || fee.flat_fee > 0}
+									({fee.multiplier}x{fee.flat_fee > 0 ? ` + €${fee.flat_fee}` : ''})
+								{/if}
+							</option>
+						{/each}
+					</select>
+				</div>
+
+				<Separator />
 
 				<div class="space-y-2">
 					<Label for="notes">{m.form_notes_optional()}</Label>
 					<Input id="notes" name="notes" type="text" bind:value={notes} disabled={loading} />
 				</div>
 
+				<!-- Hidden fields for form submission -->
+				<input type="hidden" name="pickup_location" value={pickupLocation} />
+				<input type="hidden" name="delivery_location" value={deliveryLocation} />
+				<input type="hidden" name="pickup_lat" value={pickupCoords?.[1] ?? ''} />
+				<input type="hidden" name="pickup_lng" value={pickupCoords?.[0] ?? ''} />
+				<input type="hidden" name="delivery_lat" value={deliveryCoords?.[1] ?? ''} />
+				<input type="hidden" name="delivery_lng" value={deliveryCoords?.[0] ?? ''} />
+				<input type="hidden" name="distance_km" value={distanceKm ?? ''} />
+				<input type="hidden" name="scheduled_date" value={scheduledDate ?? ''} />
+				<input type="hidden" name="scheduled_time_slot" value={scheduledTimeSlot ?? ''} />
+				<input type="hidden" name="scheduled_time" value={scheduledTime ?? ''} />
+
 				<div class="flex gap-3 pt-4">
-					<Button type="submit" disabled={loading}>
+					<Button type="submit" disabled={loading || !clientId || !pickupLocation || !deliveryLocation || (scheduledTimeSlot === 'specific' && !scheduledTime)}>
 						{loading ? m.saving() : m.action_save()}
 					</Button>
 					<Button

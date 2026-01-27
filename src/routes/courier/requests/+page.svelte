@@ -7,6 +7,8 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
+	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
+	import { CheckSquare } from '@lucide/svelte';
 	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
@@ -26,6 +28,56 @@
 	let showRejectDialog = $state(false);
 	let showSuggestDialog = $state(false);
 	let selectedService = $state<ServiceWithClient | null>(null);
+
+	// Batch selection
+	let selectionMode = $state(false);
+	let selectedIds = $state<Set<string>>(new Set());
+	let batchLoading = $state(false);
+	let batchMessage = $state<{ type: 'success' | 'error'; text: string } | null>(null);
+
+	function toggleSelectionMode() {
+		selectionMode = !selectionMode;
+		if (!selectionMode) selectedIds = new Set();
+	}
+
+	function toggleRequestSelection(id: string) {
+		const s = new Set(selectedIds);
+		if (s.has(id)) s.delete(id); else s.add(id);
+		selectedIds = s;
+	}
+
+	function selectAllRequests() {
+		selectedIds = new Set(data.pendingRequests.map((s: ServiceWithClient) => s.id));
+	}
+
+	const selectedCount = $derived(selectedIds.size);
+	const hasSelection = $derived(selectedCount > 0);
+
+	async function handleBatchAccept() {
+		if (!hasSelection) return;
+		batchLoading = true;
+		batchMessage = null;
+
+		const formData = new FormData();
+		formData.set('service_ids', JSON.stringify(Array.from(selectedIds)));
+
+		try {
+			const response = await fetch('?/batchAccept', { method: 'POST', body: formData });
+			const result = await response.json();
+			if (result.data?.success) {
+				batchMessage = { type: 'success', text: `${selectedCount} requests accepted` };
+				selectionMode = false;
+				selectedIds = new Set();
+				await invalidateAll();
+				setTimeout(() => { batchMessage = null; }, 3000);
+			} else {
+				batchMessage = { type: 'error', text: result.data?.error || 'Failed' };
+			}
+		} catch {
+			batchMessage = { type: 'error', text: 'An error occurred' };
+		}
+		batchLoading = false;
+	}
 
 	// Form states for dialogs
 	let rejectionReason = $state('');
@@ -252,7 +304,44 @@
 				{data.pendingRequests.length === 1 ? m.requests_count_one({ count: data.pendingRequests.length }) : m.requests_count_other({ count: data.pendingRequests.length })}
 			</p>
 		</div>
+		{#if data.pendingRequests.length > 0}
+			<Button
+				variant={selectionMode ? 'default' : 'outline'}
+				size="sm"
+				onclick={toggleSelectionMode}
+			>
+				<CheckSquare class="size-4 sm:mr-1" />
+				<span class="hidden sm:inline">{selectionMode ? m.batch_deselect_all() : m.batch_selection_mode()}</span>
+			</Button>
+		{/if}
 	</div>
+
+	<!-- Selection Toolbar -->
+	{#if selectionMode}
+		<div class="flex items-center gap-2 flex-wrap rounded-lg border bg-muted/50 p-2">
+			<Button variant="outline" size="sm" onclick={selectAllRequests}>
+				{m.batch_select_all()}
+			</Button>
+			{#if hasSelection}
+				<span class="text-sm text-muted-foreground">
+					{m.batch_selected_count({ count: selectedCount })}
+				</span>
+				<Button size="sm" onclick={handleBatchAccept} disabled={batchLoading}>
+					{batchLoading ? m.saving() : m.batch_accept()}
+				</Button>
+				<Button size="sm" variant="ghost" onclick={() => (selectedIds = new Set())}>
+					{m.batch_deselect_all()}
+				</Button>
+			{/if}
+		</div>
+	{/if}
+
+	<!-- Batch feedback -->
+	{#if batchMessage}
+		<div class="rounded-md p-3 {batchMessage.type === 'success' ? 'bg-green-500/10 text-green-600' : 'bg-destructive/10 text-destructive'}">
+			{batchMessage.text}
+		</div>
+	{/if}
 
 	{#if data.pendingRequests.length === 0}
 		<Card.Root>
@@ -263,9 +352,16 @@
 	{:else}
 		<div class="grid gap-4">
 			{#each data.pendingRequests as service}
-				<Card.Root>
+				<Card.Root class={selectedIds.has(service.id) ? "ring-2 ring-primary" : ""}>
 					<Card.Content class="pt-6">
 						<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+							{#if selectionMode}
+								<Checkbox
+									checked={selectedIds.has(service.id)}
+									onCheckedChange={() => toggleRequestSelection(service.id)}
+									class="mt-1 shrink-0"
+								/>
+							{/if}
 							<div class="space-y-3 flex-1">
 								<!-- Client info -->
 								<div class="flex items-center gap-2">

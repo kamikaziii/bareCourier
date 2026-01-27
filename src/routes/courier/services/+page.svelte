@@ -24,7 +24,8 @@
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 import { formatDate, formatTimeSlot } from '$lib/utils.js';
-	import { CalendarClock } from '@lucide/svelte';
+	import { CalendarClock, CheckSquare, Check, Download } from '@lucide/svelte';
+	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import type { PageData } from './$types';
 	import type { TimeSlot, UrgencyFee } from '$lib/database.types.js';
 	import SkeletonList from '$lib/components/SkeletonList.svelte';
@@ -42,6 +43,57 @@ import { formatDate, formatTimeSlot } from '$lib/utils.js';
 	let statusFilter = $state<'all' | 'pending' | 'delivered'>('all');
 	let clientFilter = $state<string>('all');
 	let searchQuery = $state('');
+
+	// Batch selection
+	let selectionMode = $state(false);
+	let selectedIds = $state<Set<string>>(new Set());
+	let batchLoading = $state(false);
+	let batchMessage = $state<{ type: 'success' | 'error'; text: string } | null>(null);
+
+	function toggleSelectionMode() {
+		selectionMode = !selectionMode;
+		if (!selectionMode) selectedIds = new Set();
+	}
+
+	function toggleServiceSelection(id: string) {
+		const s = new Set(selectedIds);
+		if (s.has(id)) s.delete(id); else s.add(id);
+		selectedIds = s;
+	}
+
+	function selectAllVisible() {
+		selectedIds = new Set(filteredServices.filter(s => s.status === 'pending').map(s => s.id));
+	}
+
+	const selectedCount = $derived(selectedIds.size);
+	const hasSelection = $derived(selectedCount > 0);
+
+	async function handleBatchMarkDelivered() {
+		if (!hasSelection) return;
+		batchLoading = true;
+		batchMessage = null;
+
+		const formData = new FormData();
+		formData.set('service_ids', JSON.stringify(Array.from(selectedIds)));
+		formData.set('status', 'delivered');
+
+		try {
+			const response = await fetch('?/batchStatusChange', { method: 'POST', body: formData });
+			const result = await response.json();
+			if (result.data?.success) {
+				batchMessage = { type: 'success', text: `${selectedCount} services marked as delivered` };
+				selectionMode = false;
+				selectedIds = new Set();
+				await loadData();
+				setTimeout(() => { batchMessage = null; }, 3000);
+			} else {
+				batchMessage = { type: 'error', text: result.data?.error || 'Failed' };
+			}
+		} catch {
+			batchMessage = { type: 'error', text: 'An error occurred' };
+		}
+		batchLoading = false;
+	}
 
 	// New service form
 	let showForm = $state(false);
@@ -214,13 +266,36 @@ import { formatDate, formatTimeSlot } from '$lib/utils.js';
 					const matchesClient = s.profiles?.name?.toLowerCase().includes(query);
 					const matchesPickup = s.pickup_location?.toLowerCase().includes(query);
 					const matchesDelivery = s.delivery_location?.toLowerCase().includes(query);
-					if (!matchesClient && !matchesPickup && !matchesDelivery) return false;
+					const matchesNotes = s.notes?.toLowerCase().includes(query);
+					if (!matchesClient && !matchesPickup && !matchesDelivery && !matchesNotes) return false;
 				}
 				return true;
 			}),
 			pastDueConfig
 		)
 	);
+
+	function exportCSV() {
+		const escapeCell = (val: string) => `"${String(val ?? '').replace(/"/g, '""')}"`;
+		const headers = ['Date', 'Client', 'Pickup', 'Delivery', 'Distance (km)', 'Price', 'Status'];
+		const rows = filteredServices.map((s) => [
+			formatDate(s.scheduled_date || s.created_at),
+			s.profiles?.name || '',
+			s.pickup_location,
+			s.delivery_location,
+			s.distance_km ? `${s.distance_km}` : '',
+			s.calculated_price ? `${s.calculated_price}` : '',
+			s.status
+		]);
+
+		const bom = '\uFEFF';
+		const csv = bom + [headers.map(escapeCell).join(','), ...rows.map(r => r.map(escapeCell).join(','))].join('\n');
+		const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+		const link = document.createElement('a');
+		link.href = URL.createObjectURL(blob);
+		link.download = `services_${new Date().toISOString().split('T')[0]}.csv`;
+		link.click();
+	}
 
 	function getStatusLabel(status: string): string {
 		return status === 'pending' ? m.status_pending() : m.status_delivered();
@@ -425,7 +500,52 @@ import { formatDate, formatTimeSlot } from '$lib/utils.js';
 				<option value={client.id}>{client.name}</option>
 			{/each}
 		</select>
+		<Button
+			variant="outline"
+			onclick={exportCSV}
+			disabled={filteredServices.length === 0}
+			class="shrink-0"
+		>
+			<Download class="size-4 sm:mr-1" />
+			<span class="hidden sm:inline">CSV</span>
+		</Button>
+		<Button
+			variant={selectionMode ? 'default' : 'outline'}
+			onclick={toggleSelectionMode}
+			class="shrink-0"
+		>
+			<CheckSquare class="size-4 sm:mr-1" />
+			<span class="hidden sm:inline">{selectionMode ? m.batch_deselect_all() : m.batch_selection_mode()}</span>
+		</Button>
 	</div>
+
+	<!-- Selection Toolbar -->
+	{#if selectionMode}
+		<div class="flex items-center gap-2 flex-wrap rounded-lg border bg-muted/50 p-2">
+			<Button variant="outline" size="sm" onclick={selectAllVisible}>
+				{m.batch_select_all()}
+			</Button>
+			{#if hasSelection}
+				<span class="text-sm text-muted-foreground">
+					{m.batch_selected_count({ count: selectedCount })}
+				</span>
+				<Button size="sm" onclick={handleBatchMarkDelivered} disabled={batchLoading}>
+					<Check class="size-4 mr-1" />
+					{batchLoading ? m.saving() : m.batch_mark_delivered()}
+				</Button>
+				<Button size="sm" variant="ghost" onclick={() => (selectedIds = new Set())}>
+					{m.batch_deselect_all()}
+				</Button>
+			{/if}
+		</div>
+	{/if}
+
+	<!-- Batch feedback -->
+	{#if batchMessage}
+		<div class="rounded-md p-3 {batchMessage.type === 'success' ? 'bg-green-500/10 text-green-600' : 'bg-destructive/10 text-destructive'}">
+			{batchMessage.text}
+		</div>
+	{/if}
 
 	<!-- Warning message (e.g., no pricing configured) -->
 	{#if formWarning}
@@ -458,14 +578,32 @@ import { formatDate, formatTimeSlot } from '$lib/utils.js';
 				{m.services_showing({ count: filteredServices.length })}
 			</p>
 			{#each filteredServices as service (service.id)}
-				<a href={localizeHref(`/courier/services/${service.id}`)} class="block">
-					<Card.Root class="overflow-hidden transition-colors hover:bg-muted/50">
+				<button
+					type="button"
+					class="block w-full text-left bg-transparent border-0 p-0 cursor-pointer"
+					onclick={() => {
+						if (selectionMode && service.status === 'pending') {
+							toggleServiceSelection(service.id);
+						} else {
+							window.location.href = localizeHref(`/courier/services/${service.id}`);
+						}
+					}}
+				>
+					<Card.Root class="overflow-hidden transition-colors hover:bg-muted/50 {selectedIds.has(service.id) ? 'ring-2 ring-primary' : ''}">
 						<Card.Content class="flex items-start gap-3 p-4">
-							<div
-								class="mt-1.5 size-3 shrink-0 rounded-full {service.status === 'pending'
-									? 'bg-blue-500'
-									: 'bg-green-500'}"
-							></div>
+							{#if selectionMode && service.status === 'pending'}
+								<Checkbox
+									checked={selectedIds.has(service.id)}
+									onCheckedChange={() => toggleServiceSelection(service.id)}
+									class="mt-1"
+								/>
+							{:else}
+								<div
+									class="mt-1.5 size-3 shrink-0 rounded-full {service.status === 'pending'
+										? 'bg-blue-500'
+										: 'bg-green-500'}"
+								></div>
+							{/if}
 							<div class="min-w-0 flex-1 space-y-1">
 								<div class="flex items-center justify-between gap-2">
 									<p class="font-semibold truncate">
@@ -502,7 +640,7 @@ import { formatDate, formatTimeSlot } from '$lib/utils.js';
 							</div>
 						</Card.Content>
 					</Card.Root>
-				</a>
+				</button>
 			{/each}
 		{/if}
 	</div>

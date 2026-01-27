@@ -14,6 +14,7 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	import type { Service } from '$lib/database.types.js';
 	import { Search, X, Filter, CalendarClock } from '@lucide/svelte';
 	import PullToRefresh from '$lib/components/PullToRefresh.svelte';
+	import SkeletonList from '$lib/components/SkeletonList.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -32,6 +33,7 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 
 	// Filter state
 	let statusFilter = $state<'all' | 'pending' | 'delivered'>('all');
+	let dateFilter = $state<'today' | 'tomorrow' | 'all'>('all');
 	let searchQuery = $state('');
 	let dateFrom = $state('');
 	let dateTo = $state('');
@@ -68,8 +70,21 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 			result = result.filter(
 				(s) =>
 					s.pickup_location.toLowerCase().includes(query) ||
-					s.delivery_location.toLowerCase().includes(query)
+					s.delivery_location.toLowerCase().includes(query) ||
+					s.notes?.toLowerCase().includes(query)
 			);
+		}
+
+		// Quick date filter
+		if (dateFilter !== 'all') {
+			const today = new Date();
+			today.setHours(0, 0, 0, 0);
+			const targetDate = dateFilter === 'tomorrow' ? new Date(today.getTime() + 86400000) : today;
+			const targetStr = targetDate.toISOString().split('T')[0];
+			result = result.filter((s) => {
+				const schedDate = s.scheduled_date || s.requested_date;
+				return schedDate === targetStr;
+			});
 		}
 
 		// Date range filter
@@ -89,7 +104,7 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 
 	// Check if any filter is active
 	const hasActiveFilters = $derived(
-		statusFilter !== 'all' || searchQuery.trim() !== '' || dateFrom !== '' || dateTo !== ''
+		statusFilter !== 'all' || dateFilter !== 'all' || searchQuery.trim() !== '' || dateFrom !== '' || dateTo !== ''
 	);
 
 	// Filter services by type
@@ -146,6 +161,7 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 
 	function clearFilters() {
 		statusFilter = 'all';
+		dateFilter = 'all';
 		searchQuery = '';
 		dateFrom = '';
 		dateTo = '';
@@ -327,6 +343,24 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	<div class="space-y-4">
 		<!-- Quick filters row -->
 		<div class="flex flex-wrap items-center gap-2">
+			<!-- Date filter buttons -->
+			<Button
+				variant={dateFilter === 'today' ? 'default' : 'outline'}
+				size="sm"
+				onclick={() => (dateFilter = dateFilter === 'today' ? 'all' : 'today')}
+			>
+				{m.dashboard_today()}
+			</Button>
+			<Button
+				variant={dateFilter === 'tomorrow' ? 'default' : 'outline'}
+				size="sm"
+				onclick={() => (dateFilter = dateFilter === 'tomorrow' ? 'all' : 'tomorrow')}
+			>
+				{m.dashboard_tomorrow()}
+			</Button>
+
+			<div class="w-px h-6 bg-border"></div>
+
 			<!-- Status filter buttons -->
 			<Button
 				variant={statusFilter === 'all' ? 'default' : 'outline'}
@@ -416,7 +450,7 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	<!-- Services List -->
 	<div class="space-y-3">
 		{#if loading}
-			<p class="text-center text-muted-foreground py-8">{m.loading()}</p>
+			<SkeletonList variant="service" count={5} />
 		{:else if filteredServices.length === 0}
 			<Card.Root>
 				<Card.Content class="py-8 text-center">

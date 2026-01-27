@@ -535,6 +535,8 @@
 	"batch_deselect_all": "Deselect All",
 	"batch_selected_count": "{count} selected",
 	"batch_selection_mode": "Selection Mode",
+	"batch_mark_delivered": "Mark Delivered",
+	"batch_accept": "Accept Selected",
 	"notification_past_due_title": "Delivery Past Due",
 	"notification_past_due_body": "{clientName} delivery is {time} overdue",
 	"notification_daily_summary_title": "Today's Deliveries",

@@ -59,9 +59,22 @@ export const actions: Actions = {
 		const pickup_location = formData.get('pickup_location') as string;
 		const delivery_location = formData.get('delivery_location') as string;
 		const notes = formData.get('notes') as string;
+		const scheduled_date = (formData.get('scheduled_date') as string) || null;
+		const scheduled_time_slot = (formData.get('scheduled_time_slot') as string) || null;
+		const scheduled_time = (formData.get('scheduled_time') as string) || null;
+		const pickup_lat = formData.get('pickup_lat') ? parseFloat(formData.get('pickup_lat') as string) : null;
+		const pickup_lng = formData.get('pickup_lng') ? parseFloat(formData.get('pickup_lng') as string) : null;
+		const delivery_lat = formData.get('delivery_lat') ? parseFloat(formData.get('delivery_lat') as string) : null;
+		const delivery_lng = formData.get('delivery_lng') ? parseFloat(formData.get('delivery_lng') as string) : null;
+		const distance_km = formData.get('distance_km') ? parseFloat(formData.get('distance_km') as string) : null;
+		const urgency_fee_id = (formData.get('urgency_fee_id') as string) || null;
 
 		if (!client_id || !pickup_location || !delivery_location) {
 			return { success: false, error: 'Required fields missing' };
+		}
+
+		if (scheduled_time_slot === 'specific' && !scheduled_time) {
+			return { success: false, error: 'Specific time is required when "specific" time slot is selected' };
 		}
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -71,7 +84,17 @@ export const actions: Actions = {
 				client_id,
 				pickup_location,
 				delivery_location,
-				notes: notes || null
+				notes: notes || null,
+				scheduled_date,
+				scheduled_time_slot,
+				scheduled_time: scheduled_time_slot === 'specific' ? scheduled_time : null,
+				pickup_lat,
+				pickup_lng,
+				delivery_lat,
+				delivery_lng,
+				distance_km,
+				urgency_fee_id: urgency_fee_id || null,
+				updated_at: new Date().toISOString()
 			})
 			.eq('id', params.id);
 

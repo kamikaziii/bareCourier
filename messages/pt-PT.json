@@ -535,6 +535,8 @@
 	"batch_deselect_all": "Desselecionar Todos",
 	"batch_selected_count": "{count} selecionados",
 	"batch_selection_mode": "Modo de Seleção",
+	"batch_mark_delivered": "Marcar Entregues",
+	"batch_accept": "Aceitar Selecionados",
 	"notification_past_due_title": "Entrega Atrasada",
 	"notification_past_due_body": "Entrega de {clientName} está {time} atrasada",
 	"notification_daily_summary_title": "Entregas de Hoje",
