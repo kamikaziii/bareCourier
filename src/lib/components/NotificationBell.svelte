@@ -9,6 +9,7 @@
 	import type { Notification } from '$lib/database.types';
 	import type { SupabaseClient } from '@supabase/supabase-js';
 	import { Bell, CheckCheck, Package, Clock, CalendarClock, Settings, AlertTriangle, BarChart3 } from '@lucide/svelte';
+	import { formatBadge } from '$lib/utils.js';
 
 	let {
 		supabase,
@@ -126,14 +127,13 @@
 		}
 	}
 
-	async function handleNotificationClick(notification: Notification) {
-		await markAsRead(notification.id);
+	function handleNotificationClick(notification: Notification) {
+		open = false;
+		markAsRead(notification.id);
 
-		// Navigate to service if service_id is present
 		if (notification.service_id) {
 			const basePath = userRole === 'courier' ? '/courier/services' : '/client/services';
-			open = false;
-			await goto(localizeHref(`${basePath}/${notification.service_id}`));
+			goto(localizeHref(`${basePath}/${notification.service_id}`));
 		}
 	}
 
@@ -152,7 +152,10 @@
 					filter: `user_id=eq.${userId}`
 				},
 				(payload) => {
-					notifications = [payload.new as Notification, ...notifications];
+					const newNotif = payload.new as Notification;
+					if (!notifications.some((n) => n.id === newNotif.id)) {
+						notifications = [newNotif, ...notifications].slice(0, 20);
+					}
 				}
 			)
 			.subscribe();
@@ -163,6 +166,38 @@
 	});
 </script>
 
+{#snippet notificationItem(notification: Notification)}
+	{@const Icon = getNotificationIcon(notification.type)}
+	<button
+		class="flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-muted {!notification.read
+			? 'bg-muted/50'
+			: ''}"
+		onclick={() => handleNotificationClick(notification)}
+	>
+		<div
+			class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full {!notification.read
+				? 'bg-primary/10 text-primary'
+				: 'bg-muted text-muted-foreground'}"
+		>
+			<Icon class="size-4" />
+		</div>
+		<div class="min-w-0 flex-1">
+			<p class="text-sm font-medium {!notification.read ? '' : 'text-muted-foreground'}">
+				{notification.title}
+			</p>
+			<p class="text-xs text-muted-foreground line-clamp-2">
+				{notification.message}
+			</p>
+			<p class="mt-1 text-xs text-muted-foreground">
+				{formatRelativeTime(notification.created_at)}
+			</p>
+		</div>
+		{#if !notification.read}
+			<div class="mt-2 size-2 shrink-0 rounded-full bg-primary"></div>
+		{/if}
+	</button>
+{/snippet}
+
 <DropdownMenu.Root bind:open>
 	<DropdownMenu.Trigger>
 		{#snippet child({ props })}
@@ -172,7 +207,7 @@
 					<span
 						class="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-destructive text-xs text-destructive-foreground"
 					>
-						{unreadCount > 9 ? '9+' : unreadCount}
+						{formatBadge(unreadCount, 9)}
 					</span>
 				{/if}
 			</Button>
@@ -257,35 +292,7 @@
 						{m.notification_time_today()}
 					</div>
 					{#each groupedNotifications.today as notification (notification.id)}
-						{@const Icon = getNotificationIcon(notification.type)}
-						<button
-							class="flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-muted {!notification.read
-								? 'bg-muted/50'
-								: ''}"
-							onclick={() => handleNotificationClick(notification)}
-						>
-							<div
-								class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full {!notification.read
-									? 'bg-primary/10 text-primary'
-									: 'bg-muted text-muted-foreground'}"
-							>
-								<Icon class="size-4" />
-							</div>
-							<div class="min-w-0 flex-1">
-								<p class="text-sm font-medium {!notification.read ? '' : 'text-muted-foreground'}">
-									{notification.title}
-								</p>
-								<p class="text-xs text-muted-foreground line-clamp-2">
-									{notification.message}
-								</p>
-								<p class="mt-1 text-xs text-muted-foreground">
-									{formatRelativeTime(notification.created_at)}
-								</p>
-							</div>
-							{#if !notification.read}
-								<div class="mt-2 size-2 shrink-0 rounded-full bg-primary"></div>
-							{/if}
-						</button>
+						{@render notificationItem(notification)}
 					{/each}
 				{/if}
 
@@ -294,35 +301,7 @@
 						{m.notification_time_earlier()}
 					</div>
 					{#each groupedNotifications.earlier as notification (notification.id)}
-						{@const Icon = getNotificationIcon(notification.type)}
-						<button
-							class="flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-muted {!notification.read
-								? 'bg-muted/50'
-								: ''}"
-							onclick={() => handleNotificationClick(notification)}
-						>
-							<div
-								class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full {!notification.read
-									? 'bg-primary/10 text-primary'
-									: 'bg-muted text-muted-foreground'}"
-							>
-								<Icon class="size-4" />
-							</div>
-							<div class="min-w-0 flex-1">
-								<p class="text-sm font-medium {!notification.read ? '' : 'text-muted-foreground'}">
-									{notification.title}
-								</p>
-								<p class="text-xs text-muted-foreground line-clamp-2">
-									{notification.message}
-								</p>
-								<p class="mt-1 text-xs text-muted-foreground">
-									{formatRelativeTime(notification.created_at)}
-								</p>
-							</div>
-							{#if !notification.read}
-								<div class="mt-2 size-2 shrink-0 rounded-full bg-primary"></div>
-							{/if}
-						</button>
+						{@render notificationItem(notification)}
 					{/each}
 				{/if}
 			{/if}
