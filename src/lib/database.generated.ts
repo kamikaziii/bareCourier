@@ -3,470 +3,795 @@
  *
  * This file is generated from the Supabase schema.
  * To regenerate, run: pnpm run types:generate
- *
- * Manual type aliases and custom types live in database.types.ts
+ * or use mcp__supabase__generate_typescript_types
  */
 
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
-	public: {
-		Tables: {
-			profiles: {
-				Row: {
-					id: string;
-					role: 'courier' | 'client';
-					name: string;
-					phone: string | null;
-					default_pickup_location: string | null;
-					active: boolean;
-					created_at: string;
-					push_notifications_enabled: boolean;
-					email_notifications_enabled: boolean;
-					pricing_mode: 'warehouse' | 'zone' | null;
-					warehouse_lat: number | null;
-					warehouse_lng: number | null;
-					show_price_to_courier: boolean | null;
-					show_price_to_client: boolean | null;
-					default_urgency_fee_id: string | null;
-					minimum_charge: number | null;
-					round_distance: boolean | null;
-					past_due_settings: Json | null;
-					timezone: string;
-					time_slots: Json | null;
-					working_days: Json | null;
-					notification_preferences: Json | null;
-					vat_enabled: boolean;
-					vat_rate: number | null;
-					prices_include_vat: boolean;
-				};
-				Insert: {
-					id: string;
-					role: 'courier' | 'client';
-					name: string;
-					phone?: string | null;
-					default_pickup_location?: string | null;
-					active?: boolean;
-					created_at?: string;
-					push_notifications_enabled?: boolean;
-					email_notifications_enabled?: boolean;
-					pricing_mode?: 'warehouse' | 'zone' | null;
-					warehouse_lat?: number | null;
-					warehouse_lng?: number | null;
-					show_price_to_courier?: boolean | null;
-					show_price_to_client?: boolean | null;
-					default_urgency_fee_id?: string | null;
-					minimum_charge?: number | null;
-					round_distance?: boolean | null;
-					past_due_settings?: Json | null;
-					timezone?: string;
-					time_slots?: Json | null;
-					working_days?: Json | null;
-					notification_preferences?: Json | null;
-					vat_enabled?: boolean;
-					vat_rate?: number | null;
-					prices_include_vat?: boolean;
-				};
-				Update: {
-					id?: string;
-					role?: 'courier' | 'client';
-					name?: string;
-					phone?: string | null;
-					default_pickup_location?: string | null;
-					active?: boolean;
-					created_at?: string;
-					push_notifications_enabled?: boolean;
-					email_notifications_enabled?: boolean;
-					pricing_mode?: 'warehouse' | 'zone' | null;
-					warehouse_lat?: number | null;
-					warehouse_lng?: number | null;
-					show_price_to_courier?: boolean | null;
-					show_price_to_client?: boolean | null;
-					default_urgency_fee_id?: string | null;
-					minimum_charge?: number | null;
-					round_distance?: boolean | null;
-					past_due_settings?: Json | null;
-					timezone?: string;
-					time_slots?: Json | null;
-					working_days?: Json | null;
-					notification_preferences?: Json | null;
-					vat_enabled?: boolean;
-					vat_rate?: number | null;
-					prices_include_vat?: boolean;
-				};
-			};
-			services: {
-				Row: {
-					id: string;
-					client_id: string;
-					pickup_location: string;
-					delivery_location: string;
-					status: 'pending' | 'delivered';
-					notes: string | null;
-					created_at: string;
-					delivered_at: string | null;
-					deleted_at: string | null;
-					updated_at: string;
-					requested_date: string | null;
-					requested_time_slot: 'morning' | 'afternoon' | 'evening' | 'specific' | null;
-					requested_time: string | null;
-					scheduled_date: string | null;
-					scheduled_time_slot: 'morning' | 'afternoon' | 'evening' | 'specific' | null;
-					scheduled_time: string | null;
-					request_status: 'pending' | 'accepted' | 'rejected' | 'suggested';
-					rejection_reason: string | null;
-					suggested_date: string | null;
-					suggested_time_slot: 'morning' | 'afternoon' | 'evening' | 'specific' | null;
-					suggested_time: string | null;
-					pickup_lat: number | null;
-					pickup_lng: number | null;
-					delivery_lat: number | null;
-					delivery_lng: number | null;
-					distance_km: number | null;
-					urgency_fee_id: string | null;
-					calculated_price: number | null;
-					price_breakdown: Json | null;
-					price_override_reason: string | null;
-					reschedule_count: number;
-					last_rescheduled_at: string | null;
-					last_rescheduled_by: string | null;
-					pending_reschedule_date: string | null;
-					pending_reschedule_time_slot: string | null;
-					pending_reschedule_time: string | null;
-					pending_reschedule_reason: string | null;
-					pending_reschedule_requested_at: string | null;
-					pending_reschedule_requested_by: string | null;
-					vat_rate_snapshot: number;
-					prices_include_vat_snapshot: boolean;
-				};
-				Insert: {
-					id?: string;
-					client_id: string;
-					pickup_location: string;
-					delivery_location: string;
-					status?: 'pending' | 'delivered';
-					notes?: string | null;
-					created_at?: string;
-					delivered_at?: string | null;
-					deleted_at?: string | null;
-					updated_at?: string;
-					requested_date?: string | null;
-					requested_time_slot?: 'morning' | 'afternoon' | 'evening' | 'specific' | null;
-					requested_time?: string | null;
-					scheduled_date?: string | null;
-					scheduled_time_slot?: 'morning' | 'afternoon' | 'evening' | 'specific' | null;
-					scheduled_time?: string | null;
-					request_status?: 'pending' | 'accepted' | 'rejected' | 'suggested';
-					rejection_reason?: string | null;
-					suggested_date?: string | null;
-					suggested_time_slot?: 'morning' | 'afternoon' | 'evening' | 'specific' | null;
-					suggested_time?: string | null;
-					pickup_lat?: number | null;
-					pickup_lng?: number | null;
-					delivery_lat?: number | null;
-					delivery_lng?: number | null;
-					distance_km?: number | null;
-					urgency_fee_id?: string | null;
-					calculated_price?: number | null;
-					price_breakdown?: Json | null;
-					price_override_reason?: string | null;
-					reschedule_count?: number;
-					last_rescheduled_at?: string | null;
-					last_rescheduled_by?: string | null;
-					pending_reschedule_date?: string | null;
-					pending_reschedule_time_slot?: string | null;
-					pending_reschedule_time?: string | null;
-					pending_reschedule_reason?: string | null;
-					pending_reschedule_requested_at?: string | null;
-					pending_reschedule_requested_by?: string | null;
-					vat_rate_snapshot?: number;
-					prices_include_vat_snapshot?: boolean;
-				};
-				Update: {
-					id?: string;
-					client_id?: string;
-					pickup_location?: string;
-					delivery_location?: string;
-					status?: 'pending' | 'delivered';
-					notes?: string | null;
-					created_at?: string;
-					delivered_at?: string | null;
-					deleted_at?: string | null;
-					updated_at?: string;
-					requested_date?: string | null;
-					requested_time_slot?: 'morning' | 'afternoon' | 'evening' | 'specific' | null;
-					requested_time?: string | null;
-					scheduled_date?: string | null;
-					scheduled_time_slot?: 'morning' | 'afternoon' | 'evening' | 'specific' | null;
-					scheduled_time?: string | null;
-					request_status?: 'pending' | 'accepted' | 'rejected' | 'suggested';
-					rejection_reason?: string | null;
-					suggested_date?: string | null;
-					suggested_time_slot?: 'morning' | 'afternoon' | 'evening' | 'specific' | null;
-					suggested_time?: string | null;
-					pickup_lat?: number | null;
-					pickup_lng?: number | null;
-					delivery_lat?: number | null;
-					delivery_lng?: number | null;
-					distance_km?: number | null;
-					urgency_fee_id?: string | null;
-					calculated_price?: number | null;
-					price_breakdown?: Json | null;
-					price_override_reason?: string | null;
-					reschedule_count?: number;
-					last_rescheduled_at?: string | null;
-					last_rescheduled_by?: string | null;
-					pending_reschedule_date?: string | null;
-					pending_reschedule_time_slot?: string | null;
-					pending_reschedule_time?: string | null;
-					pending_reschedule_reason?: string | null;
-					pending_reschedule_requested_at?: string | null;
-					pending_reschedule_requested_by?: string | null;
-					vat_rate_snapshot?: number;
-					prices_include_vat_snapshot?: boolean;
-				};
-			};
-			service_status_history: {
-				Row: {
-					id: string;
-					service_id: string;
-					old_status: string | null;
-					new_status: string;
-					changed_by: string | null;
-					changed_at: string;
-					notes: string | null;
-				};
-				Insert: {
-					id?: string;
-					service_id: string;
-					old_status?: string | null;
-					new_status: string;
-					changed_by?: string | null;
-					changed_at?: string;
-					notes?: string | null;
-				};
-				Update: {
-					id?: string;
-					service_id?: string;
-					old_status?: string | null;
-					new_status?: string;
-					changed_by?: string | null;
-					changed_at?: string;
-					notes?: string | null;
-				};
-			};
-			notifications: {
-				Row: {
-					id: string;
-					user_id: string;
-					type: 'service_status' | 'new_request' | 'schedule_change' | 'service_created' | 'past_due' | 'daily_summary';
-					title: string;
-					message: string;
-					service_id: string | null;
-					read: boolean;
-					created_at: string;
-				};
-				Insert: {
-					id?: string;
-					user_id: string;
-					type: 'service_status' | 'new_request' | 'schedule_change' | 'service_created' | 'past_due' | 'daily_summary';
-					title: string;
-					message: string;
-					service_id?: string | null;
-					read?: boolean;
-					created_at?: string;
-				};
-				Update: {
-					id?: string;
-					user_id?: string;
-					type?: 'service_status' | 'new_request' | 'schedule_change' | 'service_created' | 'past_due' | 'daily_summary';
-					title?: string;
-					message?: string;
-					service_id?: string | null;
-					read?: boolean;
-					created_at?: string;
-				};
-			};
-			push_subscriptions: {
-				Row: {
-					id: string;
-					user_id: string;
-					endpoint: string;
-					p256dh: string;
-					auth: string;
-					created_at: string;
-				};
-				Insert: {
-					id?: string;
-					user_id: string;
-					endpoint: string;
-					p256dh: string;
-					auth: string;
-					created_at?: string;
-				};
-				Update: {
-					id?: string;
-					user_id?: string;
-					endpoint?: string;
-					p256dh?: string;
-					auth?: string;
-					created_at?: string;
-				};
-			};
-			client_pricing: {
-				Row: {
-					id: string;
-					client_id: string;
-					pricing_model: 'per_km' | 'zone' | 'flat_plus_km';
-					base_fee: number;
-					per_km_rate: number;
-					created_at: string;
-					updated_at: string;
-				};
-				Insert: {
-					id?: string;
-					client_id: string;
-					pricing_model?: 'per_km' | 'zone' | 'flat_plus_km';
-					base_fee?: number;
-					per_km_rate?: number;
-					created_at?: string;
-					updated_at?: string;
-				};
-				Update: {
-					id?: string;
-					client_id?: string;
-					pricing_model?: 'per_km' | 'zone' | 'flat_plus_km';
-					base_fee?: number;
-					per_km_rate?: number;
-					created_at?: string;
-					updated_at?: string;
-				};
-			};
-			pricing_zones: {
-				Row: {
-					id: string;
-					client_id: string;
-					min_km: number;
-					max_km: number | null;
-					price: number;
-					created_at: string;
-				};
-				Insert: {
-					id?: string;
-					client_id: string;
-					min_km?: number;
-					max_km?: number | null;
-					price: number;
-					created_at?: string;
-				};
-				Update: {
-					id?: string;
-					client_id?: string;
-					min_km?: number;
-					max_km?: number | null;
-					price?: number;
-					created_at?: string;
-				};
-			};
-			urgency_fees: {
-				Row: {
-					id: string;
-					name: string;
-					description: string | null;
-					multiplier: number;
-					flat_fee: number;
-					active: boolean;
-					sort_order: number;
-					created_at: string;
-				};
-				Insert: {
-					id?: string;
-					name: string;
-					description?: string | null;
-					multiplier?: number;
-					flat_fee?: number;
-					active?: boolean;
-					sort_order?: number;
-					created_at?: string;
-				};
-				Update: {
-					id?: string;
-					name?: string;
-					description?: string | null;
-					multiplier?: number;
-					flat_fee?: number;
-					active?: boolean;
-					sort_order?: number;
-					created_at?: string;
-				};
-			};
-		};
-		Views: {};
-		Functions: {
-			approve_reschedule: {
-				Args: { p_service_id: string; p_approved_by: string };
-				Returns: Json;
-			};
-			deny_reschedule: {
-				Args: { p_service_id: string; p_denied_by: string; p_denial_reason?: string | null };
-				Returns: Json;
-			};
-			client_approve_reschedule: {
-				Args: { p_service_id: string };
-				Returns: Json;
-			};
-			client_deny_reschedule: {
-				Args: { p_service_id: string; p_denial_reason?: string | null };
-				Returns: Json;
-			};
-			bulk_recalculate_service_prices: {
-				Args: {
-					p_client_id: string;
-					p_minimum_charge?: number;
-					p_service_ids: string[];
-				};
-				Returns: Json;
-			};
-			bulk_reschedule_services: {
-				Args: {
-					p_new_date: string;
-					p_new_time?: string;
-					p_new_time_slot: string;
-					p_reason?: string;
-					p_service_ids: string[];
-					p_user_id?: string;
-				};
-				Returns: Json;
-			};
-			calculate_service_price: {
-				Args: {
-					p_client_id: string;
-					p_distance_km: number;
-					p_urgency_fee_id?: string;
-				};
-				Returns: {
-					price_breakdown: Json;
-					total_price: number;
-				}[];
-			};
-			is_courier: { Args: Record<string, never>; Returns: boolean };
-			replace_pricing_zones: {
-				Args: { p_client_id: string; p_zones: Json };
-				Returns: Json;
-			};
-			reschedule_service: {
-				Args: {
-					p_new_date: string;
-					p_new_time?: string;
-					p_new_time_slot: string;
-					p_notification_message?: string;
-					p_notification_title?: string;
-					p_reason?: string;
-					p_service_id: string;
-				};
-				Returns: Json;
-			};
-		};
-		Enums: {};
-	};
-};
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.1"
+  }
+  public: {
+    Tables: {
+      client_pricing: {
+        Row: {
+          base_fee: number
+          client_id: string
+          created_at: string
+          id: string
+          per_km_rate: number
+          pricing_model: string
+          updated_at: string
+        }
+        Insert: {
+          base_fee?: number
+          client_id: string
+          created_at?: string
+          id?: string
+          per_km_rate?: number
+          pricing_model?: string
+          updated_at?: string
+        }
+        Update: {
+          base_fee?: number
+          client_id?: string
+          created_at?: string
+          id?: string
+          per_km_rate?: number
+          pricing_model?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_pricing_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string
+          read: boolean | null
+          service_id: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message: string
+          read?: boolean | null
+          service_id?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string
+          read?: boolean | null
+          service_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pricing_zones: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          max_km: number | null
+          min_km: number
+          price: number
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          max_km?: number | null
+          min_km?: number
+          price: number
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          max_km?: number | null
+          min_km?: number
+          price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_zones_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          default_pickup_location: string | null
+          default_urgency_fee_id: string | null
+          email_notifications_enabled: boolean | null
+          id: string
+          minimum_charge: number | null
+          name: string
+          notification_preferences: Json | null
+          past_due_settings: Json | null
+          phone: string | null
+          prices_include_vat: boolean | null
+          pricing_mode: string | null
+          push_notifications_enabled: boolean | null
+          role: string
+          round_distance: boolean | null
+          show_price_to_client: boolean | null
+          show_price_to_courier: boolean | null
+          time_slots: Json | null
+          timezone: string | null
+          vat_enabled: boolean | null
+          vat_rate: number | null
+          warehouse_lat: number | null
+          warehouse_lng: number | null
+          working_days: Json | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          default_pickup_location?: string | null
+          default_urgency_fee_id?: string | null
+          email_notifications_enabled?: boolean | null
+          id: string
+          minimum_charge?: number | null
+          name: string
+          notification_preferences?: Json | null
+          past_due_settings?: Json | null
+          phone?: string | null
+          prices_include_vat?: boolean | null
+          pricing_mode?: string | null
+          push_notifications_enabled?: boolean | null
+          role: string
+          round_distance?: boolean | null
+          show_price_to_client?: boolean | null
+          show_price_to_courier?: boolean | null
+          time_slots?: Json | null
+          timezone?: string | null
+          vat_enabled?: boolean | null
+          vat_rate?: number | null
+          warehouse_lat?: number | null
+          warehouse_lng?: number | null
+          working_days?: Json | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          default_pickup_location?: string | null
+          default_urgency_fee_id?: string | null
+          email_notifications_enabled?: boolean | null
+          id?: string
+          minimum_charge?: number | null
+          name?: string
+          notification_preferences?: Json | null
+          past_due_settings?: Json | null
+          phone?: string | null
+          prices_include_vat?: boolean | null
+          pricing_mode?: string | null
+          push_notifications_enabled?: boolean | null
+          role?: string
+          round_distance?: boolean | null
+          show_price_to_client?: boolean | null
+          show_price_to_courier?: boolean | null
+          time_slots?: Json | null
+          timezone?: string | null
+          vat_enabled?: boolean | null
+          vat_rate?: number | null
+          warehouse_lat?: number | null
+          warehouse_lng?: number | null
+          working_days?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_default_urgency_fee_id_fkey"
+            columns: ["default_urgency_fee_id"]
+            isOneToOne: false
+            referencedRelation: "urgency_fees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string | null
+          endpoint: string
+          id: string
+          p256dh: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string | null
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string | null
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_reschedule_history: {
+        Row: {
+          approval_status: string | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          denial_reason: string | null
+          id: string
+          initiated_by: string
+          initiated_by_role: string
+          new_date: string
+          new_time: string | null
+          new_time_slot: string
+          old_date: string | null
+          old_time: string | null
+          old_time_slot: string | null
+          reason: string | null
+          service_id: string
+        }
+        Insert: {
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          denial_reason?: string | null
+          id?: string
+          initiated_by: string
+          initiated_by_role: string
+          new_date: string
+          new_time?: string | null
+          new_time_slot: string
+          old_date?: string | null
+          old_time?: string | null
+          old_time_slot?: string | null
+          reason?: string | null
+          service_id: string
+        }
+        Update: {
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          denial_reason?: string | null
+          id?: string
+          initiated_by?: string
+          initiated_by_role?: string
+          new_date?: string
+          new_time?: string | null
+          new_time_slot?: string
+          old_date?: string | null
+          old_time?: string | null
+          old_time_slot?: string | null
+          reason?: string | null
+          service_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_reschedule_history_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_reschedule_history_initiated_by_fkey"
+            columns: ["initiated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_reschedule_history_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_status_history: {
+        Row: {
+          changed_at: string | null
+          changed_by: string | null
+          id: string
+          new_status: string
+          notes: string | null
+          old_status: string | null
+          service_id: string
+        }
+        Insert: {
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: string
+          new_status: string
+          notes?: string | null
+          old_status?: string | null
+          service_id: string
+        }
+        Update: {
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: string
+          new_status?: string
+          notes?: string | null
+          old_status?: string | null
+          service_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_status_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_status_history_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      services: {
+        Row: {
+          calculated_price: number | null
+          client_id: string
+          created_at: string | null
+          deleted_at: string | null
+          delivered_at: string | null
+          delivery_lat: number | null
+          delivery_lng: number | null
+          delivery_location: string
+          distance_km: number | null
+          id: string
+          last_past_due_notification_at: string | null
+          last_rescheduled_at: string | null
+          last_rescheduled_by: string | null
+          notes: string | null
+          pending_reschedule_date: string | null
+          pending_reschedule_reason: string | null
+          pending_reschedule_requested_at: string | null
+          pending_reschedule_requested_by: string | null
+          pending_reschedule_time: string | null
+          pending_reschedule_time_slot: string | null
+          pickup_lat: number | null
+          pickup_lng: number | null
+          pickup_location: string
+          price_breakdown: Json | null
+          price_override_reason: string | null
+          prices_include_vat_snapshot: boolean
+          rejection_reason: string | null
+          request_status: string | null
+          requested_date: string | null
+          requested_time: string | null
+          requested_time_slot: string | null
+          reschedule_count: number | null
+          scheduled_date: string | null
+          scheduled_time: string | null
+          scheduled_time_slot: string | null
+          status: string
+          suggested_date: string | null
+          suggested_time: string | null
+          suggested_time_slot: string | null
+          updated_at: string | null
+          urgency_fee_id: string | null
+          vat_rate_snapshot: number
+        }
+        Insert: {
+          calculated_price?: number | null
+          client_id: string
+          created_at?: string | null
+          deleted_at?: string | null
+          delivered_at?: string | null
+          delivery_lat?: number | null
+          delivery_lng?: number | null
+          delivery_location: string
+          distance_km?: number | null
+          id?: string
+          last_past_due_notification_at?: string | null
+          last_rescheduled_at?: string | null
+          last_rescheduled_by?: string | null
+          notes?: string | null
+          pending_reschedule_date?: string | null
+          pending_reschedule_reason?: string | null
+          pending_reschedule_requested_at?: string | null
+          pending_reschedule_requested_by?: string | null
+          pending_reschedule_time?: string | null
+          pending_reschedule_time_slot?: string | null
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          pickup_location: string
+          price_breakdown?: Json | null
+          price_override_reason?: string | null
+          prices_include_vat_snapshot?: boolean
+          rejection_reason?: string | null
+          request_status?: string | null
+          requested_date?: string | null
+          requested_time?: string | null
+          requested_time_slot?: string | null
+          reschedule_count?: number | null
+          scheduled_date?: string | null
+          scheduled_time?: string | null
+          scheduled_time_slot?: string | null
+          status?: string
+          suggested_date?: string | null
+          suggested_time?: string | null
+          suggested_time_slot?: string | null
+          updated_at?: string | null
+          urgency_fee_id?: string | null
+          vat_rate_snapshot?: number
+        }
+        Update: {
+          calculated_price?: number | null
+          client_id?: string
+          created_at?: string | null
+          deleted_at?: string | null
+          delivered_at?: string | null
+          delivery_lat?: number | null
+          delivery_lng?: number | null
+          delivery_location?: string
+          distance_km?: number | null
+          id?: string
+          last_past_due_notification_at?: string | null
+          last_rescheduled_at?: string | null
+          last_rescheduled_by?: string | null
+          notes?: string | null
+          pending_reschedule_date?: string | null
+          pending_reschedule_reason?: string | null
+          pending_reschedule_requested_at?: string | null
+          pending_reschedule_requested_by?: string | null
+          pending_reschedule_time?: string | null
+          pending_reschedule_time_slot?: string | null
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          pickup_location?: string
+          price_breakdown?: Json | null
+          price_override_reason?: string | null
+          prices_include_vat_snapshot?: boolean
+          rejection_reason?: string | null
+          request_status?: string | null
+          requested_date?: string | null
+          requested_time?: string | null
+          requested_time_slot?: string | null
+          reschedule_count?: number | null
+          scheduled_date?: string | null
+          scheduled_time?: string | null
+          scheduled_time_slot?: string | null
+          status?: string
+          suggested_date?: string | null
+          suggested_time?: string | null
+          suggested_time_slot?: string | null
+          updated_at?: string | null
+          urgency_fee_id?: string | null
+          vat_rate_snapshot?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "services_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "services_last_rescheduled_by_fkey"
+            columns: ["last_rescheduled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "services_pending_reschedule_requested_by_fkey"
+            columns: ["pending_reschedule_requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "services_urgency_fee_id_fkey"
+            columns: ["urgency_fee_id"]
+            isOneToOne: false
+            referencedRelation: "urgency_fees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      urgency_fees: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          flat_fee: number
+          id: string
+          multiplier: number
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          flat_fee?: number
+          id?: string
+          multiplier?: number
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          flat_fee?: number
+          id?: string
+          multiplier?: number
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      approve_reschedule: {
+        Args: { p_approved_by: string; p_service_id: string }
+        Returns: Json
+      }
+      bulk_recalculate_service_prices: {
+        Args: {
+          p_client_id: string
+          p_minimum_charge?: number
+          p_service_ids: string[]
+        }
+        Returns: Json
+      }
+      bulk_reschedule_services: {
+        Args: {
+          p_new_date: string
+          p_new_time?: string
+          p_new_time_slot: string
+          p_reason?: string
+          p_service_ids: string[]
+          p_user_id?: string
+        }
+        Returns: Json
+      }
+      calculate_service_price: {
+        Args: {
+          p_client_id: string
+          p_distance_km: number
+          p_urgency_fee_id?: string
+        }
+        Returns: {
+          price_breakdown: Json
+          total_price: number
+        }[]
+      }
+      client_approve_reschedule: {
+        Args: { p_service_id: string }
+        Returns: Json
+      }
+      client_deny_reschedule: {
+        Args: { p_denial_reason?: string; p_service_id: string }
+        Returns: Json
+      }
+      deny_reschedule: {
+        Args: {
+          p_denial_reason?: string
+          p_denied_by: string
+          p_service_id: string
+        }
+        Returns: Json
+      }
+      is_courier: { Args: never; Returns: boolean }
+      replace_pricing_zones: {
+        Args: { p_client_id: string; p_zones: Json }
+        Returns: Json
+      }
+      reschedule_service: {
+        Args: {
+          p_new_date: string
+          p_new_time?: string
+          p_new_time_slot: string
+          p_notification_message?: string
+          p_notification_title?: string
+          p_reason?: string
+          p_service_id: string
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const

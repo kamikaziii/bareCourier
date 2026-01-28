@@ -87,7 +87,7 @@
 	const servicesByDate = $derived(
 		data.services.reduce(
 			(acc, service) => {
-				const dateKey = service.scheduled_date || service.created_at.split('T')[0];
+				const dateKey = service.scheduled_date || (service.created_at || '').split('T')[0];
 				if (!acc[dateKey]) {
 					acc[dateKey] = [];
 				}

@@ -309,7 +309,7 @@ import { formatDate } from '$lib/utils.js';
 						<div class="mb-4 space-y-2 rounded-md bg-muted p-4">
 							<div class="flex justify-between">
 								<span class="text-muted-foreground">{m.billing_pricing_model()}</span>
-								<Badge variant="outline">{getPricingModelLabel(pricing.pricing_model)}</Badge>
+								<Badge variant="outline">{getPricingModelLabel(pricing.pricing_model as PricingModel)}</Badge>
 							</div>
 							{#if pricing.pricing_model !== 'zone'}
 								<div class="flex justify-between">

@@ -156,7 +156,7 @@ export function calculateMonthlyData(services: ServiceWithProfile[]): MonthlyDat
 	const monthMap = new Map<string, { services: number; km: number; revenue: number }>();
 
 	for (const s of services) {
-		const date = new Date(s.created_at);
+		const date = new Date(s.created_at || '');
 		const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 		const existing = monthMap.get(monthKey) || { services: 0, km: 0, revenue: 0 };
 		existing.services++;
@@ -334,7 +334,7 @@ export function exportServicesToCSV(
 	];
 
 	const rows = services.map((s) => [
-		new Date(s.created_at).toLocaleDateString(locale),
+		new Date(s.created_at || '').toLocaleDateString(locale),
 		s.profiles?.name || m.unknown_client(),
 		s.pickup_location,
 		s.delivery_location,

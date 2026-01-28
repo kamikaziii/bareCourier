@@ -129,8 +129,7 @@ export const actions: Actions = {
 
 		if (needsApproval) {
 			// Create pending reschedule request
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const { error: updateError } = await (supabase as any)
+			const { error: updateError } = await supabase
 				.from('services')
 				.update({
 					pending_reschedule_date: newDate,
@@ -148,8 +147,7 @@ export const actions: Actions = {
 			}
 
 			// Create history record
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			await (supabase as any).from('service_reschedule_history').insert({
+			await supabase.from('service_reschedule_history').insert({
 				service_id: params.id,
 				initiated_by: user.id,
 				initiated_by_role: 'client',
@@ -165,8 +163,7 @@ export const actions: Actions = {
 
 			// Notify courier
 			if (courierProfile?.id) {
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				await (supabase as any).from('notifications').insert({
+				await supabase.from('notifications').insert({
 					user_id: courierProfile.id,
 					type: 'schedule_change',
 					title: 'Pedido de Reagendamento',
@@ -178,8 +175,7 @@ export const actions: Actions = {
 			return { success: true, needsApproval: true };
 		} else {
 			// Auto-approve: update service directly
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const { error: updateError } = await (supabase as any)
+			const { error: updateError } = await supabase
 				.from('services')
 				.update({
 					scheduled_date: newDate,
@@ -197,8 +193,7 @@ export const actions: Actions = {
 			}
 
 			// Create history record
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			await (supabase as any).from('service_reschedule_history').insert({
+			await supabase.from('service_reschedule_history').insert({
 				service_id: params.id,
 				initiated_by: user.id,
 				initiated_by_role: 'client',
@@ -214,8 +209,7 @@ export const actions: Actions = {
 
 			// Notify courier of auto-approved reschedule
 			if (courierProfile?.id) {
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				await (supabase as any).from('notifications').insert({
+				await supabase.from('notifications').insert({
 					user_id: courierProfile.id,
 					type: 'schedule_change',
 					title: 'Reagendamento Automático',
@@ -234,8 +228,7 @@ export const actions: Actions = {
 			return { success: false, error: 'Not authenticated' };
 		}
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { data, error: rpcError } = await (supabase as any).rpc('client_approve_reschedule', {
+		const { data, error: rpcError } = await supabase.rpc('client_approve_reschedule', {
 			p_service_id: params.id
 		});
 
@@ -257,8 +250,7 @@ export const actions: Actions = {
 			.single();
 
 		if (courierData) {
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			await (supabase as any).from('notifications').insert({
+			await supabase.from('notifications').insert({
 				user_id: (courierData as { id: string }).id,
 				type: 'schedule_change',
 				title: 'Reagendamento Aceite',
@@ -279,10 +271,9 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const reason = (formData.get('reason') as string) || null;
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { data, error: rpcError } = await (supabase as any).rpc('client_deny_reschedule', {
+		const { data, error: rpcError } = await supabase.rpc('client_deny_reschedule', {
 			p_service_id: params.id,
-			p_denial_reason: reason
+			p_denial_reason: reason ?? undefined
 		});
 
 		if (rpcError) {
@@ -304,8 +295,7 @@ export const actions: Actions = {
 
 		if (courierData) {
 			const reasonText = reason ? ` Motivo: ${reason}` : '';
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			await (supabase as any).from('notifications').insert({
+			await supabase.from('notifications').insert({
 				user_id: (courierData as { id: string }).id,
 				type: 'schedule_change',
 				title: 'Reagendamento Recusado',

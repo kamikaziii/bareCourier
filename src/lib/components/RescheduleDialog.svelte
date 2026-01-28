@@ -27,7 +27,7 @@
 	// svelte-ignore state_referenced_locally
 	let newDate = $state<string | null>(service.scheduled_date);
 	// svelte-ignore state_referenced_locally
-	let newTimeSlot = $state<TimeSlot | null>(service.scheduled_time_slot);
+	let newTimeSlot = $state<TimeSlot | null>(service.scheduled_time_slot as TimeSlot | null);
 	// svelte-ignore state_referenced_locally
 	let newTime = $state<string | null>(service.scheduled_time);
 	let reason = $state('');
@@ -64,7 +64,7 @@
 
 	function resetForm() {
 		newDate = service.scheduled_date;
-		newTimeSlot = service.scheduled_time_slot;
+		newTimeSlot = service.scheduled_time_slot as TimeSlot | null;
 		newTime = service.scheduled_time;
 		reason = '';
 		requestApproval = false;

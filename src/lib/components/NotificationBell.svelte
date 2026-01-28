@@ -54,7 +54,7 @@
 		const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
 		for (const n of filteredNotifications) {
-			if (new Date(n.created_at) >= todayStart) {
+			if (new Date(n.created_at || '') >= todayStart) {
 				today.push(n);
 			} else {
 				earlier.push(n);
@@ -187,7 +187,7 @@
 				{notification.message}
 			</p>
 			<p class="mt-1 text-xs text-muted-foreground">
-				{formatRelativeTime(notification.created_at)}
+				{formatRelativeTime(notification.created_at || '')}
 			</p>
 		</div>
 		{#if !notification.read}

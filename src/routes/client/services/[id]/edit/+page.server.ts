@@ -97,8 +97,7 @@ export const actions: Actions = {
 		}
 
 		// Update service
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error: updateError } = await (supabase as any).from('services').update({
+		const { error: updateError } = await supabase.from('services').update({
 			pickup_location,
 			delivery_location,
 			notes,

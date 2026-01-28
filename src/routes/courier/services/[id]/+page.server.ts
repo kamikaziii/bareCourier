@@ -68,8 +68,7 @@ export const actions: Actions = {
 			updates.delivered_at = null;
 		}
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error: updateError } = await (supabase as any)
+		const { error: updateError } = await supabase
 			.from('services')
 			.update(updates)
 			.eq('id', params.id);
@@ -101,8 +100,7 @@ export const actions: Actions = {
 		}
 
 		// Soft delete
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error: deleteError } = await (supabase as any)
+		const { error: deleteError } = await supabase
 			.from('services')
 			.update({ deleted_at: new Date().toISOString() })
 			.eq('id', params.id);
@@ -141,8 +139,7 @@ export const actions: Actions = {
 			return fail(400, { error: 'Invalid price' });
 		}
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error: updateError } = await (supabase as any)
+		const { error: updateError } = await supabase
 			.from('services')
 			.update({
 				calculated_price: override_price,
@@ -211,8 +208,7 @@ export const actions: Actions = {
 			}
 
 			// Set pending fields (don't change scheduled_*)
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const { error: updateError } = await (supabase as any).from('services').update({
+			const { error: updateError } = await supabase.from('services').update({
 				pending_reschedule_date: newDate,
 				pending_reschedule_time_slot: newTimeSlot,
 				pending_reschedule_time: newTime || null,
@@ -227,8 +223,7 @@ export const actions: Actions = {
 			}
 
 			// Create history record
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			await (supabase as any).from('service_reschedule_history').insert({
+			await supabase.from('service_reschedule_history').insert({
 				service_id: params.id,
 				initiated_by: user.id,
 				initiated_by_role: 'courier',
@@ -247,8 +242,7 @@ export const actions: Actions = {
 				day: 'numeric', month: 'long', year: 'numeric'
 			});
 			const reasonText = reason ? ` Motivo: ${reason}` : '';
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			await (supabase as any).from('notifications').insert({
+			await supabase.from('notifications').insert({
 				user_id: service.client_id,
 				type: 'schedule_change',
 				title: 'Proposta de Reagendamento',
@@ -265,13 +259,12 @@ export const actions: Actions = {
 			const reasonText = reason ? ` Motivo: ${reason}` : '';
 			const notificationMessage = `A sua entrega foi reagendada para ${formattedDate}.${reasonText}`;
 
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const { data, error: rpcError } = await (supabase as any).rpc('reschedule_service', {
+			const { data, error: rpcError } = await supabase.rpc('reschedule_service', {
 				p_service_id: params.id,
 				p_new_date: newDate,
 				p_new_time_slot: newTimeSlot,
-				p_new_time: newTime || null,
-				p_reason: reason || null,
+				p_new_time: newTime || undefined,
+				p_reason: reason || undefined,
 				p_notification_title: 'Entrega Reagendada',
 				p_notification_message: notificationMessage
 			});

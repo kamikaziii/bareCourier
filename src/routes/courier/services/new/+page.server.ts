@@ -81,7 +81,7 @@ export const actions: Actions = {
 		const { config: pricingConfig } = await getClientPricing(supabase, client_id);
 
 		let calculated_price: number | null = null;
-		let price_breakdown: object | null = null;
+		let price_breakdown: import('$lib/database.types').PriceBreakdown | null = null;
 		let warning: string | null = null;
 
 		if (!pricingConfig) {
@@ -103,8 +103,7 @@ export const actions: Actions = {
 			}
 		}
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error: insertError } = await (supabase as any).from('services').insert({
+		const { error: insertError } = await supabase.from('services').insert({
 			client_id,
 			pickup_location,
 			delivery_location,

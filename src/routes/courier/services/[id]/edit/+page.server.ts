@@ -108,7 +108,7 @@ export const actions: Actions = {
 		const { config: pricingConfig } = await getClientPricing(supabase, client_id);
 
 		let calculated_price: number | null = null;
-		let price_breakdown: object | null = null;
+		let price_breakdown: import('$lib/database.types').PriceBreakdown | null = null;
 
 		if (pricingConfig && recalculated_distance_km !== null) {
 			const priceResult = await calculateServicePrice(supabase, {
@@ -127,8 +127,7 @@ export const actions: Actions = {
 			}
 		}
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error: updateError } = await (supabase as any)
+		const { error: updateError } = await supabase
 			.from('services')
 			.update({
 				client_id,

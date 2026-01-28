@@ -29,7 +29,7 @@
 
 	// State for pricing form - svelte-ignore state_referenced_locally for all: intentional initial value capture
 	// svelte-ignore state_referenced_locally
-	let pricingModel = $state<PricingModel>(existingConfig?.pricing_model || 'per_km');
+	let pricingModel = $state<PricingModel>((existingConfig?.pricing_model as PricingModel) || 'per_km');
 	// svelte-ignore state_referenced_locally
 	let baseFee = $state(existingConfig?.base_fee?.toString() || '0');
 	// svelte-ignore state_referenced_locally

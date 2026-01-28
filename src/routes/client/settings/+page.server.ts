@@ -83,8 +83,7 @@ export const actions: Actions = {
 		const phone = formData.get('phone') as string;
 		const defaultPickupLocation = formData.get('default_pickup_location') as string;
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error } = await (supabase as any)
+		const { error } = await supabase
 			.from('profiles')
 			.update({
 				name,
@@ -133,8 +132,7 @@ export const actions: Actions = {
 			return fail(400, { error: 'No data to update' });
 		}
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error } = await (supabase as any)
+		const { error } = await supabase
 			.from('profiles')
 			.update(updateData)
 			.eq('id', user.id);
@@ -159,8 +157,7 @@ export const actions: Actions = {
 			return fail(400, { error: 'Invalid timezone' });
 		}
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error } = await (supabase as any)
+		const { error } = await supabase
 			.from('profiles')
 			.update({ timezone })
 			.eq('id', user.id);

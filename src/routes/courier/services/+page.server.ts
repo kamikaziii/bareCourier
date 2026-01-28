@@ -39,8 +39,7 @@ export const actions: Actions = {
 			updateData.delivered_at = new Date().toISOString();
 		}
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error: updateError } = await (supabase as any)
+		const { error: updateError } = await supabase
 			.from('services')
 			.update(updateData)
 			.in('id', serviceIds);

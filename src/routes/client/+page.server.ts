@@ -85,8 +85,7 @@ export const actions: Actions = {
 		}
 
 		// Accept the suggestion - copy suggested to scheduled and mark as accepted
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error: updateError } = await (supabase as any)
+		const { error: updateError } = await supabase
 			.from('services')
 			.update({
 				request_status: 'accepted',
@@ -147,8 +146,7 @@ export const actions: Actions = {
 		}
 
 		// Decline the suggestion - set back to pending for courier to review
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error: updateError } = await (supabase as any)
+		const { error: updateError } = await supabase
 			.from('services')
 			.update({
 				request_status: 'pending',
@@ -220,8 +218,7 @@ export const actions: Actions = {
 		// Accept each suggestion
 		let failCount = 0;
 		for (const svc of servicesData) {
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const { error } = await (supabase as any)
+			const { error } = await supabase
 				.from('services')
 				.update({
 					request_status: 'accepted',
@@ -290,8 +287,7 @@ export const actions: Actions = {
 		// Decline all
 		let failCount = 0;
 		for (const svc of servicesData) {
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const { error } = await (supabase as any)
+			const { error } = await supabase
 				.from('services')
 				.update({
 					request_status: 'pending',
@@ -353,8 +349,7 @@ export const actions: Actions = {
 		}
 
 		// Soft delete by setting deleted_at
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error: updateError } = await (supabase as any)
+		const { error: updateError } = await supabase
 			.from('services')
 			.update({
 				deleted_at: new Date().toISOString()

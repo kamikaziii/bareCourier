@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import type { Profile, UrgencyFee } from '$lib/database.types';
+import type { Profile, UrgencyFee, PastDueSettings, WorkingDay } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 
 // Validation helpers
@@ -98,8 +98,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 	}
 
 	// Load urgency fees
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const { data: urgencyFees } = await (supabase as any)
+	const { data: urgencyFees } = await supabase
 		.from('urgency_fees')
 		.select('*')
 		.order('sort_order');
@@ -124,8 +123,7 @@ export const actions: Actions = {
 		const name = formData.get('name') as string;
 		const phone = formData.get('phone') as string;
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error } = await (supabase as any)
+		const { error } = await supabase
 			.from('profiles')
 			.update({ name, phone })
 			.eq('id', user.id);
@@ -153,8 +151,7 @@ export const actions: Actions = {
 		const flatFee = parseFloat(formData.get('flat_fee') as string) || 0;
 		const active = formData.get('active') === 'true';
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error } = await (supabase as any)
+		const { error } = await supabase
 			.from('urgency_fees')
 			.update({
 				name,
@@ -187,8 +184,7 @@ export const actions: Actions = {
 		const flatFee = parseFloat(formData.get('flat_fee') as string) || 0;
 
 		// Get max sort_order
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { data: maxOrder } = await (supabase as any)
+		const { data: maxOrder } = await supabase
 			.from('urgency_fees')
 			.select('sort_order')
 			.order('sort_order', { ascending: false })
@@ -197,8 +193,7 @@ export const actions: Actions = {
 
 		const sortOrder = ((maxOrder as { sort_order: number } | null)?.sort_order || 0) + 1;
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error } = await (supabase as any).from('urgency_fees').insert({
+		const { error } = await supabase.from('urgency_fees').insert({
 			name,
 			description,
 			multiplier,
@@ -225,8 +220,7 @@ export const actions: Actions = {
 		const id = formData.get('id') as string;
 		const active = formData.get('active') === 'true';
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error } = await (supabase as any)
+		const { error } = await supabase
 			.from('urgency_fees')
 			.update({ active: !active })
 			.eq('id', id);
@@ -250,8 +244,7 @@ export const actions: Actions = {
 		const id = formData.get('id') as string;
 
 		// Check if this urgency fee is in use by any services
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { count } = await (supabase as any)
+		const { count } = await supabase
 			.from('services')
 			.select('id', { count: 'exact', head: true })
 			.eq('urgency_fee_id', id);
@@ -260,8 +253,7 @@ export const actions: Actions = {
 			return fail(409, { error: 'urgency_in_use' });
 		}
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error } = await (supabase as any).from('urgency_fees').delete().eq('id', id);
+		const { error } = await supabase.from('urgency_fees').delete().eq('id', id);
 
 		if (error) {
 			return fail(500, { error: 'Failed to delete urgency fee' });
@@ -307,8 +299,7 @@ export const actions: Actions = {
 			return fail(400, { error: 'No data to update' });
 		}
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error } = await (supabase as any)
+		const { error } = await supabase
 			.from('profiles')
 			.update(updateData)
 			.eq('id', user.id);
@@ -336,8 +327,7 @@ export const actions: Actions = {
 			return fail(400, { error: 'Invalid pricing mode' });
 		}
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error } = await (supabase as any)
+		const { error } = await supabase
 			.from('profiles')
 			.update({ pricing_mode: pricingMode })
 			.eq('id', user.id);
@@ -363,8 +353,7 @@ export const actions: Actions = {
 		const warehouse_lat = formData.get('warehouse_lat') as string;
 		const warehouse_lng = formData.get('warehouse_lng') as string;
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error } = await (supabase as any)
+		const { error } = await supabase
 			.from('profiles')
 			.update({
 				default_pickup_location: default_pickup_location || null,
@@ -396,8 +385,7 @@ export const actions: Actions = {
 		const minimum_charge = parseFloat(formData.get('minimum_charge') as string) || 0;
 		const round_distance = formData.get('round_distance') === 'true';
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error } = await (supabase as any)
+		const { error } = await supabase
 			.from('profiles')
 			.update({
 				show_price_to_courier,
@@ -435,8 +423,7 @@ export const actions: Actions = {
 			return fail(400, { error: 'VAT rate must be between 0 and 100' });
 		}
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error } = await (supabase as any)
+		const { error } = await supabase
 			.from('profiles')
 			.update({
 				vat_enabled,
@@ -493,10 +480,9 @@ export const actions: Actions = {
 			thresholdApproaching,
 			thresholdUrgent,
 			thresholdCriticalHours
-		};
+		} as PastDueSettings;
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error } = await (supabase as any)
+		const { error } = await supabase
 			.from('profiles')
 			.update({ past_due_settings: updatedSettings })
 			.eq('id', user.id);
@@ -545,10 +531,9 @@ export const actions: Actions = {
 			allowClientReschedule,
 			clientMinNoticeHours,
 			clientMaxReschedules
-		};
+		} as PastDueSettings;
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error } = await (supabase as any)
+		const { error } = await supabase
 			.from('profiles')
 			.update({ past_due_settings: updatedSettings })
 			.eq('id', user.id);
@@ -589,10 +574,9 @@ export const actions: Actions = {
 			pastDueReminderInterval,
 			dailySummaryEnabled,
 			dailySummaryTime
-		};
+		} as PastDueSettings;
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error } = await (supabase as any)
+		const { error } = await supabase
 			.from('profiles')
 			.update({ past_due_settings: updatedSettings })
 			.eq('id', user.id);
@@ -636,8 +620,7 @@ export const actions: Actions = {
 			}
 		}
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error } = await (supabase as any)
+		const { error } = await supabase
 			.from('profiles')
 			.update({ time_slots: timeSlots })
 			.eq('id', user.id);
@@ -659,7 +642,7 @@ export const actions: Actions = {
 		await requireCourier(supabase, user.id);
 
 		const formData = await request.formData();
-		const workingDays = formData.getAll('working_days') as string[];
+		const workingDays = formData.getAll('working_days') as WorkingDay[];
 
 		// Validate all days
 		const invalidDays = workingDays.filter((day) => !isValidWorkingDay(day));
@@ -667,8 +650,7 @@ export const actions: Actions = {
 			return fail(400, { error: `Invalid working days: ${invalidDays.join(', ')}` });
 		}
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error } = await (supabase as any)
+		const { error } = await supabase
 			.from('profiles')
 			.update({ working_days: workingDays })
 			.eq('id', user.id);
@@ -697,8 +679,7 @@ export const actions: Actions = {
 			return fail(400, { error: 'Invalid timezone' });
 		}
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error } = await (supabase as any)
+		const { error } = await supabase
 			.from('profiles')
 			.update({ timezone })
 			.eq('id', user.id);

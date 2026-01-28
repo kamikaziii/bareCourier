@@ -240,7 +240,7 @@ export async function applyOptimisticUpdate(
 			id: serviceId,
 			...updates
 		},
-		originalUpdatedAt: cachedService?.updated_at
+		originalUpdatedAt: cachedService?.updated_at ?? undefined
 	});
 
 	return mutationId;
@@ -292,8 +292,8 @@ export async function detectConflict(
 		return undefined;
 	}
 
-	const localUpdatedAt = new Date(mutation.originalUpdatedAt).getTime();
-	const serverUpdatedAt = new Date(serverData.updated_at).getTime();
+	const localUpdatedAt = new Date(mutation.originalUpdatedAt || '').getTime();
+	const serverUpdatedAt = new Date(serverData.updated_at || '').getTime();
 
 	// Server has been modified since we cached the data
 	if (serverUpdatedAt > localUpdatedAt) {
@@ -303,8 +303,8 @@ export async function detectConflict(
 			serviceId,
 			localChanges: mutation.data as Partial<Service>,
 			serverData,
-			localUpdatedAt: mutation.originalUpdatedAt,
-			serverUpdatedAt: serverData.updated_at,
+			localUpdatedAt: mutation.originalUpdatedAt || '',
+			serverUpdatedAt: serverData.updated_at || '',
 			conflictType: 'server_newer',
 			detectedAt: new Date().toISOString(),
 			resolved: false

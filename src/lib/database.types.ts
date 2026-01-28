@@ -113,6 +113,7 @@ export type ServiceRescheduleHistory = {
  * their known TypeScript shapes (PriceBreakdown, PastDueSettings, etc.).
  */
 export type Database = {
+	__InternalSupabase: GeneratedDatabase['__InternalSupabase'];
 	public: {
 		Tables: {
 			profiles: {
@@ -143,6 +144,7 @@ export type Database = {
 					working_days?: WorkingDay[] | null;
 					notification_preferences?: NotificationPreferences | null;
 				};
+				Relationships: GeneratedDatabase['public']['Tables']['profiles']['Relationships'];
 			};
 			services: {
 				Row: Omit<
@@ -163,6 +165,7 @@ export type Database = {
 				> & {
 					price_breakdown?: PriceBreakdown | null;
 				};
+				Relationships: GeneratedDatabase['public']['Tables']['services']['Relationships'];
 			};
 			service_status_history: GeneratedDatabase['public']['Tables']['service_status_history'];
 			notifications: GeneratedDatabase['public']['Tables']['notifications'];
@@ -170,10 +173,12 @@ export type Database = {
 			client_pricing: GeneratedDatabase['public']['Tables']['client_pricing'];
 			pricing_zones: GeneratedDatabase['public']['Tables']['pricing_zones'];
 			urgency_fees: GeneratedDatabase['public']['Tables']['urgency_fees'];
+			service_reschedule_history: GeneratedDatabase['public']['Tables']['service_reschedule_history'];
 		};
 		Views: GeneratedDatabase['public']['Views'];
 		Functions: GeneratedDatabase['public']['Functions'];
 		Enums: GeneratedDatabase['public']['Enums'];
+		CompositeTypes: GeneratedDatabase['public']['CompositeTypes'];
 	};
 };
 
@@ -208,8 +213,8 @@ export type CourierLayoutProfile = {
 	past_due_settings: PastDueSettings | null;
 	time_slots: TimeSlotDefinitions | null;
 	working_days: WorkingDay[] | null;
-	timezone: string;
-	vat_enabled: boolean;
+	timezone: string | null;
+	vat_enabled: boolean | null;
 	vat_rate: number | null;
 	prices_include_vat: boolean | null;
 	show_price_to_courier: boolean | null;

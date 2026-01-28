@@ -67,8 +67,7 @@ export const actions: Actions = {
 		const { client_id } = params;
 
 		// Upsert pricing configuration
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error: upsertError } = await (supabase as any).from('client_pricing').upsert(
+		const { error: upsertError } = await supabase.from('client_pricing').upsert(
 			{
 				client_id,
 				pricing_model: pricingModel,
@@ -115,8 +114,7 @@ export const actions: Actions = {
 		const { client_id } = params;
 
 		// Use atomic RPC function to replace zones (DELETE + INSERT in single transaction)
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error: rpcError } = await (supabase as any).rpc('replace_pricing_zones', {
+		const { error: rpcError } = await supabase.rpc('replace_pricing_zones', {
 			p_client_id: client_id,
 			p_zones: zones
 		});
@@ -182,8 +180,7 @@ export const actions: Actions = {
 		const courierSettings = await getCourierPricingSettings(supabase);
 
 		// Use bulk RPC to calculate and update all prices in a single call
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { data: result, error: rpcError } = await (supabase as any).rpc(
+		const { data: result, error: rpcError } = await supabase.rpc(
 			'bulk_recalculate_service_prices',
 			{
 				p_service_ids: services.map((s: { id: string }) => s.id),
@@ -198,11 +195,12 @@ export const actions: Actions = {
 		}
 
 		// Check RPC-level success (auth check or other validation failure)
-		if (result && !result.success) {
-			return { success: false, error: result.error || 'Recalculation failed' };
+		const rpcResult = result as { success?: boolean; error?: string; updated?: number } | null;
+		if (rpcResult && !rpcResult.success) {
+			return { success: false, error: rpcResult.error || 'Recalculation failed' };
 		}
 
-		return { success: true, recalculated: result?.updated || 0 };
+		return { success: true, recalculated: rpcResult?.updated || 0 };
 	},
 
 	recalculateAll: async ({ params, request, locals: { supabase, safeGetSession } }) => {
@@ -257,8 +255,7 @@ export const actions: Actions = {
 		const courierSettings = await getCourierPricingSettings(supabase);
 
 		// Use bulk RPC to calculate and update all prices in a single call
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { data: result, error: rpcError } = await (supabase as any).rpc(
+		const { data: result, error: rpcError } = await supabase.rpc(
 			'bulk_recalculate_service_prices',
 			{
 				p_service_ids: services.map((s: { id: string }) => s.id),
@@ -273,10 +270,11 @@ export const actions: Actions = {
 		}
 
 		// Check RPC-level success (auth check or other validation failure)
-		if (result && !result.success) {
-			return { success: false, error: result.error || 'Recalculation failed' };
+		const rpcResult = result as { success?: boolean; error?: string; updated?: number } | null;
+		if (rpcResult && !rpcResult.success) {
+			return { success: false, error: rpcResult.error || 'Recalculation failed' };
 		}
 
-		return { success: true, recalculated: result?.updated || 0 };
+		return { success: true, recalculated: rpcResult?.updated || 0 };
 	}
 };

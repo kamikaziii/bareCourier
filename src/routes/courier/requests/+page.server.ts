@@ -111,8 +111,7 @@ export const actions: Actions = {
 			requested_time: string | null;
 		};
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error: updateError } = await (supabase as any)
+		const { error: updateError } = await supabase
 			.from('services')
 			.update({
 				request_status: 'accepted',
@@ -174,8 +173,7 @@ export const actions: Actions = {
 
 		const service = serviceData as { client_id: string } | null;
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error: updateError } = await (supabase as any)
+		const { error: updateError } = await supabase
 			.from('services')
 			.update({
 				request_status: 'rejected',
@@ -248,8 +246,7 @@ export const actions: Actions = {
 
 		const service = serviceData as { client_id: string } | null;
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error: updateError } = await (supabase as any)
+		const { error: updateError } = await supabase
 			.from('services')
 			.update({
 				request_status: 'suggested',
@@ -340,8 +337,7 @@ export const actions: Actions = {
 
 		// Use RPC function to atomically approve reschedule
 		// This updates both services and service_reschedule_history in a single transaction
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { data: rpcResult, error: rpcError } = await (supabase as any).rpc('approve_reschedule', {
+		const { data: rpcResult, error: rpcError } = await supabase.rpc('approve_reschedule', {
 			p_service_id: serviceId,
 			p_approved_by: user.id
 		});
@@ -411,8 +407,7 @@ export const actions: Actions = {
 
 		let accepted = 0;
 		for (const svc of servicesData as Array<{ id: string; client_id: string; requested_date: string | null; requested_time_slot: string | null; requested_time: string | null }>) {
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const { error: updateError } = await (supabase as any)
+			const { error: updateError } = await supabase
 				.from('services')
 				.update({
 					request_status: 'accepted',
@@ -465,11 +460,10 @@ export const actions: Actions = {
 
 		// Use RPC function to atomically deny reschedule
 		// This updates both services and service_reschedule_history in a single transaction
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { data: rpcResult, error: rpcError } = await (supabase as any).rpc('deny_reschedule', {
+		const { data: rpcResult, error: rpcError } = await supabase.rpc('deny_reschedule', {
 			p_service_id: serviceId,
 			p_denied_by: user.id,
-			p_denial_reason: denialReason || null
+			p_denial_reason: denialReason || undefined
 		});
 
 		if (rpcError) {

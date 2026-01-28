@@ -26,7 +26,7 @@
 	// svelte-ignore state_referenced_locally
 	let showPricingSection = $state(!!data.pricing);
 	// svelte-ignore state_referenced_locally
-	let pricingModel = $state<PricingModel>(data.pricing?.pricing_model || 'per_km');
+	let pricingModel = $state<PricingModel>((data.pricing?.pricing_model as PricingModel) || 'per_km');
 	// svelte-ignore state_referenced_locally
 	let baseFee = $state(data.pricing?.base_fee?.toString() || '0');
 	// svelte-ignore state_referenced_locally

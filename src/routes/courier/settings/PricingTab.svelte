@@ -34,7 +34,7 @@
 
 	// Pricing mode state
 	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
-	let pricingMode = $state<'warehouse' | 'zone'>(profile.pricing_mode ?? 'warehouse');
+	let pricingMode = $state<'warehouse' | 'zone'>((profile.pricing_mode as 'warehouse' | 'zone') ?? 'warehouse');
 
 	// Pricing preferences state
 	// svelte-ignore state_referenced_locally - intentional: capture initial value for form

@@ -102,12 +102,12 @@
 		if (dateFrom) {
 			const fromDate = new Date(dateFrom);
 			fromDate.setHours(0, 0, 0, 0);
-			result = result.filter((s) => new Date(s.created_at) >= fromDate);
+			result = result.filter((s) => new Date(s.created_at || '') >= fromDate);
 		}
 		if (dateTo) {
 			const toDate = new Date(dateTo);
 			toDate.setHours(23, 59, 59, 999);
-			result = result.filter((s) => new Date(s.created_at) <= toDate);
+			result = result.filter((s) => new Date(s.created_at || '') <= toDate);
 		}
 
 		return result;
@@ -117,9 +117,9 @@
 		return [...list].sort((a, b) => {
 			switch (sortBy) {
 				case 'newest':
-					return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+					return new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime();
 				case 'oldest':
-					return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+					return new Date(a.created_at || '').getTime() - new Date(b.created_at || '').getTime();
 				case 'pending-first':
 					return (a.status === 'pending' ? 0 : 1) - (b.status === 'pending' ? 0 : 1);
 				case 'delivered-first':

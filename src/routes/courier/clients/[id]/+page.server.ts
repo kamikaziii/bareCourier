@@ -115,8 +115,7 @@ export const actions: Actions = {
 		}
 
 		const clientData = client as { active: boolean };
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error: updateError } = await (supabase as any)
+		const { error: updateError } = await supabase
 			.from('profiles')
 			.update({ active: !clientData.active })
 			.eq('id', params.id);
@@ -154,8 +153,7 @@ export const actions: Actions = {
 		const zonesJson = formData.get('zones') as string;
 
 		// Upsert pricing configuration
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const { error: upsertError } = await (supabase as any).from('client_pricing').upsert(
+		const { error: upsertError } = await supabase.from('client_pricing').upsert(
 			{
 				client_id: params.id,
 				pricing_model: pricingModel,
@@ -178,8 +176,7 @@ export const actions: Actions = {
 			} catch {
 				return { success: false, error: 'Invalid zone configuration format' };
 			}
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const { error: rpcError } = await (supabase as any).rpc('replace_pricing_zones', {
+			const { error: rpcError } = await supabase.rpc('replace_pricing_zones', {
 				p_client_id: params.id,
 				p_zones: zones
 			});
