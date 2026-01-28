@@ -284,4 +284,4 @@ After fixes, verify:
 - [ ] Non-courier users cannot perform courier actions
 - [ ] Failed actions show error messages to user
 - [ ] All TypeScript checks pass: `pnpm run check`
-- [ ] Security advisors clean: `mcp__supabase__get_advisors(type: "security")`
+- [ ] Security advisors clean: `supabase inspect db lint`

@@ -40,15 +40,10 @@ For the **first courier account** (or when no courier exists), use the bootstrap
 # From project root, deploy the bootstrap function
 ```
 
-Or use Supabase MCP:
+Or use Supabase CLI:
 
-```typescript
-// Deploy via MCP
-mcp__supabase__deploy_edge_function({
-  name: "bootstrap-courier",
-  verify_jwt: false,  // Required - no auth exists yet
-  files: [{ name: "index.ts", content: BOOTSTRAP_CODE }]
-})
+```bash
+supabase functions deploy bootstrap-courier --no-verify-jwt
 ```
 
 **Bootstrap function code:**

@@ -45,3 +45,8 @@ src/lib/paraglide/
 
 # Implementation plans (development artifacts)
 docs/plans/
+
+# Playwright
+test-results/
+.playwright-mcp/
+playwright-report/

@@ -96,9 +96,9 @@ import * as Card from '$lib/components/ui/card/index.js';  // Multi-part compone
 ## Database Changes
 
 1. Create `supabase/migrations/NNN_description.sql`
-2. Apply via MCP: `mcp__supabase__apply_migration(name, query)`
+2. Apply: `supabase db push`
 3. Update `src/lib/database.types.ts`
-4. Check security: `mcp__supabase__get_advisors(type: "security")`
+4. Check security: `supabase inspect db lint`
 
 ## Environment Variables
 

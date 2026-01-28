@@ -462,6 +462,12 @@
 	"urgency_urgent": "Due Soon",
 	"urgency_past_due": "Past Due",
 	"urgency_critical": "Critical",
+	"urgency_approaching_tooltip": "Delivery deadline is approaching",
+	"urgency_urgent_tooltip": "Delivery should be made soon",
+	"urgency_past_due_tooltip": "Delivery is past the scheduled deadline",
+	"urgency_critical_tooltip": "Significant delay — requires immediate attention",
+	"status_pending_tooltip": "Awaiting pickup/delivery",
+	"status_delivered_tooltip": "Service completed",
 
 	"reschedule": "Reschedule",
 	"reschedule_service": "Reschedule Service",

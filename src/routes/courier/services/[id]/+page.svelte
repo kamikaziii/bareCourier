@@ -33,7 +33,7 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 		User,
 		CheckCircle,
 		Circle,
-		DollarSign,
+		Euro,
 		CalendarClock
 	} from '@lucide/svelte';
 
@@ -372,7 +372,7 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 			<Card.Root>
 				<Card.Header>
 					<Card.Title class="flex items-center gap-2">
-						<DollarSign class="size-5" />
+						<Euro class="size-5" />
 						{m.billing_price()}
 					</Card.Title>
 				</Card.Header>

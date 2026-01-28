@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
+	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import { getStatusLabel, getRequestStatusLabel, getRequestStatusColor } from '$lib/utils/status.js';
 	import * as m from '$lib/paraglide/messages.js';
@@ -49,6 +50,10 @@
 	}: ServiceCardProps = $props();
 
 	const isSelected = $derived(selectable && selected);
+
+	const statusTooltip = $derived(
+		service.status === 'pending' ? m.status_pending_tooltip() : m.status_delivered_tooltip()
+	);
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -99,14 +104,21 @@
 						{/if}
 					</p>
 					<div class="flex items-center gap-2">
-						<Badge
-							variant="outline"
-							class="shrink-0 {service.status === 'pending'
-								? 'border-blue-500 text-blue-500'
-								: 'border-green-500 text-green-500'}"
-						>
-							{getStatusLabel(service.status)}
-						</Badge>
+						<Tooltip.Root delayDuration={200}>
+							<Tooltip.Trigger class="cursor-help">
+								<Badge
+									variant="outline"
+									class="shrink-0 {service.status === 'pending'
+										? 'border-blue-500 text-blue-500'
+										: 'border-green-500 text-green-500'}"
+								>
+									{getStatusLabel(service.status)}
+								</Badge>
+							</Tooltip.Trigger>
+							<Tooltip.Content>
+								<p>{statusTooltip}</p>
+							</Tooltip.Content>
+						</Tooltip.Root>
 						{#if headerActions}
 							{@render headerActions()}
 						{/if}

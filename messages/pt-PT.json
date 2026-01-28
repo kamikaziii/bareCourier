@@ -462,6 +462,12 @@
 	"urgency_urgent": "Urgente",
 	"urgency_past_due": "Em Atraso",
 	"urgency_critical": "Crítico",
+	"urgency_approaching_tooltip": "Prazo de entrega aproxima-se",
+	"urgency_urgent_tooltip": "Entrega deve ser feita em breve",
+	"urgency_past_due_tooltip": "Entrega passou do prazo previsto",
+	"urgency_critical_tooltip": "Atraso significativo — requer atenção imediata",
+	"status_pending_tooltip": "Aguarda recolha/entrega",
+	"status_delivered_tooltip": "Serviço concluído",
 
 	"reschedule": "Reagendar",
 	"reschedule_service": "Reagendar Serviço",

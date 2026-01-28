@@ -3,7 +3,7 @@
  *
  * This file is generated from the Supabase schema.
  * To regenerate, run: pnpm run types:generate
- * or use mcp__supabase__generate_typescript_types
+ * or use: supabase gen types typescript --project-id kwqrvhbzxncaatxwmaky > src/lib/database.generated.ts
  */
 
 export type Json =

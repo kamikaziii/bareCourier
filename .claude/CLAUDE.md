@@ -113,7 +113,7 @@ pnpm dlx shadcn-svelte@latest add [component] --yes
 
 ### Database changes
 1. Update `supabase/migrations/` with new SQL
-2. Apply via Supabase MCP: `mcp__supabase__apply_migration`
+2. Apply: `supabase db push`
 3. Update `src/lib/database.types.ts`
 
 ## Environment Variables

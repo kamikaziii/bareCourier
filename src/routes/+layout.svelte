@@ -10,6 +10,7 @@
 	import OfflineIndicator from '$lib/components/OfflineIndicator.svelte';
 	import { deLocalizeUrl } from '$lib/paraglide/runtime.js';
 	import * as m from '$lib/paraglide/messages.js';
+	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
@@ -43,9 +44,11 @@
 	<OfflineIndicator />
 {/if}
 
-<div id="main-content">
-	{@render children()}
-</div>
+<Tooltip.Provider>
+	<div id="main-content">
+		{@render children()}
+	</div>
+</Tooltip.Provider>
 
 {#if browser}
 	<ReloadPrompt />

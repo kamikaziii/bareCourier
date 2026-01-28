@@ -142,10 +142,7 @@ let services: Service[] = [];
 
 ### Creating new migrations
 1. Create file: `supabase/migrations/NNN_description.sql`
-2. Apply via Supabase MCP:
-   ```
-   mcp__supabase__apply_migration(name: "description", query: "SQL...")
-   ```
+2. Apply: `supabase db push`
 3. Update `src/lib/database.types.ts` with new types
 
 ### Migration naming
@@ -157,7 +154,7 @@ let services: Service[] = [];
 - Never modify existing migrations in production
 - Always include both `up` and consider rollback strategy
 - Test RLS policies after changes
-- Run `mcp__supabase__get_advisors(type: "security")` to check for issues
+- Run `supabase inspect db lint` to check for issues
 
 ## Indexes
 

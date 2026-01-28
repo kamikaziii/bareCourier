@@ -107,7 +107,7 @@ Services track notification state via:
 
 ## Setup
 
-The extensions, vault secrets, and cron jobs were set up via Supabase MCP. If they ever need to be recreated:
+The extensions, vault secrets, and cron jobs were set up via the Supabase CLI. If they ever need to be recreated:
 
 1. **Enable extensions** (migration or SQL editor):
    ```sql
@@ -151,6 +151,6 @@ The extensions, vault secrets, and cron jobs were set up via Supabase MCP. If th
 ## Troubleshooting
 
 - **Cron jobs not running**: Check `cron.job` table for `active = true`. Check `cron.job_run_details` for errors.
-- **Edge Function errors**: Check Supabase Dashboard > Edge Functions > Logs, or use `mcp__supabase__get_logs(service: "edge-function")`.
+- **Edge Function errors**: Check Supabase Dashboard > Edge Functions > Logs, or use `supabase functions logs`.
 - **No notifications sent**: Verify courier has the category enabled in notification preferences, is within working hours, and not in quiet hours.
 - **Duplicate notifications**: Check `last_past_due_notification_at` on the service and the `pastDueReminderInterval` setting.
