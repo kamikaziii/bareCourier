@@ -301,7 +301,7 @@
 			<EmptyState
 				icon={Package}
 				title={m.services_no_results()}
-				description="Create your first service to get started."
+				description={m.empty_courier_services()}
 				actionLabel={m.services_new()}
 				actionHref={localizeHref('/courier/services/new')}
 			/>

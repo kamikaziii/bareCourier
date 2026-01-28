@@ -324,7 +324,7 @@
 	{#if attentionServices.length > 0}
 		<div class="space-y-3">
 			<h2 class="text-sm font-semibold text-orange-600 dark:text-orange-400">
-				Needs your attention ({attentionServices.length})
+				{m.client_needs_attention()} ({attentionServices.length})
 			</h2>
 			{#each attentionServices as service (service.id)}
 				<Card.Root class="border-orange-200 bg-orange-50 dark:border-orange-900 dark:bg-orange-950/30">
@@ -344,22 +344,22 @@
 								</p>
 								{#if service.request_status === 'suggested'}
 									<p class="text-muted-foreground mt-1 text-xs">
-										Courier suggested a new date
+										{m.client_courier_suggested_date()}
 									</p>
 								{:else if service.request_status === 'rejected'}
 									<p class="text-muted-foreground mt-1 text-xs">
-										Request was declined
+										{m.client_request_declined()}
 									</p>
 								{/if}
 							</div>
 							<div class="flex gap-2">
 								{#if service.request_status === 'suggested'}
 									<Button size="sm" onclick={() => openSuggestionDialog(service)}>
-										Respond
+										{m.client_respond()}
 									</Button>
 								{:else if service.request_status === 'rejected'}
 									<Button size="sm" variant="outline" href={localizeHref('/client/new')}>
-										Re-submit
+										{m.client_resubmit()}
 									</Button>
 								{/if}
 							</div>
@@ -370,14 +370,14 @@
 			{#if suggestionBatch.hasSelection}
 				<div class="bg-background sticky bottom-16 z-10 flex items-center gap-2 rounded-lg border p-3 shadow-lg">
 					<span class="text-muted-foreground text-sm">
-						{suggestionBatch.selectedCount} selected
+						{m.client_selected_count({ count: suggestionBatch.selectedCount })}
 					</span>
 					<div class="ml-auto flex gap-2">
 						<Button size="sm" disabled={batchActionLoading} onclick={handleBatchAcceptSuggestions}>
-							Accept all
+							{m.client_accept_all()}
 						</Button>
 						<Button size="sm" variant="outline" disabled={batchActionLoading} onclick={() => (showBatchDeclineDialog = true)}>
-							Decline all
+							{m.client_decline_all()}
 						</Button>
 					</div>
 				</div>
@@ -463,10 +463,10 @@
 				class="border-input bg-background rounded-md border px-3 py-2 text-sm"
 				bind:value={sortBy}
 			>
-				<option value="newest">Newest first</option>
-				<option value="oldest">Oldest first</option>
-				<option value="pending-first">Pending first</option>
-				<option value="delivered-first">Delivered first</option>
+				<option value="newest">{m.sort_newest()}</option>
+				<option value="oldest">{m.sort_oldest()}</option>
+				<option value="pending-first">{m.sort_pending_first()}</option>
+				<option value="delivered-first">{m.sort_delivered_first()}</option>
 			</select>
 
 			<!-- Toggle advanced filters -->
@@ -546,7 +546,7 @@
 				<EmptyState
 					icon={Package}
 					title={m.client_no_services()}
-					description="Create your first request to get started."
+					description={m.empty_client_services()}
 					actionLabel={m.client_first_request()}
 					actionHref={localizeHref('/client/new')}
 				/>
@@ -690,17 +690,17 @@
 <Dialog.Root bind:open={showBatchDeclineDialog}>
 	<Dialog.Content>
 		<Dialog.Header>
-			<Dialog.Title>Decline Selected Suggestions</Dialog.Title>
+			<Dialog.Title>{m.client_decline_selected_title()}</Dialog.Title>
 			<Dialog.Description>
-				This will reset {suggestionBatch.selectedCount} suggestion(s) back to pending.
+				{m.client_decline_selected_desc({ count: suggestionBatch.selectedCount })}
 			</Dialog.Description>
 		</Dialog.Header>
 		<Dialog.Footer class="flex-col sm:flex-row gap-2">
 			<Button variant="outline" onclick={() => (showBatchDeclineDialog = false)} disabled={batchActionLoading}>
-				Cancel
+				{m.action_cancel()}
 			</Button>
 			<Button variant="destructive" onclick={handleBatchDeclineSuggestions} disabled={batchActionLoading}>
-				{batchActionLoading ? 'Declining...' : 'Decline'}
+				{batchActionLoading ? m.saving() : m.action_decline()}
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>

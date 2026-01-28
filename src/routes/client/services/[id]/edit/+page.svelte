@@ -131,8 +131,8 @@
 			<ArrowLeft class="size-4" />
 		</Button>
 		<div>
-			<h1 class="text-2xl font-bold">Edit Service Request</h1>
-			<p class="text-muted-foreground">Update your pending service request</p>
+			<h1 class="text-2xl font-bold">{m.edit_service_title()}</h1>
+			<p class="text-muted-foreground">{m.edit_service_description()}</p>
 		</div>
 	</div>
 
