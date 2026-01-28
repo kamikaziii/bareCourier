@@ -28,18 +28,6 @@ export function formatDateTime(date: Date | string | null): string {
 }
 
 /**
- * Format a date with short month (e.g., "15 Jan")
- */
-export function formatDateShort(date: Date | string | null): string {
-	if (!date) return '';
-	const d = typeof date === 'string' ? new Date(date) : date;
-	return d.toLocaleDateString(getLocale(), {
-		day: 'numeric',
-		month: 'short'
-	});
-}
-
-/**
  * Format a date with weekday, day, and short month (e.g., "Mon, 15 Jan")
  */
 export function formatDateWithWeekday(date: Date | string | null): string {

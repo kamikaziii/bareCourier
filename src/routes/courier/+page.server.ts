@@ -127,21 +127,23 @@ export const actions: Actions = {
 			year: 'numeric'
 		});
 
-		for (const [clientId, serviceIdList] of clientNotifications) {
-			const count = serviceIdList.length;
-			const message =
-				count === 1
-					? `A sua entrega foi reagendada para ${formattedDate}.`
-					: `${count} entregas foram reagendadas para ${formattedDate}.`;
+		await Promise.all(
+			Array.from(clientNotifications).map(([clientId, serviceIdList]) => {
+				const count = serviceIdList.length;
+				const message =
+					count === 1
+						? `A sua entrega foi reagendada para ${formattedDate}.`
+						: `${count} entregas foram reagendadas para ${formattedDate}.`;
 
-			await notifyClient(
-				session,
-				clientId,
-				serviceIdList[0], // Link to first service
-				'Entregas Reagendadas',
-				message
-			);
-		}
+				return notifyClient(
+					session,
+					clientId,
+					serviceIdList[0], // Link to first service
+					'Entregas Reagendadas',
+					message
+				);
+			})
+		);
 
 		return { success: true, results };
 	}

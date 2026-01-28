@@ -4,6 +4,7 @@ import type { ChartData } from 'chart.js';
 import { getLocale } from '$lib/paraglide/runtime.js';
 import * as m from '$lib/paraglide/messages.js';
 import { formatDate as formatDateUtil } from '$lib/utils.js';
+import { getStatusLabel } from '$lib/utils/status.js';
 
 // Constants
 const PAGE_SIZE = 500;
@@ -229,12 +230,9 @@ export function formatCurrency(value: number): string {
  */
 export const formatDate = formatDateUtil;
 
-/**
- * Get localized status label
- */
-export function getStatusLabel(status: string): string {
-	return status === 'pending' ? m.status_pending() : m.status_delivered();
-}
+// Re-export from canonical source for backwards compatibility
+export { getStatusLabel };
+
 
 // Chart data builders
 
@@ -349,8 +347,12 @@ export function exportServicesToCSV(
 	].join('\n');
 
 	const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+	const url = URL.createObjectURL(blob);
 	const link = document.createElement('a');
-	link.href = URL.createObjectURL(blob);
+	link.href = url;
 	link.download = `services_${startDate}_to_${endDate}.csv`;
+	document.body.appendChild(link);
 	link.click();
+	document.body.removeChild(link);
+	URL.revokeObjectURL(url);
 }

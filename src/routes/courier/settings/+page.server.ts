@@ -2,6 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import type { Profile, UrgencyFee, PastDueSettings, WorkingDay } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
+import { parseIntWithBounds } from '$lib/utils/form.js';
 
 // Validation helpers
 const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
@@ -450,14 +451,6 @@ export const actions: Actions = {
 
 		const formData = await request.formData();
 
-		// Helper to parse int with bounds validation (handles 0 correctly, unlike || default)
-		const parseIntWithBounds = (value: FormDataEntryValue | null, min: number, max: number, defaultVal: number): number => {
-			if (value === null || value === '') return defaultVal;
-			const parsed = parseInt(value as string, 10);
-			if (Number.isNaN(parsed)) return defaultVal;
-			return Math.max(min, Math.min(max, parsed));
-		};
-
 		const gracePeriodStandard = parseIntWithBounds(formData.get('gracePeriodStandard'), 0, 60, 30);
 		const gracePeriodSpecific = parseIntWithBounds(formData.get('gracePeriodSpecific'), 0, 30, 15);
 		const thresholdApproaching = parseIntWithBounds(formData.get('thresholdApproaching'), 30, 180, 120);
@@ -505,14 +498,6 @@ export const actions: Actions = {
 
 		const formData = await request.formData();
 		const allowClientReschedule = formData.get('allowClientReschedule') === 'true';
-
-		// Helper to parse int with bounds validation
-		const parseIntWithBounds = (value: FormDataEntryValue | null, min: number, max: number, defaultVal: number): number => {
-			if (value === null || value === '') return defaultVal;
-			const parsed = parseInt(value as string, 10);
-			if (Number.isNaN(parsed)) return defaultVal;
-			return Math.max(min, Math.min(max, parsed));
-		};
 
 		const clientMinNoticeHours = parseIntWithBounds(formData.get('clientMinNoticeHours'), 1, 72, 24);
 		const clientMaxReschedules = parseIntWithBounds(formData.get('clientMaxReschedules'), 1, 10, 3);

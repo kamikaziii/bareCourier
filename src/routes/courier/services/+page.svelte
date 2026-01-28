@@ -159,10 +159,14 @@
 		const bom = '\uFEFF';
 		const csv = bom + [headers.map(escapeCell).join(','), ...rows.map(r => r.map(escapeCell).join(','))].join('\n');
 		const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+		const url = URL.createObjectURL(blob);
 		const link = document.createElement('a');
-		link.href = URL.createObjectURL(blob);
+		link.href = url;
 		link.download = `services_${new Date().toISOString().split('T')[0]}.csv`;
+		document.body.appendChild(link);
 		link.click();
+		document.body.removeChild(link);
+		URL.revokeObjectURL(url);
 	}
 
 </script>

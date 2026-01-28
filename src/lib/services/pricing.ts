@@ -94,22 +94,6 @@ export interface CalculatePriceResult {
 }
 
 /**
- * Get the courier's pricing mode
- */
-export async function getCourierPricingMode(
-	supabase: SupabaseClient
-): Promise<'warehouse' | 'zone'> {
-	const { data: profiles } = await supabase
-		.from('profiles')
-		.select('pricing_mode')
-		.eq('role', 'courier')
-		.limit(1)
-		.single();
-
-	return (profiles?.pricing_mode as 'warehouse' | 'zone') || 'warehouse';
-}
-
-/**
  * Get all courier pricing settings
  */
 export async function getCourierPricingSettings(
