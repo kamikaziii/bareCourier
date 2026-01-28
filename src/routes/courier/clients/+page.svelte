@@ -13,7 +13,8 @@
 	import type { PricingModel, Profile } from '$lib/database.types.js';
 	import SkeletonList from '$lib/components/SkeletonList.svelte';
 	import PullToRefresh from '$lib/components/PullToRefresh.svelte';
-	import { ChevronRight, ChevronDown, Euro } from '@lucide/svelte';
+	import { ChevronRight, ChevronDown, Euro, Users } from '@lucide/svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -298,11 +299,10 @@
 		{#if loading}
 			<SkeletonList variant="client" count={3} />
 		{:else if activeClients.length === 0}
-			<Card.Root>
-				<Card.Content class="py-8 text-center text-muted-foreground">
-					{m.clients_no_active()}
-				</Card.Content>
-			</Card.Root>
+			<EmptyState
+				icon={Users}
+				title={m.clients_no_active()}
+			/>
 		{:else}
 			{#each activeClients as client (client.id)}
 				<a href={localizeHref(`/courier/clients/${client.id}`)} class="block">

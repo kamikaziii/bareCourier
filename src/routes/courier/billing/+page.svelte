@@ -8,7 +8,8 @@
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData } from './$types';
 	import type { ClientPricing } from '$lib/database.types';
-	import { Euro, TrendingUp, MapPin, FileText } from '@lucide/svelte';
+	import { Euro, TrendingUp, MapPin, FileText, Receipt } from '@lucide/svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 	import SkeletonList from '$lib/components/SkeletonList.svelte';
 
 	let { data }: { data: PageData } = $props();
@@ -260,7 +261,10 @@
 			{#if loading}
 				<SkeletonList variant="service" count={5} />
 			{:else if sortedBilling.length === 0}
-				<p class="py-8 text-center text-muted-foreground">{m.billing_no_data()}</p>
+				<EmptyState
+					icon={Receipt}
+					title={m.billing_no_data()}
+				/>
 			{:else}
 				<div class="overflow-x-auto">
 					<table class="w-full">

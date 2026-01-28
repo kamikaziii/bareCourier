@@ -9,7 +9,8 @@
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import { formatDate, formatTimeSlot } from '$lib/utils.js';
 	import ServiceCard from '$lib/components/ServiceCard.svelte';
-	import { CheckSquare, Check, Download, EllipsisVertical, Users } from '@lucide/svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
+	import { CheckSquare, Check, Download, EllipsisVertical, Package, Users } from '@lucide/svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { useBatchSelection } from '$lib/composables/use-batch-selection.svelte.js';
 	import type { PageData } from './$types';
@@ -300,11 +301,13 @@
 		{#if loading}
 			<SkeletonList variant="service" count={5} />
 		{:else if filteredServices.length === 0}
-			<Card.Root>
-				<Card.Content class="py-8 text-center text-muted-foreground">
-					{m.services_no_results()}
-				</Card.Content>
-			</Card.Root>
+			<EmptyState
+				icon={Package}
+				title={m.services_no_results()}
+				description="Create your first service to get started."
+				actionLabel={m.services_new()}
+				actionHref={localizeHref('/courier/services/new')}
+			/>
 		{:else}
 			<p class="text-sm text-muted-foreground">
 				{m.services_showing({ count: filteredServices.length })}

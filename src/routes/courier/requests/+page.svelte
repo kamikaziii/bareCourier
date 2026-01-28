@@ -8,7 +8,8 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
-	import { CheckSquare } from '@lucide/svelte';
+	import { CheckSquare, Inbox } from '@lucide/svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
 	import { useBatchSelection } from '$lib/composables/use-batch-selection.svelte.js';
 	import * as m from '$lib/paraglide/messages.js';
@@ -329,11 +330,10 @@
 	{/if}
 
 	{#if data.pendingRequests.length === 0}
-		<Card.Root>
-			<Card.Content class="py-12 text-center">
-				<p class="text-muted-foreground">{m.requests_no_pending()}</p>
-			</Card.Content>
-		</Card.Root>
+		<EmptyState
+			icon={Inbox}
+			title={m.requests_no_pending()}
+		/>
 	{:else}
 		<div class="grid gap-4">
 			{#each data.pendingRequests as service}

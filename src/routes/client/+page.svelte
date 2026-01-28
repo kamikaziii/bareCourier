@@ -12,7 +12,8 @@
 	import { formatDate, formatTimeSlot } from '$lib/utils.js';
 	import type { PageData } from './$types';
 	import type { Service } from '$lib/database.types.js';
-	import { Search, X, Filter, CalendarClock } from '@lucide/svelte';
+	import { Search, X, Filter, CalendarClock, Package } from '@lucide/svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 	import PullToRefresh from '$lib/components/PullToRefresh.svelte';
 	import SkeletonList from '$lib/components/SkeletonList.svelte';
 	import ServiceCard from '$lib/components/ServiceCard.svelte';
@@ -531,17 +532,22 @@
 		{#if loading}
 			<SkeletonList variant="service" count={5} />
 		{:else if sortedServices.length === 0}
-			<Card.Root>
-				<Card.Content class="py-8 text-center">
-					{#if hasActiveFilters}
-						<p class="text-muted-foreground mb-4">{m.services_no_results()}</p>
-						<Button variant="outline" onclick={clearFilters}>{m.filter_clear()}</Button>
-					{:else}
-						<p class="text-muted-foreground mb-4">{m.client_no_services()}</p>
-						<Button onclick={() => goto(localizeHref('/client/new'))}>{m.client_first_request()}</Button>
-					{/if}
-				</Card.Content>
-			</Card.Root>
+			{#if hasActiveFilters}
+				<EmptyState
+					icon={Package}
+					title={m.services_no_results()}
+					actionLabel={m.filter_clear()}
+					onAction={clearFilters}
+				/>
+			{:else}
+				<EmptyState
+					icon={Package}
+					title={m.client_no_services()}
+					description="Create your first request to get started."
+					actionLabel={m.client_first_request()}
+					actionHref={localizeHref('/client/new')}
+				/>
+			{/if}
 		{:else}
 			{#each paginatedServices as service (service.id)}
 				<ServiceCard

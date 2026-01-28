@@ -8,6 +8,8 @@
 	import { localizeHref, getLocale } from '$lib/paraglide/runtime.js';
 	import { formatMonthYear, formatDateFull } from '$lib/utils.js';
 	import type { PageData } from './$types';
+	import { Calendar } from '@lucide/svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 	import type { Service } from '$lib/database.types.js';
 
 	let { data }: { data: PageData } = $props();
@@ -292,11 +294,15 @@
 			</Card.Header>
 			<Card.Content class="pt-0">
 				{#if selectedDay === null}
-					<p class="text-muted-foreground text-center py-8 text-sm">
-						{m.calendar_no_services()}
-					</p>
+					<EmptyState
+						icon={Calendar}
+						title={m.calendar_no_services()}
+					/>
 				{:else if selectedDayServices.length === 0}
-					<p class="text-muted-foreground text-center py-8 text-sm">{m.calendar_no_services()}</p>
+					<EmptyState
+						icon={Calendar}
+						title={m.calendar_no_services()}
+					/>
 				{:else}
 					<div class="space-y-2 max-h-[400px] overflow-y-auto">
 						{#each selectedDayServices as service}

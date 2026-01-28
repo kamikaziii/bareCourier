@@ -9,6 +9,7 @@
 import { formatDate } from '$lib/utils.js';
 	import type { PageData } from './$types';
 	import { Euro, MapPin, Package, Receipt, Download } from '@lucide/svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 	import SkeletonList from '$lib/components/SkeletonList.svelte';
 
 	let { data }: { data: PageData } = $props();
@@ -281,7 +282,10 @@ import { formatDate } from '$lib/utils.js';
 			{#if loading}
 				<SkeletonList variant="service" count={5} />
 			{:else if services.length === 0}
-				<p class="py-8 text-center text-muted-foreground">{m.client_no_services()}</p>
+				<EmptyState
+					icon={Receipt}
+					title={m.client_no_services()}
+				/>
 			{:else}
 				<div class="overflow-x-auto">
 					<table class="w-full">
