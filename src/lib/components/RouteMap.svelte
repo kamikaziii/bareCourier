@@ -49,7 +49,7 @@
 
 			map.on('load', () => {
 				mapLoaded = true;
-				updateMapContent();
+				updateMapContent(pickupCoords, deliveryCoords, routeGeometry);
 			});
 
 			map.addControl(new mapboxgl.default.NavigationControl(), 'top-right');
@@ -61,13 +61,19 @@
 	});
 
 	// Update map when coordinates change
+	// Props must be read synchronously in $effect to be tracked as dependencies
+	// (reads after await in async functions are not tracked - see Svelte 5 await_reactivity_loss)
 	$effect(() => {
 		if (mapLoaded && map) {
-			updateMapContent();
+			updateMapContent(pickupCoords, deliveryCoords, routeGeometry);
 		}
 	});
 
-	async function updateMapContent() {
+	async function updateMapContent(
+		pickup: [number, number] | null,
+		delivery: [number, number] | null,
+		geometry: string | null
+	) {
 		if (!map || !mapLoaded) return;
 
 		const mapboxgl = await import('mapbox-gl');
@@ -85,36 +91,36 @@
 		let hasMarkers = false;
 
 		// Add pickup marker
-		if (pickupCoords) {
+		if (pickup) {
 			const pickupMarker = document.createElement('div');
 			pickupMarker.className = 'size-6 bg-blue-500 rounded-full border-2 border-white shadow-lg flex items-center justify-center';
 			pickupMarker.innerHTML = '<span class="text-white text-xs font-bold">P</span>';
 
 			new mapboxgl.default.Marker({ element: pickupMarker })
-				.setLngLat(pickupCoords)
+				.setLngLat(pickup)
 				.addTo(map);
 
-			bounds.extend(pickupCoords);
+			bounds.extend(pickup);
 			hasMarkers = true;
 		}
 
 		// Add delivery marker
-		if (deliveryCoords) {
+		if (delivery) {
 			const deliveryMarker = document.createElement('div');
 			deliveryMarker.className = 'size-6 bg-green-500 rounded-full border-2 border-white shadow-lg flex items-center justify-center';
 			deliveryMarker.innerHTML = '<span class="text-white text-xs font-bold">E</span>';
 
 			new mapboxgl.default.Marker({ element: deliveryMarker })
-				.setLngLat(deliveryCoords)
+				.setLngLat(delivery)
 				.addTo(map);
 
-			bounds.extend(deliveryCoords);
+			bounds.extend(delivery);
 			hasMarkers = true;
 		}
 
 		// Add route line
-		if (routeGeometry && pickupCoords && deliveryCoords) {
-			const coordinates = decodePolyline(routeGeometry);
+		if (geometry && pickup && delivery) {
+			const coordinates = decodePolyline(geometry);
 
 			map.addSource('route', {
 				type: 'geojson',
