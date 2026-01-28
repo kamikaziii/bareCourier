@@ -121,6 +121,19 @@
 		Array.from(billingData.values()).sort((a, b) => b.estimatedCost - a.estimatedCost)
 	);
 
+	// Pagination
+	const PAGE_SIZE = 20;
+	let currentPage = $state(1);
+	const totalPages = $derived(Math.ceil(sortedBilling.length / PAGE_SIZE));
+	const paginatedBilling = $derived(
+		sortedBilling.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+	);
+
+	$effect(() => {
+		startDate; endDate;
+		currentPage = 1;
+	});
+
 	function formatCurrency(value: number): string {
 		return new Intl.NumberFormat(getLocale(), {
 			style: 'currency',
@@ -263,7 +276,7 @@
 							</tr>
 						</thead>
 						<tbody>
-							{#each sortedBilling as billing (billing.clientId)}
+							{#each paginatedBilling as billing (billing.clientId)}
 								<tr class="border-b hover:bg-muted/25">
 									<td class="px-4 py-3">
 										<span class="font-medium">{billing.clientName}</span>
@@ -313,6 +326,15 @@
 						</tfoot>
 					</table>
 				</div>
+				{#if totalPages > 1}
+					<div class="flex items-center justify-center gap-2 py-4">
+						<Button variant="outline" size="sm" disabled={currentPage === 1}
+							onclick={() => (currentPage = currentPage - 1)}>Previous</Button>
+						<span class="text-muted-foreground text-sm">Page {currentPage} of {totalPages}</span>
+						<Button variant="outline" size="sm" disabled={currentPage === totalPages}
+							onclick={() => (currentPage = currentPage + 1)}>Next</Button>
+					</div>
+				{/if}
 			{/if}
 		</Card.Content>
 	</Card.Root>
