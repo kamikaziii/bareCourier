@@ -581,6 +581,11 @@
 	"notification_filter_unread": "Unread",
 	"notification_time_today": "Today",
 	"notification_time_earlier": "Earlier",
+	"notification_empty_title": "You're all caught up",
+	"notification_empty_subtitle": "No new notifications",
+	"notification_dismiss": "Dismiss",
+	"notification_mark_read": "Mark as read",
+	"notification_unread_count": "{count} unread notifications",
 
 	"reschedule_request_approval": "Request client approval",
 	"client_reschedule_courier_proposes": "The courier proposes a new schedule",

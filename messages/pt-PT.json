@@ -581,6 +581,11 @@
 	"notification_filter_unread": "Não lidas",
 	"notification_time_today": "Hoje",
 	"notification_time_earlier": "Anteriores",
+	"notification_empty_title": "Tudo em dia",
+	"notification_empty_subtitle": "Sem novas notificações",
+	"notification_dismiss": "Dispensar",
+	"notification_mark_read": "Marcar como lida",
+	"notification_unread_count": "{count} notificações não lidas",
 
 	"reschedule_request_approval": "Pedir aprovação ao cliente",
 	"client_reschedule_courier_proposes": "O estafeta propõe um novo agendamento",

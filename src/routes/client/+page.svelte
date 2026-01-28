@@ -386,7 +386,7 @@
 	{/if}
 
 	<!-- Stats -->
-	<div class="grid gap-4 md:grid-cols-2">
+	<div class="grid grid-cols-2 gap-3">
 		<Card.Root>
 			<Card.Content class="flex items-center gap-4 p-6">
 				<div class="size-12 rounded-full bg-blue-500/10 flex items-center justify-center">

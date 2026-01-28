@@ -63,6 +63,7 @@ export type Database = {
       notifications: {
         Row: {
           created_at: string | null
+          dismissed_at: string | null
           id: string
           message: string
           read: boolean | null
@@ -73,6 +74,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          dismissed_at?: string | null
           id?: string
           message: string
           read?: boolean | null
@@ -83,6 +85,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          dismissed_at?: string | null
           id?: string
           message?: string
           read?: boolean | null

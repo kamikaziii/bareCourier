@@ -2,14 +2,14 @@
 	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as m from '$lib/paraglide/messages.js';
-	import { getLocale, localizeHref } from '$lib/paraglide/runtime.js';
+	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import type { Notification } from '$lib/database.types';
 	import type { SupabaseClient } from '@supabase/supabase-js';
-	import { Bell, CheckCheck, Package, Clock, CalendarClock, Settings, AlertTriangle, BarChart3 } from '@lucide/svelte';
+	import { Bell, CheckCheck, Package, Clock, CalendarClock, Settings, AlertTriangle, BarChart3, X } from '@lucide/svelte';
 	import { formatBadge, formatRelativeTime } from '$lib/utils.js';
+	import { fly } from 'svelte/transition';
 
 	let {
 		supabase,
@@ -64,22 +64,8 @@
 		return { today, earlier };
 	});
 
-	async function loadNotifications() {
-		loading = true;
-		const { data } = await supabase
-			.from('notifications')
-			.select('*')
-			.eq('user_id', userId)
-			.order('created_at', { ascending: false })
-			.limit(20);
-
-		notifications = (data || []) as Notification[];
-		loading = false;
-	}
-
 	async function markAsRead(id: string) {
 		await supabase.from('notifications').update({ read: true }).eq('id', id);
-
 		notifications = notifications.map((n) => (n.id === id ? { ...n, read: true } : n));
 	}
 
@@ -88,8 +74,12 @@
 		if (unreadIds.length === 0) return;
 
 		await supabase.from('notifications').update({ read: true }).in('id', unreadIds);
-
 		notifications = notifications.map((n) => ({ ...n, read: true }));
+	}
+
+	async function dismissNotification(id: string) {
+		await supabase.from('notifications').update({ dismissed_at: new Date().toISOString() }).eq('id', id);
+		notifications = notifications.filter((n) => n.id !== id);
 	}
 
 	function getNotificationIcon(type: string) {
@@ -109,6 +99,24 @@
 		}
 	}
 
+	function getNotificationColor(type: string, unread: boolean): string {
+		if (!unread) return 'bg-muted text-muted-foreground';
+		switch (type) {
+			case 'new_request':
+				return 'bg-blue-500/10 text-blue-600';
+			case 'schedule_change':
+				return 'bg-amber-500/10 text-amber-600';
+			case 'service_status':
+				return 'bg-green-500/10 text-green-600';
+			case 'past_due':
+				return 'bg-red-500/10 text-red-600';
+			case 'daily_summary':
+				return 'bg-purple-500/10 text-purple-600';
+			default:
+				return 'bg-primary/10 text-primary';
+		}
+	}
+
 	function handleNotificationClick(notification: Notification) {
 		open = false;
 		markAsRead(notification.id);
@@ -119,16 +127,17 @@
 		}
 	}
 
+	// Load notifications + real-time subscription
 	$effect(() => {
 		let canceled = false;
 
-		// Load notifications with cancellation guard
 		(async () => {
 			loading = true;
 			const { data } = await supabase
 				.from('notifications')
 				.select('*')
 				.eq('user_id', userId)
+				.is('dismissed_at', null)
 				.order('created_at', { ascending: false })
 				.limit(20);
 
@@ -137,7 +146,6 @@
 			loading = false;
 		})();
 
-		// Subscribe to real-time notifications
 		const channel = supabase
 			.channel('notifications')
 			.on(
@@ -166,40 +174,181 @@
 
 {#snippet notificationItem(notification: Notification)}
 	{@const Icon = getNotificationIcon(notification.type)}
-	<button
-		class="flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-muted {!notification.read
-			? 'bg-muted/50'
-			: ''}"
-		onclick={() => handleNotificationClick(notification)}
-	>
-		<div
-			class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full {!notification.read
-				? 'bg-primary/10 text-primary'
-				: 'bg-muted text-muted-foreground'}"
+	<div class="group relative" transition:fly={{ y: -10, duration: 200 }}>
+		<button
+			class="flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-muted {!notification.read
+				? 'bg-muted/50'
+				: ''}"
+			onclick={() => handleNotificationClick(notification)}
 		>
-			<Icon class="size-4" />
-		</div>
-		<div class="min-w-0 flex-1">
-			<p class="text-sm font-medium {!notification.read ? '' : 'text-muted-foreground'}">
-				{notification.title}
-			</p>
-			<p class="text-xs text-muted-foreground line-clamp-2">
-				{notification.message}
-			</p>
-			<p class="mt-1 text-xs text-muted-foreground">
-				{formatRelativeTime(notification.created_at || '')}
-			</p>
-		</div>
-		{#if !notification.read}
-			<div class="mt-2 size-2 shrink-0 rounded-full bg-primary"></div>
-		{/if}
-	</button>
+			<div
+				class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full {getNotificationColor(notification.type, !notification.read)}"
+			>
+				<Icon class="size-4" />
+			</div>
+			<div class="min-w-0 flex-1">
+				<p class="text-sm font-medium {!notification.read ? '' : 'text-muted-foreground'}">
+					{notification.title}
+				</p>
+				<p class="text-xs text-muted-foreground line-clamp-2">
+					{notification.message}
+				</p>
+				<p class="mt-1 text-xs text-muted-foreground">
+					{formatRelativeTime(notification.created_at || '')}
+				</p>
+			</div>
+			{#if !notification.read}
+				<span
+					role="button"
+					tabindex="0"
+					class="mt-2 size-3 shrink-0 rounded-full bg-primary hover:ring-2 hover:ring-primary/30 transition-shadow cursor-pointer"
+					aria-label={m.notification_mark_read()}
+					onclick={(e) => {
+						e.stopPropagation();
+						markAsRead(notification.id);
+					}}
+					onkeydown={(e) => {
+						if (e.key === 'Enter' || e.key === ' ') {
+							e.stopPropagation();
+							e.preventDefault();
+							markAsRead(notification.id);
+						}
+					}}
+				></span>
+			{/if}
+		</button>
+		<!-- Dismiss button on hover -->
+		<button
+			class="absolute right-7 top-2 rounded-md p-1 text-muted-foreground opacity-100 md:opacity-0 transition-opacity hover:bg-muted hover:text-foreground md:group-hover:opacity-100 focus:opacity-100"
+			aria-label={m.notification_dismiss()}
+			onclick={(e) => {
+				e.stopPropagation();
+				dismissNotification(notification.id);
+			}}
+		>
+			<X class="size-3.5" />
+		</button>
+	</div>
 {/snippet}
+
+{#snippet notificationContent()}
+	<!-- Header with settings link -->
+	<div class="flex items-center justify-between px-3 py-2">
+		<span class="font-semibold">{m.notifications()}</span>
+		<Button
+			variant="ghost"
+			size="icon"
+			class="size-6"
+			onclick={() => {
+				open = false;
+				goto(localizeHref(userRole === 'courier' ? '/courier/settings?tab=notifications' : '/client/settings'));
+			}}
+		>
+			<Settings class="size-4" />
+		</Button>
+	</div>
+	<Separator />
+
+	<!-- Tabs and unread filter -->
+	<div class="flex items-center justify-between px-3 py-2 border-b">
+		<div class="flex gap-1">
+			<Button
+				variant={activeTab === 'all' ? 'secondary' : 'ghost'}
+				size="sm"
+				class="h-7 text-xs"
+				onclick={() => activeTab = 'all'}
+			>
+				{m.notification_tab_all()}
+			</Button>
+			<Button
+				variant={activeTab === 'requests' ? 'secondary' : 'ghost'}
+				size="sm"
+				class="h-7 text-xs"
+				onclick={() => activeTab = 'requests'}
+			>
+				{m.notification_tab_requests()}
+			</Button>
+			<Button
+				variant={activeTab === 'alerts' ? 'secondary' : 'ghost'}
+				size="sm"
+				class="h-7 text-xs"
+				onclick={() => activeTab = 'alerts'}
+			>
+				{m.notification_tab_alerts()}
+			</Button>
+		</div>
+		<Button
+			variant={showUnreadOnly ? 'secondary' : 'ghost'}
+			size="sm"
+			class="h-7 text-xs"
+			onclick={() => showUnreadOnly = !showUnreadOnly}
+		>
+			{m.notification_filter_unread()}
+		</Button>
+	</div>
+
+	<!-- Notification list with time grouping -->
+	<div class="max-h-80 overflow-y-auto">
+		{#if loading}
+			<div class="px-3 py-4 text-center text-sm text-muted-foreground">
+				{m.loading()}
+			</div>
+		{:else if groupedNotifications.today.length === 0 && groupedNotifications.earlier.length === 0}
+			<div class="flex flex-col items-center justify-center px-3 py-8 text-center">
+				<Bell class="size-10 text-muted-foreground/40 mb-3" />
+				<p class="text-sm font-medium text-muted-foreground">{m.notification_empty_title()}</p>
+				<p class="text-xs text-muted-foreground/70 mt-1">{m.notification_empty_subtitle()}</p>
+			</div>
+		{:else}
+			{#if groupedNotifications.today.length > 0}
+				<div class="px-3 py-1.5 text-xs font-medium text-muted-foreground bg-muted/50">
+					{m.notification_time_today()}
+				</div>
+				{#each groupedNotifications.today as notification (notification.id)}
+					{@render notificationItem(notification)}
+				{/each}
+			{/if}
+
+			{#if groupedNotifications.earlier.length > 0}
+				<div class="px-3 py-1.5 text-xs font-medium text-muted-foreground bg-muted/50">
+					{m.notification_time_earlier()}
+				</div>
+				{#each groupedNotifications.earlier as notification (notification.id)}
+					{@render notificationItem(notification)}
+				{/each}
+			{/if}
+		{/if}
+	</div>
+
+	<!-- Footer: mark all read -->
+	{#if unreadCount > 0}
+		<Separator />
+		<div class="px-3 py-2">
+			<Button variant="outline" size="sm" class="w-full h-8 text-xs" onclick={markAllAsRead}>
+				<CheckCheck class="size-3.5 mr-1.5" />
+				{m.mark_all_read()}
+			</Button>
+		</div>
+	{/if}
+{/snippet}
+
+<!-- Accessibility: sr-only live region for unread count -->
+<div class="sr-only" aria-live="polite">
+	{#if unreadCount > 0}
+		{m.notification_unread_count({ count: unreadCount })}
+	{/if}
+</div>
 
 <DropdownMenu.Root bind:open>
 	<DropdownMenu.Trigger>
 		{#snippet child({ props })}
-			<Button variant="ghost" size="sm" class="relative" {...props}>
+			<Button
+				variant="ghost"
+				size="sm"
+				class="relative"
+				aria-label="{m.notifications()}{unreadCount > 0 ? ` (${unreadCount})` : ''}"
+				{...props}
+			>
 				<Bell class="size-5" />
 				{#if unreadCount > 0}
 					<span
@@ -211,98 +360,7 @@
 			</Button>
 		{/snippet}
 	</DropdownMenu.Trigger>
-	<DropdownMenu.Content align="end" class="w-80">
-		<!-- Header with settings link -->
-		<div class="flex items-center justify-between px-3 py-2">
-			<span class="font-semibold">{m.notifications()}</span>
-			<div class="flex items-center gap-2">
-				{#if unreadCount > 0}
-					<Button variant="ghost" size="sm" class="h-auto p-0 text-xs" onclick={markAllAsRead}>
-						{m.mark_all_read()}
-					</Button>
-				{/if}
-				<Button
-					variant="ghost"
-					size="icon"
-					class="size-6"
-					onclick={() => {
-						open = false;
-						goto(localizeHref(userRole === 'courier' ? '/courier/settings?tab=notifications' : '/client/settings'));
-					}}
-				>
-					<Settings class="size-4" />
-				</Button>
-			</div>
-		</div>
-		<Separator />
-
-		<!-- Tabs and unread filter -->
-		<div class="flex items-center justify-between px-3 py-2 border-b">
-			<div class="flex gap-1">
-				<Button
-					variant={activeTab === 'all' ? 'secondary' : 'ghost'}
-					size="sm"
-					class="h-7 text-xs"
-					onclick={() => activeTab = 'all'}
-				>
-					{m.notification_tab_all()}
-				</Button>
-				<Button
-					variant={activeTab === 'requests' ? 'secondary' : 'ghost'}
-					size="sm"
-					class="h-7 text-xs"
-					onclick={() => activeTab = 'requests'}
-				>
-					{m.notification_tab_requests()}
-				</Button>
-				<Button
-					variant={activeTab === 'alerts' ? 'secondary' : 'ghost'}
-					size="sm"
-					class="h-7 text-xs"
-					onclick={() => activeTab = 'alerts'}
-				>
-					{m.notification_tab_alerts()}
-				</Button>
-			</div>
-			<label class="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
-				<input
-					type="checkbox"
-					bind:checked={showUnreadOnly}
-					class="size-3 rounded"
-				/>
-				{m.notification_filter_unread()}
-			</label>
-		</div>
-
-		<!-- Notification list with time grouping -->
-		<div class="max-h-80 overflow-y-auto">
-			{#if loading}
-				<div class="px-3 py-4 text-center text-sm text-muted-foreground">
-					{m.loading()}
-				</div>
-			{:else if groupedNotifications.today.length === 0 && groupedNotifications.earlier.length === 0}
-				<div class="px-3 py-4 text-center text-sm text-muted-foreground">
-					{m.no_notifications()}
-				</div>
-			{:else}
-				{#if groupedNotifications.today.length > 0}
-					<div class="px-3 py-1.5 text-xs font-medium text-muted-foreground bg-muted/50">
-						{m.notification_time_today()}
-					</div>
-					{#each groupedNotifications.today as notification (notification.id)}
-						{@render notificationItem(notification)}
-					{/each}
-				{/if}
-
-				{#if groupedNotifications.earlier.length > 0}
-					<div class="px-3 py-1.5 text-xs font-medium text-muted-foreground bg-muted/50">
-						{m.notification_time_earlier()}
-					</div>
-					{#each groupedNotifications.earlier as notification (notification.id)}
-						{@render notificationItem(notification)}
-					{/each}
-				{/if}
-			{/if}
-		</div>
+	<DropdownMenu.Content align="end" collisionPadding={8} class="w-80 max-w-[calc(100vw-1rem)] shadow-xl">
+		{@render notificationContent()}
 	</DropdownMenu.Content>
 </DropdownMenu.Root>
