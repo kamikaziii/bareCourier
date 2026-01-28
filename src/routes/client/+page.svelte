@@ -281,10 +281,10 @@
 				suggestionBatch.reset();
 				await loadServices();
 			} else {
-				actionError = result.data?.error || 'Failed to accept suggestions';
+				actionError = result.data?.error || m.error_accept_suggestions();
 			}
 		} catch {
-			actionError = 'An error occurred';
+			actionError = m.error_generic();
 		}
 		batchActionLoading = false;
 	}
@@ -304,10 +304,10 @@
 				showBatchDeclineDialog = false;
 				await loadServices();
 			} else {
-				actionError = result.data?.error || 'Failed to decline suggestions';
+				actionError = result.data?.error || m.error_decline_suggestions();
 			}
 		} catch {
-			actionError = 'An error occurred';
+			actionError = m.error_generic();
 		}
 		batchActionLoading = false;
 	}

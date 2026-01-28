@@ -233,18 +233,17 @@ export const actions: Actions = {
 			if (error) failCount++;
 		}
 
-		// Notify courier about batch acceptance
-		await notifyCourier(
-			supabase,
-			session,
-			servicesData[0].id,
-			'Sugestões Aceites',
-			`O cliente aceitou ${servicesData.length} sugestão(ões) de data.`
-		);
-
 		if (failCount > 0) {
+			if (failCount < servicesData.length) {
+				// Partial success — still notify
+				await notifyCourier(supabase, session, servicesData[0].id, 'Sugestões Aceites',
+					`O cliente aceitou ${servicesData.length - failCount} de ${servicesData.length} sugestão(ões) de data.`);
+			}
 			return { success: true, error: `${failCount} of ${serviceIds.length} failed` };
 		}
+
+		await notifyCourier(supabase, session, servicesData[0].id, 'Sugestões Aceites',
+			`O cliente aceitou ${servicesData.length} sugestão(ões) de data.`);
 		return { success: true };
 	},
 
@@ -299,17 +298,16 @@ export const actions: Actions = {
 			if (error) failCount++;
 		}
 
-		await notifyCourier(
-			supabase,
-			session,
-			servicesData[0].id,
-			'Sugestões Recusadas',
-			`O cliente recusou ${servicesData.length} sugestão(ões). Os pedidos estão novamente pendentes.`
-		);
-
 		if (failCount > 0) {
+			if (failCount < servicesData.length) {
+				await notifyCourier(supabase, session, servicesData[0].id, 'Sugestões Recusadas',
+					`O cliente recusou ${servicesData.length - failCount} de ${servicesData.length} sugestão(ões). Os pedidos estão novamente pendentes.`);
+			}
 			return { success: true, error: `${failCount} of ${serviceIds.length} failed` };
 		}
+
+		await notifyCourier(supabase, session, servicesData[0].id, 'Sugestões Recusadas',
+			`O cliente recusou ${servicesData.length} sugestão(ões). Os pedidos estão novamente pendentes.`);
 		return { success: true };
 	},
 

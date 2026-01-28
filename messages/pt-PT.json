@@ -617,5 +617,9 @@
 	"edit_service_save": "Guardar Alterações",
 
 	"empty_courier_services": "Crie o seu primeiro serviço para começar.",
-	"empty_client_services": "Crie o seu primeiro pedido para começar."
+	"empty_client_services": "Crie o seu primeiro pedido para começar.",
+
+	"error_accept_suggestions": "Falha ao aceitar sugestões",
+	"error_decline_suggestions": "Falha ao recusar sugestões",
+	"error_generic": "Ocorreu um erro"
 }

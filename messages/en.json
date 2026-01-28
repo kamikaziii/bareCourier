@@ -617,5 +617,9 @@
 	"edit_service_save": "Save Changes",
 
 	"empty_courier_services": "Create your first service to get started.",
-	"empty_client_services": "Create your first request to get started."
+	"empty_client_services": "Create your first request to get started.",
+
+	"error_accept_suggestions": "Failed to accept suggestions",
+	"error_decline_suggestions": "Failed to decline suggestions",
+	"error_generic": "An error occurred"
 }

@@ -277,7 +277,7 @@
 						{m.services_cancel()}
 					</Button>
 					<Button type="submit" class="flex-1" disabled={loading || !pickupLocation || !deliveryLocation || (requestedTimeSlot === 'specific' && !requestedTime)}>
-						{loading ? m.saving() : m.action_save()}
+						{loading ? m.saving() : m.edit_service_save()}
 					</Button>
 				</div>
 			</form>

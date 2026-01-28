@@ -38,7 +38,7 @@
 	let batchLoading = $state(false);
 	let batchMessage = $state<{ type: 'success' | 'error'; text: string } | null>(null);
 
-	// Warning from create form (via sessionStorage)
+	// Warning from create form (via URL search params)
 	let formWarning = $state('');
 
 	function selectAllVisible() {

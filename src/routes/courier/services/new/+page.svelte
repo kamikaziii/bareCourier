@@ -85,7 +85,7 @@
 				formError = result.data.error;
 				formLoading = false;
 			} else if (result.type === 'success' && result.data?.success) {
-				const params = result.data.warning ? `?warning=${result.data.warning}` : '';
+				const params = result.data.warning ? `?warning=${encodeURIComponent(result.data.warning)}` : '';
 				goto(localizeHref('/courier/services') + params);
 			} else {
 				formLoading = false;

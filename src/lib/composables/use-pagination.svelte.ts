@@ -11,6 +11,10 @@ export function usePagination<T>(items: () => T[], pageSize = 20) {
 	);
 	const totalItems = $derived(items().length);
 
+	$effect(() => {
+		if (currentPage > totalPages) currentPage = totalPages;
+	});
+
 	function reset() {
 		currentPage = 1;
 	}
