@@ -85,11 +85,8 @@
 				formError = result.data.error;
 				formLoading = false;
 			} else if (result.type === 'success' && result.data?.success) {
-				if (result.data.warning) {
-					// Store warning in sessionStorage so the list page can show it
-					sessionStorage.setItem('serviceFormWarning', result.data.warning);
-				}
-				goto(localizeHref('/courier/services'));
+				const params = result.data.warning ? `?warning=${result.data.warning}` : '';
+				goto(localizeHref('/courier/services') + params);
 			} else {
 				formLoading = false;
 			}

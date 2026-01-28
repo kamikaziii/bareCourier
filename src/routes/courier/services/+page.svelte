@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { goto, replaceState } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -91,16 +92,20 @@
 		clients = clientsResult.data || [];
 		loading = false;
 
-		// Check for warning from create form
-		const warning = sessionStorage.getItem('serviceFormWarning');
-		if (warning) {
-			formWarning = warning;
-			sessionStorage.removeItem('serviceFormWarning');
-		}
 	}
 
 	$effect(() => {
 		loadData();
+	});
+
+	$effect(() => {
+		const warning = $page.url.searchParams.get('warning');
+		if (warning) {
+			formWarning = warning;
+			const url = new URL($page.url);
+			url.searchParams.delete('warning');
+			replaceState(url, {});
+		}
 	});
 
 	const filteredServices = $derived(
