@@ -8,7 +8,7 @@
 	import { localizeHref, getLocale } from '$lib/paraglide/runtime.js';
 	import { formatMonthYear, formatDateFull } from '$lib/utils.js';
 	import type { PageData } from './$types';
-	import { Calendar } from '@lucide/svelte';
+	import { Calendar, ChevronLeft, ChevronRight } from '@lucide/svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import type { Service } from '$lib/database.types.js';
 
@@ -166,35 +166,11 @@
 		<h1 class="text-2xl font-bold">{m.calendar_title()}</h1>
 		<div class="flex items-center gap-2">
 			<Button variant="outline" size="sm" onclick={goToPreviousMonth}>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					width="16"
-					height="16"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				>
-					<path d="m15 18-6-6 6-6" />
-				</svg>
+				<ChevronLeft class="size-5" />
 			</Button>
 			<Button variant="outline" size="sm" onclick={goToToday}>{m.calendar_today()}</Button>
 			<Button variant="outline" size="sm" onclick={goToNextMonth}>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					width="16"
-					height="16"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				>
-					<path d="m9 18 6-6-6-6" />
-				</svg>
+				<ChevronRight class="size-5" />
 			</Button>
 		</div>
 	</div>
@@ -337,20 +313,7 @@
 											</p>
 										{/if}
 									</div>
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										width="14"
-										height="14"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										class="text-muted-foreground shrink-0 mt-0.5"
-									>
-										<path d="m9 18 6-6-6-6" />
-									</svg>
+									<ChevronRight class="size-3.5 text-muted-foreground shrink-0 mt-0.5" />
 								</div>
 							</a>
 						{/each}
