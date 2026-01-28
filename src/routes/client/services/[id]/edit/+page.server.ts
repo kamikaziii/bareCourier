@@ -1,10 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions } from './$types';
-import {
-	calculateServicePrice,
-	getCourierPricingSettings,
-	getClientPricing
-} from '$lib/services/pricing.js';
+import { getCourierPricingSettings } from '$lib/services/pricing.js';
 import { calculateServiceDistance } from '$lib/services/distance.js';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 
@@ -100,29 +96,6 @@ export const actions: Actions = {
 			distance_km = distanceResult.totalDistanceKm;
 		}
 
-		// Check if client has pricing config
-		const { config: pricingConfig } = await getClientPricing(supabase, user.id);
-
-		let calculated_price: number | null = null;
-		let price_breakdown: object | null = null;
-
-		if (pricingConfig && distance_km !== null) {
-			const priceResult = await calculateServicePrice(supabase, {
-				clientId: user.id,
-				distanceKm: distance_km,
-				urgencyFeeId: urgency_fee_id,
-				minimumCharge: courierSettings.minimumCharge,
-				distanceMode: distanceResult?.distanceMode as 'warehouse' | 'zone' | 'fallback',
-				warehouseToPickupKm: distanceResult?.warehouseToPickupKm,
-				pickupToDeliveryKm: distanceResult?.pickupToDeliveryKm
-			});
-
-			if (priceResult.success) {
-				calculated_price = priceResult.price;
-				price_breakdown = priceResult.breakdown;
-			}
-		}
-
 		// Update service
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const { error: updateError } = await (supabase as any).from('services').update({
@@ -137,9 +110,7 @@ export const actions: Actions = {
 			delivery_lat,
 			delivery_lng,
 			distance_km,
-			urgency_fee_id: urgency_fee_id || null,
-			calculated_price,
-			price_breakdown
+			urgency_fee_id: urgency_fee_id || null
 		}).eq('id', params.id);
 
 		if (updateError) {
