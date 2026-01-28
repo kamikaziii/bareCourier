@@ -175,6 +175,148 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
+	batchAcceptSuggestions: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const formData = await request.formData();
+		const serviceIdsJson = formData.get('service_ids') as string;
+		if (!serviceIdsJson) {
+			return { success: false, error: 'Service IDs required' };
+		}
+
+		let serviceIds: string[];
+		try {
+			serviceIds = JSON.parse(serviceIdsJson);
+		} catch {
+			return { success: false, error: 'Invalid service IDs' };
+		}
+
+		if (serviceIds.length === 0) {
+			return { success: false, error: 'No services selected' };
+		}
+
+		// Get all services and verify ownership
+		const { data: rawServicesData } = await supabase
+			.from('services')
+			.select('id, client_id, suggested_date, suggested_time_slot, suggested_time')
+			.in('id', serviceIds)
+			.eq('client_id', user.id);
+
+		const servicesData = rawServicesData as {
+			id: string;
+			client_id: string;
+			suggested_date: string | null;
+			suggested_time_slot: string | null;
+			suggested_time: string | null;
+		}[] | null;
+
+		if (!servicesData || servicesData.length !== serviceIds.length) {
+			return { success: false, error: 'Some services not found or unauthorized' };
+		}
+
+		// Accept each suggestion
+		let failCount = 0;
+		for (const svc of servicesData) {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const { error } = await (supabase as any)
+				.from('services')
+				.update({
+					request_status: 'accepted',
+					scheduled_date: svc.suggested_date,
+					scheduled_time_slot: svc.suggested_time_slot,
+					scheduled_time: svc.suggested_time,
+					suggested_date: null,
+					suggested_time_slot: null,
+					suggested_time: null
+				})
+				.eq('id', svc.id);
+			if (error) failCount++;
+		}
+
+		// Notify courier about batch acceptance
+		await notifyCourier(
+			supabase,
+			session,
+			servicesData[0].id,
+			'Sugestões Aceites',
+			`O cliente aceitou ${servicesData.length} sugestão(ões) de data.`
+		);
+
+		if (failCount > 0) {
+			return { success: true, error: `${failCount} of ${serviceIds.length} failed` };
+		}
+		return { success: true };
+	},
+
+	batchDeclineSuggestions: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const formData = await request.formData();
+		const serviceIdsJson = formData.get('service_ids') as string;
+		if (!serviceIdsJson) {
+			return { success: false, error: 'Service IDs required' };
+		}
+
+		let serviceIds: string[];
+		try {
+			serviceIds = JSON.parse(serviceIdsJson);
+		} catch {
+			return { success: false, error: 'Invalid service IDs' };
+		}
+
+		if (serviceIds.length === 0) {
+			return { success: false, error: 'No services selected' };
+		}
+
+		// Verify ownership
+		const { data: rawServicesData } = await supabase
+			.from('services')
+			.select('id, client_id')
+			.in('id', serviceIds)
+			.eq('client_id', user.id);
+
+		const servicesData = rawServicesData as { id: string; client_id: string }[] | null;
+
+		if (!servicesData || servicesData.length !== serviceIds.length) {
+			return { success: false, error: 'Some services not found or unauthorized' };
+		}
+
+		// Decline all
+		let failCount = 0;
+		for (const svc of servicesData) {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const { error } = await (supabase as any)
+				.from('services')
+				.update({
+					request_status: 'pending',
+					suggested_date: null,
+					suggested_time_slot: null,
+					suggested_time: null
+				})
+				.eq('id', svc.id);
+			if (error) failCount++;
+		}
+
+		await notifyCourier(
+			supabase,
+			session,
+			servicesData[0].id,
+			'Sugestões Recusadas',
+			`O cliente recusou ${servicesData.length} sugestão(ões). Os pedidos estão novamente pendentes.`
+		);
+
+		if (failCount > 0) {
+			return { success: true, error: `${failCount} of ${serviceIds.length} failed` };
+		}
+		return { success: true };
+	},
+
 	cancelRequest: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {

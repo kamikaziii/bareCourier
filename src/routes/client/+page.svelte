@@ -17,8 +17,7 @@
 	import PullToRefresh from '$lib/components/PullToRefresh.svelte';
 	import SkeletonList from '$lib/components/SkeletonList.svelte';
 	import ServiceCard from '$lib/components/ServiceCard.svelte';
-	import { Textarea } from '$lib/components/ui/textarea/index.js';
-	import { useBatchSelection } from '$lib/composables/use-batch-selection.svelte';
+	import { useBatchSelection } from '$lib/composables/use-batch-selection.svelte.js';
 
 	let { data }: { data: PageData } = $props();
 
@@ -38,7 +37,6 @@
 	// Batch selection for suggestions
 	const suggestionBatch = useBatchSelection();
 	let showBatchDeclineDialog = $state(false);
-	let batchDeclineReason = $state('');
 	let batchActionLoading = $state(false);
 
 	// Filter state
@@ -273,40 +271,48 @@
 	}
 
 	async function handleBatchAcceptSuggestions() {
+		if (!suggestionBatch.hasSelection) return;
 		batchActionLoading = true;
-		const ids = [...suggestionBatch.selectedIds];
-		for (const id of ids) {
-			const svc = services.find((s) => s.id === id);
-			if (svc) {
-				await data.supabase
-					.from('services')
-					.update({
-						request_status: 'accepted',
-						scheduled_date: svc.suggested_date,
-						scheduled_time_slot: svc.suggested_time_slot
-					})
-					.eq('id', id);
+
+		const formData = new FormData();
+		formData.set('service_ids', JSON.stringify(Array.from(suggestionBatch.selectedIds)));
+
+		try {
+			const response = await fetch('?/batchAcceptSuggestions', { method: 'POST', body: formData });
+			const result = await response.json();
+			if (result.data?.success) {
+				suggestionBatch.reset();
+				await loadServices();
+			} else {
+				actionError = result.data?.error || 'Failed to accept suggestions';
 			}
+		} catch {
+			actionError = 'An error occurred';
 		}
-		suggestionBatch.reset();
 		batchActionLoading = false;
-		await loadServices();
 	}
 
 	async function handleBatchDeclineSuggestions() {
+		if (!suggestionBatch.hasSelection) return;
 		batchActionLoading = true;
-		const ids = [...suggestionBatch.selectedIds];
-		for (const id of ids) {
-			await data.supabase
-				.from('services')
-				.update({ request_status: 'pending' })
-				.eq('id', id);
+
+		const formData = new FormData();
+		formData.set('service_ids', JSON.stringify(Array.from(suggestionBatch.selectedIds)));
+
+		try {
+			const response = await fetch('?/batchDeclineSuggestions', { method: 'POST', body: formData });
+			const result = await response.json();
+			if (result.data?.success) {
+				suggestionBatch.reset();
+				showBatchDeclineDialog = false;
+				await loadServices();
+			} else {
+				actionError = result.data?.error || 'Failed to decline suggestions';
+			}
+		} catch {
+			actionError = 'An error occurred';
 		}
-		suggestionBatch.reset();
-		showBatchDeclineDialog = false;
-		batchDeclineReason = '';
 		batchActionLoading = false;
-		await loadServices();
 	}
 </script>
 
@@ -709,10 +715,6 @@
 				This will reset {suggestionBatch.selectedCount} suggestion(s) back to pending.
 			</Dialog.Description>
 		</Dialog.Header>
-		<div class="space-y-2">
-			<Label for="batchDeclineReason">Reason (optional)</Label>
-			<Textarea id="batchDeclineReason" bind:value={batchDeclineReason} placeholder="Why are you declining these suggestions?" />
-		</div>
 		<Dialog.Footer class="flex-col sm:flex-row gap-2">
 			<Button variant="outline" onclick={() => (showBatchDeclineDialog = false)} disabled={batchActionLoading}>
 				Cancel
