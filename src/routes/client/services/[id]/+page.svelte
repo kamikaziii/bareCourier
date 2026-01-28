@@ -134,7 +134,12 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 		<Button variant="ghost" size="sm" href={localizeHref('/client')}>
 			<ArrowLeft class="size-4" />
 		</Button>
-		<h1 class="text-2xl font-bold">{m.service_details()}</h1>
+		<h1 class="text-2xl font-bold flex-1">{m.service_details()}</h1>
+		{#if service.request_status === 'pending'}
+			<Button variant="outline" size="sm" href={localizeHref(`/client/services/${service.id}/edit`)}>
+				{m.action_edit()}
+			</Button>
+		{/if}
 	</div>
 
 	<!-- Reschedule Success Banner -->
