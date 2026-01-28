@@ -53,6 +53,24 @@
 	const currentLocale = $derived(getLocale());
 	const currentPath = $derived(deLocalizeUrl(page.url).pathname);
 	const homeHref = $derived(`/${role}`);
+
+	async function switchLocale(newLocale: string) {
+		// Only sync if user is logged in
+		if (profile?.id) {
+			try {
+				await fetch('/api/locale', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ locale: newLocale })
+				});
+			} catch (e) {
+				console.error('Failed to sync locale:', e);
+				// Continue with navigation anyway - URL locale will be used
+			}
+		}
+		// Navigate to localized URL
+		window.location.href = localizeHref(currentPath, { locale: newLocale });
+	}
 </script>
 
 <div class="flex min-h-screen bg-background">
@@ -71,15 +89,14 @@
 					<!-- Language Switcher -->
 					<div class="flex gap-1">
 						{#each locales as locale (locale.code)}
-							<a href={localizeHref(currentPath, { locale: locale.code })} data-sveltekit-reload>
-								<Button
-									variant={currentLocale === locale.code ? 'default' : 'ghost'}
-									size="sm"
-									class="px-2"
-								>
-									{locale.label}
-								</Button>
-							</a>
+							<Button
+								variant={currentLocale === locale.code ? 'default' : 'ghost'}
+								size="sm"
+								class="px-2"
+								onclick={() => switchLocale(locale.code)}
+							>
+								{locale.label}
+							</Button>
 						{/each}
 					</div>
 					{#if profile?.id}

@@ -1,6 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { dispatchNotification } from '../_shared/notify.ts';
+import { t, getLocale, type SupportedLocale } from '../_shared/translations.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -13,6 +14,7 @@ interface PastDueSettings {
 
 interface CourierProfile {
 	id: string;
+	locale: string | null;
 	past_due_settings: PastDueSettings | null;
 	working_days: string[] | null;
 	timezone: string | null;
@@ -40,10 +42,10 @@ Deno.serve(async (req: Request) => {
 		const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 		const now = new Date();
 
-		// Get courier profile with settings
+		// Get courier profile with settings and locale
 		const { data: courierData } = await supabase
 			.from('profiles')
-			.select('id, past_due_settings, working_days, timezone')
+			.select('id, locale, past_due_settings, working_days, timezone')
 			.eq('role', 'courier')
 			.single();
 
@@ -55,6 +57,7 @@ Deno.serve(async (req: Request) => {
 			});
 		}
 
+		const locale: SupportedLocale = getLocale(courier.locale);
 		const settings = courier.past_due_settings || {};
 		const courierTimezone = courier.timezone || 'Europe/Lisbon';
 
@@ -139,26 +142,38 @@ Deno.serve(async (req: Request) => {
 			}
 		}
 
-		// Create summary notification
+		// Create summary notification with translations
 		let message: string;
 		if (total === 0) {
-			message = 'Nao tem entregas agendadas para hoje.';
+			message = t('daily_summary_no_services', locale);
 		} else if (pending === 0) {
-			message = `Todas as ${total} entregas de hoje foram concluidas!`;
+			message = t('daily_summary_all_done', locale, { total });
+		} else if (urgent > 0) {
+			message = t('daily_summary_with_urgent', locale, { total, pending, urgent });
 		} else {
-			message = `Tem ${total} entrega${total > 1 ? 's' : ''} hoje: ${pending} pendente${pending > 1 ? 's' : ''}`;
-			if (urgent > 0) {
-				message += `, ${urgent} urgente${urgent > 1 ? 's' : ''}`;
-			}
-			message += '.';
+			// Use singular or plural form based on total count
+			message =
+				total === 1
+					? t('daily_summary_pending', locale, { total, pending })
+					: t('daily_summary_pending_plural', locale, { total, pending });
 		}
+
+		// Pre-fetch courier profile for dispatchNotification (avoids N+1 query)
+		const { data: courierProfile } = await supabase
+			.from('profiles')
+			.select(
+				'notification_preferences, timezone, working_days, push_notifications_enabled, email_notifications_enabled, locale'
+			)
+			.eq('id', courier.id)
+			.single();
 
 		await dispatchNotification({
 			supabase,
 			userId: courier.id,
 			category: 'daily_summary',
-			title: 'Resumo do Dia',
-			message
+			title: t('daily_summary_title', locale),
+			message,
+			profile: courierProfile
 		});
 
 		return new Response(

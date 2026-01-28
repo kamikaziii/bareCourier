@@ -1,4 +1,5 @@
 import { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
+import { getLocale } from './translations.ts';
 
 // SYNC WARNING: These notification types (NotificationCategory, ChannelPreferences, NotificationPreferences)
 // must match the definitions in src/lib/database.types.ts
@@ -105,7 +106,7 @@ export async function dispatchNotification(params: DispatchParams): Promise<Disp
 	const profile = params.profile ?? (await supabase
 		.from('profiles')
 		.select(
-			'notification_preferences, timezone, working_days, push_notifications_enabled, email_notifications_enabled'
+			'notification_preferences, timezone, working_days, push_notifications_enabled, email_notifications_enabled, locale'
 		)
 		.eq('id', userId)
 		.single()).data;
@@ -181,6 +182,7 @@ export async function dispatchNotification(params: DispatchParams): Promise<Disp
 	// 3. Send email if enabled
 	if (categoryPrefs.email && profile?.email_notifications_enabled && canSendExternal && emailTemplate) {
 		try {
+			const locale = getLocale(profile?.locale as string | null | undefined);
 			const emailUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`;
 			const response = await fetch(emailUrl, {
 				method: 'POST',
@@ -191,7 +193,7 @@ export async function dispatchNotification(params: DispatchParams): Promise<Disp
 				body: JSON.stringify({
 					user_id: userId,
 					template: emailTemplate,
-					data: emailData || {}
+					data: { ...(emailData || {}), locale }
 				})
 			});
 			const emailResult = await response.json();

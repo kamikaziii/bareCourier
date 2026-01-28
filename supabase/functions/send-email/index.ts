@@ -1,5 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { emailT } from "../_shared/email-translations.ts";
+import { getLocale, type SupportedLocale } from "../_shared/translations.ts";
 
 /**
  * Send Email Notification Edge Function
@@ -49,12 +51,16 @@ function escapeHtml(str: string | undefined | null): string {
     .replace(/'/g, "&#039;");
 }
 
-function generateEmailHtml(template: EmailTemplate, rawData: Record<string, string>): { subject: string; html: string } {
+function generateEmailHtml(
+  template: EmailTemplate,
+  rawData: Record<string, string>,
+  locale: SupportedLocale = "pt-PT"
+): { subject: string; html: string } {
   // Escape all user-provided data to prevent XSS
   const data: Record<string, string> = {};
   for (const [key, value] of Object.entries(rawData)) {
-    // app_url is a trusted internal value, don't escape it
-    if (key === "app_url") {
+    // app_url and locale are trusted internal values, don't escape them
+    if (key === "app_url" || key === "locale") {
       data[key] = value;
     } else {
       data[key] = escapeHtml(value);
@@ -76,7 +82,7 @@ function generateEmailHtml(template: EmailTemplate, rawData: Record<string, stri
   switch (template) {
     case "new_request":
       return {
-        subject: `New Service Request from ${data.client_name}`,
+        subject: emailT("email_new_request_subject", locale, { client_name: data.client_name }),
         html: `
           <!DOCTYPE html>
           <html>
@@ -84,20 +90,20 @@ function generateEmailHtml(template: EmailTemplate, rawData: Record<string, stri
           <body>
             <div class="container">
               <div class="header">
-                <h1>New Service Request</h1>
+                <h1>${emailT("email_new_request_title", locale)}</h1>
               </div>
               <div class="content">
-                <p>You have a new service request from <strong>${data.client_name}</strong>.</p>
+                <p>${emailT("email_new_request_intro", locale, { client_name: data.client_name })}</p>
                 <div class="detail">
-                  <p><span class="label">Pickup:</span> ${data.pickup_location}</p>
-                  <p><span class="label">Delivery:</span> ${data.delivery_location}</p>
-                  ${data.requested_date ? `<p><span class="label">Requested Date:</span> ${data.requested_date}</p>` : ""}
-                  ${data.notes ? `<p><span class="label">Notes:</span> ${data.notes}</p>` : ""}
+                  <p><span class="label">${emailT("email_pickup_label", locale)}</span> ${data.pickup_location}</p>
+                  <p><span class="label">${emailT("email_delivery_label", locale)}</span> ${data.delivery_location}</p>
+                  ${data.requested_date ? `<p><span class="label">${emailT("email_new_request_date_label", locale)}</span> ${data.requested_date}</p>` : ""}
+                  ${data.notes ? `<p><span class="label">${emailT("email_new_request_notes_label", locale)}</span> ${data.notes}</p>` : ""}
                 </div>
-                <a href="${data.app_url}/courier/requests" class="button">View Request</a>
+                <a href="${data.app_url}/courier/requests" class="button">${emailT("email_new_request_button", locale)}</a>
               </div>
               <div class="footer">
-                <p>bareCourier - Courier Management</p>
+                <p>${emailT("email_footer", locale)}</p>
               </div>
             </div>
           </body>
@@ -107,7 +113,7 @@ function generateEmailHtml(template: EmailTemplate, rawData: Record<string, stri
 
     case "delivered":
       return {
-        subject: "Your Service Has Been Delivered",
+        subject: emailT("email_delivered_subject", locale),
         html: `
           <!DOCTYPE html>
           <html>
@@ -115,19 +121,19 @@ function generateEmailHtml(template: EmailTemplate, rawData: Record<string, stri
           <body>
             <div class="container">
               <div class="header" style="background: #16a34a;">
-                <h1>Service Delivered</h1>
+                <h1>${emailT("email_delivered_title", locale)}</h1>
               </div>
               <div class="content">
-                <p>Good news! Your service has been marked as delivered.</p>
+                <p>${emailT("email_delivered_intro", locale)}</p>
                 <div class="detail">
-                  <p><span class="label">Pickup:</span> ${data.pickup_location}</p>
-                  <p><span class="label">Delivery:</span> ${data.delivery_location}</p>
-                  <p><span class="label">Delivered:</span> ${data.delivered_at}</p>
+                  <p><span class="label">${emailT("email_pickup_label", locale)}</span> ${data.pickup_location}</p>
+                  <p><span class="label">${emailT("email_delivery_label", locale)}</span> ${data.delivery_location}</p>
+                  <p><span class="label">${emailT("email_delivered_at_label", locale)}</span> ${data.delivered_at}</p>
                 </div>
-                <a href="${data.app_url}/client" class="button" style="background: #16a34a;">View My Services</a>
+                <a href="${data.app_url}/client" class="button" style="background: #16a34a;">${emailT("email_delivered_button", locale)}</a>
               </div>
               <div class="footer">
-                <p>Thank you for using bareCourier!</p>
+                <p>${emailT("email_delivered_footer", locale)}</p>
               </div>
             </div>
           </body>
@@ -137,7 +143,7 @@ function generateEmailHtml(template: EmailTemplate, rawData: Record<string, stri
 
     case "request_accepted":
       return {
-        subject: "Your Service Request Has Been Accepted",
+        subject: emailT("email_accepted_subject", locale),
         html: `
           <!DOCTYPE html>
           <html>
@@ -145,19 +151,19 @@ function generateEmailHtml(template: EmailTemplate, rawData: Record<string, stri
           <body>
             <div class="container">
               <div class="header" style="background: #16a34a;">
-                <h1>Request Accepted</h1>
+                <h1>${emailT("email_accepted_title", locale)}</h1>
               </div>
               <div class="content">
-                <p>Your service request has been accepted by the courier.</p>
+                <p>${emailT("email_accepted_intro", locale)}</p>
                 <div class="detail">
-                  <p><span class="label">Pickup:</span> ${data.pickup_location}</p>
-                  <p><span class="label">Delivery:</span> ${data.delivery_location}</p>
-                  ${data.scheduled_date ? `<p><span class="label">Scheduled:</span> ${data.scheduled_date}</p>` : ""}
+                  <p><span class="label">${emailT("email_pickup_label", locale)}</span> ${data.pickup_location}</p>
+                  <p><span class="label">${emailT("email_delivery_label", locale)}</span> ${data.delivery_location}</p>
+                  ${data.scheduled_date ? `<p><span class="label">${emailT("email_accepted_scheduled_label", locale)}</span> ${data.scheduled_date}</p>` : ""}
                 </div>
-                <a href="${data.app_url}/client" class="button" style="background: #16a34a;">View My Services</a>
+                <a href="${data.app_url}/client" class="button" style="background: #16a34a;">${emailT("email_accepted_button", locale)}</a>
               </div>
               <div class="footer">
-                <p>bareCourier - Courier Management</p>
+                <p>${emailT("email_footer", locale)}</p>
               </div>
             </div>
           </body>
@@ -167,7 +173,7 @@ function generateEmailHtml(template: EmailTemplate, rawData: Record<string, stri
 
     case "request_rejected":
       return {
-        subject: "Service Request Update",
+        subject: emailT("email_rejected_subject", locale),
         html: `
           <!DOCTYPE html>
           <html>
@@ -175,20 +181,20 @@ function generateEmailHtml(template: EmailTemplate, rawData: Record<string, stri
           <body>
             <div class="container">
               <div class="header" style="background: #dc2626;">
-                <h1>Request Not Available</h1>
+                <h1>${emailT("email_rejected_title", locale)}</h1>
               </div>
               <div class="content">
-                <p>Unfortunately, the courier is unable to fulfill your service request at this time.</p>
+                <p>${emailT("email_rejected_intro", locale)}</p>
                 <div class="detail">
-                  <p><span class="label">Pickup:</span> ${data.pickup_location}</p>
-                  <p><span class="label">Delivery:</span> ${data.delivery_location}</p>
-                  ${data.reason ? `<p><span class="label">Reason:</span> ${data.reason}</p>` : ""}
+                  <p><span class="label">${emailT("email_pickup_label", locale)}</span> ${data.pickup_location}</p>
+                  <p><span class="label">${emailT("email_delivery_label", locale)}</span> ${data.delivery_location}</p>
+                  ${data.reason ? `<p><span class="label">${emailT("email_rejected_reason_label", locale)}</span> ${data.reason}</p>` : ""}
                 </div>
-                <p>Please create a new request with different dates.</p>
-                <a href="${data.app_url}/client/new" class="button">Create New Request</a>
+                <p>${emailT("email_rejected_cta", locale)}</p>
+                <a href="${data.app_url}/client/new" class="button">${emailT("email_rejected_button", locale)}</a>
               </div>
               <div class="footer">
-                <p>bareCourier - Courier Management</p>
+                <p>${emailT("email_footer", locale)}</p>
               </div>
             </div>
           </body>
@@ -198,7 +204,7 @@ function generateEmailHtml(template: EmailTemplate, rawData: Record<string, stri
 
     case "request_suggested":
       return {
-        subject: "Alternative Date Suggested for Your Request",
+        subject: emailT("email_suggested_subject", locale),
         html: `
           <!DOCTYPE html>
           <html>
@@ -206,21 +212,21 @@ function generateEmailHtml(template: EmailTemplate, rawData: Record<string, stri
           <body>
             <div class="container">
               <div class="header" style="background: #f59e0b;">
-                <h1>Alternative Suggested</h1>
+                <h1>${emailT("email_suggested_title", locale)}</h1>
               </div>
               <div class="content">
-                <p>The courier has suggested an alternative date for your service request.</p>
+                <p>${emailT("email_suggested_intro", locale)}</p>
                 <div class="detail">
-                  <p><span class="label">Pickup:</span> ${data.pickup_location}</p>
-                  <p><span class="label">Delivery:</span> ${data.delivery_location}</p>
-                  <p><span class="label">Your Request:</span> ${data.requested_date}</p>
-                  <p><span class="label">Suggested:</span> ${data.suggested_date}</p>
+                  <p><span class="label">${emailT("email_pickup_label", locale)}</span> ${data.pickup_location}</p>
+                  <p><span class="label">${emailT("email_delivery_label", locale)}</span> ${data.delivery_location}</p>
+                  <p><span class="label">${emailT("email_suggested_requested_label", locale)}</span> ${data.requested_date}</p>
+                  <p><span class="label">${emailT("email_suggested_suggested_label", locale)}</span> ${data.suggested_date}</p>
                 </div>
-                <p>Please respond to accept or decline this suggestion.</p>
-                <a href="${data.app_url}/client" class="button" style="background: #f59e0b;">Respond to Suggestion</a>
+                <p>${emailT("email_suggested_cta", locale)}</p>
+                <a href="${data.app_url}/client" class="button" style="background: #f59e0b;">${emailT("email_suggested_button", locale)}</a>
               </div>
               <div class="footer">
-                <p>bareCourier - Courier Management</p>
+                <p>${emailT("email_footer", locale)}</p>
               </div>
             </div>
           </body>
@@ -230,7 +236,7 @@ function generateEmailHtml(template: EmailTemplate, rawData: Record<string, stri
 
     case "request_cancelled":
       return {
-        subject: "Service Request Cancelled",
+        subject: emailT("email_cancelled_subject", locale),
         html: `
           <!DOCTYPE html>
           <html>
@@ -238,19 +244,19 @@ function generateEmailHtml(template: EmailTemplate, rawData: Record<string, stri
           <body>
             <div class="container">
               <div class="header" style="background: #6b7280;">
-                <h1>Request Cancelled</h1>
+                <h1>${emailT("email_cancelled_title", locale)}</h1>
               </div>
               <div class="content">
-                <p>A client has cancelled their service request.</p>
+                <p>${emailT("email_cancelled_intro", locale)}</p>
                 <div class="detail">
-                  <p><span class="label">Client:</span> ${data.client_name}</p>
-                  <p><span class="label">Pickup:</span> ${data.pickup_location}</p>
-                  <p><span class="label">Delivery:</span> ${data.delivery_location}</p>
+                  <p><span class="label">${emailT("email_cancelled_client_label", locale)}</span> ${data.client_name}</p>
+                  <p><span class="label">${emailT("email_pickup_label", locale)}</span> ${data.pickup_location}</p>
+                  <p><span class="label">${emailT("email_delivery_label", locale)}</span> ${data.delivery_location}</p>
                 </div>
-                <a href="${data.app_url}/courier" class="button">View Dashboard</a>
+                <a href="${data.app_url}/courier" class="button">${emailT("email_cancelled_button", locale)}</a>
               </div>
               <div class="footer">
-                <p>bareCourier - Courier Management</p>
+                <p>${emailT("email_footer", locale)}</p>
               </div>
             </div>
           </body>
@@ -260,7 +266,7 @@ function generateEmailHtml(template: EmailTemplate, rawData: Record<string, stri
 
     default:
       return {
-        subject: "bareCourier Notification",
+        subject: emailT("email_default_subject", locale),
         html: `
           <!DOCTYPE html>
           <html>
@@ -268,13 +274,13 @@ function generateEmailHtml(template: EmailTemplate, rawData: Record<string, stri
           <body>
             <div class="container">
               <div class="header">
-                <h1>Notification</h1>
+                <h1>${emailT("email_default_title", locale)}</h1>
               </div>
               <div class="content">
-                <p>${data.message || "You have a new notification from bareCourier."}</p>
+                <p>${data.message || emailT("email_default_message", locale)}</p>
               </div>
               <div class="footer">
-                <p>bareCourier - Courier Management</p>
+                <p>${emailT("email_footer", locale)}</p>
               </div>
             </div>
           </body>
@@ -353,10 +359,10 @@ Deno.serve(async (req: Request) => {
       .eq("id", user.id)
       .single();
 
-    // Get target user's profile (role and email notification preference)
+    // Get target user's profile (role, email notification preference, and locale)
     const { data: targetProfile } = await adminClient
       .from("profiles")
-      .select("role, email_notifications_enabled")
+      .select("role, email_notifications_enabled, locale")
       .eq("id", user_id)
       .single();
 
@@ -390,8 +396,11 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Determine locale: prefer from templateData (passed by dispatchNotification), fallback to profile
+    const locale = getLocale(templateData?.locale || targetProfile?.locale);
+
     // Generate email content
-    const { subject, html } = generateEmailHtml(template, templateData || {});
+    const { subject, html } = generateEmailHtml(template, templateData || {}, locale);
 
     // Send email via Resend
     const resendResponse = await fetch("https://api.resend.com/emails", {

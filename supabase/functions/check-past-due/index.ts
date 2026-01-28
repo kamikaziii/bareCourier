@@ -1,6 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { dispatchNotification } from '../_shared/notify.ts';
+import { t, formatOverdueTime, getLocale, type SupportedLocale } from '../_shared/translations.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -42,6 +43,7 @@ interface PastDueSettings {
 
 interface CourierProfile {
 	id: string;
+	locale: string | null;
 	past_due_settings: PastDueSettings | null;
 	time_slots: TimeSlots | null;
 	working_days: string[] | null;
@@ -99,18 +101,6 @@ function getCutoffTime(
 	return new Date(cutoffUtc.getTime() + gracePeriod * 60 * 1000);
 }
 
-function formatOverdueTime(minutes: number): string {
-	if (minutes < 60) {
-		return `${Math.round(minutes)} minutos`;
-	}
-	const hours = Math.floor(minutes / 60);
-	if (hours < 24) {
-		return `${hours} hora${hours > 1 ? 's' : ''}`;
-	}
-	const days = Math.floor(hours / 24);
-	return `${days} dia${days > 1 ? 's' : ''}`;
-}
-
 const corsHeaders = {
 	'Access-Control-Allow-Origin': '*',
 	'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
@@ -125,10 +115,10 @@ Deno.serve(async (req: Request) => {
 		const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 		const now = new Date();
 
-		// Get courier profile with settings
+		// Get courier profile with settings and locale
 		const { data: courierData } = await supabase
 			.from('profiles')
-			.select('id, past_due_settings, time_slots, working_days, timezone')
+			.select('id, locale, past_due_settings, time_slots, working_days, timezone')
 			.eq('role', 'courier')
 			.single();
 
@@ -139,6 +129,8 @@ Deno.serve(async (req: Request) => {
 				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
 			});
 		}
+
+		const locale: SupportedLocale = getLocale(courier.locale);
 
 		// Check if today is a working day (in courier's timezone)
 		const courierTimezone = courier.timezone || 'Europe/Lisbon';
@@ -216,13 +208,13 @@ Deno.serve(async (req: Request) => {
 		// Pre-fetch courier profile once for all dispatches (avoids N+1 query)
 		const { data: courierProfile } = await supabase
 			.from('profiles')
-			.select('notification_preferences, timezone, working_days, push_notifications_enabled, email_notifications_enabled')
+			.select('notification_preferences, timezone, working_days, push_notifications_enabled, email_notifications_enabled, locale')
 			.eq('id', courier.id)
 			.single();
 
 		for (const { service, overdueMinutes } of pastDueServices) {
-			const clientName = service.profiles?.name || 'Cliente';
-			const overdueText = formatOverdueTime(overdueMinutes);
+			const clientName = service.profiles?.name || (locale === 'en' ? 'Client' : 'Cliente');
+			const overdueText = formatOverdueTime(overdueMinutes, locale);
 
 			// Atomic claim-then-dispatch: update timestamp FIRST with a WHERE condition
 			// checking the old value, so only one concurrent invocation can win the race.
@@ -241,17 +233,17 @@ Deno.serve(async (req: Request) => {
 			const { data: claimedRows } = await claimQuery.select('id');
 
 			// If no rows were updated, another invocation already claimed this service
-			if (\!claimedRows || claimedRows.length === 0) {
+			if (!claimedRows || claimedRows.length === 0) {
 				continue;
 			}
 
-			// We won the race — dispatch notification
+			// We won the race — dispatch notification with translated text
 			await dispatchNotification({
 				supabase,
 				userId: courier.id,
 				category: 'past_due',
-				title: 'Entrega Atrasada',
-				message: `Entrega de ${clientName} está ${overdueText} atrasada`,
+				title: t('past_due_title', locale),
+				message: t('past_due_message', locale, { client_name: clientName, overdue_text: overdueText }),
 				serviceId: service.id,
 				profile: courierProfile
 			});
