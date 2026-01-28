@@ -594,5 +594,28 @@
 	"pagination_page_of": "Página {current} de {total}",
 
 	"batch_mark_delivered_success": "{count} serviços marcados como entregues",
-	"batch_accept_success": "{count} pedidos aceites"
+	"batch_accept_success": "{count} pedidos aceites",
+
+	"client_needs_attention": "Precisa da sua atenção",
+	"client_courier_suggested_date": "O estafeta sugeriu uma nova data",
+	"client_request_declined": "O pedido foi recusado",
+	"client_respond": "Responder",
+	"client_resubmit": "Reenviar com alterações",
+	"client_accept_all": "Aceitar todos",
+	"client_decline_all": "Recusar todos",
+	"client_selected_count": "{count} selecionado(s)",
+	"client_decline_selected_title": "Recusar Sugestões Selecionadas",
+	"client_decline_selected_desc": "Isto irá repor {count} sugestão(ões) como pendente(s).",
+
+	"sort_newest": "Mais recentes",
+	"sort_oldest": "Mais antigos",
+	"sort_pending_first": "Pendentes primeiro",
+	"sort_delivered_first": "Entregues primeiro",
+
+	"edit_service_title": "Editar Pedido de Serviço",
+	"edit_service_description": "Atualize o seu pedido de serviço pendente",
+	"edit_service_save": "Guardar Alterações",
+
+	"empty_courier_services": "Crie o seu primeiro serviço para começar.",
+	"empty_client_services": "Crie o seu primeiro pedido para começar."
 }

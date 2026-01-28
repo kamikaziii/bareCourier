@@ -594,5 +594,28 @@
 	"pagination_page_of": "Page {current} of {total}",
 
 	"batch_mark_delivered_success": "{count} services marked as delivered",
-	"batch_accept_success": "{count} requests accepted"
+	"batch_accept_success": "{count} requests accepted",
+
+	"client_needs_attention": "Needs your attention",
+	"client_courier_suggested_date": "Courier suggested a new date",
+	"client_request_declined": "Request was declined",
+	"client_respond": "Respond",
+	"client_resubmit": "Re-submit with changes",
+	"client_accept_all": "Accept all",
+	"client_decline_all": "Decline all",
+	"client_selected_count": "{count} selected",
+	"client_decline_selected_title": "Decline Selected Suggestions",
+	"client_decline_selected_desc": "This will reset {count} suggestion(s) back to pending.",
+
+	"sort_newest": "Newest first",
+	"sort_oldest": "Oldest first",
+	"sort_pending_first": "Pending first",
+	"sort_delivered_first": "Delivered first",
+
+	"edit_service_title": "Edit Service Request",
+	"edit_service_description": "Update your pending service request",
+	"edit_service_save": "Save Changes",
+
+	"empty_courier_services": "Create your first service to get started.",
+	"empty_client_services": "Create your first request to get started."
 }
