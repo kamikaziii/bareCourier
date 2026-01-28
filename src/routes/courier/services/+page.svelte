@@ -16,6 +16,8 @@
 	import type { PageData } from './$types';
 	import SkeletonList from '$lib/components/SkeletonList.svelte';
 	import PullToRefresh from '$lib/components/PullToRefresh.svelte';
+	import { usePagination } from '$lib/composables/use-pagination.svelte.js';
+	import PaginationControls from '$lib/components/PaginationControls.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -121,16 +123,11 @@
 	);
 
 	// Pagination
-	const PAGE_SIZE = 20;
-	let currentPage = $state(1);
-	const totalPages = $derived(Math.ceil(filteredServices.length / PAGE_SIZE));
-	const paginatedServices = $derived(
-		filteredServices.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
-	);
+	const pagination = usePagination(() => filteredServices);
 
 	$effect(() => {
 		statusFilter; clientFilter; searchQuery;
-		currentPage = 1;
+		pagination.reset();
 	});
 
 	function exportCSV() {
@@ -312,7 +309,7 @@
 			<p class="text-sm text-muted-foreground">
 				{m.services_showing({ count: filteredServices.length })}
 			</p>
-			{#each paginatedServices as service (service.id)}
+			{#each pagination.paginatedItems as service (service.id)}
 				<ServiceCard
 					{service}
 					showClientName={true}
@@ -326,15 +323,12 @@
 					{/snippet}
 				</ServiceCard>
 			{/each}
-			{#if totalPages > 1}
-				<div class="flex items-center justify-center gap-2 py-4">
-					<Button variant="outline" size="sm" disabled={currentPage === 1}
-						onclick={() => (currentPage = currentPage - 1)}>Previous</Button>
-					<span class="text-muted-foreground text-sm">Page {currentPage} of {totalPages}</span>
-					<Button variant="outline" size="sm" disabled={currentPage === totalPages}
-						onclick={() => (currentPage = currentPage + 1)}>Next</Button>
-				</div>
-			{/if}
+			<PaginationControls
+				currentPage={pagination.currentPage}
+				totalPages={pagination.totalPages}
+				onPrev={pagination.prev}
+				onNext={pagination.next}
+			/>
 		{/if}
 	</div>
 </div>

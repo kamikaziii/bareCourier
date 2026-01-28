@@ -11,6 +11,8 @@
 	import { Euro, TrendingUp, MapPin, FileText, Receipt } from '@lucide/svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import SkeletonList from '$lib/components/SkeletonList.svelte';
+	import { usePagination } from '$lib/composables/use-pagination.svelte.js';
+	import PaginationControls from '$lib/components/PaginationControls.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -123,16 +125,11 @@
 	);
 
 	// Pagination
-	const PAGE_SIZE = 20;
-	let currentPage = $state(1);
-	const totalPages = $derived(Math.ceil(sortedBilling.length / PAGE_SIZE));
-	const paginatedBilling = $derived(
-		sortedBilling.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
-	);
+	const pagination = usePagination(() => sortedBilling);
 
 	$effect(() => {
 		startDate; endDate;
-		currentPage = 1;
+		pagination.reset();
 	});
 
 	function formatCurrency(value: number): string {
@@ -280,7 +277,7 @@
 							</tr>
 						</thead>
 						<tbody>
-							{#each paginatedBilling as billing (billing.clientId)}
+							{#each pagination.paginatedItems as billing (billing.clientId)}
 								<tr class="border-b hover:bg-muted/25">
 									<td class="px-4 py-3">
 										<span class="font-medium">{billing.clientName}</span>
@@ -330,15 +327,12 @@
 						</tfoot>
 					</table>
 				</div>
-				{#if totalPages > 1}
-					<div class="flex items-center justify-center gap-2 py-4">
-						<Button variant="outline" size="sm" disabled={currentPage === 1}
-							onclick={() => (currentPage = currentPage - 1)}>Previous</Button>
-						<span class="text-muted-foreground text-sm">Page {currentPage} of {totalPages}</span>
-						<Button variant="outline" size="sm" disabled={currentPage === totalPages}
-							onclick={() => (currentPage = currentPage + 1)}>Next</Button>
-					</div>
-				{/if}
+				<PaginationControls
+					currentPage={pagination.currentPage}
+					totalPages={pagination.totalPages}
+					onPrev={pagination.prev}
+					onNext={pagination.next}
+				/>
 			{/if}
 		</Card.Content>
 	</Card.Root>
