@@ -119,6 +119,19 @@
 		)
 	);
 
+	// Pagination
+	const PAGE_SIZE = 20;
+	let currentPage = $state(1);
+	const totalPages = $derived(Math.ceil(filteredServices.length / PAGE_SIZE));
+	const paginatedServices = $derived(
+		filteredServices.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+	);
+
+	$effect(() => {
+		statusFilter; clientFilter; searchQuery;
+		currentPage = 1;
+	});
+
 	function exportCSV() {
 		const escapeCell = (val: string) => `"${String(val ?? '').replace(/"/g, '""')}"`;
 		const headers = [
@@ -296,7 +309,7 @@
 			<p class="text-sm text-muted-foreground">
 				{m.services_showing({ count: filteredServices.length })}
 			</p>
-			{#each filteredServices as service (service.id)}
+			{#each paginatedServices as service (service.id)}
 				<ServiceCard
 					{service}
 					showClientName={true}
@@ -310,6 +323,15 @@
 					{/snippet}
 				</ServiceCard>
 			{/each}
+			{#if totalPages > 1}
+				<div class="flex items-center justify-center gap-2 py-4">
+					<Button variant="outline" size="sm" disabled={currentPage === 1}
+						onclick={() => (currentPage = currentPage - 1)}>Previous</Button>
+					<span class="text-muted-foreground text-sm">Page {currentPage} of {totalPages}</span>
+					<Button variant="outline" size="sm" disabled={currentPage === totalPages}
+						onclick={() => (currentPage = currentPage + 1)}>Next</Button>
+				</div>
+			{/if}
 		{/if}
 	</div>
 </div>
