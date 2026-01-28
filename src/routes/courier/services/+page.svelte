@@ -63,10 +63,10 @@
 				await loadData();
 				setTimeout(() => { batchMessage = null; }, 3000);
 			} else {
-				batchMessage = { type: 'error', text: result.data?.error || 'Failed' };
+				batchMessage = { type: 'error', text: result.data?.error || m.error_generic() };
 			}
 		} catch {
-			batchMessage = { type: 'error', text: 'An error occurred' };
+			batchMessage = { type: 'error', text: m.error_generic() };
 		}
 		batchLoading = false;
 	}
@@ -200,7 +200,7 @@
 				<DropdownMenu.Content align="end">
 					<DropdownMenu.Item onclick={exportCSV} disabled={filteredServices.length === 0}>
 						<Download class="size-4 mr-2" />
-						Export CSV
+						{m.export_csv()}
 					</DropdownMenu.Item>
 					<DropdownMenu.Item onclick={batch.toggleSelectionMode}>
 						<CheckSquare class="size-4 mr-2" />
