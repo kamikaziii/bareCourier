@@ -170,30 +170,33 @@ export type Database = {
 			profiles: {
 				Row: Omit<
 					GeneratedDatabase['public']['Tables']['profiles']['Row'],
-					'past_due_settings' | 'time_slots' | 'working_days' | 'notification_preferences'
+					'past_due_settings' | 'time_slots' | 'working_days' | 'notification_preferences' | 'workload_settings'
 				> & {
 					past_due_settings: PastDueSettings | null;
 					time_slots: TimeSlotDefinitions | null;
 					working_days: WorkingDay[] | null;
 					notification_preferences: NotificationPreferences | null;
+					workload_settings: WorkloadSettings | null;
 				};
 				Insert: Omit<
 					GeneratedDatabase['public']['Tables']['profiles']['Insert'],
-					'past_due_settings' | 'time_slots' | 'working_days' | 'notification_preferences'
+					'past_due_settings' | 'time_slots' | 'working_days' | 'notification_preferences' | 'workload_settings'
 				> & {
 					past_due_settings?: PastDueSettings | null;
 					time_slots?: TimeSlotDefinitions | null;
 					working_days?: WorkingDay[] | null;
 					notification_preferences?: NotificationPreferences | null;
+					workload_settings?: WorkloadSettings | null;
 				};
 				Update: Omit<
 					GeneratedDatabase['public']['Tables']['profiles']['Update'],
-					'past_due_settings' | 'time_slots' | 'working_days' | 'notification_preferences'
+					'past_due_settings' | 'time_slots' | 'working_days' | 'notification_preferences' | 'workload_settings'
 				> & {
 					past_due_settings?: PastDueSettings | null;
 					time_slots?: TimeSlotDefinitions | null;
 					working_days?: WorkingDay[] | null;
 					notification_preferences?: NotificationPreferences | null;
+					workload_settings?: WorkloadSettings | null;
 				};
 				Relationships: GeneratedDatabase['public']['Tables']['profiles']['Relationships'];
 			};
@@ -270,6 +273,7 @@ export type CourierLayoutProfile = {
 	prices_include_vat: boolean | null;
 	show_price_to_courier: boolean | null;
 	show_price_to_client: boolean | null;
+	workload_settings: WorkloadSettings | null;
 };
 
 /** Profile shape returned by client +layout.server.ts */

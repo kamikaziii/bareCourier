@@ -22,6 +22,8 @@
 	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
 	import { useBatchSelection } from '$lib/composables/use-batch-selection.svelte.js';
 	import { sortByUrgency, settingsToConfig, type PastDueConfig } from '$lib/utils/past-due.js';
+	import WorkloadCard from '$lib/components/WorkloadCard.svelte';
+	import { calculateDayWorkload, getWorkloadSettings, type WorkloadEstimate } from '$lib/services/workload.js';
 
 	let { data }: { data: PageData } = $props();
 
@@ -35,6 +37,9 @@
 	let loading = $state(true);
 	// Track which services are currently syncing
 	let syncingIds = $state<Set<string>>(new Set());
+	// Workload state
+	let workload = $state<WorkloadEstimate | null>(null);
+	let workloadLoading = $state(true);
 
 	// Batch selection
 	const batch = useBatchSelection();
@@ -149,6 +154,13 @@
 		}
 	}
 
+	async function loadWorkload() {
+		workloadLoading = true;
+		const settings = getWorkloadSettings(data.profile.workload_settings);
+		workload = await calculateDayWorkload(data.supabase, data.profile.id, new Date(), settings);
+		workloadLoading = false;
+	}
+
 	async function toggleStatus(service: ServiceWithProfile, e: Event) {
 		e.preventDefault();
 		e.stopPropagation();
@@ -192,6 +204,9 @@
 
 			// Success - remove from syncing
 			syncingIds = new Set([...syncingIds].filter((id) => id !== service.id));
+
+			// Refresh workload after status change
+			loadWorkload();
 		} catch (err) {
 			console.error('Failed to update service:', err);
 
@@ -217,8 +232,15 @@
 		}
 	}
 
+	// Track if workload has been loaded (only needs to load once since it's always for today)
+	let workloadLoaded = false;
+
 	$effect(() => {
 		loadServices();
+		if (!workloadLoaded) {
+			workloadLoaded = true;
+			loadWorkload();
+		}
 	});
 
 	// Listen for sync completion from service worker
@@ -227,8 +249,9 @@
 
 		function handleSyncComplete(event: MessageEvent) {
 			if (event.data?.type === 'SYNC_COMPLETE') {
-				// Reload services when sync completes
+				// Reload services and workload when sync completes
 				loadServices();
+				loadWorkload();
 			}
 		}
 
@@ -281,6 +304,13 @@
 			</Card.Root>
 		{/if}
 	</div>
+
+	<!-- Workload Card -->
+	{#if workloadLoading}
+		<SkeletonCard variant="stat" />
+	{:else if workload}
+		<WorkloadCard {workload} />
+	{/if}
 
 	<!-- Filters -->
 	<div class="flex items-center gap-2">
