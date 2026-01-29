@@ -210,6 +210,16 @@
 							disabled={loading}
 						/>
 					{/if}
+					<!-- Zone status indicator with manual override (type-based pricing only) -->
+					{#if isTypePricingMode && deliveryLocation}
+						<ZoneOverrideToggle
+							{isOutOfZone}
+							{detectedMunicipality}
+							{checkingZone}
+							onOverride={(outOfZone) => (isOutOfZone = outOfZone)}
+							disabled={loading}
+						/>
+					{/if}
 				</div>
 
 				<!-- Show map preview if both addresses are selected -->
@@ -263,17 +273,6 @@
 							basePrice={0}
 							timePreferencePrice={data.typePricingSettings.timeSpecificPrice}
 						/>
-
-						<!-- Zone status indicator with manual override -->
-						{#if deliveryLocation}
-							<ZoneOverrideToggle
-								{isOutOfZone}
-								{detectedMunicipality}
-								{checkingZone}
-								onOverride={(outOfZone) => (isOutOfZone = outOfZone)}
-								disabled={loading}
-							/>
-						{/if}
 					{:else}
 						<!-- Use traditional SchedulePicker -->
 						<h3 class="font-medium text-sm text-muted-foreground">{m.schedule_optional()}</h3>
@@ -314,6 +313,33 @@
 							<span>{m.distance_total()}</span>
 							<span>{distanceResult.totalDistanceKm} km</span>
 						</div>
+					</div>
+				{/if}
+
+				<!-- Price Estimate (only if type-based pricing and show_price_to_client is true) -->
+				{#if isTypePricingMode && data.showPriceToClient && data.typePricingSettings}
+					<Separator />
+					<div class="rounded-md bg-muted/50 p-4 space-y-2">
+						<p class="text-sm font-medium">{m.price_estimate()}</p>
+
+						{#if isOutOfZone === true}
+							<p class="text-lg font-bold text-amber-600">
+								€{data.typePricingSettings.outOfZoneBase.toFixed(2)} + {m.distance_charge()}
+							</p>
+							<p class="text-xs text-muted-foreground">{m.out_of_zone_client_warning()}</p>
+						{:else if hasTimePreference}
+							<p class="text-lg font-bold">
+								€{data.typePricingSettings.timeSpecificPrice.toFixed(2)}
+							</p>
+						{:else if data.clientServiceType}
+							<p class="text-lg font-bold">
+								€{data.clientServiceType.price.toFixed(2)}
+							</p>
+						{:else}
+							<p class="text-muted-foreground text-sm">
+								{m.price_final_note()}
+							</p>
+						{/if}
 					</div>
 				{/if}
 
