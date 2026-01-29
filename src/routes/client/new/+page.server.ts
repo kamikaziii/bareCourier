@@ -38,6 +38,9 @@ export const actions: Actions = {
 		const pickup_location = formData.get('pickup_location') as string;
 		const delivery_location = formData.get('delivery_location') as string;
 		const notes = (formData.get('notes') as string) || null;
+		const recipient_name = (formData.get('recipient_name') as string) || null;
+		const recipient_phone = (formData.get('recipient_phone') as string) || null;
+		const customer_reference = (formData.get('customer_reference') as string) || null;
 		const requested_date = (formData.get('requested_date') as string) || null;
 		const requested_time_slot = (formData.get('requested_time_slot') as string) || null;
 		const requested_time = (formData.get('requested_time') as string) || null;
@@ -181,6 +184,9 @@ export const actions: Actions = {
 			pickup_location,
 			delivery_location,
 			notes,
+			recipient_name,
+			recipient_phone,
+			customer_reference,
 			requested_date,
 			requested_time_slot,
 			requested_time,
