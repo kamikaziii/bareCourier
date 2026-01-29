@@ -351,7 +351,7 @@
 				{/if}
 
 				<!-- Live Price Preview (type-based pricing only) -->
-				{#if isTypePricingMode && selectedServiceType}
+				{#if isTypePricingMode && selectedServiceType && data.showPriceToCourier}
 					<Separator />
 					<TypePricePreview
 						settings={data.typePricingSettings}
@@ -383,12 +383,14 @@
 				<input type="hidden" name="scheduled_time" value={scheduledTime ?? ''} />
 				<input type="hidden" name="urgency_fee_id" value={selectedUrgencyFeeId} />
 
-				<!-- Type-based pricing hidden fields -->
-				<input type="hidden" name="service_type_id" value={serviceTypeId} />
-				<input type="hidden" name="is_out_of_zone" value={isOutOfZone ?? ''} />
-				<input type="hidden" name="tolls" value={tolls} />
-				<input type="hidden" name="detected_municipality" value={detectedMunicipality ?? ''} />
-				<input type="hidden" name="has_time_preference" value={hasTimePreference} />
+				<!-- Type-based pricing hidden fields - only send in type mode -->
+				{#if isTypePricingMode}
+					<input type="hidden" name="service_type_id" value={serviceTypeId} />
+					<input type="hidden" name="is_out_of_zone" value={isOutOfZone ?? ''} />
+					<input type="hidden" name="tolls" value={tolls} />
+					<input type="hidden" name="detected_municipality" value={detectedMunicipality ?? ''} />
+					<input type="hidden" name="has_time_preference" value={hasTimePreference} />
+				{/if}
 
 				<div class="flex gap-3 pt-4">
 					<Button type="submit" disabled={loading || !clientId || !pickupLocation || !deliveryLocation || (scheduledTimeSlot === 'specific' && !scheduledTime) || (isTypePricingMode && !serviceTypeId)}>

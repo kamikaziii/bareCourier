@@ -142,7 +142,12 @@
 		error = '';
 		return async ({ result }: { result: { type: string; data?: { error?: string } } }) => {
 			if (result.type === 'failure' && result.data?.error) {
-				error = result.data.error;
+				// Use localized message for specific error codes
+				if (result.data.error === 'no_service_type_assigned') {
+					error = m.client_no_service_type_error();
+				} else {
+					error = result.data.error;
+				}
 				loading = false;
 			} else if (result.type === 'redirect') {
 				// Redirect is handled automatically by SvelteKit
@@ -270,7 +275,7 @@
 							onTimeChange={(time) => (requestedTime = time)}
 							disabled={loading}
 							showPriceWarning={true}
-							basePrice={0}
+							basePrice={data.clientServiceType?.price ?? 0}
 							timePreferencePrice={data.typePricingSettings.timeSpecificPrice}
 						/>
 					{:else}

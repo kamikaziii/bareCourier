@@ -114,35 +114,40 @@ export const actions: Actions = {
 			// Get client's default service type for type-based pricing
 			service_type_id = await getClientDefaultServiceTypeId(supabase, user.id);
 
-			if (service_type_id) {
-				// Use type-based pricing
-				const typePricingInput: TypePricingInput = {
-					serviceTypeId: service_type_id,
-					hasTimePreference: has_time_preference,
-					isOutOfZone: is_out_of_zone,
-					distanceKm: distance_km,
-					tolls: null // Clients don't set tolls, courier handles that
-				};
+			if (!service_type_id) {
+				return fail(400, {
+					error: 'no_service_type_assigned',
+					message: 'Your account does not have a service type assigned. Please contact the courier.'
+				});
+			}
 
-				const typeResult = await calculateTypedPrice(supabase, typePricingInput);
+			// Use type-based pricing
+			const typePricingInput: TypePricingInput = {
+				serviceTypeId: service_type_id,
+				hasTimePreference: has_time_preference,
+				isOutOfZone: is_out_of_zone,
+				distanceKm: distance_km,
+				tolls: null // Clients don't set tolls, courier handles that
+			};
 
-				if (typeResult.success && typeResult.price !== null) {
-					calculated_price = typeResult.price;
-					// Store type breakdown in price_breakdown
-					if (typeResult.breakdown) {
-						price_breakdown = {
-							base: typeResult.breakdown.base,
-							distance: typeResult.breakdown.distance,
-							urgency: 0,
-							total: typeResult.breakdown.total,
-							model: 'type',
-							distance_km: distance_km ?? 0,
-							// Type-based pricing specific fields
-							tolls: typeResult.breakdown.tolls,
-							reason: typeResult.breakdown.reason,
-							service_type_name: typeResult.breakdown.serviceTypeName
-						};
-					}
+			const typeResult = await calculateTypedPrice(supabase, typePricingInput);
+
+			if (typeResult.success && typeResult.price !== null) {
+				calculated_price = typeResult.price;
+				// Store type breakdown in price_breakdown
+				if (typeResult.breakdown) {
+					price_breakdown = {
+						base: typeResult.breakdown.base,
+						distance: typeResult.breakdown.distance,
+						urgency: 0,
+						total: typeResult.breakdown.total,
+						model: 'type',
+						distance_km: distance_km ?? 0,
+						// Type-based pricing specific fields
+						tolls: typeResult.breakdown.tolls,
+						reason: typeResult.breakdown.reason,
+						service_type_name: typeResult.breakdown.serviceTypeName
+					};
 				}
 			}
 		} else {

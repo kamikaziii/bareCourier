@@ -244,9 +244,12 @@
 
 			<!-- Info text shown immediately on expansion -->
 			{#if showPriceWarning && timePreferencePrice > 0}
-				<p class="text-xs text-muted-foreground">
-					{m.time_preference_surcharge({ amount: timePreferencePrice.toFixed(2) })}
-				</p>
+				{@const surcharge = basePrice > 0 ? timePreferencePrice - basePrice : timePreferencePrice}
+				{#if surcharge > 0}
+					<p class="text-xs text-muted-foreground">
+						{m.time_preference_surcharge({ amount: surcharge.toFixed(2) })}
+					</p>
+				{/if}
 			{/if}
 
 			<div class="grid grid-cols-2 gap-2">

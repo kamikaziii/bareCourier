@@ -722,6 +722,7 @@
 	"tolls_placeholder": "0.00",
 	"tolls_description": "Additional toll costs for out-of-zone deliveries",
 
+	"pricing_info": "Pricing",
 	"price_estimate": "Estimated price",
 	"price_final_note": "Final price confirmed by courier",
 	"zone_override_title": "Zone Override",
@@ -736,5 +737,7 @@
 	"time_preference_surcharge": "+€{amount} for time preference",
 
 	"new_client": "New Client",
-	"new_client_desc": "Create a new client account"
+	"new_client_desc": "Create a new client account",
+
+	"client_no_service_type_error": "Your account does not have a service type assigned. Please contact the courier to set up your account."
 }

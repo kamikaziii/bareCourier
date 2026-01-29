@@ -722,6 +722,7 @@
 	"tolls_placeholder": "0.00",
 	"tolls_description": "Custos adicionais de portagens para entregas fora de zona",
 
+	"pricing_info": "Preço",
 	"price_estimate": "Preço estimado",
 	"price_final_note": "Preço final confirmado pelo estafeta",
 	"zone_override_title": "Substituição de Zona",
@@ -736,5 +737,7 @@
 	"time_preference_surcharge": "+€{amount} pela preferência de horário",
 
 	"new_client": "Novo Cliente",
-	"new_client_desc": "Criar uma nova conta de cliente"
+	"new_client_desc": "Criar uma nova conta de cliente",
+
+	"client_no_service_type_error": "A sua conta nao tem um tipo de servico atribuido. Por favor contacte o estafeta para configurar a sua conta."
 }

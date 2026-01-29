@@ -1,6 +1,6 @@
 import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import type { Service, ServiceStatusHistory, Profile, PastDueSettings } from '$lib/database.types';
+import type { Service, ServiceStatusHistory, Profile, PastDueSettings, ServiceType } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
@@ -9,10 +9,10 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 		redirect(303, localizeHref('/login'));
 	}
 
-	// Load service (RLS ensures client can only see their own)
+	// Load service with service_types join (RLS ensures client can only see their own)
 	const { data: serviceData, error: serviceError } = await supabase
 		.from('services')
-		.select('*')
+		.select('*, service_types(id, name, price)')
 		.eq('id', params.id)
 		.eq('client_id', user.id)
 		.single();
@@ -21,7 +21,9 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 		error(404, 'Service not found');
 	}
 
-	const service = serviceData as Service;
+	const service = serviceData as Service & {
+		service_types: Pick<ServiceType, 'id' | 'name' | 'price'> | null;
+	};
 
 	// Load status history
 	const { data: statusHistoryData } = await supabase
@@ -30,25 +32,27 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 		.eq('service_id', params.id)
 		.order('changed_at', { ascending: false });
 
-	// Load courier's reschedule settings
+	// Load courier's reschedule settings and price visibility
 	const { data: courierSettingsData } = await supabase
 		.from('profiles')
-		.select('past_due_settings')
+		.select('past_due_settings, show_price_to_client')
 		.eq('role', 'courier')
 		.single();
 
-	const courierSettings = courierSettingsData as Pick<Profile, 'past_due_settings'> | null;
+	const courierSettings = courierSettingsData as Pick<Profile, 'past_due_settings' | 'show_price_to_client'> | null;
 	const settings = courierSettings?.past_due_settings as PastDueSettings | null;
 	const rescheduleSettings = {
 		allowed: settings?.allowClientReschedule ?? true,
 		minNoticeHours: settings?.clientMinNoticeHours ?? 24,
 		maxReschedules: settings?.clientMaxReschedules ?? 3
 	};
+	const showPriceToClient = courierSettings?.show_price_to_client ?? true;
 
 	return {
 		service,
 		statusHistory: (statusHistoryData || []) as ServiceStatusHistory[],
-		rescheduleSettings
+		rescheduleSettings,
+		showPriceToClient
 	};
 };
 

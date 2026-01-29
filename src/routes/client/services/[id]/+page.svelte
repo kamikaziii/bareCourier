@@ -17,7 +17,7 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	import type { PageData } from './$types';
 	import type { TimeSlot } from '$lib/database.types.js';
 	import { PUBLIC_MAPBOX_TOKEN } from '$env/static/public';
-	import { ArrowLeft, Clock, Calendar, CalendarClock, AlertCircle } from '@lucide/svelte';
+	import { ArrowLeft, Clock, Calendar, CalendarClock, AlertCircle, Euro } from '@lucide/svelte';
 
 	const hasMapbox = !!PUBLIC_MAPBOX_TOKEN;
 
@@ -304,6 +304,43 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 										- {formatTimeSlot(service.suggested_time_slot)}
 									{/if}
 								</p>
+							</div>
+						{/if}
+					</Card.Content>
+				</Card.Root>
+			{/if}
+
+			<!-- Pricing Info (for type-based pricing) -->
+			{#if data.showPriceToClient && (service.service_types || service.calculated_price !== null)}
+				<Card.Root>
+					<Card.Header>
+						<Card.Title class="flex items-center gap-2">
+							<Euro class="size-5" />
+							{m.pricing_info()}
+						</Card.Title>
+					</Card.Header>
+					<Card.Content class="space-y-2">
+						{#if service.service_types?.name}
+							<div class="flex justify-between">
+								<span class="text-muted-foreground">{m.service_type()}</span>
+								<span class="font-medium">{service.service_types.name}</span>
+							</div>
+						{/if}
+						{#if service.is_out_of_zone !== null}
+							<div class="flex justify-between">
+								<span class="text-muted-foreground">{m.zone_status()}</span>
+								<Badge variant="secondary" class={service.is_out_of_zone
+									? 'bg-amber-100 text-amber-800'
+									: 'bg-green-100 text-green-800'}>
+									{service.is_out_of_zone ? m.out_of_zone() : m.in_zone()}
+								</Badge>
+							</div>
+						{/if}
+						{#if service.calculated_price !== null}
+							<Separator />
+							<div class="flex justify-between font-medium">
+								<span>{m.total_price()}</span>
+								<span class="text-lg">€{service.calculated_price.toFixed(2)}</span>
 							</div>
 						{/if}
 					</Card.Content>

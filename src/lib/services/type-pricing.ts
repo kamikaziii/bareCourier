@@ -206,18 +206,9 @@ export async function calculateTypedPrice(
 
 		// Case 1: Out-of-zone pricing (highest priority)
 		if (input.isOutOfZone) {
-			// For out-of-zone, we need distance
-			if (input.distanceKm === null || input.distanceKm === undefined) {
-				return {
-					success: false,
-					price: null,
-					breakdown: null,
-					error: 'Distance required for out-of-zone pricing'
-				};
-			}
-
 			const base = settings.outOfZoneBase;
-			const distance = input.distanceKm * settings.outOfZonePerKm;
+			// Use 0 if distance is not available (graceful fallback)
+			const distance = (input.distanceKm ?? 0) * settings.outOfZonePerKm;
 			const tolls = input.tolls ?? 0;
 			const total = base + distance + tolls;
 
