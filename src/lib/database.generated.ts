@@ -191,6 +191,27 @@ export type Database = {
           },
         ]
       }
+      distribution_zones: {
+        Row: {
+          id: string
+          distrito: string
+          concelho: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          distrito: string
+          concelho: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          distrito?: string
+          concelho?: string
+          created_at?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -282,6 +303,7 @@ export type Database = {
           active: boolean | null
           created_at: string | null
           default_pickup_location: string | null
+          default_service_type_id: string | null
           default_urgency_fee_id: string | null
           email_notifications_enabled: boolean | null
           id: string
@@ -289,6 +311,8 @@ export type Database = {
           minimum_charge: number | null
           name: string
           notification_preferences: Json | null
+          out_of_zone_base: number | null
+          out_of_zone_per_km: number | null
           past_due_settings: Json | null
           phone: string | null
           prices_include_vat: boolean | null
@@ -299,6 +323,7 @@ export type Database = {
           show_price_to_client: boolean | null
           show_price_to_courier: boolean | null
           time_slots: Json | null
+          time_specific_price: number | null
           timezone: string | null
           vat_enabled: boolean | null
           vat_rate: number | null
@@ -311,6 +336,7 @@ export type Database = {
           active?: boolean | null
           created_at?: string | null
           default_pickup_location?: string | null
+          default_service_type_id?: string | null
           default_urgency_fee_id?: string | null
           email_notifications_enabled?: boolean | null
           id: string
@@ -318,6 +344,8 @@ export type Database = {
           minimum_charge?: number | null
           name: string
           notification_preferences?: Json | null
+          out_of_zone_base?: number | null
+          out_of_zone_per_km?: number | null
           past_due_settings?: Json | null
           phone?: string | null
           prices_include_vat?: boolean | null
@@ -328,6 +356,7 @@ export type Database = {
           show_price_to_client?: boolean | null
           show_price_to_courier?: boolean | null
           time_slots?: Json | null
+          time_specific_price?: number | null
           timezone?: string | null
           vat_enabled?: boolean | null
           vat_rate?: number | null
@@ -340,6 +369,7 @@ export type Database = {
           active?: boolean | null
           created_at?: string | null
           default_pickup_location?: string | null
+          default_service_type_id?: string | null
           default_urgency_fee_id?: string | null
           email_notifications_enabled?: boolean | null
           id?: string
@@ -347,6 +377,8 @@ export type Database = {
           minimum_charge?: number | null
           name?: string
           notification_preferences?: Json | null
+          out_of_zone_base?: number | null
+          out_of_zone_per_km?: number | null
           past_due_settings?: Json | null
           phone?: string | null
           prices_include_vat?: boolean | null
@@ -357,6 +389,7 @@ export type Database = {
           show_price_to_client?: boolean | null
           show_price_to_courier?: boolean | null
           time_slots?: Json | null
+          time_specific_price?: number | null
           timezone?: string | null
           vat_enabled?: boolean | null
           vat_rate?: number | null
@@ -366,6 +399,13 @@ export type Database = {
           workload_settings?: Json | null
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_default_service_type_id_fkey"
+            columns: ["default_service_type_id"]
+            isOneToOne: false
+            referencedRelation: "service_types"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_default_urgency_fee_id_fkey"
             columns: ["default_urgency_fee_id"]
@@ -544,9 +584,12 @@ export type Database = {
           delivery_lat: number | null
           delivery_lng: number | null
           delivery_location: string
+          detected_municipality: string | null
           distance_km: number | null
           duration_minutes: number | null
+          has_time_preference: boolean | null
           id: string
+          is_out_of_zone: boolean | null
           last_past_due_notification_at: string | null
           last_rescheduled_at: string | null
           last_rescheduled_by: string | null
@@ -572,10 +615,12 @@ export type Database = {
           scheduled_date: string | null
           scheduled_time: string | null
           scheduled_time_slot: string | null
+          service_type_id: string | null
           status: string
           suggested_date: string | null
           suggested_time: string | null
           suggested_time_slot: string | null
+          tolls: number | null
           updated_at: string | null
           urgency_fee_id: string | null
           vat_rate_snapshot: number
@@ -589,9 +634,12 @@ export type Database = {
           delivery_lat?: number | null
           delivery_lng?: number | null
           delivery_location: string
+          detected_municipality?: string | null
           distance_km?: number | null
           duration_minutes?: number | null
+          has_time_preference?: boolean | null
           id?: string
+          is_out_of_zone?: boolean | null
           last_past_due_notification_at?: string | null
           last_rescheduled_at?: string | null
           last_rescheduled_by?: string | null
@@ -617,10 +665,12 @@ export type Database = {
           scheduled_date?: string | null
           scheduled_time?: string | null
           scheduled_time_slot?: string | null
+          service_type_id?: string | null
           status?: string
           suggested_date?: string | null
           suggested_time?: string | null
           suggested_time_slot?: string | null
+          tolls?: number | null
           updated_at?: string | null
           urgency_fee_id?: string | null
           vat_rate_snapshot?: number
@@ -634,9 +684,12 @@ export type Database = {
           delivery_lat?: number | null
           delivery_lng?: number | null
           delivery_location?: string
+          detected_municipality?: string | null
           distance_km?: number | null
           duration_minutes?: number | null
+          has_time_preference?: boolean | null
           id?: string
+          is_out_of_zone?: boolean | null
           last_past_due_notification_at?: string | null
           last_rescheduled_at?: string | null
           last_rescheduled_by?: string | null
@@ -662,10 +715,12 @@ export type Database = {
           scheduled_date?: string | null
           scheduled_time?: string | null
           scheduled_time_slot?: string | null
+          service_type_id?: string | null
           status?: string
           suggested_date?: string | null
           suggested_time?: string | null
           suggested_time_slot?: string | null
+          tolls?: number | null
           updated_at?: string | null
           urgency_fee_id?: string | null
           vat_rate_snapshot?: number
@@ -690,6 +745,13 @@ export type Database = {
             columns: ["pending_reschedule_requested_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "services_service_type_id_fkey"
+            columns: ["service_type_id"]
+            isOneToOne: false
+            referencedRelation: "service_types"
             referencedColumns: ["id"]
           },
           {
@@ -731,6 +793,39 @@ export type Database = {
           multiplier?: number
           name?: string
           sort_order?: number
+        }
+        Relationships: []
+      }
+      service_types: {
+        Row: {
+          id: string
+          name: string
+          price: number
+          description: string | null
+          active: boolean | null
+          sort_order: number | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          price: number
+          description?: string | null
+          active?: boolean | null
+          sort_order?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          price?: number
+          description?: string | null
+          active?: boolean | null
+          sort_order?: number | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }

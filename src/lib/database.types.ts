@@ -222,6 +222,8 @@ export type Database = {
 				Relationships: GeneratedDatabase['public']['Tables']['services']['Relationships'];
 			};
 			service_status_history: GeneratedDatabase['public']['Tables']['service_status_history'];
+			service_types: GeneratedDatabase['public']['Tables']['service_types'];
+			distribution_zones: GeneratedDatabase['public']['Tables']['distribution_zones'];
 			notifications: GeneratedDatabase['public']['Tables']['notifications'];
 			push_subscriptions: GeneratedDatabase['public']['Tables']['push_subscriptions'];
 			client_pricing: GeneratedDatabase['public']['Tables']['client_pricing'];
@@ -256,6 +258,14 @@ export type ClientPricing = Database['public']['Tables']['client_pricing']['Row'
 export type PricingZone = Database['public']['Tables']['pricing_zones']['Row'];
 export type UrgencyFee = Database['public']['Tables']['urgency_fees']['Row'];
 export type PricingModel = 'per_km' | 'zone' | 'flat_plus_km';
+
+// Service type for type-based pricing
+export type ServiceType = Database['public']['Tables']['service_types']['Row'];
+export type NewServiceType = Database['public']['Tables']['service_types']['Insert'];
+
+// Distribution zone for geographic pricing
+export type DistributionZone = Database['public']['Tables']['distribution_zones']['Row'];
+export type NewDistributionZone = Database['public']['Tables']['distribution_zones']['Insert'];
 
 // ─── Layout profile types (discriminated union) ─────────────────────────────
 
