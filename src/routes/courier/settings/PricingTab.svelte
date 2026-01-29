@@ -33,28 +33,36 @@
 	let deleteDialogOpen = $state(false);
 
 	// Pricing mode state
-	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
 	let pricingMode = $state<'warehouse' | 'zone' | 'type'>((profile.pricing_mode as 'warehouse' | 'zone' | 'type') ?? 'warehouse');
 
 	// Pricing preferences state
-	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
 	let showPriceToCourier = $state(profile.show_price_to_courier ?? true);
-	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
 	let showPriceToClient = $state(profile.show_price_to_client ?? true);
-	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
 	let defaultUrgencyFeeId = $state<string | null>(profile.default_urgency_fee_id || null);
-	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
 	let minimumCharge = $state(profile.minimum_charge ?? 0);
-	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
 	let roundDistance = $state(profile.round_distance ?? false);
 
 	// VAT state
-	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
 	let vatEnabled = $state(profile.vat_enabled ?? false);
-	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
 	let vatRate = $state(profile.vat_rate ?? DEFAULT_VAT_RATE);
-	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
 	let pricesIncludeVat = $state(profile.prices_include_vat ?? false);
+
+	// Sync state when profile prop changes (after form submission)
+	$effect(() => {
+		pricingMode = (profile.pricing_mode as 'warehouse' | 'zone' | 'type') ?? 'warehouse';
+	});
+	$effect(() => {
+		showPriceToCourier = profile.show_price_to_courier ?? true;
+		showPriceToClient = profile.show_price_to_client ?? true;
+		defaultUrgencyFeeId = profile.default_urgency_fee_id || null;
+		minimumCharge = profile.minimum_charge ?? 0;
+		roundDistance = profile.round_distance ?? false;
+	});
+	$effect(() => {
+		vatEnabled = profile.vat_enabled ?? false;
+		vatRate = profile.vat_rate ?? DEFAULT_VAT_RATE;
+		pricesIncludeVat = profile.prices_include_vat ?? false;
+	});
 
 	function openDeleteDialog(feeId: string) {
 		deletingFeeId = feeId;
@@ -150,58 +158,60 @@
 
 {#if pricingMode === 'type'}
 	<!-- Special Pricing Settings -->
-	<Card.Root>
-		<Card.Header>
-			<Card.Title class="flex items-center gap-2">
-				<Calculator class="size-5" />
-				{m.special_pricing()}
-			</Card.Title>
-			<Card.Description>{m.special_pricing_desc()}</Card.Description>
-		</Card.Header>
-		<Card.Content>
-			<form method="POST" action="?/updateSpecialPricing" use:enhance class="space-y-4">
-				<div class="grid gap-4 md:grid-cols-3">
-					<div class="space-y-2">
-						<Label for="time_specific_price">{m.time_specific_price()}</Label>
-						<Input
-							id="time_specific_price"
-							name="time_specific_price"
-							type="number"
-							step="0.01"
-							min="0"
-							value={profile.time_specific_price ?? 13}
-						/>
-						<p class="text-xs text-muted-foreground">{m.time_specific_price_desc()}</p>
+	{#key `${profile.time_specific_price}-${profile.out_of_zone_base}-${profile.out_of_zone_per_km}`}
+		<Card.Root>
+			<Card.Header>
+				<Card.Title class="flex items-center gap-2">
+					<Calculator class="size-5" />
+					{m.special_pricing()}
+				</Card.Title>
+				<Card.Description>{m.special_pricing_desc()}</Card.Description>
+			</Card.Header>
+			<Card.Content>
+				<form method="POST" action="?/updateSpecialPricing" use:enhance class="space-y-4">
+					<div class="grid gap-4 md:grid-cols-3">
+						<div class="space-y-2">
+							<Label for="time_specific_price">{m.time_specific_price()}</Label>
+							<Input
+								id="time_specific_price"
+								name="time_specific_price"
+								type="number"
+								step="0.01"
+								min="0"
+								value={profile.time_specific_price ?? 13}
+							/>
+							<p class="text-xs text-muted-foreground">{m.time_specific_price_desc()}</p>
+						</div>
+						<div class="space-y-2">
+							<Label for="out_of_zone_base">{m.out_of_zone_base()}</Label>
+							<Input
+								id="out_of_zone_base"
+								name="out_of_zone_base"
+								type="number"
+								step="0.01"
+								min="0"
+								value={profile.out_of_zone_base ?? 13}
+							/>
+							<p class="text-xs text-muted-foreground">{m.out_of_zone_base_desc()}</p>
+						</div>
+						<div class="space-y-2">
+							<Label for="out_of_zone_per_km">{m.out_of_zone_per_km()}</Label>
+							<Input
+								id="out_of_zone_per_km"
+								name="out_of_zone_per_km"
+								type="number"
+								step="0.01"
+								min="0"
+								value={profile.out_of_zone_per_km ?? 0.5}
+							/>
+							<p class="text-xs text-muted-foreground">{m.out_of_zone_per_km_desc()}</p>
+						</div>
 					</div>
-					<div class="space-y-2">
-						<Label for="out_of_zone_base">{m.out_of_zone_base()}</Label>
-						<Input
-							id="out_of_zone_base"
-							name="out_of_zone_base"
-							type="number"
-							step="0.01"
-							min="0"
-							value={profile.out_of_zone_base ?? 10}
-						/>
-						<p class="text-xs text-muted-foreground">{m.out_of_zone_base_desc()}</p>
-					</div>
-					<div class="space-y-2">
-						<Label for="out_of_zone_per_km">{m.out_of_zone_per_km()}</Label>
-						<Input
-							id="out_of_zone_per_km"
-							name="out_of_zone_per_km"
-							type="number"
-							step="0.01"
-							min="0"
-							value={profile.out_of_zone_per_km ?? 0.5}
-						/>
-						<p class="text-xs text-muted-foreground">{m.out_of_zone_per_km_desc()}</p>
-					</div>
-				</div>
-				<Button type="submit">{m.action_save()}</Button>
-			</form>
-		</Card.Content>
-	</Card.Root>
+					<Button type="submit">{m.action_save()}</Button>
+				</form>
+			</Card.Content>
+		</Card.Root>
+	{/key}
 {/if}
 
 <!-- Pricing Preferences -->
