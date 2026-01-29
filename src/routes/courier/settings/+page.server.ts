@@ -404,6 +404,34 @@ export const actions: Actions = {
 		return { success: true, message: 'warehouse_updated' };
 	},
 
+	updateLabelBranding: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return fail(401, { error: 'Not authenticated' });
+		}
+
+		// Verify courier role
+		await requireCourier(supabase, user.id);
+
+		const formData = await request.formData();
+		const labelBusinessName = (formData.get('label_business_name') as string) || null;
+		const labelTagline = (formData.get('label_tagline') as string) || null;
+
+		const { error } = await supabase
+			.from('profiles')
+			.update({
+				label_business_name: labelBusinessName,
+				label_tagline: labelTagline
+			})
+			.eq('id', user.id);
+
+		if (error) {
+			return fail(500, { error: 'Failed to update label branding' });
+		}
+
+		return { success: true, message: 'label_branding_updated' };
+	},
+
 	updatePricingPreferences: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {

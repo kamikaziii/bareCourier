@@ -6,7 +6,7 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import AddressInput from '$lib/components/AddressInput.svelte';
-	import { User, Warehouse } from '@lucide/svelte';
+	import { User, Warehouse, Tag } from '@lucide/svelte';
 	import type { Profile } from '$lib/database.types.js';
 	import type { SafeSession } from '$lib/utils.js';
 
@@ -26,6 +26,12 @@
 			? [profile.warehouse_lng, profile.warehouse_lat]
 			: null
 	);
+
+	// Label branding state
+	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
+	let labelBusinessName = $state(profile.label_business_name || '');
+	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
+	let labelTagline = $state(profile.label_tagline || '');
 </script>
 
 <!-- Profile Settings -->
@@ -91,6 +97,41 @@
 				<input type="hidden" name="default_pickup_location" value={warehouseAddress} />
 				<input type="hidden" name="warehouse_lat" value={warehouseCoords?.[1] ?? ''} />
 				<input type="hidden" name="warehouse_lng" value={warehouseCoords?.[0] ?? ''} />
+			</div>
+			<Button type="submit">{m.action_save()}</Button>
+		</form>
+	</Card.Content>
+</Card.Root>
+
+<!-- Label Branding -->
+<Card.Root>
+	<Card.Header>
+		<Card.Title class="flex items-center gap-2">
+			<Tag class="size-5" />
+			{m.label_branding()}
+		</Card.Title>
+		<Card.Description>{m.label_branding_desc()}</Card.Description>
+	</Card.Header>
+	<Card.Content>
+		<form method="POST" action="?/updateLabelBranding" use:enhance class="space-y-4">
+			<div class="space-y-2">
+				<Label for="label_business_name">{m.label_business_name()}</Label>
+				<Input
+					id="label_business_name"
+					name="label_business_name"
+					bind:value={labelBusinessName}
+					placeholder={m.label_business_name_placeholder()}
+				/>
+			</div>
+			<div class="space-y-2">
+				<Label for="label_tagline">{m.label_tagline()}</Label>
+				<Input
+					id="label_tagline"
+					name="label_tagline"
+					bind:value={labelTagline}
+					placeholder={m.label_tagline_placeholder()}
+				/>
+				<p class="text-xs text-muted-foreground">{m.label_tagline_help()}</p>
 			</div>
 			<Button type="submit">{m.action_save()}</Button>
 		</form>
