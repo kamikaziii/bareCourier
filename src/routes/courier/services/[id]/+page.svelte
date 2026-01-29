@@ -32,7 +32,8 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 		CheckCircle,
 		Circle,
 		Euro,
-		CalendarClock
+		CalendarClock,
+		Copy
 	} from '@lucide/svelte';
 
 	const hasMapbox = !!PUBLIC_MAPBOX_TOKEN;
@@ -51,7 +52,15 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	let actionError = $state('');
 	let priceOverrideLoading = $state(false);
 	let priceOverrideError = $state('');
+	let idCopied = $state(false);
 
+	async function copyDisplayId() {
+		if (data.service.display_id) {
+			await navigator.clipboard.writeText(data.service.display_id);
+			idCopied = true;
+			setTimeout(() => (idCopied = false), 2000);
+		}
+	}
 
 	async function handleStatusChange() {
 		loading = true;
@@ -205,6 +214,24 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	<!-- Status Badge & Quick Actions -->
 	<Card.Root>
 		<Card.Content class="space-y-3 p-4">
+			<!-- Display ID with copy button -->
+			{#if service.display_id}
+				<div class="flex items-center gap-2">
+					<span class="font-mono text-lg font-semibold">{service.display_id}</span>
+					<Button variant="ghost" size="sm" onclick={copyDisplayId} class="h-7 px-2">
+						<Copy class="size-4" />
+					</Button>
+					{#if idCopied}
+						<span class="text-xs text-green-600">{m.service_id_copied()}</span>
+					{/if}
+				</div>
+			{/if}
+			{#if service.customer_reference}
+				<p class="text-sm text-muted-foreground">
+					{m.customer_reference()}: {service.customer_reference}
+				</p>
+			{/if}
+
 			<div class="flex flex-wrap items-center gap-2">
 				<Badge
 					variant={service.status === 'pending' ? 'default' : 'secondary'}
