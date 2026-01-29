@@ -24,7 +24,7 @@
 	import type { PageData } from './$types';
 	import type { TimeSlot, UrgencyFee } from '$lib/database.types.js';
 	import { PUBLIC_MAPBOX_TOKEN } from '$env/static/public';
-	import { AlertTriangle } from '@lucide/svelte';
+	import ZoneOverrideToggle from '$lib/components/ZoneOverrideToggle.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -264,12 +264,15 @@
 							timePreferencePrice={data.typePricingSettings.timeSpecificPrice}
 						/>
 
-						<!-- Out-of-zone warning -->
-						{#if isOutOfZone === true}
-							<div class="flex items-start gap-2 rounded-md bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
-								<AlertTriangle class="mt-0.5 size-4 shrink-0" />
-								<span>{m.out_of_zone_client_warning()}</span>
-							</div>
+						<!-- Zone status indicator with manual override -->
+						{#if deliveryLocation}
+							<ZoneOverrideToggle
+								{isOutOfZone}
+								{detectedMunicipality}
+								{checkingZone}
+								onOverride={(outOfZone) => (isOutOfZone = outOfZone)}
+								disabled={loading}
+							/>
 						{/if}
 					{:else}
 						<!-- Use traditional SchedulePicker -->

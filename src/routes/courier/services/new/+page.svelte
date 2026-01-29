@@ -6,7 +6,6 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
-	import { Badge } from '$lib/components/ui/badge/index.js';
 
 	import AddressInput from '$lib/components/AddressInput.svelte';
 	import RouteMap from '$lib/components/RouteMap.svelte';
@@ -23,7 +22,8 @@
 	import { extractMunicipalityFromAddress } from '$lib/services/municipality.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
-	import { ArrowLeft, MapPin, AlertTriangle, Check } from '@lucide/svelte';
+	import { ArrowLeft } from '@lucide/svelte';
+	import ZoneOverrideToggle from '$lib/components/ZoneOverrideToggle.svelte';
 	import type { PageData } from './$types';
 	import type { TimeSlot, UrgencyFee, ServiceType } from '$lib/database.types.js';
 
@@ -277,27 +277,7 @@
 							/>
 						</div>
 						<div class="space-y-2">
-							<div class="flex items-center justify-between">
-								<Label for="delivery">{m.form_delivery_location()} *</Label>
-								<!-- Zone Indicator (Type-based pricing only) -->
-								{#if isTypePricingMode && deliveryLocation}
-									{#if checkingZone}
-										<Badge variant="outline" class="text-xs">
-											<span class="animate-pulse">{m.loading()}</span>
-										</Badge>
-									{:else if isOutOfZone === true}
-										<Badge variant="secondary" class="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">
-											<AlertTriangle class="mr-1 size-3" />
-											{m.out_of_zone()}
-										</Badge>
-									{:else if isOutOfZone === false}
-										<Badge variant="secondary" class="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200">
-											<Check class="mr-1 size-3" />
-											{m.in_zone()}
-										</Badge>
-									{/if}
-								{/if}
-							</div>
+							<Label for="delivery">{m.form_delivery_location()} *</Label>
 							<AddressInput
 								id="delivery"
 								bind:value={deliveryLocation}
@@ -305,11 +285,15 @@
 								placeholder={m.form_delivery_placeholder()}
 								disabled={formLoading}
 							/>
-							{#if isTypePricingMode && isOutOfZone === true && detectedMunicipality}
-								<p class="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-									<AlertTriangle class="size-3" />
-									{m.out_of_zone_warning()}
-								</p>
+							<!-- Zone status indicator with manual override (Type-based pricing only) -->
+							{#if isTypePricingMode && deliveryLocation}
+								<ZoneOverrideToggle
+									{isOutOfZone}
+									{detectedMunicipality}
+									{checkingZone}
+									onOverride={(outOfZone) => (isOutOfZone = outOfZone)}
+									disabled={formLoading}
+								/>
 							{/if}
 						</div>
 					</div>
