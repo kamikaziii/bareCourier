@@ -242,6 +242,13 @@
 				</Button>
 			</div>
 
+			<!-- Info text shown immediately on expansion -->
+			{#if showPriceWarning && timePreferencePrice > 0}
+				<p class="text-xs text-muted-foreground">
+					{m.time_preference_surcharge({ amount: timePreferencePrice.toFixed(2) })}
+				</p>
+			{/if}
+
 			<div class="grid grid-cols-2 gap-2">
 				{#each timeSlots as slot}
 					<Button
