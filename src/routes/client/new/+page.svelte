@@ -7,6 +7,7 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
+	import TimePreferencePicker from '$lib/components/TimePreferencePicker.svelte';
 	import UrgencyFeeSelect from '$lib/components/UrgencyFeeSelect.svelte';
 	import AddressInput from '$lib/components/AddressInput.svelte';
 	import RouteMap from '$lib/components/RouteMap.svelte';
@@ -16,11 +17,14 @@
 		getCourierPricingSettings,
 		type CourierPricingSettings
 	} from '$lib/services/pricing.js';
+	import { isInDistributionZone } from '$lib/services/type-pricing.js';
+	import { extractMunicipalityFromAddress } from '$lib/services/municipality.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData } from './$types';
 	import type { TimeSlot, UrgencyFee } from '$lib/database.types.js';
 	import { PUBLIC_MAPBOX_TOKEN } from '$env/static/public';
+	import { AlertTriangle } from '@lucide/svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -54,6 +58,15 @@
 	let courierSettings = $state<CourierPricingSettings | null>(null);
 	let settingsLoaded = $state(false);
 
+	// Type-based pricing state
+	let hasTimePreference = $state(false);
+	let isOutOfZone = $state<boolean | null>(null);
+	let detectedMunicipality = $state<string | null>(null);
+	let checkingZone = $state(false);
+
+	// Derived: is type-based pricing mode
+	const isTypePricingMode = $derived(data.pricingMode === 'type');
+
 	// Whether to show address autocomplete (only if Mapbox is configured)
 	const hasMapbox = !!PUBLIC_MAPBOX_TOKEN;
 
@@ -81,10 +94,37 @@
 		calculateDistanceIfReady();
 	}
 
-	function handleDeliverySelect(address: string, coords: [number, number] | null) {
+	async function handleDeliverySelect(address: string, coords: [number, number] | null) {
 		deliveryLocation = address;
 		deliveryCoords = coords;
 		calculateDistanceIfReady();
+
+		// If type-based pricing, detect municipality and check zone
+		if (isTypePricingMode && address) {
+			await detectMunicipalityAndCheckZone(address);
+		}
+	}
+
+	/**
+	 * Extract municipality (concelho) from Mapbox address and check if in zone
+	 */
+	async function detectMunicipalityAndCheckZone(address: string) {
+		checkingZone = true;
+
+		// Extract municipality using shared utility
+		const municipality = extractMunicipalityFromAddress(address);
+		detectedMunicipality = municipality;
+
+		// Check if municipality is in distribution zone
+		if (municipality) {
+			const inZone = await isInDistributionZone(data.supabase, municipality);
+			isOutOfZone = !inZone;
+		} else {
+			// Cannot determine, default to null (unknown)
+			isOutOfZone = null;
+		}
+
+		checkingZone = false;
 	}
 
 	async function calculateDistanceIfReady() {
@@ -203,21 +243,51 @@
 
 				<Separator />
 
+				<!-- Schedule / Time Preference -->
 				<div class="space-y-2">
-					<h3 class="font-medium text-sm text-muted-foreground">{m.schedule_optional()}</h3>
-					<SchedulePicker
-						selectedDate={requestedDate}
-						selectedTimeSlot={requestedTimeSlot}
-						selectedTime={requestedTime}
-						onDateChange={(date) => (requestedDate = date)}
-						onTimeSlotChange={(slot) => (requestedTimeSlot = slot)}
-						onTimeChange={(time) => (requestedTime = time)}
-						disabled={loading}
-					/>
+					{#if isTypePricingMode}
+						<!-- Use TimePreferencePicker for type-based pricing -->
+						<h3 class="font-medium text-sm text-muted-foreground">{m.schedule_optional()}</h3>
+						<TimePreferencePicker
+							selectedDate={requestedDate}
+							selectedTimeSlot={requestedTimeSlot}
+							selectedTime={requestedTime}
+							onDateChange={(date) => (requestedDate = date)}
+							onTimeSlotChange={(slot) => {
+								requestedTimeSlot = slot;
+								hasTimePreference = slot !== null;
+							}}
+							onTimeChange={(time) => (requestedTime = time)}
+							disabled={loading}
+							showPriceWarning={true}
+							basePrice={0}
+							timePreferencePrice={data.typePricingSettings.timeSpecificPrice}
+						/>
+
+						<!-- Out-of-zone warning -->
+						{#if isOutOfZone === true}
+							<div class="flex items-start gap-2 rounded-md bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
+								<AlertTriangle class="mt-0.5 size-4 shrink-0" />
+								<span>{m.out_of_zone_client_warning()}</span>
+							</div>
+						{/if}
+					{:else}
+						<!-- Use traditional SchedulePicker -->
+						<h3 class="font-medium text-sm text-muted-foreground">{m.schedule_optional()}</h3>
+						<SchedulePicker
+							selectedDate={requestedDate}
+							selectedTimeSlot={requestedTimeSlot}
+							selectedTime={requestedTime}
+							onDateChange={(date) => (requestedDate = date)}
+							onTimeSlotChange={(slot) => (requestedTimeSlot = slot)}
+							onTimeChange={(time) => (requestedTime = time)}
+							disabled={loading}
+						/>
+					{/if}
 				</div>
 
-				<!-- Urgency fee selection -->
-				{#if settingsLoaded}
+				<!-- Urgency fee selection (only for non-type-based pricing) -->
+				{#if !isTypePricingMode && settingsLoaded}
 					<Separator />
 					<div class="space-y-2">
 						<Label for="urgency">{m.form_urgency()}</Label>
@@ -225,8 +295,8 @@
 					</div>
 				{/if}
 
-				<!-- Distance breakdown for warehouse mode -->
-				{#if distanceResult?.distanceMode === 'warehouse' && distanceResult.warehouseToPickupKm}
+				<!-- Distance breakdown for warehouse mode (only for non-type-based pricing) -->
+				{#if !isTypePricingMode && distanceResult?.distanceMode === 'warehouse' && distanceResult.warehouseToPickupKm}
 					<div class="rounded-md bg-muted p-3 text-sm space-y-1">
 						<div class="flex justify-between">
 							<span class="text-muted-foreground">{m.distance_warehouse_to_pickup()}</span>
@@ -255,6 +325,13 @@
 				<input type="hidden" name="requested_date" value={requestedDate ?? ''} />
 				<input type="hidden" name="requested_time_slot" value={requestedTimeSlot ?? ''} />
 				<input type="hidden" name="requested_time" value={requestedTime ?? ''} />
+
+				<!-- Type-based pricing hidden fields -->
+				{#if isTypePricingMode}
+					<input type="hidden" name="has_time_preference" value={hasTimePreference} />
+					<input type="hidden" name="is_out_of_zone" value={isOutOfZone ?? false} />
+					<input type="hidden" name="detected_municipality" value={detectedMunicipality ?? ''} />
+				{/if}
 
 				<div class="flex gap-2 pt-2">
 					<Button type="button" variant="outline" class="flex-1" onclick={() => goto(localizeHref('/client'))}>

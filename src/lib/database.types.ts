@@ -24,13 +24,17 @@ export type PriceBreakdown = {
 	distance: number;
 	urgency: number;
 	total: number;
-	model: 'per_km' | 'zone' | 'flat_plus_km';
+	model: 'per_km' | 'zone' | 'flat_plus_km' | 'type';
 	distance_km: number;
 	error?: string;
 	// Distance breakdown (warehouse mode)
 	distance_mode?: 'warehouse' | 'zone' | 'fallback';
 	warehouse_to_pickup_km?: number;
 	pickup_to_delivery_km?: number;
+	// Type-based pricing fields
+	tolls?: number;
+	reason?: 'out_of_zone' | 'time_preference' | 'service_type';
+	service_type_name?: string;
 };
 
 // Phase 3 Past Due: Configurable settings
@@ -222,6 +226,8 @@ export type Database = {
 				Relationships: GeneratedDatabase['public']['Tables']['services']['Relationships'];
 			};
 			service_status_history: GeneratedDatabase['public']['Tables']['service_status_history'];
+			service_types: GeneratedDatabase['public']['Tables']['service_types'];
+			distribution_zones: GeneratedDatabase['public']['Tables']['distribution_zones'];
 			notifications: GeneratedDatabase['public']['Tables']['notifications'];
 			push_subscriptions: GeneratedDatabase['public']['Tables']['push_subscriptions'];
 			client_pricing: GeneratedDatabase['public']['Tables']['client_pricing'];
@@ -256,6 +262,14 @@ export type ClientPricing = Database['public']['Tables']['client_pricing']['Row'
 export type PricingZone = Database['public']['Tables']['pricing_zones']['Row'];
 export type UrgencyFee = Database['public']['Tables']['urgency_fees']['Row'];
 export type PricingModel = 'per_km' | 'zone' | 'flat_plus_km';
+
+// Service type for type-based pricing
+export type ServiceType = Database['public']['Tables']['service_types']['Row'];
+export type NewServiceType = Database['public']['Tables']['service_types']['Insert'];
+
+// Distribution zone for geographic pricing
+export type DistributionZone = Database['public']['Tables']['distribution_zones']['Row'];
+export type NewDistributionZone = Database['public']['Tables']['distribution_zones']['Insert'];
 
 // ─── Layout profile types (discriminated union) ─────────────────────────────
 

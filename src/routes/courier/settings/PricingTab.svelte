@@ -8,7 +8,7 @@
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import * as m from '$lib/paraglide/messages.js';
-	import { Zap, Plus, Trash2, Power, MapPin, Warehouse, Calculator, Pencil, Receipt } from '@lucide/svelte';
+	import { Zap, Plus, Trash2, Power, MapPin, Warehouse, Calculator, Pencil, Receipt, Package } from '@lucide/svelte';
 	import type { Profile, UrgencyFee } from '$lib/database.types.js';
 
 	/** Portuguese standard VAT rate (%) */
@@ -34,7 +34,7 @@
 
 	// Pricing mode state
 	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
-	let pricingMode = $state<'warehouse' | 'zone'>((profile.pricing_mode as 'warehouse' | 'zone') ?? 'warehouse');
+	let pricingMode = $state<'warehouse' | 'zone' | 'type'>((profile.pricing_mode as 'warehouse' | 'zone' | 'type') ?? 'warehouse');
 
 	// Pricing preferences state
 	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
@@ -119,11 +119,90 @@
 						</p>
 					</div>
 				</label>
+
+				<!-- Type-based Option -->
+				<label
+					class="flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors {pricingMode === 'type' ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}"
+				>
+					<input
+						type="radio"
+						name="pricing_mode"
+						value="type"
+						checked={pricingMode === 'type'}
+						onchange={() => pricingMode = 'type'}
+						class="mt-1"
+					/>
+					<div class="flex-1">
+						<div class="flex items-center gap-2">
+							<Package class="size-4" />
+							<span class="font-medium">{m.pricing_mode_type()}</span>
+						</div>
+						<p class="mt-1 text-sm text-muted-foreground">
+							{m.pricing_mode_type_desc()}
+						</p>
+					</div>
+				</label>
 			</div>
 			<Button type="submit">{m.action_save()}</Button>
 		</form>
 	</Card.Content>
 </Card.Root>
+
+{#if pricingMode === 'type'}
+	<!-- Special Pricing Settings -->
+	<Card.Root>
+		<Card.Header>
+			<Card.Title class="flex items-center gap-2">
+				<Calculator class="size-5" />
+				{m.special_pricing()}
+			</Card.Title>
+			<Card.Description>{m.special_pricing_desc()}</Card.Description>
+		</Card.Header>
+		<Card.Content>
+			<form method="POST" action="?/updateSpecialPricing" use:enhance class="space-y-4">
+				<div class="grid gap-4 md:grid-cols-3">
+					<div class="space-y-2">
+						<Label for="time_specific_price">{m.time_specific_price()}</Label>
+						<Input
+							id="time_specific_price"
+							name="time_specific_price"
+							type="number"
+							step="0.01"
+							min="0"
+							value={profile.time_specific_price ?? 13}
+						/>
+						<p class="text-xs text-muted-foreground">{m.time_specific_price_desc()}</p>
+					</div>
+					<div class="space-y-2">
+						<Label for="out_of_zone_base">{m.out_of_zone_base()}</Label>
+						<Input
+							id="out_of_zone_base"
+							name="out_of_zone_base"
+							type="number"
+							step="0.01"
+							min="0"
+							value={profile.out_of_zone_base ?? 10}
+						/>
+						<p class="text-xs text-muted-foreground">{m.out_of_zone_base_desc()}</p>
+					</div>
+					<div class="space-y-2">
+						<Label for="out_of_zone_per_km">{m.out_of_zone_per_km()}</Label>
+						<Input
+							id="out_of_zone_per_km"
+							name="out_of_zone_per_km"
+							type="number"
+							step="0.01"
+							min="0"
+							value={profile.out_of_zone_per_km ?? 0.5}
+						/>
+						<p class="text-xs text-muted-foreground">{m.out_of_zone_per_km_desc()}</p>
+					</div>
+				</div>
+				<Button type="submit">{m.action_save()}</Button>
+			</form>
+		</Card.Content>
+	</Card.Root>
+{/if}
 
 <!-- Pricing Preferences -->
 <Card.Root>

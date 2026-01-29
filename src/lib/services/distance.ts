@@ -34,7 +34,7 @@ export interface ServiceDistanceInput {
 	pickupCoords: [number, number];
 	deliveryCoords: [number, number];
 	warehouseCoords?: [number, number] | null;
-	pricingMode: 'warehouse' | 'zone';
+	pricingMode: 'warehouse' | 'zone' | 'type';
 	roundDistance?: boolean;
 }
 

@@ -1,8 +1,9 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import type { Profile, UrgencyFee, PastDueSettings, WorkingDay } from '$lib/database.types';
+import type { Profile, UrgencyFee, PastDueSettings, WorkingDay, ServiceType, DistributionZone } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 import { parseIntWithBounds } from '$lib/utils/form.js';
+import { isValidUUID } from '$lib/utils/validation.js';
 
 // Validation helpers
 const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
@@ -87,7 +88,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 		redirect(303, localizeHref('/login'));
 	}
 
-	// Load courier profile
+	// Load courier profile first (required for auth check)
 	const { data: profile } = await supabase
 		.from('profiles')
 		.select('*')
@@ -98,15 +99,19 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 		redirect(303, localizeHref('/login'));
 	}
 
-	// Load urgency fees
-	const { data: urgencyFees } = await supabase
-		.from('urgency_fees')
-		.select('*')
-		.order('sort_order');
+	// Load remaining data in parallel
+	const [{ data: urgencyFees }, { data: serviceTypes }, { data: distributionZones }] =
+		await Promise.all([
+			supabase.from('urgency_fees').select('*').order('sort_order'),
+			supabase.from('service_types').select('*').order('sort_order'),
+			supabase.from('distribution_zones').select('*').order('distrito, concelho')
+		]);
 
 	return {
 		profile: profile as Profile,
-		urgencyFees: (urgencyFees || []) as UrgencyFee[]
+		urgencyFees: (urgencyFees || []) as UrgencyFee[],
+		serviceTypes: (serviceTypes || []) as ServiceType[],
+		distributionZones: (distributionZones || []) as DistributionZone[]
 	};
 };
 
@@ -322,9 +327,9 @@ export const actions: Actions = {
 		await requireCourier(supabase, user.id);
 
 		const formData = await request.formData();
-		const pricingMode = formData.get('pricing_mode') as 'warehouse' | 'zone';
+		const pricingMode = formData.get('pricing_mode') as 'warehouse' | 'zone' | 'type';
 
-		if (!['warehouse', 'zone'].includes(pricingMode)) {
+		if (!['warehouse', 'zone', 'type'].includes(pricingMode)) {
 			return fail(400, { error: 'Invalid pricing mode' });
 		}
 
@@ -338,6 +343,35 @@ export const actions: Actions = {
 		}
 
 		return { success: true, message: 'pricing_mode_updated' };
+	},
+
+	updateSpecialPricing: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return fail(401, { error: 'Not authenticated' });
+		}
+
+		await requireCourier(supabase, user.id);
+
+		const formData = await request.formData();
+		const timeSpecificPrice = parseFloat(formData.get('time_specific_price') as string) || 13;
+		const outOfZoneBase = parseFloat(formData.get('out_of_zone_base') as string) || 13;
+		const outOfZonePerKm = parseFloat(formData.get('out_of_zone_per_km') as string) || 0.5;
+
+		const { error } = await supabase
+			.from('profiles')
+			.update({
+				time_specific_price: timeSpecificPrice,
+				out_of_zone_base: outOfZoneBase,
+				out_of_zone_per_km: outOfZonePerKm
+			})
+			.eq('id', user.id);
+
+		if (error) {
+			return fail(500, { error: 'Failed to update special pricing' });
+		}
+
+		return { success: true, message: 'special_pricing_updated' };
 	},
 
 	updateWarehouseLocation: async ({ request, locals: { supabase, safeGetSession } }) => {
@@ -674,5 +708,177 @@ export const actions: Actions = {
 		}
 
 		return { success: true, message: 'timezone_updated' };
+	},
+
+	// Service Types actions
+	createServiceType: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return fail(401, { error: 'Not authenticated' });
+		}
+
+		await requireCourier(supabase, user.id);
+
+		const formData = await request.formData();
+		const name = formData.get('name') as string;
+		const price = parseFloat(formData.get('price') as string) || 0;
+		const description = formData.get('description') as string;
+
+		if (!name || name.trim() === '') {
+			return fail(400, { error: 'Name is required' });
+		}
+
+		// Get max sort_order
+		const { data: maxOrder } = await supabase
+			.from('service_types')
+			.select('sort_order')
+			.order('sort_order', { ascending: false })
+			.limit(1)
+			.single();
+
+		const sortOrder = ((maxOrder as { sort_order: number } | null)?.sort_order || 0) + 1;
+
+		const { error } = await supabase.from('service_types').insert({
+			name: name.trim(),
+			price,
+			description: description?.trim() || null,
+			sort_order: sortOrder
+		});
+
+		if (error) {
+			return fail(500, { error: 'Failed to create service type' });
+		}
+
+		return { success: true, message: 'service_type_created' };
+	},
+
+	updateServiceType: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return fail(401, { error: 'Not authenticated' });
+		}
+
+		await requireCourier(supabase, user.id);
+
+		const formData = await request.formData();
+		const id = formData.get('id') as string;
+		const name = formData.get('name') as string;
+		const price = parseFloat(formData.get('price') as string) || 0;
+		const description = formData.get('description') as string;
+
+		if (!isValidUUID(id)) {
+			return fail(400, { error: 'Invalid ID format' });
+		}
+
+		if (!name || name.trim() === '') {
+			return fail(400, { error: 'Name is required' });
+		}
+
+		const { error } = await supabase
+			.from('service_types')
+			.update({
+				name: name.trim(),
+				price,
+				description: description?.trim() || null
+			})
+			.eq('id', id);
+
+		if (error) {
+			return fail(500, { error: 'Failed to update service type' });
+		}
+
+		return { success: true, message: 'service_type_updated' };
+	},
+
+	deleteServiceType: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return fail(401, { error: 'Not authenticated' });
+		}
+
+		await requireCourier(supabase, user.id);
+
+		const formData = await request.formData();
+		const id = formData.get('id') as string;
+
+		if (!isValidUUID(id)) {
+			return fail(400, { error: 'Invalid ID format' });
+		}
+
+		// Check if this service type is in use by any services
+		const { count } = await supabase
+			.from('services')
+			.select('id', { count: 'exact', head: true })
+			.eq('service_type_id', id);
+
+		if (count && count > 0) {
+			return fail(409, { error: 'service_type_in_use' });
+		}
+
+		const { error } = await supabase.from('service_types').delete().eq('id', id);
+
+		if (error) {
+			return fail(500, { error: 'Failed to delete service type' });
+		}
+
+		return { success: true, message: 'service_type_deleted' };
+	},
+
+	toggleServiceType: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return fail(401, { error: 'Not authenticated' });
+		}
+
+		await requireCourier(supabase, user.id);
+
+		const formData = await request.formData();
+		const id = formData.get('id') as string;
+		const active = formData.get('active') === 'true';
+
+		if (!isValidUUID(id)) {
+			return fail(400, { error: 'Invalid ID format' });
+		}
+
+		const { error } = await supabase
+			.from('service_types')
+			.update({ active: !active })
+			.eq('id', id);
+
+		if (error) {
+			return fail(500, { error: 'Failed to toggle service type' });
+		}
+
+		return { success: true, message: 'service_type_toggled' };
+	},
+
+	saveDistributionZones: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return fail(401, { error: 'Not authenticated' });
+		}
+
+		await requireCourier(supabase, user.id);
+
+		const formData = await request.formData();
+		const zonesJson = formData.get('zones') as string;
+
+		let zones: { distrito: string; concelho: string }[];
+		try {
+			zones = JSON.parse(zonesJson || '[]');
+		} catch {
+			return fail(400, { error: 'Invalid zones data' });
+		}
+
+		// Use atomic RPC function to replace all zones in a single transaction
+		const { error } = await supabase.rpc('replace_distribution_zones', {
+			new_zones: zones
+		});
+
+		if (error) {
+			return fail(500, { error: 'Failed to update zones' });
+		}
+
+		return { success: true, message: 'distribution_zones_updated' };
 	}
 };

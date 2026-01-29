@@ -10,7 +10,7 @@
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData, ActionData } from './$types';
 	import type { PricingModel } from '$lib/database.types.js';
-	import { ArrowLeft, Euro, ChevronDown } from '@lucide/svelte';
+	import { ArrowLeft, Euro, ChevronDown, Package } from '@lucide/svelte';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -21,6 +21,8 @@
 	let phone = $state(data.client.phone || '');
 	// svelte-ignore state_referenced_locally
 	let defaultPickupLocation = $state(data.client.default_pickup_location || '');
+	// svelte-ignore state_referenced_locally
+	let defaultServiceTypeId = $state(data.client.default_service_type_id || '');
 
 	// Pricing state - svelte-ignore state_referenced_locally for all: intentional initial value capture
 	// svelte-ignore state_referenced_locally
@@ -114,6 +116,30 @@
 						disabled={loading}
 					/>
 				</div>
+
+				{#if data.pricingMode === 'type' && data.serviceTypes.length > 0}
+					<div class="space-y-2">
+						<Label for="default_service_type_id">
+							<span class="flex items-center gap-2">
+								<Package class="size-4 text-muted-foreground" />
+								{m.default_service_type()}
+							</span>
+						</Label>
+						<select
+							id="default_service_type_id"
+							name="default_service_type_id"
+							bind:value={defaultServiceTypeId}
+							class="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+							disabled={loading}
+						>
+							<option value="">{m.none()}</option>
+							{#each data.serviceTypes as type (type.id)}
+								<option value={type.id}>{type.name} - €{Number(type.price).toFixed(2)}</option>
+							{/each}
+						</select>
+						<p class="text-xs text-muted-foreground">{m.default_service_type_desc()}</p>
+					</div>
+				{/if}
 
 				<Separator />
 
