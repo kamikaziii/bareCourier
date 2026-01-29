@@ -64,6 +64,10 @@ export async function startBreak(
 	});
 
 	if (error) {
+		// Handle unique constraint violation (race condition: another break started concurrently)
+		if (error.code === '23505' && error.message.includes('idx_break_logs_active_break')) {
+			return { success: false, error: 'Already on break' };
+		}
 		return { success: false, error: error.message };
 	}
 
@@ -114,6 +118,10 @@ export async function logRetroactiveBreak(
 	});
 
 	if (error) {
+		// Handle overlap constraint violation
+		if (error.code === '23P01' && error.message.includes('no_overlapping_breaks')) {
+			return { success: false, error: 'This break overlaps with an existing break' };
+		}
 		return { success: false, error: error.message };
 	}
 

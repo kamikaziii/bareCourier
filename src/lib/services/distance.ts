@@ -6,6 +6,18 @@
 
 import { PUBLIC_OPENROUTESERVICE_KEY } from '$env/static/public';
 
+/** Average city driving speed for duration estimation */
+export const AVERAGE_CITY_SPEED_KMH = 30;
+
+/**
+ * Estimates driving duration from distance
+ * @param distanceKm Distance in kilometers
+ * @returns Estimated duration in minutes
+ */
+export function estimateDrivingMinutes(distanceKm: number): number {
+	return Math.round((distanceKm / AVERAGE_CITY_SPEED_KMH) * 60);
+}
+
 export interface RouteResponse {
 	distance: number; // meters
 	duration: number; // seconds
@@ -182,8 +194,7 @@ export async function calculateServiceDistance(
 	} else {
 		// Haversine fallback
 		pickupToDeliveryKm = calculateHaversineDistance(pickupCoords, deliveryCoords);
-		// Estimate duration: assume 30 km/h average city speed
-		pickupToDeliveryDuration = Math.round((pickupToDeliveryKm / 30) * 60);
+		pickupToDeliveryDuration = estimateDrivingMinutes(pickupToDeliveryKm);
 	}
 
 	// If warehouse mode and coords exist, calculate warehouse → pickup
@@ -196,8 +207,7 @@ export async function calculateServiceDistance(
 			warehouseToPickupDuration = warehousePickupRoute.durationMinutes;
 		} else {
 			warehouseToPickupKm = calculateHaversineDistance(warehouseCoords, pickupCoords);
-			// Estimate duration: assume 30 km/h average city speed
-			warehouseToPickupDuration = Math.round((warehouseToPickupKm / 30) * 60);
+			warehouseToPickupDuration = estimateDrivingMinutes(warehouseToPickupKm);
 		}
 
 		let totalDistanceKm = warehouseToPickupKm + pickupToDeliveryKm;

@@ -112,7 +112,7 @@
 				</Collapsible.Trigger>
 				<Collapsible.Content>
 					<div class="space-y-2 mt-2 pt-2 border-t">
-						{#each workload.services as service}
+						{#each workload.services as service (service.id)}
 							<div class="text-xs space-y-0.5">
 								<div class="font-medium">{service.clientName}</div>
 								<div class="flex items-center gap-1 text-muted-foreground">

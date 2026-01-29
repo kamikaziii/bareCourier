@@ -4,6 +4,7 @@
 	import * as m from '$lib/paraglide/messages.js';
 	import type { SupabaseClient } from '@supabase/supabase-js';
 	import { startBreak, endBreak, getCurrentBreak, type CurrentBreak } from '$lib/services/breaks.js';
+	import { formatMinutesToHuman } from '$lib/utils.js';
 
 	interface Props {
 		supabase: SupabaseClient;
@@ -15,6 +16,7 @@
 	let currentBreak = $state<CurrentBreak | null>(null);
 	let loading = $state(false);
 	let elapsedMinutes = $state(0);
+	let error = $state<string | null>(null);
 
 	// Load initial state
 	$effect(() => {
@@ -43,52 +45,54 @@
 
 	async function toggleBreak() {
 		loading = true;
-		if (currentBreak) {
-			await endBreak(supabase, courierId);
-		} else {
-			await startBreak(supabase, courierId, 'manual', 'toggle');
+		error = null;
+
+		const result = currentBreak
+			? await endBreak(supabase, courierId)
+			: await startBreak(supabase, courierId, 'manual', 'toggle');
+
+		if (!result.success) {
+			error = result.error || 'Failed to update break status';
 		}
+
 		await loadBreakStatus();
 		loading = false;
 	}
 
-	function formatElapsed(minutes: number): string {
-		if (minutes < 60) return `${minutes} min`;
-		const hours = Math.floor(minutes / 60);
-		const mins = minutes % 60;
-		return `${hours}h ${mins}m`;
-	}
 </script>
 
-<div
-	class="flex items-center justify-between px-4 py-2 border-b text-sm
-		{currentBreak ? 'bg-amber-50 dark:bg-amber-950/30' : 'bg-background'}"
->
-	<div class="flex items-center gap-2">
-		{#if currentBreak}
-			<Coffee class="size-4 text-amber-600" />
-			<span class="font-medium text-amber-700 dark:text-amber-400">
-				{m.workload_on_break()} ({formatElapsed(elapsedMinutes)})
-			</span>
-		{:else}
-			<div class="size-2 rounded-full bg-green-500"></div>
-			<span class="text-muted-foreground">{m.workload_working()}</span>
-		{/if}
+<div class="border-b {currentBreak ? 'bg-amber-50 dark:bg-amber-950/30' : 'bg-background'}">
+	<div class="flex items-center justify-between px-4 py-2 text-sm">
+		<div class="flex items-center gap-2">
+			{#if currentBreak}
+				<Coffee class="size-4 text-amber-600" />
+				<span class="font-medium text-amber-700 dark:text-amber-400">
+					{m.workload_on_break()} ({formatMinutesToHuman(elapsedMinutes)})
+				</span>
+			{:else}
+				<div class="size-2 rounded-full bg-green-500"></div>
+				<span class="text-muted-foreground">{m.workload_working()}</span>
+			{/if}
+		</div>
+
+		<Button
+			variant="ghost"
+			size="sm"
+			onclick={toggleBreak}
+			disabled={loading}
+			class="h-7 px-2 text-xs"
+		>
+			{#if currentBreak}
+				<Play class="size-3 mr-1" />
+				{m.workload_resume()}
+			{:else}
+				<Coffee class="size-3 mr-1" />
+				{m.workload_take_break()}
+			{/if}
+		</Button>
 	</div>
 
-	<Button
-		variant="ghost"
-		size="sm"
-		onclick={toggleBreak}
-		disabled={loading}
-		class="h-7 px-2 text-xs"
-	>
-		{#if currentBreak}
-			<Play class="size-3 mr-1" />
-			{m.workload_resume()}
-		{:else}
-			<Coffee class="size-3 mr-1" />
-			{m.workload_take_break()}
-		{/if}
-	</Button>
+	{#if error}
+		<div class="px-4 pb-2 text-xs text-destructive">{error}</div>
+	{/if}
 </div>

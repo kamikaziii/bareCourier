@@ -8,6 +8,7 @@ import {
 	calculateRoute,
 	calculateHaversineDistance,
 	calculateServiceDistance,
+	estimateDrivingMinutes,
 	type ServiceDistanceResult
 } from '$lib/services/distance.js';
 import type { CourierPricingSettings } from '$lib/services/pricing.js';
@@ -71,8 +72,7 @@ export async function calculateRouteIfReady(
 				routeGeometry = result.geometry || null;
 			} else {
 				distanceKm = calculateHaversineDistance(pickupCoords, deliveryCoords);
-				// Estimate duration: assume 30 km/h average city speed
-				durationMinutes = Math.round((distanceKm / 30) * 60);
+				durationMinutes = estimateDrivingMinutes(distanceKm);
 			}
 		}
 
@@ -80,8 +80,7 @@ export async function calculateRouteIfReady(
 	} catch {
 		// Haversine fallback
 		distanceKm = calculateHaversineDistance(pickupCoords, deliveryCoords);
-		// Estimate duration: assume 30 km/h average city speed
-		durationMinutes = Math.round((distanceKm / 30) * 60);
+		durationMinutes = estimateDrivingMinutes(distanceKm);
 		return { distanceKm, durationMinutes, routeGeometry: null, distanceResult: null };
 	}
 }

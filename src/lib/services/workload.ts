@@ -6,6 +6,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Service, WorkloadSettings } from '$lib/database.types.js';
 import { getBreakTimeForRange } from '$lib/services/breaks.js';
+import { estimateDrivingMinutes } from '$lib/services/distance.js';
 
 export interface WorkloadEstimate {
 	totalServices: number;
@@ -79,19 +80,19 @@ export async function calculateDayWorkload(
 
 	const dateStr = date.toISOString().split('T')[0];
 
-	// Fetch services for the day
-	const { data: servicesData } = await supabase
-		.from('services')
-		.select('*, profiles!client_id(name)')
-		.eq('scheduled_date', dateStr)
-		.eq('status', 'pending')
-		.is('deleted_at', null)
-		.order('scheduled_time_slot');
+	// Fetch services and break time in parallel (independent operations)
+	const [servicesResult, breakTimeMinutes] = await Promise.all([
+		supabase
+			.from('services')
+			.select('*, profiles!client_id(name)')
+			.eq('scheduled_date', dateStr)
+			.eq('status', 'pending')
+			.is('deleted_at', null)
+			.order('scheduled_time_slot'),
+		getBreakTimeForRange(supabase, courierId, startOfDay, endOfDay)
+	]);
 
-	const services = (servicesData || []) as (Service & { profiles: { name: string } | null })[];
-
-	// Get break time already logged for this day
-	const breakTimeMinutes = await getBreakTimeForRange(supabase, courierId, startOfDay, endOfDay);
+	const services = (servicesResult.data || []) as (Service & { profiles: { name: string } | null })[];
 
 	// Calculate effective service time
 	const serviceTimePerStop = getEffectiveServiceTime(settings);
@@ -102,9 +103,8 @@ export async function calculateDayWorkload(
 
 	const serviceItems: ServiceWorkloadItem[] = services.map((s) => {
 		const distanceKm = s.distance_km ?? null;
-		// Estimate driving time: use stored value or estimate from distance
-		// Assuming average speed of 30 km/h in urban delivery context
-		const drivingMinutes = distanceKm ? Math.round((distanceKm / 30) * 60) : null;
+		// Estimate driving time from distance using shared speed constant
+		const drivingMinutes = distanceKm ? estimateDrivingMinutes(distanceKm) : null;
 
 		if (distanceKm) totalDistanceKm += distanceKm;
 		if (drivingMinutes) totalDrivingMinutes += drivingMinutes;
