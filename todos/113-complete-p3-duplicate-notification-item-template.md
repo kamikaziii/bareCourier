@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p3
 issue_id: "113"
 tags: [code-quality, dry, code-review]

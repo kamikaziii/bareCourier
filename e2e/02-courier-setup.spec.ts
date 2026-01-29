@@ -7,14 +7,14 @@ test.describe('Phase 2: Courier Initial Setup', () => {
 
 	test('courier sees dashboard heading and filter buttons', async ({ page }) => {
 		await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
-		await expect(page.getByRole('button', { name: 'Today' })).toBeVisible();
-		await expect(page.getByRole('button', { name: 'Tomorrow' })).toBeVisible();
-		await expect(page.getByRole('button', { name: 'All' })).toBeVisible();
+		await expect(page.getByRole('button', { name: 'Today', exact: true })).toBeVisible();
+		await expect(page.getByRole('button', { name: 'Tomorrow', exact: true })).toBeVisible();
+		await expect(page.getByRole('button', { name: 'All', exact: true })).toBeVisible();
 	});
 
 	test('dashboard filter buttons switch', async ({ page }) => {
-		await page.getByRole('button', { name: 'All' }).click();
-		await page.getByRole('button', { name: 'Today' }).click();
+		await page.getByRole('button', { name: 'All', exact: true }).click();
+		await page.getByRole('button', { name: 'Today', exact: true }).click();
 	});
 
 	test('navigate to settings and see tabs', async ({ page }) => {

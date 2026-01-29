@@ -8,15 +8,31 @@
 
 **Tech Stack:** SvelteKit, Svelte 5 runes, shadcn-svelte, Supabase (Postgres + RLS), Tailwind CSS v4
 
+**Last Updated:** 2025-01-29 (Updated for codebase changes from PRs #6 and #7)
+
+---
+
+## Codebase Context (Updated)
+
+Since the original plan was written, the following changes have been made:
+
+- **Database types architecture**: Now uses split pattern with `database.generated.ts` (auto-generated) + `database.types.ts` (manual enrichments)
+- **New tables**: `break_logs`, `daily_reviews`, `service_types`, `distribution_zones` (workload/type-based pricing)
+- **New profile columns**: `workload_settings`, `timezone`, type-based pricing columns
+- **New service columns**: `duration_minutes`, `service_type_id`, `distribution_zone_id`
+- **i18n file paths**: Messages are at `messages/*.json` (not `src/lib/paraglide/messages/*.json`)
+
 ---
 
 ## Task 1: Database Migration - Role Constraint & Audit Log
 
 **Files:**
-- Create: `supabase/migrations/20260129200001_add_admin_role_and_audit_log.sql`
-- Modify: `src/lib/database.types.ts` (add AuditLog type)
+- Create: `supabase/migrations/20260129150000_add_admin_role_and_audit_log.sql`
+- Modify: `src/lib/database.types.ts` (add AuditLog type following existing pattern)
 
 **Step 1: Create the migration file**
+
+Create `supabase/migrations/20260129150000_add_admin_role_and_audit_log.sql`:
 
 ```sql
 -- Add 'admin' to profiles role constraint
@@ -96,12 +112,23 @@ CREATE POLICY feature_flags_insert ON feature_flags
 Run: `supabase db push`
 Expected: Migration applies successfully
 
-**Step 3: Add TypeScript types**
+**Step 3: Add TypeScript types to database.types.ts**
 
-Add to `src/lib/database.types.ts` after the existing type aliases:
+The codebase uses a split architecture. Add these types to `src/lib/database.types.ts` in the appropriate sections:
+
+1. First, add to the enriched `Database` type (inside the `public.Tables` section, after `service_reschedule_history`):
 
 ```typescript
-// Admin panel types
+// In the Database type definition, add to public.Tables:
+audit_log: GeneratedDatabase['public']['Tables']['audit_log'];
+feature_flags: GeneratedDatabase['public']['Tables']['feature_flags'];
+```
+
+2. Then add convenience aliases at the bottom (after the existing aliases):
+
+```typescript
+// ─── Admin panel types ──────────────────────────────────────────────────────
+
 export type AuditLog = {
   id: string;
   admin_id: string;
@@ -121,7 +148,7 @@ export type FeatureFlag = {
   updated_at: string;
 };
 
-// Admin layout profile type
+/** Profile shape returned by admin +layout.server.ts */
 export type AdminLayoutProfile = {
   id: string;
   role: 'admin';
@@ -129,7 +156,7 @@ export type AdminLayoutProfile = {
 };
 ```
 
-Also update the `LayoutProfile` discriminated union:
+3. Update the `LayoutProfile` discriminated union:
 
 ```typescript
 /** Discriminated union of layout profile shapes (discriminant: role) */
@@ -141,10 +168,15 @@ export type LayoutProfile = CourierLayoutProfile | ClientLayoutProfile | AdminLa
 Run: `pnpm run types:generate`
 Expected: Types regenerated successfully
 
-**Step 5: Commit**
+**Step 5: Run type check**
+
+Run: `pnpm run check`
+Expected: No TypeScript errors
+
+**Step 6: Commit**
 
 ```bash
-git add supabase/migrations/20260129200001_add_admin_role_and_audit_log.sql src/lib/database.types.ts
+git add supabase/migrations/20260129150000_add_admin_role_and_audit_log.sql src/lib/database.types.ts
 git commit -m "feat(admin): add admin role constraint and audit_log table"
 ```
 
@@ -155,7 +187,7 @@ git commit -m "feat(admin): add admin role constraint and audit_log table"
 **Files:**
 - Create: `src/routes/admin/+layout.server.ts`
 - Create: `src/routes/admin/+layout.svelte`
-- Create: `src/routes/admin/+layout.ts`
+- Modify: `src/lib/components/AppShell.svelte` (add 'admin' to role type)
 
 **Step 1: Create the server layout with auth guard**
 
@@ -215,33 +247,7 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
 };
 ```
 
-**Step 2: Create the client layout**
-
-Create `src/routes/admin/+layout.ts`:
-
-```typescript
-import { createBrowserClient, createServerClient, isBrowser } from '@supabase/ssr';
-import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from '$env/static/public';
-import type { LayoutLoad } from './$types';
-import type { Database } from '$lib/database.types';
-
-export const load: LayoutLoad = async ({ data, depends, fetch }) => {
-	depends('supabase:auth');
-
-	const supabase = isBrowser()
-		? createBrowserClient<Database>(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
-				global: { fetch }
-			})
-		: createServerClient<Database>(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
-				global: { fetch },
-				cookies: { getAll: () => [] }
-			});
-
-	return { ...data, supabase };
-};
-```
-
-**Step 3: Create the layout component**
+**Step 2: Create the layout component**
 
 Create `src/routes/admin/+layout.svelte`:
 
@@ -293,27 +299,32 @@ Create `src/routes/admin/+layout.svelte`:
 </AppShell>
 ```
 
-**Step 4: Update AppShell to support admin role**
+**Step 3: Update AppShell to support admin role**
 
-Modify `src/lib/components/AppShell.svelte` line 23 to add admin:
+Modify `src/lib/components/AppShell.svelte` line 24 to add admin to the role union:
 
 ```typescript
 interface AppShellProps {
 	profile: { id: string; name: string; role: string };
 	role: 'courier' | 'client' | 'admin';
-	// ... rest unchanged
+	supabase: SupabaseClient;
+	sidebarItems: NavItem[];
+	bottomNavItems: NavItem[];
+	moreItems?: NavItem[];
+	sidebarCollapsed?: boolean;
+	children: Snippet;
 }
 ```
 
-**Step 5: Verify types check**
+**Step 4: Run type check**
 
 Run: `pnpm run check`
 Expected: No TypeScript errors
 
-**Step 6: Commit**
+**Step 5: Commit**
 
 ```bash
-git add src/routes/admin/+layout.server.ts src/routes/admin/+layout.ts src/routes/admin/+layout.svelte src/lib/components/AppShell.svelte
+git add src/routes/admin/+layout.server.ts src/routes/admin/+layout.svelte src/lib/components/AppShell.svelte
 git commit -m "feat(admin): add auth guard and basic layout structure"
 ```
 
@@ -325,6 +336,8 @@ git commit -m "feat(admin): add auth guard and basic layout structure"
 - Create: `src/lib/components/ImpersonationBanner.svelte`
 
 **Step 1: Create the banner component**
+
+Create `src/lib/components/ImpersonationBanner.svelte`:
 
 ```svelte
 <script lang="ts">
@@ -374,7 +387,7 @@ git commit -m "feat(admin): add auth guard and basic layout structure"
 <div class="h-10"></div>
 ```
 
-**Step 2: Verify component works**
+**Step 2: Run type check**
 
 Run: `pnpm run check`
 Expected: No TypeScript errors
@@ -477,30 +490,6 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 		anomalies.push({
 			type: 'stale_pending',
 			message: `${stalePending} services pending for more than 48 hours`,
-			severity: 'warning'
-		});
-	}
-
-	// Check for inactive clients (no activity in 30 days)
-	const thirtyDaysAgo = new Date(today);
-	thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-	const { data: inactiveClients } = await supabase
-		.from('profiles')
-		.select('id, name')
-		.eq('role', 'client')
-		.eq('active', true)
-		.not('id', 'in', supabase
-			.from('services')
-			.select('client_id')
-			.gte('created_at', thirtyDaysAgo.toISOString())
-		)
-		.limit(5);
-
-	if (inactiveClients && inactiveClients.length > 0) {
-		anomalies.push({
-			type: 'inactive_clients',
-			message: `${inactiveClients.length} clients with no activity in 30 days`,
 			severity: 'warning'
 		});
 	}
@@ -712,13 +701,7 @@ Create `src/routes/admin/+page.svelte`:
 Run: `pnpm run check`
 Expected: No TypeScript errors
 
-**Step 4: Test the page**
-
-Run: `pnpm run dev`
-Navigate to `/admin` (requires admin role in database)
-Expected: Dashboard loads with stats and activity feed
-
-**Step 5: Commit**
+**Step 4: Commit**
 
 ```bash
 git add src/routes/admin/+page.svelte src/routes/admin/+page.server.ts
@@ -788,7 +771,6 @@ Create `src/routes/admin/users/+page.svelte`:
 ```svelte
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -958,9 +940,9 @@ git commit -m "feat(admin): add users browser with search and filters"
 Create `src/routes/admin/users/[id]/+page.server.ts`:
 
 ```typescript
-import { error, redirect } from '@sveltejs/kit';
+import { error } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import type { Profile, Service, AuditLog } from '$lib/database.types';
+import type { Profile, Service } from '$lib/database.types';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase } }) => {
 	const { id } = params;
@@ -1159,7 +1141,6 @@ Create `src/routes/admin/users/[id]/+page.svelte`:
 ```svelte
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -1170,7 +1151,6 @@ Create `src/routes/admin/users/[id]/+page.svelte`:
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData, ActionData } from './$types';
 	import {
-		User,
 		Package,
 		Clock,
 		CheckCircle,
@@ -1320,7 +1300,7 @@ Create `src/routes/admin/users/[id]/+page.svelte`:
 					{/if}
 
 					<div class="flex items-center gap-2">
-						<Switch id="active" name="active" checked={active} onCheckedChange={(checked) => active = checked} />
+						<Switch id="active" checked={active} onCheckedChange={(checked) => active = checked} />
 						<input type="hidden" name="active" value={active.toString()} />
 						<Label for="active">Active</Label>
 					</div>
@@ -1389,7 +1369,6 @@ Create `src/routes/admin/services/+page.server.ts`:
 
 ```typescript
 import type { PageServerLoad } from './$types';
-import type { Service } from '$lib/database.types';
 
 export const load: PageServerLoad = async ({ locals: { supabase }, url }) => {
 	const statusFilter = url.searchParams.get('status') ?? 'all';
@@ -1472,7 +1451,7 @@ Create `src/routes/admin/services/+page.svelte`:
 	import * as Select from '$lib/components/ui/select/index.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData } from './$types';
-	import { Search, ChevronRight, Package, MapPin } from '@lucide/svelte';
+	import { Search, ChevronRight, MapPin } from '@lucide/svelte';
 	import { formatDistanceToNow } from 'date-fns';
 
 	let { data }: { data: PageData } = $props();
@@ -1690,7 +1669,7 @@ Create `src/routes/admin/services/[id]/+page.server.ts`:
 ```typescript
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import type { Service, AuditLog } from '$lib/database.types';
+import type { Service } from '$lib/database.types';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase } }) => {
 	const { id } = params;
@@ -1870,10 +1849,9 @@ Create `src/routes/admin/services/[id]/+page.svelte`:
 		X,
 		MapPin,
 		User,
-		Clock,
-		Euro
+		Clock
 	} from '@lucide/svelte';
-	import { formatDistanceToNow, format } from 'date-fns';
+	import { formatDistanceToNow } from 'date-fns';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -2166,7 +2144,7 @@ export const load: PageServerLoad = async ({ locals: { supabase }, url }) => {
 		console.error('Error fetching audit logs:', error);
 	}
 
-	// Get distinct actions and tables for filters
+	// Get distinct actions for filters
 	const { data: actions } = await supabase
 		.from('audit_log')
 		.select('action')
@@ -2194,11 +2172,10 @@ Create `src/routes/admin/audit/+page.svelte`:
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
-	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData } from './$types';
 	import { ChevronDown, ChevronRight, ScrollText } from '@lucide/svelte';
-	import { formatDistanceToNow, format } from 'date-fns';
+	import { format } from 'date-fns';
 
 	let { data }: { data: PageData } = $props();
 
@@ -2383,50 +2360,48 @@ git commit -m "feat(admin): add audit log viewer with filters and expandable ent
 ## Task 10: Add Admin i18n Messages
 
 **Files:**
-- Modify: `src/lib/paraglide/messages/en.json`
-- Modify: `src/lib/paraglide/messages/pt-PT.json`
+- Modify: `messages/en.json`
+- Modify: `messages/pt-PT.json`
+
+> **Note:** i18n files are at `messages/*.json`, not `src/lib/paraglide/messages/*.json`
 
 **Step 1: Add English messages**
 
-Add to `src/lib/paraglide/messages/en.json`:
+Add to the bottom of `messages/en.json` (before the closing `}`):
 
 ```json
-{
-  "admin_dashboard": "Admin Dashboard",
-  "admin_users": "Users",
-  "admin_services": "Services",
-  "admin_audit": "Audit Log",
-  "admin_config": "Config",
-  "admin_viewing_as": "Viewing as",
-  "admin_exit_impersonation": "Exit"
-}
+	"admin_dashboard": "Admin Dashboard",
+	"admin_users": "Users",
+	"admin_services": "Services",
+	"admin_audit": "Audit Log",
+	"admin_config": "Config",
+	"admin_viewing_as": "Viewing as",
+	"admin_exit_impersonation": "Exit"
 ```
 
 **Step 2: Add Portuguese messages**
 
-Add to `src/lib/paraglide/messages/pt-PT.json`:
+Add to the bottom of `messages/pt-PT.json` (before the closing `}`):
 
 ```json
-{
-  "admin_dashboard": "Painel Admin",
-  "admin_users": "Utilizadores",
-  "admin_services": "Serviços",
-  "admin_audit": "Registo de Ações",
-  "admin_config": "Configuração",
-  "admin_viewing_as": "A ver como",
-  "admin_exit_impersonation": "Sair"
-}
+	"admin_dashboard": "Painel Admin",
+	"admin_users": "Utilizadores",
+	"admin_services": "Serviços",
+	"admin_audit": "Registo de Ações",
+	"admin_config": "Configuração",
+	"admin_viewing_as": "A ver como",
+	"admin_exit_impersonation": "Sair"
 ```
 
-**Step 3: Compile messages**
+**Step 3: Verify build succeeds**
 
 Run: `pnpm run build`
-Expected: Build succeeds with new messages
+Expected: Build succeeds with new messages compiled
 
 **Step 4: Commit**
 
 ```bash
-git add src/lib/paraglide/messages/
+git add messages/en.json messages/pt-PT.json
 git commit -m "feat(admin): add i18n messages for admin panel"
 ```
 
@@ -2439,20 +2414,32 @@ git commit -m "feat(admin): add i18n messages for admin panel"
 
 **Step 1: Update root redirect logic**
 
-The root page should redirect admins to `/admin`:
+Add admin redirect case to `src/routes/+page.server.ts`. Find the existing role checks and add before the courier check:
 
 ```typescript
-// Add admin redirect case
+// Add this before the existing role checks
 if (profile.role === 'admin') {
-  redirect(303, localizeHref('/admin'));
+	redirect(303, localizeHref('/admin'));
 }
 ```
 
-**Step 2: Verify redirect works**
+The full redirect section should look like:
 
-Run: `pnpm run dev`
-Log in as admin user
-Expected: Redirects to `/admin`
+```typescript
+// Redirect based on role
+if (profile.role === 'admin') {
+	redirect(303, localizeHref('/admin'));
+} else if (profile.role === 'courier') {
+	redirect(303, localizeHref('/courier'));
+} else if (profile.role === 'client') {
+	redirect(303, localizeHref('/client'));
+}
+```
+
+**Step 2: Run type check**
+
+Run: `pnpm run check`
+Expected: No TypeScript errors
 
 **Step 3: Commit**
 
@@ -2472,7 +2459,7 @@ git commit -m "feat(admin): redirect admin users to admin dashboard"
 Run this in Supabase SQL editor or via migration:
 
 ```sql
--- First, create the auth user (or use existing user)
+-- First, identify your user ID (or create a new auth user)
 -- Then update their profile to admin role:
 UPDATE profiles
 SET role = 'admin'
