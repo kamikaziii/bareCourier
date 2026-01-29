@@ -8,11 +8,13 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
-	import { CheckSquare, Inbox } from '@lucide/svelte';
+	import { CheckSquare, Inbox, Lightbulb } from '@lucide/svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
+	import WorkloadSummary from '$lib/components/WorkloadSummary.svelte';
 	import { useBatchSelection } from '$lib/composables/use-batch-selection.svelte.js';
 	import * as m from '$lib/paraglide/messages.js';
+	import type { WorkloadEstimate } from '$lib/services/workload.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import { formatDateWithWeekday, formatDate } from '$lib/utils.js';
 	import type { PageData } from './$types';
@@ -92,6 +94,23 @@
 		}
 	}
 
+	function getWorkloadForService(service: ServiceWithClient): { workload: WorkloadEstimate; label: string } | null {
+		if (service.requested_date && data.workloadByDate[service.requested_date]) {
+			return {
+				workload: data.workloadByDate[service.requested_date],
+				label: formatRequestDate(service.requested_date)
+			};
+		}
+		// No date requested - use today's workload
+		if (data.workloadByDate[data.todayStr]) {
+			return {
+				workload: data.workloadByDate[data.todayStr],
+				label: m.workload_today()
+			};
+		}
+		return null;
+	}
+
 	function openAcceptDialog(service: ServiceWithClient) {
 		selectedService = service;
 		actionError = '';
@@ -112,6 +131,12 @@
 		suggestedTimeSlot = null;
 		suggestedTime = null;
 		showSuggestDialog = true;
+	}
+
+	function useNextCompatibleDay() {
+		if (data.nextCompatibleDay) {
+			suggestedDate = data.nextCompatibleDay.date;
+		}
 	}
 
 	async function handleAccept() {
@@ -336,7 +361,8 @@
 		/>
 	{:else}
 		<div class="grid gap-4">
-			{#each data.pendingRequests as service}
+			{#each data.pendingRequests as service (service.id)}
+				{@const workloadInfo = getWorkloadForService(service)}
 				<Card.Root class={batch.has(service.id) ? "ring-2 ring-primary" : ""}>
 					<Card.Content class="pt-6">
 						<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -391,6 +417,16 @@
 									</div>
 								{/if}
 
+								<!-- Workload indicator -->
+								{#if workloadInfo}
+									<div class="flex items-center gap-2">
+										{#if !service.requested_date}
+											<span class="text-sm text-muted-foreground">{m.workload_today()}:</span>
+										{/if}
+										<WorkloadSummary workload={workloadInfo.workload} compact />
+									</div>
+								{/if}
+
 								<!-- Notes -->
 								{#if service.notes}
 									<p class="text-sm text-muted-foreground">{service.notes}</p>
@@ -432,7 +468,7 @@
 			</div>
 
 			<div class="grid gap-4">
-				{#each data.pendingReschedules as service}
+				{#each data.pendingReschedules as service (service.id)}
 					<Card.Root class="border-orange-200">
 						<Card.Content class="pt-6">
 							<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -510,6 +546,40 @@
 					</p>
 				{/if}
 			</div>
+
+			<!-- Workload for requested date -->
+			{@const workloadInfo = getWorkloadForService(selectedService)}
+			{#if workloadInfo}
+				<div class="mt-4">
+					<WorkloadSummary workload={workloadInfo.workload} dateLabel={workloadInfo.label} />
+				</div>
+			{/if}
+
+			<!-- If no date requested, also show tomorrow -->
+			{#if !selectedService.requested_date && data.workloadByDate[data.tomorrowStr]}
+				<div class="mt-2">
+					<WorkloadSummary
+						workload={data.workloadByDate[data.tomorrowStr]}
+						dateLabel={m.workload_tomorrow()}
+					/>
+				</div>
+			{/if}
+
+			<!-- Next compatible day suggestion if neither today nor tomorrow is comfortable -->
+			{#if !selectedService.requested_date && data.nextCompatibleDay}
+				{@const todayWorkload = data.workloadByDate[data.todayStr]}
+				{@const tomorrowWorkload = data.workloadByDate[data.tomorrowStr]}
+				{#if todayWorkload?.status !== 'comfortable' && tomorrowWorkload?.status !== 'comfortable'}
+					<div class="mt-3 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+						<div class="flex items-center gap-2 text-sm">
+							<Lightbulb class="size-4 text-blue-600" />
+							<span class="text-blue-600 font-medium">
+								{m.workload_next_compatible()}: {formatRequestDate(data.nextCompatibleDay.date)}
+							</span>
+						</div>
+					</div>
+				{/if}
+			{/if}
 		{/if}
 
 		{#if actionError}
@@ -589,6 +659,37 @@
 					{/if}
 				</p>
 			</div>
+		{/if}
+
+		<!-- Workload for originally requested date -->
+		{#if selectedService?.requested_date && data.workloadByDate[selectedService.requested_date]}
+			<div class="mt-2">
+				<WorkloadSummary
+					workload={data.workloadByDate[selectedService.requested_date]}
+				/>
+			</div>
+		{/if}
+
+		<!-- Next compatible day suggestion (only if requested date isn't comfortable) -->
+		{#if data.nextCompatibleDay}
+			{@const requestedWorkload = selectedService?.requested_date
+				? data.workloadByDate[selectedService.requested_date]
+				: null}
+			{#if !requestedWorkload || requestedWorkload.status !== 'comfortable'}
+				<div class="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+					<div class="flex items-center justify-between">
+						<div class="flex items-center gap-2 text-sm">
+							<Lightbulb class="size-4 text-blue-600" />
+							<span class="text-blue-600 font-medium">
+								{m.workload_next_compatible()}: {formatRequestDate(data.nextCompatibleDay.date)}
+							</span>
+						</div>
+						<Button variant="outline" size="sm" onclick={useNextCompatibleDay}>
+							{m.workload_use_this_date()}
+						</Button>
+					</div>
+				</div>
+			{/if}
 		{/if}
 
 		<Separator />
