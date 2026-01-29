@@ -11,8 +11,10 @@
 	import { CheckSquare, Inbox } from '@lucide/svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
+	import WorkloadSummary from '$lib/components/WorkloadSummary.svelte';
 	import { useBatchSelection } from '$lib/composables/use-batch-selection.svelte.js';
 	import * as m from '$lib/paraglide/messages.js';
+	import type { WorkloadEstimate } from '$lib/services/workload.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import { formatDateWithWeekday, formatDate } from '$lib/utils.js';
 	import type { PageData } from './$types';
@@ -90,6 +92,23 @@
 			default:
 				return slot;
 		}
+	}
+
+	function getWorkloadForService(service: ServiceWithClient): { workload: WorkloadEstimate; label: string } | null {
+		if (service.requested_date && data.workloadByDate[service.requested_date]) {
+			return {
+				workload: data.workloadByDate[service.requested_date],
+				label: formatRequestDate(service.requested_date)
+			};
+		}
+		// No date requested - use today's workload
+		if (data.workloadByDate[data.todayStr]) {
+			return {
+				workload: data.workloadByDate[data.todayStr],
+				label: m.workload_today()
+			};
+		}
+		return null;
 	}
 
 	function openAcceptDialog(service: ServiceWithClient) {
@@ -388,6 +407,17 @@
 												({service.requested_time})
 											{/if}
 										</span>
+									</div>
+								{/if}
+
+								<!-- Workload indicator -->
+								{#if getWorkloadForService(service)}
+									{@const workloadInfo = getWorkloadForService(service)}
+									<div class="flex items-center gap-2">
+										{#if !service.requested_date}
+											<span class="text-sm text-muted-foreground">{m.workload_today()}:</span>
+										{/if}
+										<WorkloadSummary workload={workloadInfo!.workload} compact />
 									</div>
 								{/if}
 
