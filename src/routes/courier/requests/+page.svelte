@@ -133,6 +133,12 @@
 		showSuggestDialog = true;
 	}
 
+	function useNextCompatibleDay() {
+		if (data.nextCompatibleDay) {
+			suggestedDate = data.nextCompatibleDay.date;
+		}
+	}
+
 	async function handleAccept() {
 		if (!selectedService) return;
 		loading = true;
@@ -653,6 +659,37 @@
 					{/if}
 				</p>
 			</div>
+		{/if}
+
+		<!-- Workload for originally requested date -->
+		{#if selectedService?.requested_date && data.workloadByDate[selectedService.requested_date]}
+			<div class="mt-2">
+				<WorkloadSummary
+					workload={data.workloadByDate[selectedService.requested_date]}
+				/>
+			</div>
+		{/if}
+
+		<!-- Next compatible day suggestion (only if requested date isn't comfortable) -->
+		{#if data.nextCompatibleDay}
+			{@const requestedWorkload = selectedService?.requested_date
+				? data.workloadByDate[selectedService.requested_date]
+				: null}
+			{#if !requestedWorkload || requestedWorkload.status !== 'comfortable'}
+				<div class="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+					<div class="flex items-center justify-between">
+						<div class="flex items-center gap-2 text-sm">
+							<span class="text-blue-600">💡</span>
+							<span class="text-blue-600 font-medium">
+								{m.workload_next_compatible()}: {formatRequestDate(data.nextCompatibleDay.date)}
+							</span>
+						</div>
+						<Button variant="outline" size="sm" onclick={useNextCompatibleDay}>
+							{m.workload_use_this_date()}
+						</Button>
+					</div>
+				</div>
+			{/if}
 		{/if}
 
 		<Separator />
