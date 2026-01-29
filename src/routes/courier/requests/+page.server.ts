@@ -3,6 +3,7 @@ import type { PageServerLoad, Actions } from './$types';
 import type { Service, Profile } from '$lib/database.types';
 import { localizeHref, extractLocaleFromRequest } from '$lib/paraglide/runtime.js';
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
+import { calculateDayWorkload, getWorkloadSettings, type WorkloadEstimate } from '$lib/services/workload.js';
 
 // Helper to send notification to client
 async function notifyClient(
@@ -61,9 +62,70 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 		.is('deleted_at', null)
 		.order('pending_reschedule_requested_at', { ascending: true });
 
+	// Get courier profile for workload settings
+	const { data: courierProfile } = await supabase
+		.from('profiles')
+		.select('workload_settings')
+		.eq('id', user.id)
+		.single();
+
+	const settings = getWorkloadSettings(courierProfile?.workload_settings);
+
+	// Collect unique dates from requests
+	const uniqueDates = new Set<string>();
+	const requests = (pendingRequests || []) as (Service & { profiles: Pick<Profile, 'id' | 'name' | 'phone'> })[];
+	for (const req of requests) {
+		if (req.requested_date) {
+			uniqueDates.add(req.requested_date);
+		}
+	}
+
+	// Always include today and tomorrow
+	const today = new Date();
+	const tomorrow = new Date(today);
+	tomorrow.setDate(tomorrow.getDate() + 1);
+
+	const todayStr = today.toISOString().split('T')[0];
+	const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+	uniqueDates.add(todayStr);
+	uniqueDates.add(tomorrowStr);
+
+	// Calculate workload for each unique date
+	const workloadByDate: Record<string, WorkloadEstimate> = {};
+	for (const dateStr of uniqueDates) {
+		const date = new Date(dateStr + 'T12:00:00'); // Noon to avoid timezone issues
+		workloadByDate[dateStr] = await calculateDayWorkload(supabase, user.id, date, settings);
+	}
+
+	// Find next compatible day (scan up to 14 days ahead)
+	let nextCompatibleDay: { date: string; workload: WorkloadEstimate } | null = null;
+	for (let i = 0; i < 14; i++) {
+		const checkDate = new Date(today);
+		checkDate.setDate(checkDate.getDate() + i);
+		const checkDateStr = checkDate.toISOString().split('T')[0];
+
+		// Use cached workload if available, otherwise calculate
+		let workload = workloadByDate[checkDateStr];
+		if (!workload) {
+			const date = new Date(checkDateStr + 'T12:00:00');
+			workload = await calculateDayWorkload(supabase, user.id, date, settings);
+			workloadByDate[checkDateStr] = workload;
+		}
+
+		if (workload.status === 'comfortable') {
+			nextCompatibleDay = { date: checkDateStr, workload };
+			break;
+		}
+	}
+
 	return {
-		pendingRequests: (pendingRequests || []) as (Service & { profiles: Pick<Profile, 'id' | 'name' | 'phone'> })[],
-		pendingReschedules: (pendingReschedules || []) as (Service & { profiles: Pick<Profile, 'id' | 'name' | 'phone'> })[]
+		pendingRequests: requests,
+		pendingReschedules: (pendingReschedules || []) as (Service & { profiles: Pick<Profile, 'id' | 'name' | 'phone'> })[],
+		workloadByDate,
+		todayStr,
+		tomorrowStr,
+		nextCompatibleDay
 	};
 };
 
