@@ -5,6 +5,7 @@
 	import NotificationBell from '$lib/components/NotificationBell.svelte';
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import MobileBottomNav from '$lib/components/MobileBottomNav.svelte';
+	import WorkStatusBar from '$lib/components/WorkStatusBar.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref, getLocale, deLocalizeUrl } from '$lib/paraglide/runtime.js';
 	import type { Snippet } from 'svelte';
@@ -109,6 +110,11 @@
 				</div>
 			</div>
 		</header>
+
+		<!-- Work Status Bar (courier only) -->
+		{#if role === 'courier'}
+			<WorkStatusBar {supabase} courierId={profile.id} />
+		{/if}
 
 		<!-- Main content -->
 		<main class="flex-1 px-5 py-6 pb-24 md:pb-6">
