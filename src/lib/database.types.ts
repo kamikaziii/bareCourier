@@ -213,9 +213,10 @@ export type Database = {
 				};
 				Insert: Omit<
 					GeneratedDatabase['public']['Tables']['services']['Insert'],
-					'price_breakdown'
+					'price_breakdown' | 'display_id'
 				> & {
 					price_breakdown?: PriceBreakdown | null;
+					display_id?: string; // Optional: trigger auto-generates if not provided
 				};
 				Update: Omit<
 					GeneratedDatabase['public']['Tables']['services']['Update'],

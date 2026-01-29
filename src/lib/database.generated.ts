@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       break_logs: {
@@ -643,7 +668,7 @@ export type Database = {
           delivery_lng: number | null
           delivery_location: string
           detected_municipality: string | null
-          display_id: string | null
+          display_id: string
           distance_km: number | null
           duration_minutes: number | null
           has_time_preference: boolean | null
@@ -697,7 +722,7 @@ export type Database = {
           delivery_lng?: number | null
           delivery_location: string
           detected_municipality?: string | null
-          display_id?: string | null
+          display_id: string
           distance_km?: number | null
           duration_minutes?: number | null
           has_time_preference?: boolean | null
@@ -751,7 +776,7 @@ export type Database = {
           delivery_lng?: number | null
           delivery_location?: string
           detected_municipality?: string | null
-          display_id?: string | null
+          display_id?: string
           distance_km?: number | null
           duration_minutes?: number | null
           has_time_preference?: boolean | null
@@ -1073,6 +1098,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
