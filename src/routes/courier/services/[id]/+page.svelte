@@ -29,6 +29,7 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 		MoreVertical,
 		Clock,
 		User,
+		UserCheck,
 		CheckCircle,
 		Circle,
 		Euro,
@@ -327,6 +328,28 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 		<Tabs.Content value="details" class="space-y-4 pt-4">
 			<!-- Locations (first for field use) -->
 			<ServiceLocationCard {service} {hasMapbox} />
+
+			<!-- Recipient Info (conditional) -->
+			{#if service.recipient_name || service.recipient_phone}
+				<Card.Root>
+					<Card.Header>
+						<Card.Title class="flex items-center gap-2">
+							<UserCheck class="size-5" />
+							{m.recipient()}
+						</Card.Title>
+					</Card.Header>
+					<Card.Content class="space-y-1">
+						{#if service.recipient_name}
+							<p class="font-medium">{service.recipient_name}</p>
+						{/if}
+						{#if service.recipient_phone}
+							<a href="tel:{service.recipient_phone}" class="text-sm text-primary hover:underline">
+								{service.recipient_phone}
+							</a>
+						{/if}
+					</Card.Content>
+				</Card.Root>
+			{/if}
 
 			<!-- Notes -->
 			{#if service.notes}
