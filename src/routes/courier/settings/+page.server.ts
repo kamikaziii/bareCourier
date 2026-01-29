@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import type { Profile, UrgencyFee, PastDueSettings, WorkingDay, ServiceType } from '$lib/database.types';
+import type { Profile, UrgencyFee, PastDueSettings, WorkingDay, ServiceType, DistributionZone } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 import { parseIntWithBounds } from '$lib/utils/form.js';
 
@@ -110,10 +110,17 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 		.select('*')
 		.order('sort_order');
 
+	// Load distribution zones
+	const { data: distributionZones } = await supabase
+		.from('distribution_zones')
+		.select('*')
+		.order('distrito, concelho');
+
 	return {
 		profile: profile as Profile,
 		urgencyFees: (urgencyFees || []) as UrgencyFee[],
-		serviceTypes: (serviceTypes || []) as ServiceType[]
+		serviceTypes: (serviceTypes || []) as ServiceType[],
+		distributionZones: (distributionZones || []) as DistributionZone[]
 	};
 };
 
@@ -823,5 +830,46 @@ export const actions: Actions = {
 		}
 
 		return { success: true, message: 'service_type_toggled' };
+	},
+
+	saveDistributionZones: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return fail(401, { error: 'Not authenticated' });
+		}
+
+		await requireCourier(supabase, user.id);
+
+		const formData = await request.formData();
+		const zonesJson = formData.get('zones') as string;
+
+		let zones: { distrito: string; concelho: string }[];
+		try {
+			zones = JSON.parse(zonesJson || '[]');
+		} catch {
+			return fail(400, { error: 'Invalid zones data' });
+		}
+
+		// Delete all existing zones and insert new ones
+		const { error: deleteError } = await supabase
+			.from('distribution_zones')
+			.delete()
+			.neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all rows
+
+		if (deleteError) {
+			return fail(500, { error: 'Failed to update zones' });
+		}
+
+		if (zones.length > 0) {
+			const { error: insertError } = await supabase
+				.from('distribution_zones')
+				.insert(zones);
+
+			if (insertError) {
+				return fail(500, { error: 'Failed to save zones' });
+			}
+		}
+
+		return { success: true, message: 'distribution_zones_updated' };
 	}
 };
