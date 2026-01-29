@@ -427,7 +427,7 @@
 	"pricing_mode_warehouse_desc": "Distância da sua localização base até ao levantamento, mais levantamento até à entrega",
 	"pricing_mode_zone": "Por Zona",
 	"pricing_mode_zone_desc": "Preços fixos por zona geográfica, independentemente da distância real",
-	"pricing_mode_type": "Preço baseado em tipo",
+	"pricing_mode_type": "Preço Baseado em Tipo",
 	"pricing_mode_type_desc": "Preço fixo por tipo de serviço (Dental, Óptica, etc.)",
 	"special_pricing": "Preços Especiais",
 	"special_pricing_desc": "Configure preços para serviços com horário e fora de zona",

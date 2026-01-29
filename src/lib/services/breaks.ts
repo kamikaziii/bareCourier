@@ -26,7 +26,7 @@ export async function getCurrentBreak(
 		.is('ended_at', null)
 		.order('started_at', { ascending: false })
 		.limit(1)
-		.single();
+		.maybeSingle();
 
 	if (error || !data) return null;
 
