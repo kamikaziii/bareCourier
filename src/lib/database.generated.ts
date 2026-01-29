@@ -1,3 +1,4 @@
+Initialising login role...
 export type Json =
   | string
   | number
@@ -11,31 +12,6 @@ export type Database = {
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.1"
-  }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
   }
   public: {
     Tables: {
@@ -332,6 +308,8 @@ export type Database = {
           default_urgency_fee_id: string | null
           email_notifications_enabled: boolean | null
           id: string
+          label_business_name: string | null
+          label_tagline: string | null
           locale: string | null
           minimum_charge: number | null
           name: string
@@ -365,6 +343,8 @@ export type Database = {
           default_urgency_fee_id?: string | null
           email_notifications_enabled?: boolean | null
           id: string
+          label_business_name?: string | null
+          label_tagline?: string | null
           locale?: string | null
           minimum_charge?: number | null
           name: string
@@ -398,6 +378,8 @@ export type Database = {
           default_urgency_fee_id?: string | null
           email_notifications_enabled?: boolean | null
           id?: string
+          label_business_name?: string | null
+          label_tagline?: string | null
           locale?: string | null
           minimum_charge?: number | null
           name?: string
@@ -474,6 +456,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      service_counters: {
+        Row: {
+          last_number: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          last_number?: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          last_number?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
       }
       service_reschedule_history: {
         Row: {
@@ -637,12 +637,14 @@ export type Database = {
           calculated_price: number | null
           client_id: string
           created_at: string | null
+          customer_reference: string | null
           deleted_at: string | null
           delivered_at: string | null
           delivery_lat: number | null
           delivery_lng: number | null
           delivery_location: string
           detected_municipality: string | null
+          display_id: string | null
           distance_km: number | null
           duration_minutes: number | null
           has_time_preference: boolean | null
@@ -664,6 +666,8 @@ export type Database = {
           price_breakdown: Json | null
           price_override_reason: string | null
           prices_include_vat_snapshot: boolean
+          recipient_name: string | null
+          recipient_phone: string | null
           rejection_reason: string | null
           request_status: string | null
           requested_date: string | null
@@ -687,12 +691,14 @@ export type Database = {
           calculated_price?: number | null
           client_id: string
           created_at?: string | null
+          customer_reference?: string | null
           deleted_at?: string | null
           delivered_at?: string | null
           delivery_lat?: number | null
           delivery_lng?: number | null
           delivery_location: string
           detected_municipality?: string | null
+          display_id?: string | null
           distance_km?: number | null
           duration_minutes?: number | null
           has_time_preference?: boolean | null
@@ -714,6 +720,8 @@ export type Database = {
           price_breakdown?: Json | null
           price_override_reason?: string | null
           prices_include_vat_snapshot?: boolean
+          recipient_name?: string | null
+          recipient_phone?: string | null
           rejection_reason?: string | null
           request_status?: string | null
           requested_date?: string | null
@@ -737,12 +745,14 @@ export type Database = {
           calculated_price?: number | null
           client_id?: string
           created_at?: string | null
+          customer_reference?: string | null
           deleted_at?: string | null
           delivered_at?: string | null
           delivery_lat?: number | null
           delivery_lng?: number | null
           delivery_location?: string
           detected_municipality?: string | null
+          display_id?: string | null
           distance_km?: number | null
           duration_minutes?: number | null
           has_time_preference?: boolean | null
@@ -764,6 +774,8 @@ export type Database = {
           price_breakdown?: Json | null
           price_override_reason?: string | null
           prices_include_vat_snapshot?: boolean
+          recipient_name?: string | null
+          recipient_phone?: string | null
           rejection_reason?: string | null
           request_status?: string | null
           requested_date?: string | null
@@ -1062,9 +1074,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },
