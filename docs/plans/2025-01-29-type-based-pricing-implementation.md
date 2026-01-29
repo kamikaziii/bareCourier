@@ -171,10 +171,10 @@ git commit -m "feat(db): add type-based pricing columns to profiles"
 
 ---
 
-### Task 4: Add type-based pricing columns to services
+### Task 4: Add type-based pricing columns to services [COMPLETED]
 
 **Files:**
-- Create: `supabase/migrations/20260129000004_add_type_pricing_service_columns.sql`
+- Created: `supabase/migrations/20260129130003_add_type_pricing_service_columns.sql`
 
 **Step 1: Write the migration**
 
@@ -1391,10 +1391,10 @@ git commit -m "feat(ui): add DistributionZonesSection component for zone managem
 
 ---
 
-### Task 13: Add distribution zones server actions
+### Task 13: Add distribution zones server actions [COMPLETED]
 
 **Files:**
-- Modify: `src/routes/courier/settings/+page.server.ts`
+- Modified: `src/routes/courier/settings/+page.server.ts`
 
 **Step 1: Add load for distribution zones**
 
@@ -1551,10 +1551,10 @@ git commit -m "feat(ui): integrate DistributionZonesSection into settings page"
 
 ## Phase 6: Settings UI - Pricing Mode & Special Pricing
 
-### Task 16: Update PricingTab with type-based mode option
+### Task 16: Update PricingTab with type-based mode option [COMPLETED]
 
 **Files:**
-- Modify: `src/routes/courier/settings/PricingTab.svelte`
+- Modified: `src/routes/courier/settings/PricingTab.svelte`
 
 **Step 1: Add 'type' option to pricing mode radio buttons**
 
@@ -1661,10 +1661,10 @@ git commit -m "feat(ui): add type-based pricing mode and special pricing setting
 
 ---
 
-### Task 17: Add special pricing server action
+### Task 17: Add special pricing server action [COMPLETED]
 
 **Files:**
-- Modify: `src/routes/courier/settings/+page.server.ts`
+- Modified: `src/routes/courier/settings/+page.server.ts`
 
 **Step 1: Update updatePricingMode to accept 'type'**
 
