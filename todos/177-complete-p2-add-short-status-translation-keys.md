@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "177"
 tags: [i18n, code-review, design-gap]

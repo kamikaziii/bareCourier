@@ -655,13 +655,15 @@
 	"workload_status_comfortable": "Compatible ({hours} buffer)",
 	"workload_status_tight": "Tight ({hours} buffer)",
 	"workload_status_overloaded": "Overloaded by {hours}",
+	"workload_status_comfortable_short": "Compatible",
+	"workload_status_tight_short": "Tight",
+	"workload_status_overloaded_short": "Overloaded",
 	"workload_show_details": "Show details",
 	"workload_hide_details": "Hide details",
 	"workload_drive_time": "~{time} drive",
 	"workload_buffer": "{time} buffer",
 	"workload_today": "Today",
 	"workload_tomorrow": "Tomorrow",
-	"workload_no_date_requested": "No specific date",
 	"workload_next_compatible": "Next compatible day",
 	"workload_use_this_date": "Use this date"
 }

@@ -2,9 +2,10 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { ChevronDown, ChevronUp, Clock, MapPin, AlertTriangle, CheckCircle } from '@lucide/svelte';
+	import { ChevronDown, ChevronUp, MapPin } from '@lucide/svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import type { WorkloadEstimate } from '$lib/services/workload.js';
+	import { getWorkloadStyles } from '$lib/services/workload-styles.js';
 	import { formatMinutesToHuman } from '$lib/utils.js';
 
 	interface Props {
@@ -19,21 +20,8 @@
 		workload.totalServices === 1 ? m.workload_service_singular() : m.workload_service_plural()
 	);
 
-	const statusBg = $derived(
-		workload.status === 'comfortable'
-			? 'bg-green-50 dark:bg-green-950/30'
-			: workload.status === 'tight'
-				? 'bg-yellow-50 dark:bg-yellow-950/30'
-				: 'bg-red-50 dark:bg-red-950/30'
-	);
-
-	const statusColor = $derived(
-		workload.status === 'comfortable'
-			? 'text-green-600'
-			: workload.status === 'tight'
-				? 'text-yellow-600'
-				: 'text-red-600'
-	);
+	const styles = $derived(getWorkloadStyles(workload.status));
+	const StatusIcon = $derived(styles.icon);
 
 	const statusMessage = $derived(
 		workload.status === 'comfortable'
@@ -45,18 +33,12 @@
 </script>
 
 <Collapsible.Root bind:open={cardExpanded}>
-	<Card.Root class="{statusBg} {cardExpanded ? '' : '!py-0 !gap-0'}">
+	<Card.Root class="{styles.bg} {cardExpanded ? '' : '!py-0 !gap-0'}">
 		<Collapsible.Trigger class="w-full text-left">
 			<Card.Header class={cardExpanded ? "pb-2" : "py-3 !grid-rows-1 !gap-0"}>
 				<Card.Title class="flex items-center justify-between text-base">
 					<span class="flex items-center gap-2">
-						{#if workload.status === 'comfortable'}
-							<CheckCircle class="size-5 {statusColor}" />
-						{:else if workload.status === 'tight'}
-							<Clock class="size-5 {statusColor}" />
-						{:else}
-							<AlertTriangle class="size-5 {statusColor}" />
-						{/if}
+						<StatusIcon class="size-5 {styles.text}" />
 						{m.workload_title()}
 					</span>
 					<span class="flex items-center gap-2 text-sm font-normal text-muted-foreground">
@@ -97,14 +79,8 @@
 					</div>
 				</div>
 
-				<div class="flex items-center gap-2 pt-1 {statusColor}">
-					{#if workload.status === 'comfortable'}
-						<CheckCircle class="size-4" />
-					{:else if workload.status === 'tight'}
-						<Clock class="size-4" />
-					{:else}
-						<AlertTriangle class="size-4" />
-					{/if}
+				<div class="flex items-center gap-2 pt-1 {styles.text}">
+					<StatusIcon class="size-4" />
 					<span class="text-sm font-medium">{statusMessage}</span>
 				</div>
 

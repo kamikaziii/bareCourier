@@ -8,7 +8,7 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
-	import { CheckSquare, Inbox } from '@lucide/svelte';
+	import { CheckSquare, Inbox, Lightbulb } from '@lucide/svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
 	import WorkloadSummary from '$lib/components/WorkloadSummary.svelte';
@@ -362,6 +362,7 @@
 	{:else}
 		<div class="grid gap-4">
 			{#each data.pendingRequests as service}
+				{@const workloadInfo = getWorkloadForService(service)}
 				<Card.Root class={batch.has(service.id) ? "ring-2 ring-primary" : ""}>
 					<Card.Content class="pt-6">
 						<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -417,13 +418,12 @@
 								{/if}
 
 								<!-- Workload indicator -->
-								{#if getWorkloadForService(service)}
-									{@const workloadInfo = getWorkloadForService(service)}
+								{#if workloadInfo}
 									<div class="flex items-center gap-2">
 										{#if !service.requested_date}
 											<span class="text-sm text-muted-foreground">{m.workload_today()}:</span>
 										{/if}
-										<WorkloadSummary workload={workloadInfo!.workload} compact />
+										<WorkloadSummary workload={workloadInfo.workload} compact />
 									</div>
 								{/if}
 
@@ -572,7 +572,7 @@
 				{#if todayWorkload?.status !== 'comfortable' && tomorrowWorkload?.status !== 'comfortable'}
 					<div class="mt-3 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
 						<div class="flex items-center gap-2 text-sm">
-							<span class="text-blue-600">💡</span>
+							<Lightbulb class="size-4 text-blue-600" />
 							<span class="text-blue-600 font-medium">
 								{m.workload_next_compatible()}: {formatRequestDate(data.nextCompatibleDay.date)}
 							</span>
@@ -679,7 +679,7 @@
 				<div class="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
 					<div class="flex items-center justify-between">
 						<div class="flex items-center gap-2 text-sm">
-							<span class="text-blue-600">💡</span>
+							<Lightbulb class="size-4 text-blue-600" />
 							<span class="text-blue-600 font-medium">
 								{m.workload_next_compatible()}: {formatRequestDate(data.nextCompatibleDay.date)}
 							</span>

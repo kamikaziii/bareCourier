@@ -5,6 +5,9 @@ import { localizeHref, extractLocaleFromRequest } from '$lib/paraglide/runtime.j
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
 import { calculateDayWorkload, getWorkloadSettings, type WorkloadEstimate } from '$lib/services/workload.js';
 
+// Number of days to scan ahead when finding the next compatible day
+const LOOKAHEAD_DAYS = 14;
+
 // Helper to send notification to client
 async function notifyClient(
 	session: { access_token: string },
@@ -62,14 +65,18 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 		.is('deleted_at', null)
 		.order('pending_reschedule_requested_at', { ascending: true });
 
-	// Get courier profile for workload settings
+	// Get courier profile for workload settings and timezone
 	const { data: courierProfile } = await supabase
 		.from('profiles')
-		.select('workload_settings')
+		.select('workload_settings, timezone')
 		.eq('id', user.id)
 		.single();
 
 	const settings = getWorkloadSettings(courierProfile?.workload_settings);
+
+	// Use courier's timezone for date calculations (default to Europe/Lisbon)
+	const tz = (courierProfile as { timezone?: string } | null)?.timezone || 'Europe/Lisbon';
+	const dateFormatter = new Intl.DateTimeFormat('en-CA', { timeZone: tz });
 
 	// Collect unique dates from requests
 	const uniqueDates = new Set<string>();
@@ -80,30 +87,32 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 		}
 	}
 
-	// Always include today and tomorrow
-	const today = new Date();
-	const tomorrow = new Date(today);
-	tomorrow.setDate(tomorrow.getDate() + 1);
+	// Always include today and tomorrow (using courier's timezone)
+	const now = new Date();
+	const todayStr = dateFormatter.format(now);
 
-	const todayStr = today.toISOString().split('T')[0];
-	const tomorrowStr = tomorrow.toISOString().split('T')[0];
+	const tomorrow = new Date(now);
+	tomorrow.setDate(tomorrow.getDate() + 1);
+	const tomorrowStr = dateFormatter.format(tomorrow);
 
 	uniqueDates.add(todayStr);
 	uniqueDates.add(tomorrowStr);
 
-	// Calculate workload for each unique date
-	const workloadByDate: Record<string, WorkloadEstimate> = {};
-	for (const dateStr of uniqueDates) {
-		const date = new Date(dateStr + 'T12:00:00'); // Noon to avoid timezone issues
-		workloadByDate[dateStr] = await calculateDayWorkload(supabase, user.id, date, settings);
-	}
+	// Calculate workload for each unique date (parallelized)
+	const workloadEntries = await Promise.all(
+		Array.from(uniqueDates).map(async (dateStr) => [
+			dateStr,
+			await calculateDayWorkload(supabase, user.id, new Date(dateStr + 'T12:00:00'), settings)
+		] as const)
+	);
+	const workloadByDate: Record<string, WorkloadEstimate> = Object.fromEntries(workloadEntries);
 
-	// Find next compatible day (scan up to 14 days ahead)
+	// Find next compatible day (scan up to LOOKAHEAD_DAYS days ahead)
 	let nextCompatibleDay: { date: string; workload: WorkloadEstimate } | null = null;
-	for (let i = 0; i < 14; i++) {
-		const checkDate = new Date(today);
+	for (let i = 0; i < LOOKAHEAD_DAYS; i++) {
+		const checkDate = new Date(now);
 		checkDate.setDate(checkDate.getDate() + i);
-		const checkDateStr = checkDate.toISOString().split('T')[0];
+		const checkDateStr = dateFormatter.format(checkDate);
 
 		// Use cached workload if available, otherwise calculate
 		let workload = workloadByDate[checkDateStr];

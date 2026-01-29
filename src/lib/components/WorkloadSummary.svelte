@@ -1,8 +1,9 @@
 <script lang="ts">
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
-	import { ChevronDown, ChevronUp, Clock, AlertTriangle, CheckCircle } from '@lucide/svelte';
+	import { ChevronDown, ChevronUp } from '@lucide/svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import type { WorkloadEstimate } from '$lib/services/workload.js';
+	import { getWorkloadStyles } from '$lib/services/workload-styles.js';
 	import { formatMinutesToHuman } from '$lib/utils.js';
 
 	interface Props {
@@ -18,28 +19,15 @@
 		workload.totalServices === 1 ? m.workload_service_singular() : m.workload_service_plural()
 	);
 
-	const statusBg = $derived(
-		workload.status === 'comfortable'
-			? 'bg-green-50 dark:bg-green-950/30'
-			: workload.status === 'tight'
-				? 'bg-yellow-50 dark:bg-yellow-950/30'
-				: 'bg-red-50 dark:bg-red-950/30'
-	);
-
-	const statusColor = $derived(
-		workload.status === 'comfortable'
-			? 'text-green-600'
-			: workload.status === 'tight'
-				? 'text-yellow-600'
-				: 'text-red-600'
-	);
+	const styles = $derived(getWorkloadStyles(workload.status));
+	const StatusIcon = $derived(styles.icon);
 
 	const statusLabel = $derived(
 		workload.status === 'comfortable'
-			? m.workload_status_comfortable({ hours: '' }).split('(')[0].trim()
+			? m.workload_status_comfortable_short()
 			: workload.status === 'tight'
-				? m.workload_status_tight({ hours: '' }).split('(')[0].trim()
-				: m.workload_status_overloaded({ hours: '' }).split(' ')[0]
+				? m.workload_status_tight_short()
+				: m.workload_status_overloaded_short()
 	);
 
 	const bufferText = $derived(
@@ -47,36 +35,28 @@
 			? m.workload_buffer({ time: formatMinutesToHuman(workload.bufferMinutes) })
 			: m.workload_status_overloaded({ hours: formatMinutesToHuman(Math.abs(workload.bufferMinutes)) })
 	);
-
-	const StatusIcon = $derived(
-		workload.status === 'comfortable'
-			? CheckCircle
-			: workload.status === 'tight'
-				? Clock
-				: AlertTriangle
-	);
 </script>
 
 {#if compact}
 	<!-- Compact mode: single line, no expand -->
-	<div class="flex items-center gap-2 text-sm {statusBg} rounded-md px-2 py-1">
-		<StatusIcon class="size-4 {statusColor}" />
-		<span class={statusColor}>{statusLabel}</span>
+	<div class="flex items-center gap-2 text-sm {styles.bg} rounded-md px-2 py-1">
+		<StatusIcon class="size-4 {styles.text}" />
+		<span class={styles.text}>{statusLabel}</span>
 		<span class="text-muted-foreground">·</span>
 		<span class="text-muted-foreground">{workload.totalServices} {servicesLabel}</span>
 	</div>
 {:else}
 	<!-- Full mode: expandable -->
 	<Collapsible.Root bind:open={expanded}>
-		<div class="{statusBg} rounded-lg overflow-hidden">
+		<div class="{styles.bg} rounded-lg overflow-hidden">
 			<Collapsible.Trigger class="w-full text-left px-3 py-2">
 				<div class="flex items-center justify-between">
 					<div class="flex items-center gap-2">
 						{#if dateLabel}
 							<span class="text-sm font-medium">{dateLabel}</span>
 						{/if}
-						<StatusIcon class="size-4 {statusColor}" />
-						<span class="text-sm {statusColor}">{statusLabel}</span>
+						<StatusIcon class="size-4 {styles.text}" />
+						<span class="text-sm {styles.text}">{statusLabel}</span>
 						<span class="text-sm text-muted-foreground">·</span>
 						<span class="text-sm text-muted-foreground">{workload.totalServices} {servicesLabel}</span>
 						<span class="text-sm text-muted-foreground">·</span>

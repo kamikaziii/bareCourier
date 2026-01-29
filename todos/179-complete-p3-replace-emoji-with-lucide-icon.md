@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p3
 issue_id: "179"
 tags: [ui, accessibility, code-review, icons]

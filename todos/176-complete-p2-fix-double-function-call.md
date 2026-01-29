@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "176"
 tags: [svelte, performance, code-review, template]
@@ -50,9 +50,9 @@ Update template to use `{@const}` pattern as specified in implementation plan.
 
 ## Acceptance Criteria
 
-- [ ] Function called only once per service
-- [ ] No non-null assertion needed (`workloadInfo!`)
-- [ ] Build passes
+- [x] Function called only once per service
+- [x] No non-null assertion needed (`workloadInfo!`)
+- [x] Build passes
 
 ## Work Log
 
@@ -62,6 +62,17 @@ Update template to use `{@const}` pattern as specified in implementation plan.
 - Issue approved during triage session
 - Status: ready
 
+### 2026-01-29 - Completed
+**By:** Claude Code Review Resolution Agent
+**Actions:**
+- Moved `{@const workloadInfo = getWorkloadForService(service)}` to be a direct child of `{#each}` block (line 365)
+- Changed condition from `{#if getWorkloadForService(service)}` to `{#if workloadInfo}` (line 421)
+- Removed non-null assertion (`workloadInfo!.workload` -> `workloadInfo.workload`)
+- Verified no Svelte/TypeScript errors in the modified file
+- Status: complete
+
 ## Notes
 
 Source: PR #6 code review - implementation deviated from plan
+
+**Implementation Note:** Svelte 5 requires `{@const}` to be a direct child of block elements like `{#each}`, `{#if}`, etc. The original placement inside nested HTML elements caused a compiler error. The fix places the `{@const}` immediately after the `{#each}` opening tag.
