@@ -49,6 +49,57 @@ export type PastDueSettings = {
 	dailySummaryTime: string; // time to send daily summary HH:MM (default: "08:00")
 };
 
+// Workload management settings
+export type WorkloadSettings = {
+	daily_hours: number;
+	default_service_time_minutes: number;
+	auto_lunch_start: string; // "HH:MM"
+	auto_lunch_end: string; // "HH:MM"
+	review_time: string; // "HH:MM"
+	learning_enabled: boolean;
+	learned_service_time_minutes: number | null;
+	learning_sample_count: number;
+};
+
+// Break log entry
+export type BreakLog = {
+	id: string;
+	courier_id: string;
+	started_at: string;
+	ended_at: string | null;
+	type: 'lunch' | 'manual' | 'retroactive';
+	source: 'auto' | 'toggle' | 'anomaly_prompt' | 'daily_review';
+	created_at: string;
+};
+
+// Delivery time log entry
+export type DeliveryTimeLog = {
+	id: string;
+	service_id: string;
+	courier_id: string;
+	started_at: string;
+	completed_at: string;
+	driving_time_minutes: number | null;
+	break_time_minutes: number;
+	delay_reason: 'break' | 'traffic' | 'customer' | 'other' | null;
+	calculated_service_time_minutes: number | null;
+	include_in_learning: boolean;
+	created_at: string;
+};
+
+// Daily review entry
+export type DailyReview = {
+	id: string;
+	courier_id: string;
+	review_date: string;
+	completed_at: string | null;
+	total_services: number | null;
+	total_work_minutes: number | null;
+	gaps_detected: number | null;
+	gaps_resolved: number | null;
+	created_at: string;
+};
+
 // SYNC WARNING: These notification types (NotificationCategory, ChannelPreferences, NotificationPreferences)
 // must match the definitions in supabase/functions/_shared/notify.ts
 // Notification channel preferences per category
@@ -119,30 +170,33 @@ export type Database = {
 			profiles: {
 				Row: Omit<
 					GeneratedDatabase['public']['Tables']['profiles']['Row'],
-					'past_due_settings' | 'time_slots' | 'working_days' | 'notification_preferences'
+					'past_due_settings' | 'time_slots' | 'working_days' | 'notification_preferences' | 'workload_settings'
 				> & {
 					past_due_settings: PastDueSettings | null;
 					time_slots: TimeSlotDefinitions | null;
 					working_days: WorkingDay[] | null;
 					notification_preferences: NotificationPreferences | null;
+					workload_settings: WorkloadSettings | null;
 				};
 				Insert: Omit<
 					GeneratedDatabase['public']['Tables']['profiles']['Insert'],
-					'past_due_settings' | 'time_slots' | 'working_days' | 'notification_preferences'
+					'past_due_settings' | 'time_slots' | 'working_days' | 'notification_preferences' | 'workload_settings'
 				> & {
 					past_due_settings?: PastDueSettings | null;
 					time_slots?: TimeSlotDefinitions | null;
 					working_days?: WorkingDay[] | null;
 					notification_preferences?: NotificationPreferences | null;
+					workload_settings?: WorkloadSettings | null;
 				};
 				Update: Omit<
 					GeneratedDatabase['public']['Tables']['profiles']['Update'],
-					'past_due_settings' | 'time_slots' | 'working_days' | 'notification_preferences'
+					'past_due_settings' | 'time_slots' | 'working_days' | 'notification_preferences' | 'workload_settings'
 				> & {
 					past_due_settings?: PastDueSettings | null;
 					time_slots?: TimeSlotDefinitions | null;
 					working_days?: WorkingDay[] | null;
 					notification_preferences?: NotificationPreferences | null;
+					workload_settings?: WorkloadSettings | null;
 				};
 				Relationships: GeneratedDatabase['public']['Tables']['profiles']['Relationships'];
 			};
@@ -219,6 +273,7 @@ export type CourierLayoutProfile = {
 	prices_include_vat: boolean | null;
 	show_price_to_courier: boolean | null;
 	show_price_to_client: boolean | null;
+	workload_settings: WorkloadSettings | null;
 };
 
 /** Profile shape returned by client +layout.server.ts */

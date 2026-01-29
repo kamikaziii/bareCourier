@@ -9,6 +9,7 @@
 		deliveryCoords?: [number, number] | null; // [lng, lat]
 		routeGeometry?: string | null; // Encoded polyline
 		distanceKm?: number | null;
+		durationMinutes?: number | null;
 		height?: string;
 		hideFooter?: boolean;
 	}
@@ -18,6 +19,7 @@
 		deliveryCoords = null,
 		routeGeometry = null,
 		distanceKm = null,
+		durationMinutes = null,
 		height = '300px',
 		hideFooter = false
 	}: Props = $props();
@@ -184,7 +186,11 @@
 		<div class="flex items-center justify-between">
 			{#if distanceKm !== null}
 				<span class="text-sm text-muted-foreground">
-					{m.map_distance({ km: distanceKm.toFixed(1) })}
+					{#if durationMinutes !== null}
+						{m.map_distance_duration({ km: distanceKm.toFixed(1), minutes: String(Math.round(durationMinutes)) })}
+					{:else}
+						{m.map_distance({ km: distanceKm.toFixed(1) })}
+					{/if}
 				</span>
 			{:else}
 				<span></span>

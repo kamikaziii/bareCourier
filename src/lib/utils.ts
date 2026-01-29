@@ -153,3 +153,14 @@ export function formatBadge(count: number | undefined, max: number = 99): string
 	if (count > max) return `${max}+`;
 	return count.toString();
 }
+
+/**
+ * Converts minutes to human-readable format (e.g., "1h 30m")
+ */
+export function formatMinutesToHuman(minutes: number): string {
+	const hours = Math.floor(minutes / 60);
+	const mins = minutes % 60;
+	if (hours === 0) return `${mins}m`;
+	if (mins === 0) return `${hours}h`;
+	return `${hours}h ${mins}m`;
+}

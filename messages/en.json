@@ -208,6 +208,7 @@
 
 	"map_get_directions": "Get directions",
 	"map_distance": "Distance: {km} km",
+	"map_distance_duration": "{km} km ~ {minutes} min",
 	"map_calculating": "Calculating distance...",
 	"map_route": "Route",
 
@@ -637,5 +638,22 @@
 	"navigate_to_location": "Navigate",
 	"service_lifecycle": "Service Lifecycle",
 	"show_map": "Show map",
-	"hide_map": "Hide map"
+	"hide_map": "Hide map",
+
+	"workload_working": "Working",
+	"workload_on_break": "On Break",
+	"workload_resume": "Resume",
+	"workload_take_break": "Break",
+
+	"workload_title": "Today's Workload",
+	"workload_services": "services",
+	"workload_driving": "Driving",
+	"workload_service_time": "Service time",
+	"workload_breaks": "Breaks",
+	"workload_total_needed": "Total needed",
+	"workload_status_comfortable": "Fits in day ({hours} buffer)",
+	"workload_status_tight": "Tight day ({hours} buffer)",
+	"workload_status_overloaded": "Overloaded by {hours}",
+	"workload_show_details": "Show details",
+	"workload_hide_details": "Hide details"
 }

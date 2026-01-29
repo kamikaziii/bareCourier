@@ -166,6 +166,7 @@ export type Database = {
           warehouse_lat: number | null
           warehouse_lng: number | null
           working_days: Json | null
+          workload_settings: Json | null
         }
         Insert: {
           active?: boolean | null
@@ -194,6 +195,7 @@ export type Database = {
           warehouse_lat?: number | null
           warehouse_lng?: number | null
           working_days?: Json | null
+          workload_settings?: Json | null
         }
         Update: {
           active?: boolean | null
@@ -222,6 +224,7 @@ export type Database = {
           warehouse_lat?: number | null
           warehouse_lng?: number | null
           working_days?: Json | null
+          workload_settings?: Json | null
         }
         Relationships: [
           {

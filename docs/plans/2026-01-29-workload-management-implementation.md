@@ -222,10 +222,11 @@ git commit -m "feat(types): add WorkloadSettings, BreakLog, DeliveryTimeLog, Dai
 
 ---
 
-### Task 1.4: Route Calculation - Add Duration to Result
+### Task 1.4: Route Calculation - Add Duration to Result [COMPLETED]
 
 **Files:**
 - Modify: `src/lib/services/route.ts`
+- Modify: `src/lib/services/distance.ts`
 
 **Step 1: Update RouteCalculationResult interface**
 

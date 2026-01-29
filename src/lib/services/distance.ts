@@ -6,6 +6,18 @@
 
 import { PUBLIC_OPENROUTESERVICE_KEY } from '$env/static/public';
 
+/** Average city driving speed for duration estimation */
+export const AVERAGE_CITY_SPEED_KMH = 30;
+
+/**
+ * Estimates driving duration from distance
+ * @param distanceKm Distance in kilometers
+ * @returns Estimated duration in minutes
+ */
+export function estimateDrivingMinutes(distanceKm: number): number {
+	return Math.round((distanceKm / AVERAGE_CITY_SPEED_KMH) * 60);
+}
+
 export interface RouteResponse {
 	distance: number; // meters
 	duration: number; // seconds
@@ -28,6 +40,7 @@ export interface ServiceDistanceInput {
 
 export interface ServiceDistanceResult {
 	totalDistanceKm: number;
+	durationMinutes?: number;
 	distanceMode: 'warehouse' | 'zone' | 'fallback';
 	warehouseToPickupKm?: number;
 	pickupToDeliveryKm: number;
@@ -171,24 +184,30 @@ export async function calculateServiceDistance(
 
 	// Calculate pickup → delivery (always needed)
 	let pickupToDeliveryKm: number;
+	let pickupToDeliveryDuration: number | undefined;
 	let geometry: string | undefined;
 	const pickupDeliveryRoute = await calculateRoute(pickupCoords, deliveryCoords);
 	if (pickupDeliveryRoute) {
 		pickupToDeliveryKm = pickupDeliveryRoute.distanceKm;
+		pickupToDeliveryDuration = pickupDeliveryRoute.durationMinutes;
 		geometry = pickupDeliveryRoute.geometry;
 	} else {
 		// Haversine fallback
 		pickupToDeliveryKm = calculateHaversineDistance(pickupCoords, deliveryCoords);
+		pickupToDeliveryDuration = estimateDrivingMinutes(pickupToDeliveryKm);
 	}
 
 	// If warehouse mode and coords exist, calculate warehouse → pickup
 	if (pricingMode === 'warehouse' && warehouseCoords) {
 		let warehouseToPickupKm: number;
+		let warehouseToPickupDuration: number | undefined;
 		const warehousePickupRoute = await calculateRoute(warehouseCoords, pickupCoords);
 		if (warehousePickupRoute) {
 			warehouseToPickupKm = warehousePickupRoute.distanceKm;
+			warehouseToPickupDuration = warehousePickupRoute.durationMinutes;
 		} else {
 			warehouseToPickupKm = calculateHaversineDistance(warehouseCoords, pickupCoords);
+			warehouseToPickupDuration = estimateDrivingMinutes(warehouseToPickupKm);
 		}
 
 		let totalDistanceKm = warehouseToPickupKm + pickupToDeliveryKm;
@@ -198,8 +217,15 @@ export async function calculateServiceDistance(
 			pickupToDeliveryKm = Math.round(pickupToDeliveryKm * 10) / 10;
 		}
 
+		// Calculate total duration (sum of both legs)
+		const durationMinutes =
+			warehouseToPickupDuration !== undefined && pickupToDeliveryDuration !== undefined
+				? warehouseToPickupDuration + pickupToDeliveryDuration
+				: undefined;
+
 		return {
 			totalDistanceKm,
+			durationMinutes,
 			distanceMode: 'warehouse',
 			warehouseToPickupKm,
 			pickupToDeliveryKm,
@@ -216,6 +242,7 @@ export async function calculateServiceDistance(
 
 	return {
 		totalDistanceKm,
+		durationMinutes: pickupToDeliveryDuration,
 		distanceMode:
 			warehouseCoords === null && pricingMode === 'warehouse' ? 'fallback' : 'zone',
 		pickupToDeliveryKm,

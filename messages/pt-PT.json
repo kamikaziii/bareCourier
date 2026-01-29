@@ -208,6 +208,7 @@
 
 	"map_get_directions": "Obter direções",
 	"map_distance": "Distância: {km} km",
+	"map_distance_duration": "{km} km ~ {minutes} min",
 	"map_calculating": "A calcular distância...",
 	"map_route": "Rota",
 
@@ -637,5 +638,22 @@
 	"navigate_to_location": "Navegar",
 	"service_lifecycle": "Ciclo de Vida",
 	"show_map": "Mostrar mapa",
-	"hide_map": "Ocultar mapa"
+	"hide_map": "Ocultar mapa",
+
+	"workload_working": "A trabalhar",
+	"workload_on_break": "Em pausa",
+	"workload_resume": "Retomar",
+	"workload_take_break": "Pausa",
+
+	"workload_title": "Carga de Trabalho de Hoje",
+	"workload_services": "serviços",
+	"workload_driving": "Condução",
+	"workload_service_time": "Tempo de serviço",
+	"workload_breaks": "Pausas",
+	"workload_total_needed": "Total necessário",
+	"workload_status_comfortable": "Cabe no dia ({hours} de folga)",
+	"workload_status_tight": "Dia apertado ({hours} de folga)",
+	"workload_status_overloaded": "Excede em {hours}",
+	"workload_show_details": "Mostrar detalhes",
+	"workload_hide_details": "Esconder detalhes"
 }

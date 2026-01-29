@@ -45,6 +45,7 @@
 	let routeGeometry = $state<string | null>(null);
 	// svelte-ignore state_referenced_locally
 	let distanceKm = $state<number | null>(data.service.distance_km);
+	let durationMinutes = $state<number | null>(null);
 	let calculatingDistance = $state(false);
 
 	// Schedule
@@ -107,6 +108,7 @@
 		const settings = await getCourierPricingSettings(data.supabase);
 		const result = await calculateRouteShared(pickupCoords, deliveryCoords, settings);
 		distanceKm = result.distanceKm;
+		durationMinutes = result.durationMinutes;
 		routeGeometry = result.routeGeometry;
 		calculatingDistance = false;
 	}
@@ -194,6 +196,7 @@
 							{deliveryCoords}
 							{routeGeometry}
 							{distanceKm}
+							{durationMinutes}
 							height="200px"
 						/>
 						{#if calculatingDistance}

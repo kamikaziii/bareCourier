@@ -8,18 +8,21 @@ import {
 	calculateRoute,
 	calculateHaversineDistance,
 	calculateServiceDistance,
+	estimateDrivingMinutes,
 	type ServiceDistanceResult
 } from '$lib/services/distance.js';
 import type { CourierPricingSettings } from '$lib/services/pricing.js';
 
 export interface RouteCalculationResult {
 	distanceKm: number | null;
+	durationMinutes: number | null;
 	routeGeometry: string | null;
 	distanceResult: ServiceDistanceResult | null;
 }
 
 const EMPTY_RESULT: RouteCalculationResult = {
 	distanceKm: null,
+	durationMinutes: null,
 	routeGeometry: null,
 	distanceResult: null
 };
@@ -43,6 +46,7 @@ export async function calculateRouteIfReady(
 	}
 
 	let distanceKm: number | null = null;
+	let durationMinutes: number | null = null;
 	let distanceResult: ServiceDistanceResult | null = null;
 
 	try {
@@ -58,21 +62,25 @@ export async function calculateRouteIfReady(
 			});
 			distanceResult = result;
 			distanceKm = result.totalDistanceKm;
+			durationMinutes = result.durationMinutes ?? null;
 			routeGeometry = result.geometry || null;
 		} else {
 			const result = await calculateRoute(pickupCoords, deliveryCoords);
 			if (result) {
 				distanceKm = result.distanceKm;
+				durationMinutes = result.durationMinutes;
 				routeGeometry = result.geometry || null;
 			} else {
 				distanceKm = calculateHaversineDistance(pickupCoords, deliveryCoords);
+				durationMinutes = estimateDrivingMinutes(distanceKm);
 			}
 		}
 
-		return { distanceKm, routeGeometry, distanceResult };
+		return { distanceKm, durationMinutes, routeGeometry, distanceResult };
 	} catch {
 		// Haversine fallback
 		distanceKm = calculateHaversineDistance(pickupCoords, deliveryCoords);
-		return { distanceKm, routeGeometry: null, distanceResult: null };
+		durationMinutes = estimateDrivingMinutes(distanceKm);
+		return { distanceKm, durationMinutes, routeGeometry: null, distanceResult: null };
 	}
 }
