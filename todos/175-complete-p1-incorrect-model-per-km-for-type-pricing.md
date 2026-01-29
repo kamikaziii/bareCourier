@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p1
 issue_id: "175"
 tags: [code-review, data-integrity, pr-7]

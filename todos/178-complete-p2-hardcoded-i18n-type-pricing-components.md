@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "178"
 tags: [code-review, i18n, pr-7]
