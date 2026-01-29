@@ -1,11 +1,3 @@
-/**
- * AUTO-GENERATED FILE - DO NOT EDIT MANUALLY
- *
- * This file is generated from the Supabase schema.
- * To regenerate, run: pnpm run types:generate
- * or use: supabase gen types typescript --project-id kwqrvhbzxncaatxwmaky > src/lib/database.generated.ts
- */
-
 export type Json =
   | string
   | number
@@ -154,6 +146,7 @@ export type Database = {
           default_urgency_fee_id: string | null
           email_notifications_enabled: boolean | null
           id: string
+          locale: string | null
           minimum_charge: number | null
           name: string
           notification_preferences: Json | null
@@ -181,6 +174,7 @@ export type Database = {
           default_urgency_fee_id?: string | null
           email_notifications_enabled?: boolean | null
           id: string
+          locale?: string | null
           minimum_charge?: number | null
           name: string
           notification_preferences?: Json | null
@@ -208,6 +202,7 @@ export type Database = {
           default_urgency_fee_id?: string | null
           email_notifications_enabled?: boolean | null
           id?: string
+          locale?: string | null
           minimum_charge?: number | null
           name?: string
           notification_preferences?: Json | null
@@ -648,6 +643,10 @@ export type Database = {
           p_service_id: string
         }
         Returns: Json
+      }
+      get_notification_text: {
+        Args: { key: string; locale: string; params?: Json }
+        Returns: string
       }
       is_courier: { Args: never; Returns: boolean }
       replace_pricing_zones: {
