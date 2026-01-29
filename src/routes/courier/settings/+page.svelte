@@ -6,6 +6,8 @@
 	import PricingTab from './PricingTab.svelte';
 	import SchedulingTab from './SchedulingTab.svelte';
 	import NotificationsTab from '$lib/components/NotificationsTab.svelte';
+	import ServiceTypesSection from './ServiceTypesSection.svelte';
+	import DistributionZonesSection from './DistributionZonesSection.svelte';
 	import { Settings } from '@lucide/svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import type { PageData, ActionData } from './$types';
@@ -63,6 +65,10 @@
 
 			<Tabs.Content value="pricing" class="mt-6 space-y-6">
 				<PricingTab profile={data.profile} urgencyFees={data.urgencyFees} />
+				{#if data.profile.pricing_mode === 'type'}
+					<ServiceTypesSection serviceTypes={data.serviceTypes} />
+					<DistributionZonesSection distributionZones={data.distributionZones} />
+				{/if}
 			</Tabs.Content>
 
 			<Tabs.Content value="scheduling" class="mt-6 space-y-6">
@@ -92,6 +98,10 @@
 			<AccountTab profile={data.profile} session={data.session} />
 		{:else if activeTab === 'pricing'}
 			<PricingTab profile={data.profile} urgencyFees={data.urgencyFees} />
+			{#if data.profile.pricing_mode === 'type'}
+				<ServiceTypesSection serviceTypes={data.serviceTypes} />
+				<DistributionZonesSection distributionZones={data.distributionZones} />
+			{/if}
 		{:else if activeTab === 'scheduling'}
 			<SchedulingTab profile={data.profile} />
 		{:else if activeTab === 'notifications'}
