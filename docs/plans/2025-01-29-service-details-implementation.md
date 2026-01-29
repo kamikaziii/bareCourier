@@ -4,6 +4,28 @@
 
 **Goal:** Add human-readable service IDs, recipient tracking, customer references, and printable labels.
 
+## Progress Status
+
+| Task | Status | Commit |
+|------|--------|--------|
+| 1. Database Migration | ✅ Done | `0658fec` |
+| 2. Regenerate TypeScript Types | ✅ Done | `8cb26d5` |
+| 3. Add i18n Translation Keys | ✅ Done | `b8fd667` |
+| 4. Update Service Card | ✅ Done | `103674d` |
+| 5. Service Detail - Display ID & Copy | ✅ Done | `9c2e308` |
+| 6. Service Detail - Recipient Card | ✅ Done | `745d970` |
+| 7. Courier New Service Form | ✅ Done | `4ec91b6` |
+| 8. Courier Edit Service Form | ✅ Done | `042d930` |
+| 9. Client New Service Form | ✅ Done | `2d48aa7` |
+| 10. Label Branding Settings | ✅ Done | `9f8bac1` |
+| 11. Install QR Code Library | ✅ Done | `47bd8ce` |
+| 12. Create ServiceLabel Component | ✅ Done | `3fc4770` |
+| 13. Add Print Label Dialog | ⏳ Pending | - |
+| 14. Client Print Label | ⏳ Pending | - |
+| 15. Final Testing | ⏳ Pending | - |
+
+**Next:** Start at Task 13 - Add print button and dialog to courier service detail page.
+
 **Architecture:** Database trigger auto-generates `#YY-NNNN` display IDs using counter table pattern. New optional fields for recipient info. Print label component with QR code.
 
 **Tech Stack:** SvelteKit, Supabase (PostgreSQL), Svelte 5 runes, shadcn-svelte, qrcode library
