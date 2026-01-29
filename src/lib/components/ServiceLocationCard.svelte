@@ -5,6 +5,8 @@
 	import RouteMap from '$lib/components/RouteMap.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import { MapPin, ChevronDown, Navigation } from '@lucide/svelte';
+	import { estimateDrivingMinutes } from '$lib/services/distance.js';
+	import { formatMinutesToHuman } from '$lib/utils.js';
 
 	interface ServiceLocation {
 		pickup_location: string;
@@ -14,6 +16,7 @@
 		delivery_lat: number | null;
 		delivery_lng: number | null;
 		distance_km: number | null;
+		duration_minutes: number | null;
 	}
 
 	let { service, hasMapbox = false }: { service: ServiceLocation; hasMapbox?: boolean } = $props();
@@ -23,6 +26,14 @@
 	const hasCoordinates = $derived(
 		service.pickup_lat && service.pickup_lng &&
 		service.delivery_lat && service.delivery_lng
+	);
+
+	const tripTime = $derived(
+		service.duration_minutes
+			? formatMinutesToHuman(service.duration_minutes)
+			: service.distance_km
+				? formatMinutesToHuman(estimateDrivingMinutes(service.distance_km))
+				: null
 	);
 
 	function openNavigation(lat: number, lng: number) {
@@ -79,14 +90,15 @@
 		{#if hasMapbox && hasCoordinates}
 			<Separator />
 			<!-- Always visible: distance + map toggle -->
-			<div class="flex items-center justify-between flex-wrap gap-2">
-				{#if service.distance_km}
-					<span class="text-sm text-muted-foreground">
-						{m.map_distance({ km: service.distance_km.toFixed(1) })}
-					</span>
-				{:else}
-					<span></span>
-				{/if}
+			<div class="flex items-start justify-between gap-2">
+				<div class="text-sm text-muted-foreground">
+					{#if service.distance_km}
+						<div>{m.map_distance({ km: service.distance_km.toFixed(1) })}</div>
+					{/if}
+					{#if tripTime}
+						<div>~{tripTime}</div>
+					{/if}
+				</div>
 				<Button variant="ghost" size="sm" onclick={() => (showMap = !showMap)}>
 					{showMap ? m.hide_map() : m.show_map()}
 					<ChevronDown class="ml-1 size-4 transition-transform" style={showMap ? 'transform: rotate(180deg)' : ''} />
@@ -104,11 +116,14 @@
 				/>
 			{/if}
 		{:else if service.distance_km}
-			<!-- Fallback when no map: show distance only -->
+			<!-- Fallback when no map: show distance with time -->
 			<Separator />
-			<p class="text-sm text-muted-foreground">
-				{m.map_distance({ km: service.distance_km.toFixed(1) })}
-			</p>
+			<div class="text-sm text-muted-foreground">
+				<div>{m.map_distance({ km: service.distance_km.toFixed(1) })}</div>
+				{#if tripTime}
+					<div>~{tripTime}</div>
+				{/if}
+			</div>
 		{/if}
 	</Card.Content>
 </Card.Root>
