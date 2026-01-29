@@ -32,37 +32,17 @@
 	let deletingFeeId = $state<string | null>(null);
 	let deleteDialogOpen = $state(false);
 
-	// Pricing mode state
-	let pricingMode = $state<'warehouse' | 'zone' | 'type'>((profile.pricing_mode as 'warehouse' | 'zone' | 'type') ?? 'warehouse');
-
-	// Pricing preferences state
-	let showPriceToCourier = $state(profile.show_price_to_courier ?? true);
-	let showPriceToClient = $state(profile.show_price_to_client ?? true);
-	let defaultUrgencyFeeId = $state<string | null>(profile.default_urgency_fee_id || null);
-	let minimumCharge = $state(profile.minimum_charge ?? 0);
-	let roundDistance = $state(profile.round_distance ?? false);
-
-	// VAT state
-	let vatEnabled = $state(profile.vat_enabled ?? false);
-	let vatRate = $state(profile.vat_rate ?? DEFAULT_VAT_RATE);
-	let pricesIncludeVat = $state(profile.prices_include_vat ?? false);
-
-	// Sync state when profile prop changes (after form submission)
-	$effect(() => {
-		pricingMode = (profile.pricing_mode as 'warehouse' | 'zone' | 'type') ?? 'warehouse';
-	});
-	$effect(() => {
-		showPriceToCourier = profile.show_price_to_courier ?? true;
-		showPriceToClient = profile.show_price_to_client ?? true;
-		defaultUrgencyFeeId = profile.default_urgency_fee_id || null;
-		minimumCharge = profile.minimum_charge ?? 0;
-		roundDistance = profile.round_distance ?? false;
-	});
-	$effect(() => {
-		vatEnabled = profile.vat_enabled ?? false;
-		vatRate = profile.vat_rate ?? DEFAULT_VAT_RATE;
-		pricesIncludeVat = profile.prices_include_vat ?? false;
-	});
+	// Derived values from props - using `let` allows temporary override for optimistic UI
+	// When profile updates (after form save), derived values auto-recalculate from new props
+	let pricingMode = $derived((profile.pricing_mode as 'warehouse' | 'zone' | 'type') ?? 'warehouse');
+	let showPriceToCourier = $derived(profile.show_price_to_courier ?? true);
+	let showPriceToClient = $derived(profile.show_price_to_client ?? true);
+	let defaultUrgencyFeeId = $derived(profile.default_urgency_fee_id || '');
+	let minimumCharge = $derived(profile.minimum_charge ?? 0);
+	let roundDistance = $derived(profile.round_distance ?? false);
+	let vatEnabled = $derived(profile.vat_enabled ?? false);
+	let vatRate = $derived(profile.vat_rate ?? DEFAULT_VAT_RATE);
+	let pricesIncludeVat = $derived(profile.prices_include_vat ?? false);
 
 	function openDeleteDialog(feeId: string) {
 		deletingFeeId = feeId;
