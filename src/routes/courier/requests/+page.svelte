@@ -361,7 +361,7 @@
 		/>
 	{:else}
 		<div class="grid gap-4">
-			{#each data.pendingRequests as service}
+			{#each data.pendingRequests as service (service.id)}
 				{@const workloadInfo = getWorkloadForService(service)}
 				<Card.Root class={batch.has(service.id) ? "ring-2 ring-primary" : ""}>
 					<Card.Content class="pt-6">
@@ -468,7 +468,7 @@
 			</div>
 
 			<div class="grid gap-4">
-				{#each data.pendingReschedules as service}
+				{#each data.pendingReschedules as service (service.id)}
 					<Card.Root class="border-orange-200">
 						<Card.Content class="pt-6">
 							<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
