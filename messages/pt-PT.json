@@ -318,6 +318,18 @@
 	"settings_delete_urgency_desc": "Tem a certeza que pretende eliminar esta taxa de urgência? Esta ação não pode ser revertida.",
 	"settings_urgency_in_use": "Esta taxa de urgência não pode ser eliminada porque está a ser utilizada por serviços existentes.",
 
+	"service_types": "Tipos de Serviço",
+	"service_types_desc": "Defina tipos de serviço com preços fixos para preços baseados em tipo",
+	"service_type": "Tipo de Serviço",
+	"add_service_type": "Adicionar Tipo",
+	"new_service_type": "Novo Tipo de Serviço",
+	"edit_service_type": "Editar Tipo",
+	"delete_service_type": "Eliminar Tipo de Serviço",
+	"delete_service_type_confirm": "Tem a certeza? Serviços existentes manterão o tipo.",
+	"no_service_types": "Ainda não há tipos de serviço definidos",
+	"price": "Preço",
+	"optional": "Opcional",
+
 	"settings_tab_account": "Conta",
 	"settings_tab_pricing": "Preços",
 	"settings_tab_scheduling": "Agendamento",

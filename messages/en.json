@@ -318,6 +318,18 @@
 	"settings_delete_urgency_desc": "Are you sure you want to delete this urgency fee? This action cannot be undone.",
 	"settings_urgency_in_use": "This urgency fee cannot be deleted because it is in use by existing services.",
 
+	"service_types": "Service Types",
+	"service_types_desc": "Define service types with fixed prices for type-based pricing",
+	"service_type": "Service Type",
+	"add_service_type": "Add Type",
+	"new_service_type": "New Service Type",
+	"edit_service_type": "Edit Type",
+	"delete_service_type": "Delete Service Type",
+	"delete_service_type_confirm": "Are you sure? Existing services will keep their type.",
+	"no_service_types": "No service types defined yet",
+	"price": "Price",
+	"optional": "Optional",
+
 	"settings_tab_account": "Account",
 	"settings_tab_pricing": "Pricing",
 	"settings_tab_scheduling": "Scheduling",
