@@ -20,15 +20,16 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 		redirect(303, '/login');
 	}
 
-	// Get courier's pricing mode
+	// Get courier's pricing mode and visibility settings
 	const { data: courierProfile } = await supabase
 		.from('profiles')
-		.select('pricing_mode, time_specific_price, out_of_zone_base, out_of_zone_per_km')
+		.select('pricing_mode, time_specific_price, out_of_zone_base, out_of_zone_per_km, show_price_to_courier')
 		.eq('role', 'courier')
 		.limit(1)
 		.single();
 
 	const pricingMode = (courierProfile?.pricing_mode as 'warehouse' | 'zone' | 'type') || 'warehouse';
+	const showPriceToCourier = courierProfile?.show_price_to_courier ?? true;
 
 	// Load type-based pricing data only if mode is 'type'
 	let serviceTypes: ServiceType[] = [];
@@ -58,7 +59,8 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 		pricingMode,
 		serviceTypes,
 		distributionZones,
-		typePricingSettings
+		typePricingSettings,
+		showPriceToCourier
 	};
 };
 

@@ -403,8 +403,8 @@
 						<Separator />
 					{/if}
 
-					<!-- Live Price Preview (type-based pricing only) -->
-					{#if isTypePricingMode && selectedServiceType}
+					<!-- Live Price Preview (type-based pricing only, respects visibility setting) -->
+					{#if isTypePricingMode && selectedServiceType && data.showPriceToCourier}
 						<Separator />
 						<TypePricePreview
 							settings={data.typePricingSettings}
