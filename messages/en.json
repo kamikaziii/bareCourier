@@ -669,5 +669,15 @@
 	"workload_status_overloaded": "Overloaded by {hours}",
 	"workload_show_details": "Show details",
 	"workload_hide_details": "Hide details",
-	"workload_drive_time": "~{time} drive"
+	"workload_drive_time": "~{time} drive",
+
+	"distribution_zones": "Distribution Zones",
+	"distribution_zones_desc": "Select municipalities that are within your distribution area",
+	"search_municipality": "Search municipality...",
+	"selected_zones": "Selected",
+	"in_zone": "In zone",
+	"out_of_zone": "Out of zone",
+	"out_of_zone_warning": "Outside distribution zone",
+	"out_of_zone_client_warning": "Additional costs may apply",
+	"no_results": "No results found"
 }
