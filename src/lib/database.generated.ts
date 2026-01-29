@@ -12,8 +12,71 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
+      break_logs: {
+        Row: {
+          courier_id: string
+          created_at: string | null
+          ended_at: string | null
+          id: string
+          source: string
+          started_at: string
+          type: string
+        }
+        Insert: {
+          courier_id: string
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          source: string
+          started_at: string
+          type: string
+        }
+        Update: {
+          courier_id?: string
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          source?: string
+          started_at?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "break_logs_courier_id_fkey"
+            columns: ["courier_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_pricing: {
         Row: {
           base_fee: number
@@ -48,6 +111,107 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_reviews: {
+        Row: {
+          completed_at: string | null
+          courier_id: string
+          created_at: string | null
+          gaps_detected: number | null
+          gaps_resolved: number | null
+          id: string
+          review_date: string
+          total_services: number | null
+          total_work_minutes: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          courier_id: string
+          created_at?: string | null
+          gaps_detected?: number | null
+          gaps_resolved?: number | null
+          id?: string
+          review_date: string
+          total_services?: number | null
+          total_work_minutes?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          courier_id?: string
+          created_at?: string | null
+          gaps_detected?: number | null
+          gaps_resolved?: number | null
+          id?: string
+          review_date?: string
+          total_services?: number | null
+          total_work_minutes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_reviews_courier_id_fkey"
+            columns: ["courier_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_time_logs: {
+        Row: {
+          break_time_minutes: number | null
+          calculated_service_time_minutes: number | null
+          completed_at: string
+          courier_id: string
+          created_at: string | null
+          delay_reason: string | null
+          driving_time_minutes: number | null
+          id: string
+          include_in_learning: boolean | null
+          service_id: string
+          started_at: string
+        }
+        Insert: {
+          break_time_minutes?: number | null
+          calculated_service_time_minutes?: number | null
+          completed_at: string
+          courier_id: string
+          created_at?: string | null
+          delay_reason?: string | null
+          driving_time_minutes?: number | null
+          id?: string
+          include_in_learning?: boolean | null
+          service_id: string
+          started_at: string
+        }
+        Update: {
+          break_time_minutes?: number | null
+          calculated_service_time_minutes?: number | null
+          completed_at?: string
+          courier_id?: string
+          created_at?: string | null
+          delay_reason?: string | null
+          driving_time_minutes?: number | null
+          id?: string
+          include_in_learning?: boolean | null
+          service_id?: string
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_time_logs_courier_id_fkey"
+            columns: ["courier_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_time_logs_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
             referencedColumns: ["id"]
           },
         ]
@@ -796,6 +960,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
