@@ -35,6 +35,12 @@
 	let deliveryLocation = $state(data.service.delivery_location);
 	// svelte-ignore state_referenced_locally
 	let notes = $state(data.service.notes || '');
+	// svelte-ignore state_referenced_locally
+	let recipientName = $state(data.service.recipient_name || '');
+	// svelte-ignore state_referenced_locally
+	let recipientPhone = $state(data.service.recipient_phone || '');
+	// svelte-ignore state_referenced_locally
+	let customerReference = $state(data.service.customer_reference || '');
 
 	// Coordinates and distance
 	// svelte-ignore state_referenced_locally
@@ -362,6 +368,49 @@
 						tolls={tolls ? parseFloat(tolls) : null}
 					/>
 				{/if}
+
+				<Separator />
+
+				<!-- Recipient Section -->
+				<div class="space-y-4">
+					<h3 class="text-sm font-medium text-muted-foreground">{m.recipient_optional()}</h3>
+					<div class="grid gap-4 sm:grid-cols-2">
+						<div class="space-y-2">
+							<Label for="recipient_name">{m.recipient_name()}</Label>
+							<Input
+								id="recipient_name"
+								name="recipient_name"
+								bind:value={recipientName}
+								placeholder={m.recipient_name_placeholder()}
+								disabled={loading}
+							/>
+						</div>
+						<div class="space-y-2">
+							<Label for="recipient_phone">{m.recipient_phone()}</Label>
+							<Input
+								id="recipient_phone"
+								name="recipient_phone"
+								type="tel"
+								bind:value={recipientPhone}
+								placeholder={m.recipient_phone_placeholder()}
+								disabled={loading}
+							/>
+						</div>
+					</div>
+				</div>
+
+				<!-- Customer Reference -->
+				<div class="space-y-2">
+					<Label for="customer_reference">{m.customer_reference()}</Label>
+					<Input
+						id="customer_reference"
+						name="customer_reference"
+						bind:value={customerReference}
+						placeholder={m.customer_reference_placeholder()}
+						disabled={loading}
+					/>
+					<p class="text-xs text-muted-foreground">{m.customer_reference_help()}</p>
+				</div>
 
 				<Separator />
 
