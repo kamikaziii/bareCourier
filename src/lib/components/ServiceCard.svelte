@@ -95,6 +95,11 @@
 				></div>
 			{/if}
 			<div class="min-w-0 flex-1 space-y-1">
+				{#if service.display_id}
+					<span class="font-mono text-xs text-muted-foreground">
+						{service.display_id}
+					</span>
+				{/if}
 				<div class="flex items-center justify-between gap-2">
 					<p class="font-semibold truncate">
 						{#if showClientName}
