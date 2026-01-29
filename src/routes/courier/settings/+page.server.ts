@@ -3,6 +3,7 @@ import type { PageServerLoad, Actions } from './$types';
 import type { Profile, UrgencyFee, PastDueSettings, WorkingDay, ServiceType, DistributionZone } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 import { parseIntWithBounds } from '$lib/utils/form.js';
+import { isValidUUID } from '$lib/utils/validation.js';
 
 // Validation helpers
 const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
@@ -87,7 +88,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 		redirect(303, localizeHref('/login'));
 	}
 
-	// Load courier profile
+	// Load courier profile first (required for auth check)
 	const { data: profile } = await supabase
 		.from('profiles')
 		.select('*')
@@ -98,23 +99,13 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 		redirect(303, localizeHref('/login'));
 	}
 
-	// Load urgency fees
-	const { data: urgencyFees } = await supabase
-		.from('urgency_fees')
-		.select('*')
-		.order('sort_order');
-
-	// Load service types
-	const { data: serviceTypes } = await supabase
-		.from('service_types')
-		.select('*')
-		.order('sort_order');
-
-	// Load distribution zones
-	const { data: distributionZones } = await supabase
-		.from('distribution_zones')
-		.select('*')
-		.order('distrito, concelho');
+	// Load remaining data in parallel
+	const [{ data: urgencyFees }, { data: serviceTypes }, { data: distributionZones }] =
+		await Promise.all([
+			supabase.from('urgency_fees').select('*').order('sort_order'),
+			supabase.from('service_types').select('*').order('sort_order'),
+			supabase.from('distribution_zones').select('*').order('distrito, concelho')
+		]);
 
 	return {
 		profile: profile as Profile,
@@ -775,8 +766,8 @@ export const actions: Actions = {
 		const price = parseFloat(formData.get('price') as string) || 0;
 		const description = formData.get('description') as string;
 
-		if (!id) {
-			return fail(400, { error: 'ID is required' });
+		if (!isValidUUID(id)) {
+			return fail(400, { error: 'Invalid ID format' });
 		}
 
 		if (!name || name.trim() === '') {
@@ -810,8 +801,8 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const id = formData.get('id') as string;
 
-		if (!id) {
-			return fail(400, { error: 'ID is required' });
+		if (!isValidUUID(id)) {
+			return fail(400, { error: 'Invalid ID format' });
 		}
 
 		// Check if this service type is in use by any services
@@ -845,8 +836,8 @@ export const actions: Actions = {
 		const id = formData.get('id') as string;
 		const active = formData.get('active') === 'true';
 
-		if (!id) {
-			return fail(400, { error: 'ID is required' });
+		if (!isValidUUID(id)) {
+			return fail(400, { error: 'Invalid ID format' });
 		}
 
 		const { error } = await supabase
@@ -879,24 +870,14 @@ export const actions: Actions = {
 			return fail(400, { error: 'Invalid zones data' });
 		}
 
-		// Delete all existing zones and insert new ones
-		const { error: deleteError } = await supabase
-			.from('distribution_zones')
-			.delete()
-			.neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all rows
+		// Use atomic RPC function to replace all zones in a single transaction
+		// Note: Type will be available after migration is applied and types regenerated
+		const { error } = await supabase.rpc('replace_distribution_zones' as any, {
+			new_zones: zones
+		});
 
-		if (deleteError) {
+		if (error) {
 			return fail(500, { error: 'Failed to update zones' });
-		}
-
-		if (zones.length > 0) {
-			const { error: insertError } = await supabase
-				.from('distribution_zones')
-				.insert(zones);
-
-			if (insertError) {
-				return fail(500, { error: 'Failed to save zones' });
-			}
 		}
 
 		return { success: true, message: 'distribution_zones_updated' };

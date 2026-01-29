@@ -74,15 +74,16 @@ Create a hook or store that manages zone state
 
 ## Acceptance Criteria
 
-- [ ] Single implementation of municipality extraction
-- [ ] Both forms use the shared utility
-- [ ] Zone checking behavior unchanged
+- [x] Single implementation of municipality extraction
+- [x] Both forms use the shared utility
+- [x] Zone checking behavior unchanged
 
 ## Work Log
 
 | Date | Action | Outcome |
 |------|--------|---------|
 | 2026-01-29 | PR #7 code review | Finding identified by pattern-recognition-specialist and code-simplicity-reviewer agents |
+| 2026-01-29 | Implemented Solution 1 | Created `src/lib/services/municipality.ts` with `extractMunicipalityFromAddress()`. Updated both forms to use shared utility. |
 
 ## Resources
 

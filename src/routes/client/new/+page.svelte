@@ -18,6 +18,7 @@
 		type CourierPricingSettings
 	} from '$lib/services/pricing.js';
 	import { isInDistributionZone } from '$lib/services/type-pricing.js';
+	import { extractMunicipalityFromAddress } from '$lib/services/municipality.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData } from './$types';
@@ -110,30 +111,8 @@
 	async function detectMunicipalityAndCheckZone(address: string) {
 		checkingZone = true;
 
-		// Try to extract municipality from address
-		// Mapbox addresses for Portugal typically include the municipality
-		// Format: "Street, Postal Code, Municipality, District, Portugal"
-		const parts = address.split(',').map((p) => p.trim());
-
-		let municipality: string | null = null;
-
-		if (parts.length >= 4) {
-			// Try the 3rd from last (skipping Portugal and District)
-			const potentialMunicipality = parts[parts.length - 3];
-			// Check if it looks like a municipality (not a postal code)
-			if (potentialMunicipality && !/^\d{4}/.test(potentialMunicipality)) {
-				municipality = potentialMunicipality;
-			}
-		}
-
-		if (!municipality && parts.length >= 3) {
-			// Fallback: try 2nd from last
-			const potentialMunicipality = parts[parts.length - 2];
-			if (potentialMunicipality && !/^\d{4}/.test(potentialMunicipality)) {
-				municipality = potentialMunicipality;
-			}
-		}
-
+		// Extract municipality using shared utility
+		const municipality = extractMunicipalityFromAddress(address);
 		detectedMunicipality = municipality;
 
 		// Check if municipality is in distribution zone

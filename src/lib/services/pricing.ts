@@ -54,7 +54,7 @@ export interface ServicePricingInput {
 }
 
 export interface CourierPricingSettings {
-	pricingMode: 'warehouse' | 'zone';
+	pricingMode: 'warehouse' | 'zone' | 'type';
 	warehouseCoords: [number, number] | null;
 	showPriceToCourier: boolean;
 	showPriceToClient: boolean;
@@ -122,7 +122,7 @@ export async function getCourierPricingSettings(
 		.single();
 
 	return {
-		pricingMode: (profile?.pricing_mode as 'warehouse' | 'zone') || 'zone',
+		pricingMode: (profile?.pricing_mode as 'warehouse' | 'zone' | 'type') || 'zone',
 		warehouseCoords:
 			profile?.warehouse_lat && profile?.warehouse_lng
 				? [profile.warehouse_lng, profile.warehouse_lat]

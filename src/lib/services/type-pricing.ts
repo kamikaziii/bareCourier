@@ -187,8 +187,11 @@ export async function calculateTypedPrice(
 	input: TypePricingInput
 ): Promise<TypePriceResult> {
 	try {
-		// Get the service type first - we need it for all pricing scenarios
-		const serviceType = await getServiceType(supabase, input.serviceTypeId);
+		// Fetch service type and pricing settings in parallel for better performance
+		const [serviceType, settings] = await Promise.all([
+			getServiceType(supabase, input.serviceTypeId),
+			getTypePricingSettings(supabase)
+		]);
 
 		if (!serviceType) {
 			return {
@@ -200,9 +203,6 @@ export async function calculateTypedPrice(
 		}
 
 		const serviceTypeName = serviceType.name;
-
-		// Get courier's type pricing settings
-		const settings = await getTypePricingSettings(supabase);
 
 		// Case 1: Out-of-zone pricing (highest priority)
 		if (input.isOutOfZone) {
@@ -282,27 +282,6 @@ export async function calculateTypedPrice(
 			error: (error as Error).message
 		};
 	}
-}
-
-/**
- * Detect if a delivery location is out of the distribution zone based on municipality.
- * This is a helper that combines municipality detection with zone checking.
- *
- * @param supabase - Supabase client
- * @param detectedMunicipality - The municipality detected from the delivery address
- * @returns true if out of zone, false if in zone, null if unable to determine
- */
-export async function detectOutOfZone(
-	supabase: SupabaseClient,
-	detectedMunicipality: string | null
-): Promise<boolean | null> {
-	if (!detectedMunicipality) {
-		// Cannot determine zone without municipality
-		return null;
-	}
-
-	const inZone = await isInDistributionZone(supabase, detectedMunicipality);
-	return !inZone;
 }
 
 /**

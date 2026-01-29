@@ -36,19 +36,6 @@
 	// Loading state for form submission
 	let saving = $state(false);
 
-	// i18n helper for messages that will be added in Task 14
-	// TODO: Replace with actual i18n keys from Task 14
-	const i18n = {
-		distributionZones: 'Distribution Zones',
-		distributionZonesDesc: 'Select municipalities in your distribution area',
-		searchPlaceholder: 'Search municipalities...',
-		selectedCount: 'selected',
-		noResults: 'No municipalities found',
-		selectAll: 'Select all',
-		expandAll: 'Expand all',
-		collapseAll: 'Collapse all',
-		saving: 'Saving...'
-	};
 
 	// Create a key for a zone
 	function zoneKey(distrito: string, concelho: string): string {
@@ -161,10 +148,10 @@
 	<Card.Header>
 		<Card.Title class="flex items-center gap-2">
 			<MapPin class="size-5" />
-			{i18n.distributionZones}
+			{m.distribution_zones()}
 		</Card.Title>
 		<Card.Description>
-			{i18n.distributionZonesDesc}
+			{m.distribution_zones_desc()}
 		</Card.Description>
 	</Card.Header>
 	<Card.Content class="space-y-4">
@@ -173,7 +160,7 @@
 			<Search class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 			<Input
 				type="text"
-				placeholder={i18n.searchPlaceholder}
+				placeholder={m.search_placeholder()}
 				bind:value={searchQuery}
 				class="pl-10"
 			/>
@@ -183,14 +170,14 @@
 		<div class="flex items-center justify-between">
 			<div class="flex gap-2">
 				<Button variant="ghost" size="sm" onclick={expandAll}>
-					{i18n.expandAll}
+					{m.expand_all()}
 				</Button>
 				<Button variant="ghost" size="sm" onclick={collapseAll}>
-					{i18n.collapseAll}
+					{m.collapse_all()}
 				</Button>
 			</div>
 			<Badge variant="secondary">
-				{selectedCount} {i18n.selectedCount}
+				{selectedCount} {m.selected_count()}
 			</Badge>
 		</div>
 
@@ -198,7 +185,7 @@
 		<div class="max-h-96 space-y-2 overflow-y-auto rounded-lg border p-2">
 			{#if filteredDistritos().length === 0}
 				<div class="py-8 text-center text-sm text-muted-foreground">
-					{i18n.noResults}
+					{m.no_results()}
 				</div>
 			{:else}
 				{#each filteredDistritos() as district (district.distrito)}
@@ -220,7 +207,7 @@
 								indeterminate={isPartiallySelected}
 								onCheckedChange={() =>
 									toggleDistrictZones(district.distrito, district.concelhos)}
-								aria-label="{i18n.selectAll} {district.distrito}"
+								aria-label="{m.select_all()} {district.distrito}"
 							/>
 
 							<!-- Expand/collapse trigger -->
@@ -276,7 +263,7 @@
 			<input type="hidden" name="zones" value={zonesJson()} />
 			<div class="flex justify-end">
 				<Button type="submit" disabled={saving}>
-					{saving ? i18n.saving : m.action_save()}
+					{saving ? m.saving() : m.action_save()}
 				</Button>
 			</div>
 		</form>

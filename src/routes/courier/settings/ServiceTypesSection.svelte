@@ -41,22 +41,6 @@
 		return price.toFixed(2);
 	}
 
-	// i18n helper for messages that will be added in Task 10
-	// Uses existing messages where available, otherwise returns the fallback
-	// TODO: Replace with actual i18n keys from Task 10
-	const i18n = {
-		serviceTypes: 'Service Types',
-		serviceTypesDesc: 'Define service types with fixed prices',
-		addServiceType: 'Add Type',
-		newServiceType: 'New Service Type',
-		serviceTypeNamePlaceholder: 'e.g., Dental',
-		serviceTypeDescPlaceholder: 'Optional description',
-		noServiceTypes: 'No service types defined yet',
-		addFirstServiceType: 'Add your first service type',
-		deleteServiceType: 'Delete Service Type',
-		deleteServiceTypeDesc: 'Are you sure you want to delete this service type? This action cannot be undone.',
-		price: 'Price'
-	};
 </script>
 
 <Card.Root>
@@ -65,15 +49,15 @@
 			<div>
 				<Card.Title class="flex items-center gap-2">
 					<Tags class="size-5" />
-					{i18n.serviceTypes}
+					{m.service_types()}
 				</Card.Title>
 				<Card.Description>
-					{i18n.serviceTypesDesc}
+					{m.service_types_desc()}
 				</Card.Description>
 			</div>
 			<Button variant="outline" onclick={() => (showNewForm = !showNewForm)}>
 				<Plus class="mr-2 size-4" />
-				{i18n.addServiceType}
+				{m.add_service_type()}
 			</Button>
 		</div>
 	</Card.Header>
@@ -93,7 +77,7 @@
 				}}
 				class="space-y-4 rounded-lg border p-4"
 			>
-				<h4 class="font-medium">{i18n.newServiceType}</h4>
+				<h4 class="font-medium">{m.new_service_type()}</h4>
 				<div class="grid gap-4 md:grid-cols-3">
 					<div class="space-y-2">
 						<Label for="new_type_name">{m.form_name()}</Label>
@@ -101,12 +85,12 @@
 							id="new_type_name"
 							name="name"
 							bind:value={newServiceType.name}
-							placeholder={i18n.serviceTypeNamePlaceholder}
+							placeholder={m.service_type_name_placeholder()}
 							required
 						/>
 					</div>
 					<div class="space-y-2">
-						<Label for="new_type_price">{i18n.price}</Label>
+						<Label for="new_type_price">{m.price()}</Label>
 						<Input
 							id="new_type_price"
 							name="price"
@@ -124,7 +108,7 @@
 							id="new_type_desc"
 							name="description"
 							bind:value={newServiceType.description}
-							placeholder={i18n.serviceTypeDescPlaceholder}
+							placeholder={m.service_type_desc_placeholder()}
 						/>
 					</div>
 				</div>
@@ -143,11 +127,11 @@
 				<div class="rounded-lg border border-dashed p-6 text-center">
 					<Tags class="mx-auto size-8 text-muted-foreground" />
 					<p class="mt-2 text-sm text-muted-foreground">
-						{i18n.noServiceTypes}
+						{m.no_service_types()}
 					</p>
 					<Button variant="outline" class="mt-4" onclick={() => (showNewForm = true)}>
 						<Plus class="mr-2 size-4" />
-						{i18n.addFirstServiceType}
+						{m.add_first_service_type()}
 					</Button>
 				</div>
 			{:else}
@@ -175,7 +159,7 @@
 										<Input name="name" value={type.name} required />
 									</div>
 									<div class="space-y-2">
-										<Label>{i18n.price}</Label>
+										<Label>{m.price()}</Label>
 										<Input
 											name="price"
 											type="number"
@@ -262,10 +246,10 @@
 	<AlertDialog.Content>
 		<AlertDialog.Header>
 			<AlertDialog.Title>
-				{i18n.deleteServiceType}
+				{m.delete_service_type()}
 			</AlertDialog.Title>
 			<AlertDialog.Description>
-				{i18n.deleteServiceTypeDesc}
+				{m.delete_service_type_confirm()}
 			</AlertDialog.Description>
 		</AlertDialog.Header>
 		<AlertDialog.Footer>

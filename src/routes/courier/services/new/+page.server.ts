@@ -172,15 +172,19 @@ export const actions: Actions = {
 
 			if (typeResult.success && typeResult.price !== null) {
 				calculated_price = typeResult.price;
-				// Store type breakdown in price_breakdown for compatibility
+				// Store type breakdown in price_breakdown
 				if (typeResult.breakdown) {
 					price_breakdown = {
 						base: typeResult.breakdown.base,
 						distance: typeResult.breakdown.distance,
 						urgency: 0,
 						total: typeResult.breakdown.total,
-						model: 'per_km', // Compatibility - actual pricing is type-based
-						distance_km: distance_km ?? 0
+						model: 'type',
+						distance_km: distance_km ?? 0,
+						// Type-based pricing specific fields
+						tolls: typeResult.breakdown.tolls,
+						reason: typeResult.breakdown.reason,
+						service_type_name: typeResult.breakdown.serviceTypeName
 					};
 				}
 			}
