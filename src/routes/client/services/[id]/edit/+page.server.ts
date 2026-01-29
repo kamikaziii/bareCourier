@@ -78,11 +78,13 @@ export const actions: Actions = {
 
 		// Calculate distance if coordinates available
 		let distance_km: number | null = null;
+		let duration_minutes: number | null = null;
 		let distanceResult: {
 			totalDistanceKm: number;
 			distanceMode: string;
 			warehouseToPickupKm?: number;
 			pickupToDeliveryKm: number;
+			durationMinutes?: number;
 		} | null = null;
 
 		if (pickup_lat && pickup_lng && delivery_lat && delivery_lng) {
@@ -94,6 +96,7 @@ export const actions: Actions = {
 				roundDistance: courierSettings.roundDistance
 			});
 			distance_km = distanceResult.totalDistanceKm;
+			duration_minutes = distanceResult.durationMinutes ?? null;
 		}
 
 		// Update service
@@ -109,6 +112,7 @@ export const actions: Actions = {
 			delivery_lat,
 			delivery_lng,
 			distance_km,
+			duration_minutes,
 			urgency_fee_id: urgency_fee_id || null
 		}).eq('id', params.id);
 

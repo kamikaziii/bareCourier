@@ -87,11 +87,13 @@ export const actions: Actions = {
 		const courierSettings = await getCourierPricingSettings(supabase);
 
 		let recalculated_distance_km = distance_km;
+		let duration_minutes: number | null = null;
 		let distanceResult: {
 			totalDistanceKm: number;
 			distanceMode: string;
 			warehouseToPickupKm?: number;
 			pickupToDeliveryKm: number;
+			durationMinutes?: number;
 		} | null = null;
 
 		if (pickup_lat && pickup_lng && delivery_lat && delivery_lng) {
@@ -103,6 +105,7 @@ export const actions: Actions = {
 				roundDistance: courierSettings.roundDistance
 			});
 			recalculated_distance_km = distanceResult.totalDistanceKm;
+			duration_minutes = distanceResult.durationMinutes ?? null;
 		}
 
 		const { config: pricingConfig } = await getClientPricing(supabase, client_id);
@@ -142,6 +145,7 @@ export const actions: Actions = {
 				delivery_lat,
 				delivery_lng,
 				distance_km: recalculated_distance_km,
+				duration_minutes,
 				urgency_fee_id: urgency_fee_id || null,
 				calculated_price,
 				price_breakdown,
