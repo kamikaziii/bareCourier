@@ -24,13 +24,17 @@ export type PriceBreakdown = {
 	distance: number;
 	urgency: number;
 	total: number;
-	model: 'per_km' | 'zone' | 'flat_plus_km';
+	model: 'per_km' | 'zone' | 'flat_plus_km' | 'type';
 	distance_km: number;
 	error?: string;
 	// Distance breakdown (warehouse mode)
 	distance_mode?: 'warehouse' | 'zone' | 'fallback';
 	warehouse_to_pickup_km?: number;
 	pickup_to_delivery_km?: number;
+	// Type-based pricing fields
+	tolls?: number;
+	reason?: 'out_of_zone' | 'time_preference' | 'service_type';
+	service_type_name?: string;
 };
 
 // Phase 3 Past Due: Configurable settings

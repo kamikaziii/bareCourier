@@ -1,14 +1,22 @@
 /**
  * Pricing Service
  *
- * Calculates service prices based on:
- * - Courier's pricing_mode (warehouse vs zone-based distance calculation)
- * - Client's pricing configuration (per_km, flat_plus_km, or zone model)
- * - Urgency fees if applicable
+ * Calculates service prices based on courier's pricing_mode:
+ *
+ * 1. Type-based pricing (pricing_mode = 'type'):
+ *    - Delegates to type-pricing.ts
+ *    - Uses service types, time preferences, and geographic zones
+ *    - Out-of-zone deliveries use distance + tolls
+ *
+ * 2. Distance-based pricing (pricing_mode = 'warehouse' or 'zone'):
+ *    - Uses client's pricing configuration (per_km, flat_plus_km, or zone model)
+ *    - Applies urgency fees if specified
+ *    - Calculates distance from warehouse or pickup point
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { PriceBreakdown } from '$lib/database.types';
+import { calculateTypedPrice, type TypePricingInput } from './type-pricing.js';
 
 export interface PricingConfig {
 	pricing_model: 'per_km' | 'zone' | 'flat_plus_km';
@@ -38,6 +46,11 @@ export interface ServicePricingInput {
 	distanceMode?: 'warehouse' | 'zone' | 'fallback';
 	warehouseToPickupKm?: number;
 	pickupToDeliveryKm?: number;
+	// Type-based pricing fields (optional)
+	serviceTypeId?: string | null;
+	hasTimePreference?: boolean;
+	isOutOfZone?: boolean;
+	tolls?: number;
 }
 
 export interface CourierPricingSettings {
@@ -241,6 +254,72 @@ export async function calculateServicePrice(
 	input: ServicePricingInput
 ): Promise<CalculatePriceResult> {
 	try {
+		// Get courier's pricing mode
+		const { data: courier } = await supabase
+			.from('profiles')
+			.select('pricing_mode')
+			.eq('role', 'courier')
+			.limit(1)
+			.single();
+
+		// If type-based pricing mode, delegate to type pricing service
+		if (courier?.pricing_mode === 'type') {
+			// Type-based pricing requires a service type
+			if (!input.serviceTypeId) {
+				return {
+					success: false,
+					price: null,
+					breakdown: null,
+					error: 'Service type required for type-based pricing'
+				};
+			}
+
+			const typedInput: TypePricingInput = {
+				serviceTypeId: input.serviceTypeId,
+				hasTimePreference: input.hasTimePreference || false,
+				isOutOfZone: input.isOutOfZone || false,
+				distanceKm: input.distanceKm,
+				tolls: input.tolls ?? null
+			};
+
+			const result = await calculateTypedPrice(supabase, typedInput);
+
+			if (result.success && result.breakdown) {
+				// Map type-based breakdown to standard PriceBreakdown format
+				const breakdown: PriceBreakdown = {
+					base: result.breakdown.base,
+					distance: result.breakdown.distance,
+					urgency: 0, // Type-based pricing doesn't use urgency fees
+					total: result.breakdown.total,
+					model: 'type',
+					distance_km: input.distanceKm ?? 0,
+					// Include distance breakdown if provided
+					distance_mode: input.distanceMode,
+					warehouse_to_pickup_km: input.warehouseToPickupKm,
+					pickup_to_delivery_km: input.pickupToDeliveryKm,
+					// Type-based pricing specific fields
+					tolls: result.breakdown.tolls,
+					reason: result.breakdown.reason,
+					service_type_name: result.breakdown.serviceTypeName
+				};
+
+				return {
+					success: true,
+					price: result.price,
+					breakdown
+				};
+			}
+
+			return {
+				success: false,
+				price: null,
+				breakdown: null,
+				error: result.error
+			};
+		}
+
+		// Continue with existing distance-based pricing...
+
 		// Validate distance
 		if (input.distanceKm === null || input.distanceKm === undefined) {
 			return {
