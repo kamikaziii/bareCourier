@@ -43,6 +43,7 @@
 		service.delivery_lng && service.delivery_lat ? [service.delivery_lng, service.delivery_lat] : null
 	);
 	let distanceKm = $state<number | null>(service.distance_km ?? null);
+	let durationMinutes = $state<number | null>(null);
 	let routeGeometry = $state<string | null>(null);
 	let calculatingDistance = $state(false);
 
@@ -104,6 +105,7 @@
 		calculatingDistance = true;
 		const result = await calculateRouteShared(pickupCoords, deliveryCoords, courierSettings);
 		distanceKm = result.distanceKm;
+		durationMinutes = result.durationMinutes;
 		routeGeometry = result.routeGeometry;
 		distanceResult = result.distanceResult;
 		calculatingDistance = false;
@@ -198,6 +200,7 @@
 							{deliveryCoords}
 							{routeGeometry}
 							{distanceKm}
+							{durationMinutes}
 							height="200px"
 						/>
 						{#if calculatingDistance}
