@@ -693,5 +693,10 @@
 	"out_of_zone": "Out of zone",
 	"out_of_zone_warning": "Outside distribution zone",
 	"out_of_zone_client_warning": "Additional costs may apply",
-	"no_results": "No results found"
+	"no_results": "No results found",
+
+	"tolls": "Tolls",
+	"tolls_label": "Tolls (EUR)",
+	"tolls_placeholder": "0.00",
+	"tolls_description": "Additional toll costs for out-of-zone deliveries"
 }

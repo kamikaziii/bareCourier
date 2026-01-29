@@ -6,10 +6,12 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
 
 	import AddressInput from '$lib/components/AddressInput.svelte';
 	import RouteMap from '$lib/components/RouteMap.svelte';
 	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
+	import TimePreferencePicker from '$lib/components/TimePreferencePicker.svelte';
 	import UrgencyFeeSelect from '$lib/components/UrgencyFeeSelect.svelte';
 	import { type ServiceDistanceResult } from '$lib/services/distance.js';
 	import { calculateRouteIfReady as calculateRouteShared } from '$lib/services/route.js';
@@ -17,11 +19,12 @@
 		getCourierPricingSettings,
 		type CourierPricingSettings
 	} from '$lib/services/pricing.js';
+	import { isInDistributionZone, getClientDefaultServiceTypeId } from '$lib/services/type-pricing.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
-	import { ArrowLeft } from '@lucide/svelte';
+	import { ArrowLeft, MapPin, AlertTriangle, Check } from '@lucide/svelte';
 	import type { PageData } from './$types';
-	import type { TimeSlot, UrgencyFee } from '$lib/database.types.js';
+	import type { TimeSlot, UrgencyFee, ServiceType } from '$lib/database.types.js';
 
 	let { data }: { data: PageData } = $props();
 
@@ -46,7 +49,7 @@
 	let calculatingDistance = $state(false);
 	let distanceResult = $state<ServiceDistanceResult | null>(null);
 
-	// Schedule
+	// Schedule (traditional mode)
 	let scheduledDate = $state<string | null>(null);
 	let scheduledTimeSlot = $state<TimeSlot | null>(null);
 	let scheduledTime = $state<string | null>(null);
@@ -56,13 +59,29 @@
 	let selectedUrgencyFeeId = $state<string>('');
 	let courierSettings = $state<CourierPricingSettings | null>(null);
 
+	// Type-based pricing state
+	let selectedServiceTypeId = $state<string>('');
+	let hasTimePreference = $state(false);
+	let isOutOfZone = $state<boolean | null>(null);
+	let detectedMunicipality = $state<string | null>(null);
+	let tolls = $state<number | null>(null);
+	let checkingZone = $state(false);
+
+	// Derived: is type-based pricing mode
+	const isTypePricingMode = $derived(data.pricingMode === 'type');
+
+	// Derived: get selected service type details
+	const selectedServiceType = $derived(
+		data.serviceTypes.find((st: ServiceType) => st.id === selectedServiceTypeId)
+	);
+
 	async function loadData() {
 		loading = true;
 
 		const [clientsResult, feesResult, settings] = await Promise.all([
 			data.supabase
 				.from('profiles')
-				.select('id, name, default_pickup_location')
+				.select('id, name, default_pickup_location, default_service_type_id')
 				.eq('role', 'client')
 				.eq('active', true)
 				.order('name'),
@@ -74,6 +93,12 @@
 		urgencyFees = (feesResult.data || []) as UrgencyFee[];
 		courierSettings = settings;
 		selectedUrgencyFeeId = settings.defaultUrgencyFeeId || '';
+
+		// Set default service type if in type mode
+		if (isTypePricingMode && data.serviceTypes.length > 0) {
+			selectedServiceTypeId = data.serviceTypes[0].id;
+		}
+
 		loading = false;
 	}
 
@@ -94,11 +119,15 @@
 		};
 	}
 
-	function handleClientSelect() {
+	async function handleClientSelect() {
 		const client = clients.find((c) => c.id === selectedClientId);
 		if (client?.default_pickup_location) {
 			pickupLocation = client.default_pickup_location;
 			pickupCoords = null;
+		}
+		// Set client's default service type if available
+		if (isTypePricingMode && client?.default_service_type_id) {
+			selectedServiceTypeId = client.default_service_type_id;
 		}
 	}
 
@@ -108,10 +137,64 @@
 		calculateRouteIfReady();
 	}
 
-	function handleDeliverySelect(address: string, coords: [number, number] | null) {
+	async function handleDeliverySelect(address: string, coords: [number, number] | null) {
 		deliveryLocation = address;
 		deliveryCoords = coords;
 		calculateRouteIfReady();
+
+		// If type-based pricing, detect municipality and check zone
+		if (isTypePricingMode && address) {
+			await detectMunicipalityAndCheckZone(address);
+		}
+	}
+
+	/**
+	 * Extract municipality (concelho) from Mapbox address and check if in zone
+	 */
+	async function detectMunicipalityAndCheckZone(address: string) {
+		// Mapbox addresses for Portugal typically include the municipality
+		// Format: "Street, Postal Code, Municipality, District, Portugal"
+		// or: "Street, Postal Code Municipality, District, Portugal"
+		checkingZone = true;
+
+		// Try to extract municipality from address
+		// This is a simplified extraction - Mapbox response structure varies
+		const parts = address.split(',').map((p) => p.trim());
+
+		// Municipality is usually the 3rd or 4th part from the end (before District and Portugal)
+		// For Portugal: "Rua X, 1234-567 Oeiras, Lisboa, Portugal"
+		// or: "Rua X, 1234-567, Oeiras, Lisboa, Portugal"
+		let municipality: string | null = null;
+
+		if (parts.length >= 4) {
+			// Try the 3rd from last (skipping Portugal and District)
+			const potentialMunicipality = parts[parts.length - 3];
+			// Check if it looks like a municipality (not a postal code)
+			if (potentialMunicipality && !/^\d{4}/.test(potentialMunicipality)) {
+				municipality = potentialMunicipality;
+			}
+		}
+
+		if (!municipality && parts.length >= 3) {
+			// Fallback: try 2nd from last
+			const potentialMunicipality = parts[parts.length - 2];
+			if (potentialMunicipality && !/^\d{4}/.test(potentialMunicipality)) {
+				municipality = potentialMunicipality;
+			}
+		}
+
+		detectedMunicipality = municipality;
+
+		// Check if municipality is in distribution zone
+		if (municipality) {
+			const inZone = await isInDistributionZone(data.supabase, municipality);
+			isOutOfZone = !inZone;
+		} else {
+			// Cannot determine, default to null (unknown)
+			isOutOfZone = null;
+		}
+
+		checkingZone = false;
 	}
 
 	async function calculateRouteIfReady() {
@@ -122,6 +205,21 @@
 		routeGeometry = result.routeGeometry;
 		distanceResult = result.distanceResult;
 		calculatingDistance = false;
+	}
+
+	// Handle time preference change from TimePreferencePicker
+	function handleDateChange(date: string | null) {
+		scheduledDate = date;
+	}
+
+	function handleTimeSlotChange(slot: TimeSlot | null) {
+		scheduledTimeSlot = slot;
+		// Update hasTimePreference when slot is selected
+		hasTimePreference = slot !== null;
+	}
+
+	function handleTimeChange(time: string | null) {
+		scheduledTime = time;
 	}
 
 	$effect(() => {
@@ -169,6 +267,30 @@
 						</select>
 					</div>
 
+					<!-- Service Type Selector (Type-based pricing only) -->
+					{#if isTypePricingMode && data.serviceTypes.length > 0}
+						<div class="space-y-2">
+							<Label for="service_type">{m.service_type()} *</Label>
+							<select
+								id="service_type"
+								name="service_type_id"
+								bind:value={selectedServiceTypeId}
+								required
+								disabled={formLoading}
+								class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+							>
+								{#each data.serviceTypes as serviceType (serviceType.id)}
+									<option value={serviceType.id}>
+										{serviceType.name} - {serviceType.price.toFixed(2)}
+									</option>
+								{/each}
+							</select>
+							{#if selectedServiceType?.description}
+								<p class="text-xs text-muted-foreground">{selectedServiceType.description}</p>
+							{/if}
+						</div>
+					{/if}
+
 					<div class="grid gap-4 md:grid-cols-2">
 						<div class="space-y-2">
 							<Label for="pickup">{m.form_pickup_location()} *</Label>
@@ -181,7 +303,27 @@
 							/>
 						</div>
 						<div class="space-y-2">
-							<Label for="delivery">{m.form_delivery_location()} *</Label>
+							<div class="flex items-center justify-between">
+								<Label for="delivery">{m.form_delivery_location()} *</Label>
+								<!-- Zone Indicator (Type-based pricing only) -->
+								{#if isTypePricingMode && deliveryLocation}
+									{#if checkingZone}
+										<Badge variant="outline" class="text-xs">
+											<span class="animate-pulse">{m.loading()}</span>
+										</Badge>
+									{:else if isOutOfZone === true}
+										<Badge variant="secondary" class="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">
+											<AlertTriangle class="mr-1 size-3" />
+											{m.out_of_zone()}
+										</Badge>
+									{:else if isOutOfZone === false}
+										<Badge variant="secondary" class="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200">
+											<Check class="mr-1 size-3" />
+											{m.in_zone()}
+										</Badge>
+									{/if}
+								{/if}
+							</div>
 							<AddressInput
 								id="delivery"
 								bind:value={deliveryLocation}
@@ -189,6 +331,12 @@
 								placeholder={m.form_delivery_placeholder()}
 								disabled={formLoading}
 							/>
+							{#if isTypePricingMode && isOutOfZone === true && detectedMunicipality}
+								<p class="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+									<AlertTriangle class="size-3" />
+									{m.out_of_zone_warning()}
+								</p>
+							{/if}
 						</div>
 					</div>
 
@@ -212,48 +360,89 @@
 
 					<Separator />
 
-					<!-- Schedule -->
+					<!-- Schedule / Time Preference -->
 					<div class="space-y-2">
-						<Label>{m.schedule_optional()}</Label>
-						<SchedulePicker
-							selectedDate={scheduledDate}
-							selectedTimeSlot={scheduledTimeSlot}
-							selectedTime={scheduledTime}
-							onDateChange={(date) => (scheduledDate = date)}
-							onTimeSlotChange={(slot) => (scheduledTimeSlot = slot)}
-							onTimeChange={(time) => (scheduledTime = time)}
-							disabled={formLoading}
-						/>
+						{#if isTypePricingMode}
+							<!-- Use TimePreferencePicker for type-based pricing -->
+							<Label>{m.schedule_optional()}</Label>
+							<TimePreferencePicker
+								selectedDate={scheduledDate}
+								selectedTimeSlot={scheduledTimeSlot}
+								selectedTime={scheduledTime}
+								onDateChange={handleDateChange}
+								onTimeSlotChange={handleTimeSlotChange}
+								onTimeChange={handleTimeChange}
+								disabled={formLoading}
+								showPriceWarning={true}
+								basePrice={selectedServiceType?.price ?? 0}
+								timePreferencePrice={data.typePricingSettings.timeSpecificPrice}
+							/>
+						{:else}
+							<!-- Use traditional SchedulePicker -->
+							<Label>{m.schedule_optional()}</Label>
+							<SchedulePicker
+								selectedDate={scheduledDate}
+								selectedTimeSlot={scheduledTimeSlot}
+								selectedTime={scheduledTime}
+								onDateChange={(date) => (scheduledDate = date)}
+								onTimeSlotChange={(slot) => (scheduledTimeSlot = slot)}
+								onTimeChange={(time) => (scheduledTime = time)}
+								disabled={formLoading}
+							/>
+						{/if}
 					</div>
 
-					<Separator />
-
-					<!-- Urgency fee selection -->
-					<div class="space-y-2">
-						<Label for="urgency">{m.form_urgency()}</Label>
-						<UrgencyFeeSelect fees={urgencyFees} bind:value={selectedUrgencyFeeId} disabled={formLoading} />
-					</div>
-
-					<!-- Distance breakdown for warehouse mode -->
-					{#if distanceResult?.distanceMode === 'warehouse' && distanceResult.warehouseToPickupKm}
-						<div class="rounded-md bg-muted p-3 text-sm space-y-1">
-							<div class="flex justify-between">
-								<span class="text-muted-foreground">{m.distance_warehouse_to_pickup()}</span>
-								<span>{distanceResult.warehouseToPickupKm} km</span>
-							</div>
-							<div class="flex justify-between">
-								<span class="text-muted-foreground">{m.distance_pickup_to_delivery()}</span>
-								<span>{distanceResult.pickupToDeliveryKm} km</span>
-							</div>
-							<Separator />
-							<div class="flex justify-between font-medium">
-								<span>{m.distance_total()}</span>
-								<span>{distanceResult.totalDistanceKm} km</span>
-							</div>
+					<!-- Tolls Input (Type-based pricing, out-of-zone only) -->
+					{#if isTypePricingMode && isOutOfZone === true}
+						<Separator />
+						<div class="space-y-2">
+							<Label for="tolls">{m.tolls_label()}</Label>
+							<Input
+								id="tolls"
+								name="tolls"
+								type="number"
+								step="0.01"
+								min="0"
+								placeholder={m.tolls_placeholder()}
+								bind:value={tolls}
+								disabled={formLoading}
+							/>
+							<p class="text-xs text-muted-foreground">
+								{m.tolls_description()}
+							</p>
 						</div>
 					{/if}
 
 					<Separator />
+
+					<!-- Urgency fee selection (only for non-type-based pricing) -->
+					{#if !isTypePricingMode}
+						<div class="space-y-2">
+							<Label for="urgency">{m.form_urgency()}</Label>
+							<UrgencyFeeSelect fees={urgencyFees} bind:value={selectedUrgencyFeeId} disabled={formLoading} />
+						</div>
+
+						<!-- Distance breakdown for warehouse mode -->
+						{#if distanceResult?.distanceMode === 'warehouse' && distanceResult.warehouseToPickupKm}
+							<div class="rounded-md bg-muted p-3 text-sm space-y-1">
+								<div class="flex justify-between">
+									<span class="text-muted-foreground">{m.distance_warehouse_to_pickup()}</span>
+									<span>{distanceResult.warehouseToPickupKm} km</span>
+								</div>
+								<div class="flex justify-between">
+									<span class="text-muted-foreground">{m.distance_pickup_to_delivery()}</span>
+									<span>{distanceResult.pickupToDeliveryKm} km</span>
+								</div>
+								<Separator />
+								<div class="flex justify-between font-medium">
+									<span>{m.distance_total()}</span>
+									<span>{distanceResult.totalDistanceKm} km</span>
+								</div>
+							</div>
+						{/if}
+
+						<Separator />
+					{/if}
 
 					<div class="space-y-2">
 						<Label for="notes">{m.form_notes()}</Label>
@@ -277,11 +466,18 @@
 					<input type="hidden" name="scheduled_time_slot" value={scheduledTimeSlot ?? ''} />
 					<input type="hidden" name="scheduled_time" value={scheduledTime ?? ''} />
 
+					<!-- Type-based pricing hidden fields -->
+					{#if isTypePricingMode}
+						<input type="hidden" name="has_time_preference" value={hasTimePreference} />
+						<input type="hidden" name="is_out_of_zone" value={isOutOfZone ?? false} />
+						<input type="hidden" name="detected_municipality" value={detectedMunicipality ?? ''} />
+					{/if}
+
 					<div class="flex gap-2">
 						<Button variant="outline" href={localizeHref('/courier/services')}>
 							{m.services_cancel()}
 						</Button>
-						<Button type="submit" disabled={formLoading || !selectedClientId || !pickupLocation || !deliveryLocation || (scheduledTimeSlot === 'specific' && !scheduledTime)}>
+						<Button type="submit" disabled={formLoading || !selectedClientId || !pickupLocation || !deliveryLocation || (scheduledTimeSlot === 'specific' && !scheduledTime) || (isTypePricingMode && !selectedServiceTypeId)}>
 							{formLoading ? m.services_creating() : m.services_create()}
 						</Button>
 					</div>

@@ -693,5 +693,10 @@
 	"out_of_zone": "Fora de zona",
 	"out_of_zone_warning": "Fora da zona de distribuição",
 	"out_of_zone_client_warning": "Podem haver custos adicionais",
-	"no_results": "Sem resultados"
+	"no_results": "Sem resultados",
+
+	"tolls": "Portagens",
+	"tolls_label": "Portagens (EUR)",
+	"tolls_placeholder": "0.00",
+	"tolls_description": "Custos adicionais de portagens para entregas fora de zona"
 }
