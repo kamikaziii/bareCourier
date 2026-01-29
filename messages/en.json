@@ -657,5 +657,11 @@
 	"workload_status_overloaded": "Overloaded by {hours}",
 	"workload_show_details": "Show details",
 	"workload_hide_details": "Hide details",
-	"workload_drive_time": "~{time} drive"
+	"workload_drive_time": "~{time} drive",
+	"workload_buffer": "{time} buffer",
+	"workload_today": "Today",
+	"workload_tomorrow": "Tomorrow",
+	"workload_no_date_requested": "No specific date",
+	"workload_next_compatible": "Next compatible day",
+	"workload_use_this_date": "Use this date"
 }

@@ -657,5 +657,11 @@
 	"workload_status_overloaded": "Excede em {hours}",
 	"workload_show_details": "Mostrar detalhes",
 	"workload_hide_details": "Esconder detalhes",
-	"workload_drive_time": "~{time} de viagem"
+	"workload_drive_time": "~{time} de viagem",
+	"workload_buffer": "{time} folga",
+	"workload_today": "Hoje",
+	"workload_tomorrow": "Amanhã",
+	"workload_no_date_requested": "Sem data específica",
+	"workload_next_compatible": "Próximo dia compatível",
+	"workload_use_this_date": "Usar esta data"
 }
