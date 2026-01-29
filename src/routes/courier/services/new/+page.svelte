@@ -24,6 +24,7 @@
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import { ArrowLeft } from '@lucide/svelte';
 	import ZoneOverrideToggle from '$lib/components/ZoneOverrideToggle.svelte';
+	import TypePricePreview from '$lib/components/TypePricePreview.svelte';
 	import type { PageData } from './$types';
 	import type { TimeSlot, UrgencyFee, ServiceType } from '$lib/database.types.js';
 
@@ -400,6 +401,19 @@
 						{/if}
 
 						<Separator />
+					{/if}
+
+					<!-- Live Price Preview (type-based pricing only) -->
+					{#if isTypePricingMode && selectedServiceType}
+						<Separator />
+						<TypePricePreview
+							settings={data.typePricingSettings}
+							serviceType={selectedServiceType}
+							{isOutOfZone}
+							{hasTimePreference}
+							{distanceKm}
+							tolls={tolls}
+						/>
 					{/if}
 
 					<div class="space-y-2">
