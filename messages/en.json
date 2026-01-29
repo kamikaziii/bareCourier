@@ -718,5 +718,21 @@
 	"tolls": "Tolls",
 	"tolls_label": "Tolls (EUR)",
 	"tolls_placeholder": "0.00",
-	"tolls_description": "Additional toll costs for out-of-zone deliveries"
+	"tolls_description": "Additional toll costs for out-of-zone deliveries",
+
+	"price_estimate": "Estimated price",
+	"price_final_note": "Final price confirmed by courier",
+	"zone_override_title": "Zone Override",
+	"zone_detection_failed": "Could not determine municipality",
+	"zone_manual_select": "Select manually",
+	"mark_in_zone": "Mark as in-zone",
+	"mark_out_of_zone": "Mark as out-of-zone",
+	"price_breakdown": "Price Breakdown",
+	"base_price": "Base price",
+	"distance_charge": "Distance charge",
+	"total_price": "Total",
+	"time_preference_surcharge": "+€{amount} for time preference",
+
+	"new_client": "New Client",
+	"new_client_desc": "Create a new client account"
 }

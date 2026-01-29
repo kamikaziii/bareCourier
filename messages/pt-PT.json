@@ -718,5 +718,21 @@
 	"tolls": "Portagens",
 	"tolls_label": "Portagens (EUR)",
 	"tolls_placeholder": "0.00",
-	"tolls_description": "Custos adicionais de portagens para entregas fora de zona"
+	"tolls_description": "Custos adicionais de portagens para entregas fora de zona",
+
+	"price_estimate": "Preço estimado",
+	"price_final_note": "Preço final confirmado pelo estafeta",
+	"zone_override_title": "Substituição de Zona",
+	"zone_detection_failed": "Não foi possível determinar o concelho",
+	"zone_manual_select": "Selecionar manualmente",
+	"mark_in_zone": "Marcar como dentro da zona",
+	"mark_out_of_zone": "Marcar como fora da zona",
+	"price_breakdown": "Discriminação do Preço",
+	"base_price": "Preço base",
+	"distance_charge": "Custo de distância",
+	"total_price": "Total",
+	"time_preference_surcharge": "+€{amount} pela preferência de horário",
+
+	"new_client": "Novo Cliente",
+	"new_client_desc": "Criar uma nova conta de cliente"
 }
