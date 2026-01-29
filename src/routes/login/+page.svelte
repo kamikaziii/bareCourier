@@ -62,8 +62,8 @@
 			return;
 		}
 
-		// Redirect will happen via layout auth state change
-		goto(localizeHref('/'));
+		// Redirect to intended destination or home
+		goto(data.redirectTo || localizeHref('/'));
 	}
 </script>
 

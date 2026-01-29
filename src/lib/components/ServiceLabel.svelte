@@ -21,10 +21,12 @@
 
 	const businessName = $derived(courierProfile.label_business_name || courierProfile.name);
 	const tagline = $derived(courierProfile.label_tagline);
+	// Strip the # from display_id for URL (server route handles both formats)
+	const displayIdForUrl = $derived(service.display_id?.replace('#', '') || '');
 	const trackingUrl = $derived(
 		typeof window !== 'undefined'
-			? `${window.location.origin}/track/${service.display_id}`
-			: `/track/${service.display_id}`
+			? `${window.location.origin}/track/${displayIdForUrl}`
+			: `/track/${displayIdForUrl}`
 	);
 
 	$effect(() => {

@@ -33,6 +33,9 @@
 	let pickupLocation = $state(service.pickup_location);
 	let deliveryLocation = $state(service.delivery_location);
 	let notes = $state(service.notes || '');
+	let recipientName = $state(service.recipient_name || '');
+	let recipientPhone = $state(service.recipient_phone || '');
+	let customerReference = $state(service.customer_reference || '');
 	let loading = $state(false);
 	let error = $state('');
 
@@ -225,6 +228,49 @@
 
 				<Separator />
 
+				<!-- Recipient Section -->
+				<div class="space-y-4">
+					<h3 class="text-sm font-medium text-muted-foreground">{m.recipient_optional()}</h3>
+					<div class="grid gap-4 sm:grid-cols-2">
+						<div class="space-y-2">
+							<Label for="recipient_name">{m.recipient_name()}</Label>
+							<Input
+								id="recipient_name"
+								name="recipient_name"
+								bind:value={recipientName}
+								placeholder={m.recipient_name_placeholder()}
+								disabled={loading}
+							/>
+						</div>
+						<div class="space-y-2">
+							<Label for="recipient_phone">{m.recipient_phone()}</Label>
+							<Input
+								id="recipient_phone"
+								name="recipient_phone"
+								type="tel"
+								bind:value={recipientPhone}
+								placeholder={m.recipient_phone_placeholder()}
+								disabled={loading}
+							/>
+						</div>
+					</div>
+				</div>
+
+				<!-- Customer Reference -->
+				<div class="space-y-2">
+					<Label for="customer_reference">{m.customer_reference()}</Label>
+					<Input
+						id="customer_reference"
+						name="customer_reference"
+						bind:value={customerReference}
+						placeholder={m.customer_reference_placeholder()}
+						disabled={loading}
+					/>
+					<p class="text-xs text-muted-foreground">{m.customer_reference_help()}</p>
+				</div>
+
+				<Separator />
+
 				<div class="space-y-2">
 					<h3 class="font-medium text-sm text-muted-foreground">{m.schedule_optional()}</h3>
 					<SchedulePicker
@@ -270,6 +316,9 @@
 				<input type="hidden" name="pickup_location" value={pickupLocation} />
 				<input type="hidden" name="delivery_location" value={deliveryLocation} />
 				<input type="hidden" name="notes" value={notes} />
+				<input type="hidden" name="recipient_name" value={recipientName} />
+				<input type="hidden" name="recipient_phone" value={recipientPhone} />
+				<input type="hidden" name="customer_reference" value={customerReference} />
 				<input type="hidden" name="pickup_lat" value={pickupCoords?.[1] ?? ''} />
 				<input type="hidden" name="pickup_lng" value={pickupCoords?.[0] ?? ''} />
 				<input type="hidden" name="delivery_lat" value={deliveryCoords?.[1] ?? ''} />
