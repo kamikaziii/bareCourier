@@ -1,5 +1,5 @@
 ---
-status: pending
+status: ready
 priority: p1
 issue_id: "176"
 tags: [code-review, security, rls, pr-7]

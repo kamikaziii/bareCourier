@@ -1,5 +1,5 @@
 ---
-status: pending
+status: ready
 priority: p2
 issue_id: "183"
 tags: [code-review, dead-code, pr-7]

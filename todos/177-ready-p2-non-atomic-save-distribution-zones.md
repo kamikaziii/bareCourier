@@ -1,5 +1,5 @@
 ---
-status: pending
+status: ready
 priority: p2
 issue_id: "177"
 tags: [code-review, data-integrity, race-condition, pr-7]

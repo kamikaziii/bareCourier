@@ -1,5 +1,5 @@
 ---
-status: pending
+status: ready
 priority: p3
 issue_id: "189"
 tags: [code-review, performance, pr-7]
