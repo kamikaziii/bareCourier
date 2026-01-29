@@ -579,6 +579,8 @@
 	"reschedule_current": "Current:",
 	"reschedule_new": "New:",
 	"schedule_clear_date": "Clear date",
+	"time_preference_add": "Add time preference",
+	"time_preference_price_warning": "Adding a time preference increases the price by {amount}",
 	"sidebar_collapse": "Collapse",
 
 	"location_from": "From:",
