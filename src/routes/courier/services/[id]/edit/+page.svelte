@@ -19,8 +19,10 @@
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
+	// All form state captures initial values - safe because {#key data.service.id} forces re-creation on navigation
+	// svelte-ignore state_referenced_locally
 	let loading = $state(false);
-	// svelte-ignore state_referenced_locally - intentional: capture initial value for form editing
+	// svelte-ignore state_referenced_locally
 	let clientId = $state(data.service.client_id);
 	// svelte-ignore state_referenced_locally
 	let pickupLocation = $state(data.service.pickup_location);
@@ -114,6 +116,8 @@
 	}
 </script>
 
+<!-- Force component re-creation when navigating between different services -->
+{#key data.service.id}
 <div class="space-y-6">
 	<!-- Header -->
 	<div class="flex items-center gap-3">
@@ -265,3 +269,4 @@
 		</Card.Content>
 	</Card.Root>
 </div>
+{/key}

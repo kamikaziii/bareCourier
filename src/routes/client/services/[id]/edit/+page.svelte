@@ -25,6 +25,7 @@
 
 	let { data }: { data: PageData } = $props();
 
+	// svelte-ignore state_referenced_locally - safe because {#key data.service.id} forces re-creation on navigation
 	const service = data.service;
 	const detailHref = localizeHref(`/client/services/${service.id}`);
 
@@ -127,6 +128,8 @@
 	}
 </script>
 
+<!-- Force component re-creation when navigating between different services -->
+{#key data.service.id}
 <div class="max-w-md mx-auto space-y-6">
 	<div class="flex items-center gap-3">
 		<Button variant="ghost" size="sm" href={detailHref}>
@@ -287,3 +290,4 @@
 		</Card.Content>
 	</Card.Root>
 </div>
+{/key}

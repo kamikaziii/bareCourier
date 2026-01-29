@@ -13,6 +13,7 @@
 
 	let { items, currentPath, initialCollapsed = false }: SidebarProps = $props();
 
+	// svelte-ignore state_referenced_locally - intentionally capturing initial value for one-time initialization
 	let collapsed = $state(initialCollapsed);
 
 	function toggleCollapsed() {
