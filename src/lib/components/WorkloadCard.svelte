@@ -5,6 +5,7 @@
 	import { ChevronDown, ChevronUp, Clock, MapPin, AlertTriangle, CheckCircle } from '@lucide/svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import type { WorkloadEstimate } from '$lib/services/workload.js';
+	import { formatMinutesToHuman } from '$lib/utils.js';
 
 	interface Props {
 		workload: WorkloadEstimate;
@@ -12,14 +13,6 @@
 
 	let { workload }: Props = $props();
 	let expanded = $state(false);
-
-	function formatTime(minutes: number): string {
-		const hours = Math.floor(minutes / 60);
-		const mins = minutes % 60;
-		if (hours === 0) return `${mins}m`;
-		if (mins === 0) return `${hours}h`;
-		return `${hours}h ${mins}m`;
-	}
 
 	const statusBg = $derived(
 		workload.status === 'comfortable'
@@ -39,10 +32,10 @@
 
 	const statusMessage = $derived(
 		workload.status === 'comfortable'
-			? m.workload_status_comfortable({ hours: formatTime(workload.bufferMinutes) })
+			? m.workload_status_comfortable({ hours: formatMinutesToHuman(workload.bufferMinutes) })
 			: workload.status === 'tight'
-				? m.workload_status_tight({ hours: formatTime(workload.bufferMinutes) })
-				: m.workload_status_overloaded({ hours: formatTime(Math.abs(workload.bufferMinutes)) })
+				? m.workload_status_tight({ hours: formatMinutesToHuman(workload.bufferMinutes) })
+				: m.workload_status_overloaded({ hours: formatMinutesToHuman(Math.abs(workload.bufferMinutes)) })
 	);
 </script>
 
@@ -69,21 +62,21 @@
 		<div class="space-y-1 text-sm">
 			<div class="flex justify-between">
 				<span class="text-muted-foreground">{m.workload_driving()}</span>
-				<span>{formatTime(workload.drivingTimeMinutes)}</span>
+				<span>{formatMinutesToHuman(workload.drivingTimeMinutes)}</span>
 			</div>
 			<div class="flex justify-between">
 				<span class="text-muted-foreground">{m.workload_service_time()}</span>
-				<span>{formatTime(workload.serviceTimeMinutes)}</span>
+				<span>{formatMinutesToHuman(workload.serviceTimeMinutes)}</span>
 			</div>
 			{#if workload.breakTimeMinutes > 0}
 				<div class="flex justify-between">
 					<span class="text-muted-foreground">{m.workload_breaks()}</span>
-					<span>{formatTime(workload.breakTimeMinutes)}</span>
+					<span>{formatMinutesToHuman(workload.breakTimeMinutes)}</span>
 				</div>
 			{/if}
 			<div class="border-t pt-1 flex justify-between font-medium">
 				<span>{m.workload_total_needed()}</span>
-				<span>{formatTime(workload.totalTimeMinutes)}</span>
+				<span>{formatMinutesToHuman(workload.totalTimeMinutes)}</span>
 			</div>
 		</div>
 
