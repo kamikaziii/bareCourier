@@ -368,8 +368,56 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 						</div>
 					{/if}
 
-					<!-- Type-based pricing breakdown -->
-					{#if service.service_type_id || service.is_out_of_zone !== null || service.tolls}
+					<!-- Type-based pricing detailed breakdown -->
+					{#if service.price_breakdown?.model === 'type'}
+						<Separator class="my-4" />
+						<div class="space-y-2 text-sm">
+							<p class="font-medium text-muted-foreground">{m.price_breakdown()}</p>
+
+							{#if service.service_types?.name}
+								<div class="flex justify-between">
+									<span class="text-muted-foreground">{m.service_type()}</span>
+									<span class="font-medium">{service.service_types.name}</span>
+								</div>
+							{/if}
+
+							{#if service.price_breakdown.reason === 'out_of_zone'}
+								<div class="flex justify-between">
+									<span class="text-muted-foreground">{m.base_price()} ({m.out_of_zone()})</span>
+									<span>€{service.price_breakdown.base.toFixed(2)}</span>
+								</div>
+								{#if service.price_breakdown.distance > 0}
+									<div class="flex justify-between">
+										<span class="text-muted-foreground">{m.distance_charge()} ({service.distance_km?.toFixed(1)} km)</span>
+										<span>€{service.price_breakdown.distance.toFixed(2)}</span>
+									</div>
+								{/if}
+								{#if service.price_breakdown.tolls && service.price_breakdown.tolls > 0}
+									<div class="flex justify-between">
+										<span class="text-muted-foreground">{m.tolls()}</span>
+										<span>€{service.price_breakdown.tolls.toFixed(2)}</span>
+									</div>
+								{/if}
+							{:else if service.price_breakdown.reason === 'time_preference'}
+								<div class="flex justify-between">
+									<span class="text-muted-foreground">{m.time_preference_label()}</span>
+									<span>€{service.price_breakdown.base.toFixed(2)}</span>
+								</div>
+							{:else}
+								<div class="flex justify-between">
+									<span class="text-muted-foreground">{m.base_price()}</span>
+									<span>€{service.price_breakdown.base.toFixed(2)}</span>
+								</div>
+							{/if}
+
+							<Separator />
+							<div class="flex justify-between font-medium">
+								<span>{m.total_price()}</span>
+								<span>€{service.price_breakdown.total.toFixed(2)}</span>
+							</div>
+						</div>
+					{:else if service.service_type_id || service.is_out_of_zone !== null || service.tolls}
+						<!-- Fallback: Simple display for services without full breakdown -->
 						<Separator class="my-4" />
 						<div class="space-y-2 text-sm">
 							{#if service.service_types?.name}
