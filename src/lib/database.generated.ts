@@ -570,6 +570,7 @@ export type Database = {
           delivery_lng: number | null
           delivery_location: string
           distance_km: number | null
+          duration_minutes: number | null
           id: string
           last_past_due_notification_at: string | null
           last_rescheduled_at: string | null
@@ -614,6 +615,7 @@ export type Database = {
           delivery_lng?: number | null
           delivery_location: string
           distance_km?: number | null
+          duration_minutes?: number | null
           id?: string
           last_past_due_notification_at?: string | null
           last_rescheduled_at?: string | null
@@ -658,6 +660,7 @@ export type Database = {
           delivery_lng?: number | null
           delivery_location?: string
           distance_km?: number | null
+          duration_minutes?: number | null
           id?: string
           last_past_due_notification_at?: string | null
           last_rescheduled_at?: string | null
