@@ -739,5 +739,35 @@
 	"new_client": "Novo Cliente",
 	"new_client_desc": "Criar uma nova conta de cliente",
 
-	"client_no_service_type_error": "A sua conta nao tem um tipo de servico atribuido. Por favor contacte o estafeta para configurar a sua conta."
+	"client_no_service_type_error": "A sua conta não tem um tipo de serviço atribuído. Por favor contacte o estafeta para configurar a sua conta.",
+
+	"service_id": "ID do Serviço",
+	"service_id_copied": "ID do serviço copiado!",
+
+	"customer_reference": "A Sua Referência",
+	"customer_reference_help": "A sua referência interna (nº encomenda, fatura, etc.)",
+	"customer_reference_placeholder": "PO-12345",
+
+	"recipient": "Destinatário",
+	"recipient_optional": "Destinatário (opcional)",
+	"recipient_name": "Nome do Destinatário",
+	"recipient_phone": "Telefone do Destinatário",
+	"recipient_name_placeholder": "Dr. João Silva",
+	"recipient_phone_placeholder": "+351 912 345 678",
+
+	"print_label": "Imprimir Etiqueta",
+	"print": "Imprimir",
+	"label_branding": "Marca da Etiqueta",
+	"label_branding_desc": "Personalize como a sua empresa aparece nas etiquetas impressas",
+	"label_business_name": "Nome da Empresa",
+	"label_business_name_placeholder": "Nome da Sua Empresa",
+	"label_tagline": "Slogan",
+	"label_tagline_placeholder": "Entregas Rápidas e Seguras",
+	"label_tagline_help": "Texto opcional abaixo do nome nas etiquetas",
+	"label_from": "DE",
+	"label_to": "PARA",
+	"label_scan_to_track": "Digitalize para acompanhar",
+	"label_delivery": "ENTREGA",
+	"label_pickup": "RECOLHA",
+	"label_notes": "Notas"
 }

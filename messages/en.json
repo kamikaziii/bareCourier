@@ -739,5 +739,35 @@
 	"new_client": "New Client",
 	"new_client_desc": "Create a new client account",
 
-	"client_no_service_type_error": "Your account does not have a service type assigned. Please contact the courier to set up your account."
+	"client_no_service_type_error": "Your account does not have a service type assigned. Please contact the courier to set up your account.",
+
+	"service_id": "Service ID",
+	"service_id_copied": "Service ID copied!",
+
+	"customer_reference": "Your Reference",
+	"customer_reference_help": "Your internal reference (PO number, invoice, etc.)",
+	"customer_reference_placeholder": "PO-12345",
+
+	"recipient": "Recipient",
+	"recipient_optional": "Recipient (optional)",
+	"recipient_name": "Recipient Name",
+	"recipient_phone": "Recipient Phone",
+	"recipient_name_placeholder": "Dr. João Silva",
+	"recipient_phone_placeholder": "+351 912 345 678",
+
+	"print_label": "Print Label",
+	"print": "Print",
+	"label_branding": "Label Branding",
+	"label_branding_desc": "Customize how your business appears on printed labels",
+	"label_business_name": "Business Name",
+	"label_business_name_placeholder": "Your Company Name",
+	"label_tagline": "Tagline",
+	"label_tagline_placeholder": "Fast & Secure Deliveries",
+	"label_tagline_help": "Optional text below your name on labels",
+	"label_from": "FROM",
+	"label_to": "TO",
+	"label_scan_to_track": "Scan to track",
+	"label_delivery": "DELIVERY",
+	"label_pickup": "PICKUP",
+	"label_notes": "Notes"
 }
