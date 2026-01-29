@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
@@ -18,20 +19,18 @@
 
 	let { distributionZones }: Props = $props();
 
-	// Helper to create initial selected zones set from props
-	function initSelectedZones(zones: DistributionZone[]): Set<string> {
-		return new Set(zones.map((z) => `${z.distrito}|${z.concelho}`));
-	}
-
 	// Search filter state
 	let searchQuery = $state('');
 
-	// Track expanded districts
-	let expandedDistricts = $state<Set<string>>(new Set());
+	// Track expanded districts - using SvelteSet for proper reactivity
+	let expandedDistricts = new SvelteSet<string>();
 
 	// Track selected zones as "distrito|concelho" keys
-	// User modifications control state after mount (intentionally local)
-	let selectedZones = $state<Set<string>>(initSelectedZones(distributionZones));
+	// Initialize from props - this is intentionally local state that the user modifies
+	// We don't want it to reset when the parent re-renders after save
+	let selectedZones = new SvelteSet<string>(
+		distributionZones.map((z) => `${z.distrito}|${z.concelho}`)
+	);
 
 	// Loading state for form submission
 	let saving = $state(false);
@@ -55,8 +54,7 @@
 		} else {
 			selectedZones.add(key);
 		}
-		// Trigger reactivity by reassigning
-		selectedZones = new Set(selectedZones);
+		// SvelteSet handles reactivity automatically
 	}
 
 	// Toggle all zones in a district
@@ -74,8 +72,7 @@
 				selectedZones.add(zoneKey(distrito, concelho));
 			}
 		}
-		// Trigger reactivity
-		selectedZones = new Set(selectedZones);
+		// SvelteSet handles reactivity automatically
 	}
 
 	// Check if all municipalities in a district are selected
@@ -96,11 +93,11 @@
 		} else {
 			expandedDistricts.add(distrito);
 		}
-		expandedDistricts = new Set(expandedDistricts);
+		// SvelteSet handles reactivity automatically
 	}
 
 	// Filter districts and municipalities by search
-	const filteredDistritos = $derived(() => {
+	const filteredDistritos = $derived.by(() => {
 		const query = searchQuery.toLowerCase().trim();
 		if (!query) return PORTUGAL_DISTRITOS;
 
@@ -116,7 +113,7 @@
 	const selectedCount = $derived(selectedZones.size);
 
 	// Convert selected zones to JSON for form submission
-	const zonesJson = $derived(() => {
+	const zonesJson = $derived.by(() => {
 		return JSON.stringify(
 			Array.from(selectedZones).map((key) => {
 				const [distrito, concelho] = key.split('|');
@@ -127,20 +124,31 @@
 
 	// Expand all districts (useful when searching)
 	function expandAll() {
-		expandedDistricts = new Set(PORTUGAL_DISTRITOS.map((d) => d.distrito));
+		expandedDistricts.clear();
+		for (const d of PORTUGAL_DISTRITOS) {
+			expandedDistricts.add(d.distrito);
+		}
 	}
 
 	// Collapse all districts
 	function collapseAll() {
-		expandedDistricts = new Set();
+		expandedDistricts.clear();
 	}
+
+	// Track previous search to detect changes
+	let previousSearch = '';
 
 	// When search query changes, auto-expand matching districts
 	$effect(() => {
-		if (searchQuery.trim()) {
-			const matching = filteredDistritos().map((d) => d.distrito);
-			expandedDistricts = new Set(matching);
+		const currentSearch = searchQuery.trim();
+		if (currentSearch && currentSearch !== previousSearch) {
+			// Auto-expand matching districts when search changes
+			expandedDistricts.clear();
+			for (const d of filteredDistritos) {
+				expandedDistricts.add(d.distrito);
+			}
 		}
+		previousSearch = currentSearch;
 	});
 </script>
 
@@ -183,12 +191,12 @@
 
 		<!-- Scrollable list of districts -->
 		<div class="max-h-96 space-y-2 overflow-y-auto rounded-lg border p-2">
-			{#if filteredDistritos().length === 0}
+			{#if filteredDistritos.length === 0}
 				<div class="py-8 text-center text-sm text-muted-foreground">
 					{m.no_results()}
 				</div>
 			{:else}
-				{#each filteredDistritos() as district (district.distrito)}
+				{#each filteredDistritos as district (district.distrito)}
 					{@const isExpanded = expandedDistricts.has(district.distrito)}
 					{@const isFullySelected = isDistrictFullySelected(district.distrito, district.concelhos)}
 					{@const isPartiallySelected = isDistrictPartiallySelected(
@@ -260,7 +268,7 @@
 				};
 			}}
 		>
-			<input type="hidden" name="zones" value={zonesJson()} />
+			<input type="hidden" name="zones" value={zonesJson} />
 			<div class="flex justify-end">
 				<Button type="submit" disabled={saving}>
 					{saving ? m.saving() : m.action_save()}
