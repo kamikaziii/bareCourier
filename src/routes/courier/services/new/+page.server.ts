@@ -89,6 +89,9 @@ export const actions: Actions = {
 		const pickup_location = formData.get('pickup_location') as string;
 		const delivery_location = formData.get('delivery_location') as string;
 		const notes = (formData.get('notes') as string) || null;
+		const recipient_name = (formData.get('recipient_name') as string) || null;
+		const recipient_phone = (formData.get('recipient_phone') as string) || null;
+		const customer_reference = (formData.get('customer_reference') as string) || null;
 		const scheduled_date = (formData.get('scheduled_date') as string) || null;
 		const scheduled_time_slot = (formData.get('scheduled_time_slot') as string) || null;
 		const scheduled_time = (formData.get('scheduled_time') as string) || null;
@@ -219,6 +222,9 @@ export const actions: Actions = {
 			pickup_location,
 			delivery_location,
 			notes,
+			recipient_name,
+			recipient_phone,
+			customer_reference,
 			scheduled_date,
 			scheduled_time_slot,
 			scheduled_time: scheduled_time_slot === 'specific' ? scheduled_time : null,
