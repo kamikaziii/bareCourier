@@ -28,6 +28,7 @@
 	// Track selected zones as "distrito|concelho" keys
 	// Initialize from props - this is intentionally local state that the user modifies
 	// We don't want it to reset when the parent re-renders after save
+	// svelte-ignore state_referenced_locally
 	let selectedZones = new SvelteSet<string>(
 		distributionZones.map((z) => `${z.distrito}|${z.concelho}`)
 	);

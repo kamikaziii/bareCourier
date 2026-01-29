@@ -160,11 +160,18 @@
 
 	// Selected day for detail view - auto-select today if viewing current month
 	const today = new Date();
-	const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
-	let selectedDay = $state<number | null>(isCurrentMonth ? today.getDate() : null);
+	const isCurrentMonth = $derived(today.getFullYear() === year && today.getMonth() === month);
+	let selectedDay = $state<number | null>(null);
 	let selectedDayServices = $derived<ServiceWithClient[]>(
 		selectedDay ? getServicesForDay(selectedDay) : []
 	);
+
+	// Reset selectedDay when month changes: auto-select today on current month, null otherwise
+	$effect(() => {
+		// Reading year and month creates the dependency
+		const _ = [year, month];
+		selectedDay = isCurrentMonth ? today.getDate() : null;
+	});
 </script>
 
 <div class="space-y-4">
