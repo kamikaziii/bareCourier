@@ -540,6 +540,40 @@
 					</p>
 				{/if}
 			</div>
+
+			<!-- Workload for requested date -->
+			{@const workloadInfo = getWorkloadForService(selectedService)}
+			{#if workloadInfo}
+				<div class="mt-4">
+					<WorkloadSummary workload={workloadInfo.workload} dateLabel={workloadInfo.label} />
+				</div>
+			{/if}
+
+			<!-- If no date requested, also show tomorrow -->
+			{#if !selectedService.requested_date && data.workloadByDate[data.tomorrowStr]}
+				<div class="mt-2">
+					<WorkloadSummary
+						workload={data.workloadByDate[data.tomorrowStr]}
+						dateLabel={m.workload_tomorrow()}
+					/>
+				</div>
+			{/if}
+
+			<!-- Next compatible day suggestion if neither today nor tomorrow is comfortable -->
+			{#if !selectedService.requested_date && data.nextCompatibleDay}
+				{@const todayWorkload = data.workloadByDate[data.todayStr]}
+				{@const tomorrowWorkload = data.workloadByDate[data.tomorrowStr]}
+				{#if todayWorkload?.status !== 'comfortable' && tomorrowWorkload?.status !== 'comfortable'}
+					<div class="mt-3 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+						<div class="flex items-center gap-2 text-sm">
+							<span class="text-blue-600">💡</span>
+							<span class="text-blue-600 font-medium">
+								{m.workload_next_compatible()}: {formatRequestDate(data.nextCompatibleDay.date)}
+							</span>
+						</div>
+					</div>
+				{/if}
+			{/if}
 		{/if}
 
 		{#if actionError}
