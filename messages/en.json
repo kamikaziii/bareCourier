@@ -646,14 +646,16 @@
 	"workload_take_break": "Break",
 
 	"workload_title": "Today's Workload",
-	"workload_services": "services",
+	"workload_service_singular": "service",
+	"workload_service_plural": "services",
 	"workload_driving": "Driving",
 	"workload_service_time": "Service time",
 	"workload_breaks": "Breaks",
 	"workload_total_needed": "Total needed",
-	"workload_status_comfortable": "Fits in day ({hours} buffer)",
-	"workload_status_tight": "Tight day ({hours} buffer)",
+	"workload_status_comfortable": "Compatible ({hours} buffer)",
+	"workload_status_tight": "Tight ({hours} buffer)",
 	"workload_status_overloaded": "Overloaded by {hours}",
 	"workload_show_details": "Show details",
-	"workload_hide_details": "Hide details"
+	"workload_hide_details": "Hide details",
+	"workload_drive_time": "~{time} drive"
 }
