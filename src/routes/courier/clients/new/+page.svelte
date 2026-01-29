@@ -115,7 +115,7 @@
 						>
 							<option value="">{m.none()}</option>
 							{#each data.serviceTypes as type (type.id)}
-								<option value={type.id}>{type.name} - {Number(type.price).toFixed(2)}</option>
+								<option value={type.id}>{type.name} - €{Number(type.price).toFixed(2)}</option>
 							{/each}
 						</select>
 						<p class="text-xs text-muted-foreground">{m.default_service_type_desc()}</p>

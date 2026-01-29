@@ -41,6 +41,17 @@ export const actions: Actions = {
 			return fail(401, { error: 'Not authenticated' });
 		}
 
+		// Verify courier role
+		const { data: userProfile } = await supabase
+			.from('profiles')
+			.select('role')
+			.eq('id', user.id)
+			.single();
+
+		if (userProfile?.role !== 'courier') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
 		const formData = await request.formData();
 		const name = formData.get('name') as string;
 		const email = formData.get('email') as string;
@@ -74,7 +85,7 @@ export const actions: Actions = {
 
 		// Update profile with additional data
 		if (authData.user) {
-			await supabase
+			const { error: profileError } = await supabase
 				.from('profiles')
 				.update({
 					phone: phone?.trim() || null,
@@ -82,6 +93,11 @@ export const actions: Actions = {
 					default_service_type_id: default_service_type_id || null
 				})
 				.eq('id', authData.user.id);
+
+			if (profileError) {
+				console.error('Failed to update client profile:', profileError);
+				// User was created but profile update failed - log but don't fail
+			}
 		}
 
 		redirect(303, localizeHref('/courier/clients'));

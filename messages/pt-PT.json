@@ -695,6 +695,7 @@
 	"workload_tomorrow": "Amanhã",
 	"workload_next_compatible": "Próximo dia compatível",
 	"workload_use_this_date": "Usar esta data",
+	"workload_no_date_requested": "Sem data específica",
 
 	"distribution_zones": "Zonas de Distribuição",
 	"distribution_zones_desc": "Selecione os municípios dentro da sua área de distribuição",
