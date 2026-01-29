@@ -336,9 +336,9 @@ export const actions: Actions = {
 		await requireCourier(supabase, user.id);
 
 		const formData = await request.formData();
-		const pricingMode = formData.get('pricing_mode') as 'warehouse' | 'zone';
+		const pricingMode = formData.get('pricing_mode') as 'warehouse' | 'zone' | 'type';
 
-		if (!['warehouse', 'zone'].includes(pricingMode)) {
+		if (!['warehouse', 'zone', 'type'].includes(pricingMode)) {
 			return fail(400, { error: 'Invalid pricing mode' });
 		}
 
@@ -352,6 +352,35 @@ export const actions: Actions = {
 		}
 
 		return { success: true, message: 'pricing_mode_updated' };
+	},
+
+	updateSpecialPricing: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return fail(401, { error: 'Not authenticated' });
+		}
+
+		await requireCourier(supabase, user.id);
+
+		const formData = await request.formData();
+		const timeSpecificPrice = parseFloat(formData.get('time_specific_price') as string) || 13;
+		const outOfZoneBase = parseFloat(formData.get('out_of_zone_base') as string) || 13;
+		const outOfZonePerKm = parseFloat(formData.get('out_of_zone_per_km') as string) || 0.5;
+
+		const { error } = await supabase
+			.from('profiles')
+			.update({
+				time_specific_price: timeSpecificPrice,
+				out_of_zone_base: outOfZoneBase,
+				out_of_zone_per_km: outOfZonePerKm
+			})
+			.eq('id', user.id);
+
+		if (error) {
+			return fail(500, { error: 'Failed to update special pricing' });
+		}
+
+		return { success: true, message: 'special_pricing_updated' };
 	},
 
 	updateWarehouseLocation: async ({ request, locals: { supabase, safeGetSession } }) => {
