@@ -208,6 +208,7 @@
 
 	"map_get_directions": "Obter direções",
 	"map_distance": "Distância: {km} km",
+	"map_distance_duration": "{km} km ~ {minutes} min",
 	"map_calculating": "A calcular distância...",
 	"map_route": "Rota",
 
