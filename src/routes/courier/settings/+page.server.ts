@@ -871,8 +871,7 @@ export const actions: Actions = {
 		}
 
 		// Use atomic RPC function to replace all zones in a single transaction
-		// Note: Type will be available after migration is applied and types regenerated
-		const { error } = await supabase.rpc('replace_distribution_zones' as any, {
+		const { error } = await supabase.rpc('replace_distribution_zones', {
 			new_zones: zones
 		});
 

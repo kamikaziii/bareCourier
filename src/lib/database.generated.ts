@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       break_logs: {
@@ -193,22 +218,22 @@ export type Database = {
       }
       distribution_zones: {
         Row: {
-          id: string
-          distrito: string
           concelho: string
           created_at: string | null
+          distrito: string
+          id: string
         }
         Insert: {
-          id?: string
-          distrito: string
           concelho: string
           created_at?: string | null
+          distrito: string
+          id?: string
         }
         Update: {
-          id?: string
-          distrito?: string
           concelho?: string
           created_at?: string | null
+          distrito?: string
+          id?: string
         }
         Relationships: []
       }
@@ -574,6 +599,39 @@ export type Database = {
           },
         ]
       }
+      service_types: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          price: number
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          price: number
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          price?: number
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       services: {
         Row: {
           calculated_price: number | null
@@ -796,39 +854,6 @@ export type Database = {
         }
         Relationships: []
       }
-      service_types: {
-        Row: {
-          id: string
-          name: string
-          price: number
-          description: string | null
-          active: boolean | null
-          sort_order: number | null
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: string
-          name: string
-          price: number
-          description?: string | null
-          active?: boolean | null
-          sort_order?: number | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: string
-          name?: string
-          price?: number
-          description?: string | null
-          active?: boolean | null
-          sort_order?: number | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
@@ -889,6 +914,10 @@ export type Database = {
         Returns: string
       }
       is_courier: { Args: never; Returns: boolean }
+      replace_distribution_zones: {
+        Args: { new_zones: Json }
+        Returns: undefined
+      }
       replace_pricing_zones: {
         Args: { p_client_id: string; p_zones: Json }
         Returns: Json
@@ -1033,6 +1062,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
