@@ -638,5 +638,10 @@
 	"navigate_to_location": "Navigate",
 	"service_lifecycle": "Service Lifecycle",
 	"show_map": "Show map",
-	"hide_map": "Hide map"
+	"hide_map": "Hide map",
+
+	"workload_working": "Working",
+	"workload_on_break": "On Break",
+	"workload_resume": "Resume",
+	"workload_take_break": "Break"
 }
