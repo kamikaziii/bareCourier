@@ -329,6 +329,8 @@
 	"no_service_types": "Ainda não há tipos de serviço definidos",
 	"price": "Preço",
 	"optional": "Opcional",
+	"default_service_type": "Tipo de Serviço Padrão",
+	"default_service_type_desc": "Pré-seleciona este tipo ao criar serviços para este cliente",
 
 	"settings_tab_account": "Conta",
 	"settings_tab_pricing": "Preços",

@@ -1,6 +1,6 @@
 import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import type { Profile, ClientPricing, PricingZone } from '$lib/database.types';
+import type { Profile, ClientPricing, PricingZone, ServiceType } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
@@ -21,16 +21,28 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 		error(404, 'Client not found');
 	}
 
-	// Load pricing and zones in parallel (client validated, safe to proceed)
-	const [pricingResult, zonesResult] = await Promise.all([
+	// Get courier's pricing mode to determine if we need service types
+	const { data: courier } = await supabase
+		.from('profiles')
+		.select('pricing_mode')
+		.eq('role', 'courier')
+		.single();
+
+	// Load pricing, zones, and service types in parallel (client validated, safe to proceed)
+	const [pricingResult, zonesResult, serviceTypesResult] = await Promise.all([
 		supabase.from('client_pricing').select('*').eq('client_id', params.id).single(),
-		supabase.from('pricing_zones').select('*').eq('client_id', params.id).order('min_km')
+		supabase.from('pricing_zones').select('*').eq('client_id', params.id).order('min_km'),
+		courier?.pricing_mode === 'type'
+			? supabase.from('service_types').select('*').eq('active', true).order('sort_order')
+			: Promise.resolve({ data: [] })
 	]);
 
 	return {
 		client: client as Profile,
 		pricing: pricingResult.data as ClientPricing | null,
-		zones: (zonesResult.data || []) as PricingZone[]
+		zones: (zonesResult.data || []) as PricingZone[],
+		pricingMode: (courier?.pricing_mode as 'warehouse' | 'zone' | 'type') || 'warehouse',
+		serviceTypes: (serviceTypesResult.data || []) as ServiceType[]
 	};
 };
 
@@ -58,6 +70,7 @@ export const actions: Actions = {
 		const name = formData.get('name') as string;
 		const phone = formData.get('phone') as string;
 		const default_pickup_location = formData.get('default_pickup_location') as string;
+		const defaultServiceTypeId = (formData.get('default_service_type_id') as string) || null;
 
 		// Pricing fields
 		const pricingModel = formData.get('pricing_model') as string | null;
@@ -74,7 +87,8 @@ export const actions: Actions = {
 			.update({
 				name,
 				phone: phone || null,
-				default_pickup_location: default_pickup_location || null
+				default_pickup_location: default_pickup_location || null,
+				default_service_type_id: defaultServiceTypeId || null
 			})
 			.eq('id', params.id);
 

@@ -329,6 +329,8 @@
 	"no_service_types": "No service types defined yet",
 	"price": "Price",
 	"optional": "Optional",
+	"default_service_type": "Default Service Type",
+	"default_service_type_desc": "Pre-select this type when creating services for this client",
 
 	"settings_tab_account": "Account",
 	"settings_tab_pricing": "Pricing",
