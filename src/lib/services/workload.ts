@@ -103,8 +103,8 @@ export async function calculateDayWorkload(
 
 	const serviceItems: ServiceWorkloadItem[] = services.map((s) => {
 		const distanceKm = s.distance_km ?? null;
-		// Estimate driving time from distance using shared speed constant
-		const drivingMinutes = distanceKm ? estimateDrivingMinutes(distanceKm) : null;
+		// Use stored duration from API, fallback to estimate from distance
+		const drivingMinutes = s.duration_minutes ?? (distanceKm ? estimateDrivingMinutes(distanceKm) : null);
 
 		if (distanceKm) totalDistanceKm += distanceKm;
 		if (drivingMinutes) totalDrivingMinutes += drivingMinutes;
