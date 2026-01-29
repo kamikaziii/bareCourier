@@ -1,6 +1,6 @@
 import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import type { Service, Profile } from '$lib/database.types';
+import type { Service, Profile, ServiceType } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 import {
 	calculateServicePrice,
@@ -8,6 +8,12 @@ import {
 	getClientPricing
 } from '$lib/services/pricing.js';
 import { calculateServiceDistance } from '$lib/services/distance.js';
+import {
+	getServiceTypes,
+	calculateTypedPrice,
+	type TypePricingInput,
+	type TypePricingSettings
+} from '$lib/services/type-pricing.js';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
 	const { session } = await safeGetSession();
@@ -34,9 +40,39 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 		.eq('active', true)
 		.order('name');
 
+	// Get courier's pricing mode and type-based settings
+	const { data: courierProfile } = await supabase
+		.from('profiles')
+		.select('pricing_mode, time_specific_price, out_of_zone_base, out_of_zone_per_km')
+		.eq('role', 'courier')
+		.limit(1)
+		.single();
+
+	const pricingMode = (courierProfile?.pricing_mode as 'warehouse' | 'zone' | 'type') || 'warehouse';
+
+	// Load type-based pricing data only if mode is 'type'
+	let serviceTypes: ServiceType[] = [];
+	let typePricingSettings: TypePricingSettings = {
+		timeSpecificPrice: 0,
+		outOfZoneBase: 0,
+		outOfZonePerKm: 0
+	};
+
+	if (pricingMode === 'type') {
+		serviceTypes = await getServiceTypes(supabase);
+		typePricingSettings = {
+			timeSpecificPrice: courierProfile?.time_specific_price ?? 0,
+			outOfZoneBase: courierProfile?.out_of_zone_base ?? 0,
+			outOfZonePerKm: courierProfile?.out_of_zone_per_km ?? 0
+		};
+	}
+
 	return {
 		service: service as Service & { profiles: Pick<Profile, 'id' | 'name'> },
-		clients: (clients || []) as Pick<Profile, 'id' | 'name' | 'default_pickup_location'>[]
+		clients: (clients || []) as Pick<Profile, 'id' | 'name' | 'default_pickup_location'>[],
+		pricingMode,
+		serviceTypes,
+		typePricingSettings
 	};
 };
 
@@ -75,6 +111,15 @@ export const actions: Actions = {
 		const distance_km = formData.get('distance_km') ? parseFloat(formData.get('distance_km') as string) : null;
 		const urgency_fee_id = (formData.get('urgency_fee_id') as string) || null;
 
+		// Type-based pricing fields
+		const service_type_id = (formData.get('service_type_id') as string) || null;
+		const has_time_preference = formData.get('has_time_preference') === 'true';
+		const is_out_of_zone_str = formData.get('is_out_of_zone') as string;
+		const is_out_of_zone = is_out_of_zone_str === 'true' ? true : is_out_of_zone_str === 'false' ? false : null;
+		const detected_municipality = (formData.get('detected_municipality') as string) || null;
+		const tollsStr = formData.get('tolls') as string;
+		const tolls = tollsStr && tollsStr !== '' ? parseFloat(tollsStr) : null;
+
 		if (!client_id || !pickup_location || !delivery_location) {
 			return { success: false, error: 'Required fields missing' };
 		}
@@ -108,25 +153,57 @@ export const actions: Actions = {
 			duration_minutes = distanceResult.durationMinutes ?? null;
 		}
 
-		const { config: pricingConfig } = await getClientPricing(supabase, client_id);
-
 		let calculated_price: number | null = null;
 		let price_breakdown: import('$lib/database.types').PriceBreakdown | null = null;
 
-		if (pricingConfig && recalculated_distance_km !== null) {
-			const priceResult = await calculateServicePrice(supabase, {
-				clientId: client_id,
+		// Check pricing mode to determine how to calculate price
+		if (courierSettings.pricingMode === 'type' && service_type_id) {
+			// Type-based pricing
+			const typePricingInput: TypePricingInput = {
+				serviceTypeId: service_type_id,
+				hasTimePreference: has_time_preference,
+				isOutOfZone: is_out_of_zone === true,
 				distanceKm: recalculated_distance_km,
-				urgencyFeeId: urgency_fee_id,
-				minimumCharge: courierSettings.minimumCharge,
-				distanceMode: distanceResult?.distanceMode as 'warehouse' | 'zone' | 'fallback',
-				warehouseToPickupKm: distanceResult?.warehouseToPickupKm,
-				pickupToDeliveryKm: distanceResult?.pickupToDeliveryKm
-			});
+				tolls: tolls
+			};
 
-			if (priceResult.success) {
-				calculated_price = priceResult.price;
-				price_breakdown = priceResult.breakdown;
+			const typeResult = await calculateTypedPrice(supabase, typePricingInput);
+
+			if (typeResult.success && typeResult.price !== null) {
+				calculated_price = typeResult.price;
+				if (typeResult.breakdown) {
+					price_breakdown = {
+						base: typeResult.breakdown.base,
+						distance: typeResult.breakdown.distance,
+						urgency: 0,
+						total: typeResult.breakdown.total,
+						model: 'type',
+						distance_km: recalculated_distance_km ?? 0,
+						tolls: typeResult.breakdown.tolls,
+						reason: typeResult.breakdown.reason,
+						service_type_name: typeResult.breakdown.serviceTypeName
+					};
+				}
+			}
+		} else {
+			// Distance-based pricing
+			const { config: pricingConfig } = await getClientPricing(supabase, client_id);
+
+			if (pricingConfig && recalculated_distance_km !== null) {
+				const priceResult = await calculateServicePrice(supabase, {
+					clientId: client_id,
+					distanceKm: recalculated_distance_km,
+					urgencyFeeId: urgency_fee_id,
+					minimumCharge: courierSettings.minimumCharge,
+					distanceMode: distanceResult?.distanceMode as 'warehouse' | 'zone' | 'fallback',
+					warehouseToPickupKm: distanceResult?.warehouseToPickupKm,
+					pickupToDeliveryKm: distanceResult?.pickupToDeliveryKm
+				});
+
+				if (priceResult.success) {
+					calculated_price = priceResult.price;
+					price_breakdown = priceResult.breakdown;
+				}
 			}
 		}
 
@@ -151,6 +228,12 @@ export const actions: Actions = {
 				price_breakdown,
 				vat_rate_snapshot: courierSettings.vatRate ?? 0,
 				prices_include_vat_snapshot: courierSettings.pricesIncludeVat,
+				// Type-based pricing fields
+				service_type_id: service_type_id || null,
+				has_time_preference,
+				is_out_of_zone,
+				detected_municipality,
+				tolls,
 				updated_at: new Date().toISOString()
 			})
 			.eq('id', params.id);

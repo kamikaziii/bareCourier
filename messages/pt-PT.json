@@ -41,6 +41,7 @@
 
 	"form_client": "Cliente",
 	"form_select_client": "Selecionar cliente",
+	"form_select_service_type": "Selecionar tipo de serviço",
 	"form_pickup_location": "Local de Recolha",
 	"form_delivery_location": "Local de Entrega",
 	"form_notes": "Notas",
