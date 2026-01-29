@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import type { Profile, UrgencyFee, PastDueSettings, WorkingDay } from '$lib/database.types';
+import type { Profile, UrgencyFee, PastDueSettings, WorkingDay, ServiceType } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 import { parseIntWithBounds } from '$lib/utils/form.js';
 
@@ -104,9 +104,16 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 		.select('*')
 		.order('sort_order');
 
+	// Load service types
+	const { data: serviceTypes } = await supabase
+		.from('service_types')
+		.select('*')
+		.order('sort_order');
+
 	return {
 		profile: profile as Profile,
-		urgencyFees: (urgencyFees || []) as UrgencyFee[]
+		urgencyFees: (urgencyFees || []) as UrgencyFee[],
+		serviceTypes: (serviceTypes || []) as ServiceType[]
 	};
 };
 
@@ -674,5 +681,147 @@ export const actions: Actions = {
 		}
 
 		return { success: true, message: 'timezone_updated' };
+	},
+
+	// Service Types actions
+	createServiceType: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return fail(401, { error: 'Not authenticated' });
+		}
+
+		await requireCourier(supabase, user.id);
+
+		const formData = await request.formData();
+		const name = formData.get('name') as string;
+		const price = parseFloat(formData.get('price') as string) || 0;
+		const description = formData.get('description') as string;
+
+		if (!name || name.trim() === '') {
+			return fail(400, { error: 'Name is required' });
+		}
+
+		// Get max sort_order
+		const { data: maxOrder } = await supabase
+			.from('service_types')
+			.select('sort_order')
+			.order('sort_order', { ascending: false })
+			.limit(1)
+			.single();
+
+		const sortOrder = ((maxOrder as { sort_order: number } | null)?.sort_order || 0) + 1;
+
+		const { error } = await supabase.from('service_types').insert({
+			name: name.trim(),
+			price,
+			description: description?.trim() || null,
+			sort_order: sortOrder
+		});
+
+		if (error) {
+			return fail(500, { error: 'Failed to create service type' });
+		}
+
+		return { success: true, message: 'service_type_created' };
+	},
+
+	updateServiceType: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return fail(401, { error: 'Not authenticated' });
+		}
+
+		await requireCourier(supabase, user.id);
+
+		const formData = await request.formData();
+		const id = formData.get('id') as string;
+		const name = formData.get('name') as string;
+		const price = parseFloat(formData.get('price') as string) || 0;
+		const description = formData.get('description') as string;
+
+		if (!id) {
+			return fail(400, { error: 'ID is required' });
+		}
+
+		if (!name || name.trim() === '') {
+			return fail(400, { error: 'Name is required' });
+		}
+
+		const { error } = await supabase
+			.from('service_types')
+			.update({
+				name: name.trim(),
+				price,
+				description: description?.trim() || null
+			})
+			.eq('id', id);
+
+		if (error) {
+			return fail(500, { error: 'Failed to update service type' });
+		}
+
+		return { success: true, message: 'service_type_updated' };
+	},
+
+	deleteServiceType: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return fail(401, { error: 'Not authenticated' });
+		}
+
+		await requireCourier(supabase, user.id);
+
+		const formData = await request.formData();
+		const id = formData.get('id') as string;
+
+		if (!id) {
+			return fail(400, { error: 'ID is required' });
+		}
+
+		// Check if this service type is in use by any services
+		const { count } = await supabase
+			.from('services')
+			.select('id', { count: 'exact', head: true })
+			.eq('service_type_id', id);
+
+		if (count && count > 0) {
+			return fail(409, { error: 'service_type_in_use' });
+		}
+
+		const { error } = await supabase.from('service_types').delete().eq('id', id);
+
+		if (error) {
+			return fail(500, { error: 'Failed to delete service type' });
+		}
+
+		return { success: true, message: 'service_type_deleted' };
+	},
+
+	toggleServiceType: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return fail(401, { error: 'Not authenticated' });
+		}
+
+		await requireCourier(supabase, user.id);
+
+		const formData = await request.formData();
+		const id = formData.get('id') as string;
+		const active = formData.get('active') === 'true';
+
+		if (!id) {
+			return fail(400, { error: 'ID is required' });
+		}
+
+		const { error } = await supabase
+			.from('service_types')
+			.update({ active: !active })
+			.eq('id', id);
+
+		if (error) {
+			return fail(500, { error: 'Failed to toggle service type' });
+		}
+
+		return { success: true, message: 'service_type_toggled' };
 	}
 };
