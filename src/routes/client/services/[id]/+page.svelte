@@ -17,7 +17,9 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	import type { PageData } from './$types';
 	import type { TimeSlot } from '$lib/database.types.js';
 	import { PUBLIC_MAPBOX_TOKEN } from '$env/static/public';
-	import { ArrowLeft, Clock, Calendar, CalendarClock, AlertCircle, Euro } from '@lucide/svelte';
+	import { ArrowLeft, Clock, Calendar, CalendarClock, AlertCircle, Euro, Printer } from '@lucide/svelte';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
+	import ServiceLabel from '$lib/components/ServiceLabel.svelte';
 
 	const hasMapbox = !!PUBLIC_MAPBOX_TOKEN;
 
@@ -38,6 +40,11 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	let rescheduleActionLoading = $state(false);
 	let showDeclineDialog = $state(false);
 	let declineReason = $state('');
+	let showPrintDialog = $state(false);
+
+	function handlePrint() {
+		window.print();
+	}
 
 	// Reschedule availability checks
 	const canReschedule = $derived(() => {
@@ -134,11 +141,19 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 			<ArrowLeft class="size-4" />
 		</Button>
 		<h1 class="text-2xl font-bold flex-1">{m.service_details()}</h1>
-		{#if service.request_status === 'pending'}
-			<Button variant="outline" size="sm" href={localizeHref(`/client/services/${service.id}/edit`)}>
-				{m.action_edit()}
-			</Button>
-		{/if}
+		<div class="flex gap-2">
+			{#if service.display_id && data.courierProfile}
+				<Button variant="outline" size="sm" onclick={() => (showPrintDialog = true)}>
+					<Printer class="size-4 mr-2" />
+					{m.print_label()}
+				</Button>
+			{/if}
+			{#if service.request_status === 'pending'}
+				<Button variant="outline" size="sm" href={localizeHref(`/client/services/${service.id}/edit`)}>
+					{m.action_edit()}
+				</Button>
+			{/if}
+		</div>
 	</div>
 
 	<!-- Reschedule Success Banner -->
@@ -475,3 +490,30 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
+
+<!-- Print Label Dialog -->
+{#if data.courierProfile}
+	<AlertDialog.Root bind:open={showPrintDialog}>
+		<AlertDialog.Content class="max-w-lg print:max-w-none print:p-0 print:border-none print:shadow-none">
+			<AlertDialog.Header class="print:hidden">
+				<AlertDialog.Title>{m.print_label()}</AlertDialog.Title>
+			</AlertDialog.Header>
+
+			<div class="flex justify-center py-4 print:py-0">
+				<ServiceLabel
+					{service}
+					courierProfile={data.courierProfile}
+					clientName={data.profile?.name || ''}
+				/>
+			</div>
+
+			<AlertDialog.Footer class="print:hidden">
+				<AlertDialog.Cancel>{m.action_cancel()}</AlertDialog.Cancel>
+				<Button onclick={handlePrint}>
+					<Printer class="mr-2 size-4" />
+					{m.print()}
+				</Button>
+			</AlertDialog.Footer>
+		</AlertDialog.Content>
+	</AlertDialog.Root>
+{/if}

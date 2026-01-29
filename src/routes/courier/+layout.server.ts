@@ -40,6 +40,7 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
 			id: profile.id,
 			role: 'courier' as const,
 			name: profile.name,
+			phone: profile.phone,
 			past_due_settings: profile.past_due_settings,
 			time_slots: profile.time_slots,
 			working_days: profile.working_days,
@@ -49,7 +50,9 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
 			prices_include_vat: profile.prices_include_vat,
 			show_price_to_courier: profile.show_price_to_courier,
 			show_price_to_client: profile.show_price_to_client,
-			workload_settings: profile.workload_settings
+			workload_settings: profile.workload_settings,
+			label_business_name: profile.label_business_name,
+			label_tagline: profile.label_tagline
 		} satisfies CourierLayoutProfile,
 		navCounts: {
 			pendingRequests: (pendingRequestsResult.count ?? 0) + (pendingReschedulesResult.count ?? 0)

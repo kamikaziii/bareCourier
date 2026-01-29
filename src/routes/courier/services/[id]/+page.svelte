@@ -34,8 +34,10 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 		Circle,
 		Euro,
 		CalendarClock,
-		Copy
+		Copy,
+		Printer
 	} from '@lucide/svelte';
+	import ServiceLabel from '$lib/components/ServiceLabel.svelte';
 
 	const hasMapbox = !!PUBLIC_MAPBOX_TOKEN;
 
@@ -54,6 +56,11 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	let priceOverrideLoading = $state(false);
 	let priceOverrideError = $state('');
 	let idCopied = $state(false);
+	let showPrintDialog = $state(false);
+
+	function handlePrint() {
+		window.print();
+	}
 
 	async function copyDisplayId() {
 		if (data.service.display_id) {
@@ -248,6 +255,12 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 				</span>
 			</div>
 			<div class="flex flex-wrap gap-2">
+				{#if service.display_id}
+					<Button variant="outline" size="sm" onclick={() => (showPrintDialog = true)}>
+						<Printer class="mr-2 size-4" />
+						{m.print_label()}
+					</Button>
+				{/if}
 				{#if service.status === 'pending'}
 					{#if !service.pending_reschedule_date}
 						<Button variant="outline" size="sm" onclick={() => (showRescheduleDialog = true)}>
@@ -665,3 +678,33 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	bind:open={showRescheduleDialog}
 	onReschedule={handleReschedule}
 />
+
+<!-- Print Label Dialog -->
+<AlertDialog.Root bind:open={showPrintDialog}>
+	<AlertDialog.Content class="max-w-lg print:max-w-none print:p-0 print:border-none print:shadow-none">
+		<AlertDialog.Header class="print:hidden">
+			<AlertDialog.Title>{m.print_label()}</AlertDialog.Title>
+		</AlertDialog.Header>
+
+		<div class="flex justify-center py-4 print:py-0">
+			<ServiceLabel
+				{service}
+				courierProfile={{
+					name: data.profile.name,
+					phone: data.profile.phone,
+					label_business_name: data.profile.label_business_name,
+					label_tagline: data.profile.label_tagline
+				}}
+				clientName={client.name}
+			/>
+		</div>
+
+		<AlertDialog.Footer class="print:hidden">
+			<AlertDialog.Cancel>{m.action_cancel()}</AlertDialog.Cancel>
+			<Button onclick={handlePrint}>
+				<Printer class="mr-2 size-4" />
+				{m.print()}
+			</Button>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>

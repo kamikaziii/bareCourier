@@ -32,14 +32,14 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 		.eq('service_id', params.id)
 		.order('changed_at', { ascending: false });
 
-	// Load courier's reschedule settings and price visibility
+	// Load courier's reschedule settings, price visibility, and label branding
 	const { data: courierSettingsData } = await supabase
 		.from('profiles')
-		.select('past_due_settings, show_price_to_client')
+		.select('name, phone, past_due_settings, show_price_to_client, label_business_name, label_tagline')
 		.eq('role', 'courier')
 		.single();
 
-	const courierSettings = courierSettingsData as Pick<Profile, 'past_due_settings' | 'show_price_to_client'> | null;
+	const courierSettings = courierSettingsData as Pick<Profile, 'name' | 'phone' | 'past_due_settings' | 'show_price_to_client' | 'label_business_name' | 'label_tagline'> | null;
 	const settings = courierSettings?.past_due_settings as PastDueSettings | null;
 	const rescheduleSettings = {
 		allowed: settings?.allowClientReschedule ?? true,
@@ -52,7 +52,13 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 		service,
 		statusHistory: (statusHistoryData || []) as ServiceStatusHistory[],
 		rescheduleSettings,
-		showPriceToClient
+		showPriceToClient,
+		courierProfile: courierSettings ? {
+			name: courierSettings.name,
+			phone: courierSettings.phone,
+			label_business_name: courierSettings.label_business_name,
+			label_tagline: courierSettings.label_tagline
+		} : null
 	};
 };
 

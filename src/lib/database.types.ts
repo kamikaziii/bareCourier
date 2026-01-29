@@ -278,6 +278,7 @@ export type CourierLayoutProfile = {
 	id: string;
 	role: 'courier';
 	name: string;
+	phone: string | null;
 	past_due_settings: PastDueSettings | null;
 	time_slots: TimeSlotDefinitions | null;
 	working_days: WorkingDay[] | null;
@@ -288,6 +289,8 @@ export type CourierLayoutProfile = {
 	show_price_to_courier: boolean | null;
 	show_price_to_client: boolean | null;
 	workload_settings: WorkloadSettings | null;
+	label_business_name: string | null;
+	label_tagline: string | null;
 };
 
 /** Profile shape returned by client +layout.server.ts */
