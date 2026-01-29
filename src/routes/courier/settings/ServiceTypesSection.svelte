@@ -45,7 +45,7 @@
 
 <Card.Root>
 	<Card.Header>
-		<div class="flex items-center justify-between">
+		<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 			<div>
 				<Card.Title class="flex items-center gap-2">
 					<Tags class="size-5" />
@@ -55,7 +55,7 @@
 					{m.service_types_desc()}
 				</Card.Description>
 			</div>
-			<Button variant="outline" onclick={() => (showNewForm = !showNewForm)}>
+			<Button variant="outline" onclick={() => (showNewForm = !showNewForm)} class="w-full sm:w-auto">
 				<Plus class="mr-2 size-4" />
 				{m.add_service_type()}
 			</Button>
@@ -124,14 +124,14 @@
 		<!-- List of service types -->
 		<div class="space-y-3">
 			{#if serviceTypes.length === 0}
-				<div class="rounded-lg border border-dashed p-6 text-center">
+				<div class="rounded-lg border border-dashed p-4 text-center sm:p-6">
 					<Tags class="mx-auto size-8 text-muted-foreground" />
 					<p class="mt-2 text-sm text-muted-foreground">
 						{m.no_service_types()}
 					</p>
-					<Button variant="outline" class="mt-4" onclick={() => (showNewForm = true)}>
-						<Plus class="mr-2 size-4" />
-						{m.add_first_service_type()}
+					<Button variant="outline" class="mt-4 h-auto max-w-full whitespace-normal px-3 py-2" onclick={() => (showNewForm = true)}>
+						<Plus class="mr-2 size-4 shrink-0" />
+						<span>{m.add_first_service_type()}</span>
 					</Button>
 				</div>
 			{:else}
@@ -188,49 +188,51 @@
 							</form>
 						{:else}
 							<!-- Display mode -->
-							<div class="flex items-center justify-between">
-								<div>
+							<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+								<div class="min-w-0 flex-1">
 									<h4 class="font-medium">{type.name}</h4>
-									<p class="text-sm text-muted-foreground">
+									<p class="truncate text-sm text-muted-foreground">
 										{type.description || '-'}
 									</p>
 								</div>
-								<div class="flex items-center gap-2">
-									<div class="mr-2 text-right">
+								<div class="flex items-center justify-between gap-2 sm:justify-end">
+									<div class="text-left sm:mr-2 sm:text-right">
 										<p class="text-sm font-medium">{formatPrice(type.price)} EUR</p>
 										<p class="text-xs text-muted-foreground">
 											{type.active ? m.status_active() : m.settings_inactive()}
 										</p>
 									</div>
-									<!-- Toggle active/inactive -->
-									<form method="POST" action="?/toggleServiceType" use:enhance>
-										<input type="hidden" name="id" value={type.id} />
-										<input type="hidden" name="active" value={(type.active ?? true).toString()} />
+									<div class="flex items-center gap-1">
+										<!-- Toggle active/inactive -->
+										<form method="POST" action="?/toggleServiceType" use:enhance>
+											<input type="hidden" name="id" value={type.id} />
+											<input type="hidden" name="active" value={(type.active ?? true).toString()} />
+											<Button
+												type="submit"
+												variant="ghost"
+												size="icon"
+												title={type.active ? m.settings_deactivate() : m.settings_activate()}
+											>
+												<Power
+													class="size-4 {type.active ? 'text-green-500' : 'text-muted-foreground'}"
+												/>
+											</Button>
+										</form>
+										<!-- Edit -->
+										<Button variant="ghost" size="icon" onclick={() => (editingTypeId = type.id)}>
+											<span class="sr-only">{m.action_edit()}</span>
+											<Pencil class="size-4" />
+										</Button>
+										<!-- Delete -->
 										<Button
-											type="submit"
 											variant="ghost"
 											size="icon"
-											title={type.active ? m.settings_deactivate() : m.settings_activate()}
+											class="text-destructive hover:text-destructive"
+											onclick={() => openDeleteDialog(type.id)}
 										>
-											<Power
-												class="size-4 {type.active ? 'text-green-500' : 'text-muted-foreground'}"
-											/>
+											<Trash2 class="size-4" />
 										</Button>
-									</form>
-									<!-- Edit -->
-									<Button variant="ghost" size="icon" onclick={() => (editingTypeId = type.id)}>
-										<span class="sr-only">{m.action_edit()}</span>
-										<Pencil class="size-4" />
-									</Button>
-									<!-- Delete -->
-									<Button
-										variant="ghost"
-										size="icon"
-										class="text-destructive hover:text-destructive"
-										onclick={() => openDeleteDialog(type.id)}
-									>
-										<Trash2 class="size-4" />
-									</Button>
+									</div>
 								</div>
 							</div>
 						{/if}

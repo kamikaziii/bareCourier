@@ -1555,10 +1555,42 @@ git commit -m "feat(ui): integrate DistributionZonesSection into settings page"
 
 **Files:**
 - Modified: `src/routes/courier/settings/PricingTab.svelte`
+- Modified: `src/routes/courier/settings/+page.svelte`
+
+**IMPORTANT: Svelte 5 State Management Pattern for Forms (Svelte 5.25+)**
+
+For form values initialized from props that need to stay in sync after form submission, use `$derived` instead of `$state`. Since Svelte 5.25, derived values can be temporarily overridden by user interaction and will automatically recalculate when their source props change.
+
+```svelte
+<script lang="ts">
+  let { profile } = $props();
+
+  // ✅ CORRECT: Use $derived - values auto-sync when props change
+  let pricingMode = $derived(profile.pricing_mode ?? 'warehouse');
+  let showPriceToCourier = $derived(profile.show_price_to_courier ?? true);
+
+  // ❌ WRONG: $state doesn't sync when props change
+  // let pricingMode = $state(profile.pricing_mode ?? 'warehouse');
+</script>
+
+<!-- Use bind:group for radio buttons -->
+<input type="radio" name="pricing_mode" value="type" bind:group={pricingMode} />
+```
+
+**Why `$derived` works:**
+- Derived values automatically recalculate when source props change (e.g., after server response)
+- Can be temporarily overridden by user input (radio clicks, form changes)
+- When props update (form submission success), derived values sync to new prop values
+- No `{#key}` wrapper needed, no `$effect` sync loops
+
+**Why `$state` doesn't work:**
+- `$state` values initialized from props capture the initial value only
+- When props change (after form submission), `$state` values don't update
+- Leads to stale UI state (radio unchecked, values disappearing)
 
 **Step 1: Add 'type' option to pricing mode radio buttons**
 
-After the existing "Zone" option (around line 100-120), add:
+After the existing "Zone" option, add the type-based option using `bind:group`:
 
 ```svelte
 <!-- Type-based Option -->
@@ -1569,8 +1601,7 @@ After the existing "Zone" option (around line 100-120), add:
     type="radio"
     name="pricing_mode"
     value="type"
-    checked={pricingMode === 'type'}
-    onchange={() => pricingMode = 'type'}
+    bind:group={pricingMode}
     class="mt-1"
   />
   <div class="flex-1">
@@ -2184,6 +2215,75 @@ The remaining tasks follow the same pattern:
 
 ---
 
+### Task 29: Display type-based pricing info in service details view [COMPLETED]
+
+**Files:**
+- Modified: `src/routes/courier/services/[id]/+page.server.ts`
+- Modified: `src/routes/courier/services/[id]/+page.svelte`
+
+**Step 1: Update server loader to join service_types**
+
+In the load function, update the query to include service type name:
+
+```typescript
+const { data: service, error: serviceError } = await supabase
+  .from('services')
+  .select('*, profiles!client_id(id, name, phone, default_pickup_location), service_types(id, name, price)')
+  .eq('id', params.id)
+  .single();
+```
+
+**Step 2: Add price breakdown display to the Price card**
+
+After the total price, show breakdown when type-based pricing data exists:
+
+```svelte
+{#if service.service_type_id || service.in_zone !== null}
+  <Separator class="my-3" />
+  <div class="space-y-2 text-sm">
+    {#if service.service_types?.name}
+      <div class="flex justify-between">
+        <span class="text-muted-foreground">{m.service_type()}</span>
+        <span>{service.service_types.name}</span>
+      </div>
+    {/if}
+    {#if service.in_zone !== null}
+      <div class="flex justify-between">
+        <span class="text-muted-foreground">{m.zone_status()}</span>
+        <Badge variant={service.in_zone ? 'secondary' : 'outline'}>
+          {service.in_zone ? m.in_zone() : m.out_of_zone()}
+        </Badge>
+      </div>
+    {/if}
+    {#if service.price_breakdown}
+      <!-- Show breakdown details -->
+    {/if}
+    {#if service.tolls && service.tolls > 0}
+      <div class="flex justify-between">
+        <span class="text-muted-foreground">{m.tolls_label()}</span>
+        <span>€{service.tolls.toFixed(2)}</span>
+      </div>
+    {/if}
+  </div>
+{/if}
+```
+
+**Step 3: Add i18n key for zone status**
+
+Add to messages files:
+```json
+"zone_status": "Zone"
+```
+
+**Step 4: Commit**
+
+```bash
+git add src/routes/courier/services/[id]/+page.server.ts src/routes/courier/services/[id]/+page.svelte messages/en.json messages/pt-PT.json
+git commit -m "feat(ui): display type-based pricing info in service details view"
+```
+
+---
+
 ## Summary
 
 | Phase | Tasks | Description |
@@ -2196,6 +2296,6 @@ The remaining tasks follow the same pattern:
 | 6 | 16-18 | Pricing mode & special pricing |
 | 7 | 19-20 | Client default service type |
 | 8 | 21-22 | Scheduling UI adaptation |
-| 9 | 23-28 | Integration & testing |
+| 9 | 23-29 | Integration & testing |
 
-**Total: 28 tasks**
+**Total: 29 tasks**

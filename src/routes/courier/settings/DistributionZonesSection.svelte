@@ -175,16 +175,16 @@
 		</div>
 
 		<!-- Expand/Collapse controls -->
-		<div class="flex items-center justify-between">
-			<div class="flex gap-2">
-				<Button variant="ghost" size="sm" onclick={expandAll}>
+		<div class="flex flex-wrap items-center justify-between gap-2">
+			<div class="flex gap-1 sm:gap-2">
+				<Button variant="ghost" size="sm" class="h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm" onclick={expandAll}>
 					{m.expand_all()}
 				</Button>
-				<Button variant="ghost" size="sm" onclick={collapseAll}>
+				<Button variant="ghost" size="sm" class="h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm" onclick={collapseAll}>
 					{m.collapse_all()}
 				</Button>
 			</div>
-			<Badge variant="secondary">
+			<Badge variant="secondary" class="text-xs sm:text-sm">
 				{selectedCount} {m.selected_count()}
 			</Badge>
 		</div>

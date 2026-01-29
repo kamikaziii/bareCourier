@@ -9,6 +9,7 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
+	import { Separator } from '$lib/components/ui/separator/index.js';
 	import ServiceLocationCard from '$lib/components/ServiceLocationCard.svelte';
 	import StatusHistory from '$lib/components/StatusHistory.svelte';
 	import UrgencyBadge from '$lib/components/UrgencyBadge.svelte';
@@ -364,6 +365,51 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 							<Button variant="outline" onclick={() => (showPriceOverride = true)}>
 								{m.price_override()}
 							</Button>
+						</div>
+					{/if}
+
+					<!-- Type-based pricing breakdown -->
+					{#if service.service_type_id || service.is_out_of_zone !== null || service.tolls}
+						<Separator class="my-4" />
+						<div class="space-y-2 text-sm">
+							{#if service.service_types?.name}
+								<div class="flex justify-between">
+									<span class="text-muted-foreground">{m.service_type()}</span>
+									<span class="font-medium">{service.service_types.name}</span>
+								</div>
+							{/if}
+							{#if service.is_out_of_zone !== null}
+								<div class="flex items-center justify-between">
+									<span class="text-muted-foreground">{m.zone_status()}</span>
+									{#if !service.is_out_of_zone}
+										<Badge variant="secondary" class="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200">
+											{m.in_zone()}
+										</Badge>
+									{:else}
+										<Badge variant="secondary" class="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">
+											{m.out_of_zone()}
+										</Badge>
+									{/if}
+								</div>
+							{/if}
+							{#if service.has_time_preference}
+								<div class="flex justify-between">
+									<span class="text-muted-foreground">{m.time_preference_label()}</span>
+									<span>{m.yes()}</span>
+								</div>
+							{/if}
+							{#if service.tolls && service.tolls > 0}
+								<div class="flex justify-between">
+									<span class="text-muted-foreground">{m.tolls_label()}</span>
+									<span>€{Number(service.tolls).toFixed(2)}</span>
+								</div>
+							{/if}
+							{#if service.distance_km && service.is_out_of_zone}
+								<div class="flex justify-between">
+									<span class="text-muted-foreground">{m.distance_label()}</span>
+									<span>{service.distance_km.toFixed(1)} km</span>
+								</div>
+							{/if}
 						</div>
 					{/if}
 				</Card.Content>

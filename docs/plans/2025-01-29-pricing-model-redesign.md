@@ -366,7 +366,34 @@ Add/Edit form:
 
 **Note:** Only visible when type-based pricing is enabled.
 
-### 5. Service Form (Courier)
+### 5. Service Details View (Courier)
+
+When viewing a service created with type-based pricing, show the pricing details:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ Preço                                        [Alterar]  │
+├─────────────────────────────────────────────────────────┤
+│ €38.00                                                  │
+│                                                         │
+│ ─────────────── Detalhes ───────────────                │
+│ Tipo de serviço:    Dental                              │
+│ Zona:               🔴 Fora de zona (Aveiro)            │
+│                                                         │
+│ Base (fora de zona):     €13.00                         │
+│ Distância (45km × €0.50): €22.50                        │
+│ Portagens:                €2.50                         │
+│ ───────────────────────────────                         │
+│ Total:                   €38.00                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Scenarios:**
+- In-zone, no time preference: Show type name + base price
+- In-zone, time preference: Show type name + "Serviço com horário" + €13
+- Out-of-zone: Show type name + zone badge + full breakdown
+
+### 6. Service Form (Courier)
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -591,6 +618,8 @@ If auto-detection fails:
 - `src/routes/courier/clients/new/+page.svelte` (add default type)
 - `src/routes/courier/clients/[id]/edit/+page.svelte` (add default type)
 - `src/routes/courier/services/new/+page.svelte` (add type fields, scheduling)
+- `src/routes/courier/services/[id]/+page.svelte` (display type-based pricing info)
+- `src/routes/courier/services/[id]/+page.server.ts` (join service_types for name)
 - `src/routes/courier/services/[id]/edit/+page.svelte` (add type fields)
 - `src/routes/client/new/+page.svelte` (update scheduling, zone indicator)
 - `src/lib/components/SchedulePicker.svelte` (conditional mode)
@@ -661,8 +690,9 @@ price_final_note: "Preço final confirmado pelo estafeta",
 - [ ] Client default type is pre-filled in service form
 - [ ] Tolls input appears only when out-of-zone
 - [ ] Price visibility respects settings
-- [ ] Urgency fees hidden when type-based mode
+- [x] Urgency fees hidden when type-based mode
 - [ ] Client form shows simplified version
+- [x] Service details view shows type-based pricing info (type, zone, breakdown)
 - [ ] Existing services unaffected by mode switch
 - [ ] All new strings translated (PT + EN)
 

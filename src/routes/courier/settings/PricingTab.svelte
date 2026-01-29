@@ -32,8 +32,10 @@
 	let deletingFeeId = $state<string | null>(null);
 	let deleteDialogOpen = $state(false);
 
-	// Derived values from props - using `let` allows temporary override for optimistic UI
-	// When profile updates (after form save), derived values auto-recalculate from new props
+	// Form state - using $derived with override capability (Svelte 5.25+)
+	// These values derive from profile props but can be temporarily overridden by user interaction.
+	// When profile props change (e.g., after form submission), the derived values automatically
+	// recalculate to match the new props, keeping UI in sync with server state.
 	let pricingMode = $derived((profile.pricing_mode as 'warehouse' | 'zone' | 'type') ?? 'warehouse');
 	let showPriceToCourier = $derived(profile.show_price_to_courier ?? true);
 	let showPriceToClient = $derived(profile.show_price_to_client ?? true);
@@ -43,6 +45,11 @@
 	let vatEnabled = $derived(profile.vat_enabled ?? false);
 	let vatRate = $derived(profile.vat_rate ?? DEFAULT_VAT_RATE);
 	let pricesIncludeVat = $derived(profile.prices_include_vat ?? false);
+
+	// Special pricing (type-based mode)
+	let timeSpecificPrice = $derived(profile.time_specific_price ?? 13);
+	let outOfZoneBase = $derived(profile.out_of_zone_base ?? 13);
+	let outOfZonePerKm = $derived(profile.out_of_zone_per_km ?? 0.5);
 
 	function openDeleteDialog(feeId: string) {
 		deletingFeeId = feeId;
@@ -70,8 +77,7 @@
 						type="radio"
 						name="pricing_mode"
 						value="warehouse"
-						checked={pricingMode === 'warehouse'}
-						onchange={() => pricingMode = 'warehouse'}
+						bind:group={pricingMode}
 						class="mt-1"
 					/>
 					<div class="flex-1">
@@ -93,8 +99,7 @@
 						type="radio"
 						name="pricing_mode"
 						value="zone"
-						checked={pricingMode === 'zone'}
-						onchange={() => pricingMode = 'zone'}
+						bind:group={pricingMode}
 						class="mt-1"
 					/>
 					<div class="flex-1">
@@ -116,8 +121,7 @@
 						type="radio"
 						name="pricing_mode"
 						value="type"
-						checked={pricingMode === 'type'}
-						onchange={() => pricingMode = 'type'}
+						bind:group={pricingMode}
 						class="mt-1"
 					/>
 					<div class="flex-1">
@@ -138,60 +142,58 @@
 
 {#if pricingMode === 'type'}
 	<!-- Special Pricing Settings -->
-	{#key `${profile.time_specific_price}-${profile.out_of_zone_base}-${profile.out_of_zone_per_km}`}
-		<Card.Root>
-			<Card.Header>
-				<Card.Title class="flex items-center gap-2">
-					<Calculator class="size-5" />
-					{m.special_pricing()}
-				</Card.Title>
-				<Card.Description>{m.special_pricing_desc()}</Card.Description>
-			</Card.Header>
-			<Card.Content>
-				<form method="POST" action="?/updateSpecialPricing" use:enhance class="space-y-4">
-					<div class="grid gap-4 md:grid-cols-3">
-						<div class="space-y-2">
-							<Label for="time_specific_price">{m.time_specific_price()}</Label>
-							<Input
-								id="time_specific_price"
-								name="time_specific_price"
-								type="number"
-								step="0.01"
-								min="0"
-								value={profile.time_specific_price ?? 13}
-							/>
-							<p class="text-xs text-muted-foreground">{m.time_specific_price_desc()}</p>
-						</div>
-						<div class="space-y-2">
-							<Label for="out_of_zone_base">{m.out_of_zone_base()}</Label>
-							<Input
-								id="out_of_zone_base"
-								name="out_of_zone_base"
-								type="number"
-								step="0.01"
-								min="0"
-								value={profile.out_of_zone_base ?? 13}
-							/>
-							<p class="text-xs text-muted-foreground">{m.out_of_zone_base_desc()}</p>
-						</div>
-						<div class="space-y-2">
-							<Label for="out_of_zone_per_km">{m.out_of_zone_per_km()}</Label>
-							<Input
-								id="out_of_zone_per_km"
-								name="out_of_zone_per_km"
-								type="number"
-								step="0.01"
-								min="0"
-								value={profile.out_of_zone_per_km ?? 0.5}
-							/>
-							<p class="text-xs text-muted-foreground">{m.out_of_zone_per_km_desc()}</p>
-						</div>
+	<Card.Root>
+		<Card.Header>
+			<Card.Title class="flex items-center gap-2">
+				<Calculator class="size-5" />
+				{m.special_pricing()}
+			</Card.Title>
+			<Card.Description>{m.special_pricing_desc()}</Card.Description>
+		</Card.Header>
+		<Card.Content>
+			<form method="POST" action="?/updateSpecialPricing" use:enhance class="space-y-4">
+				<div class="grid gap-4 md:grid-cols-3">
+					<div class="space-y-2">
+						<Label for="time_specific_price">{m.time_specific_price()}</Label>
+						<Input
+							id="time_specific_price"
+							name="time_specific_price"
+							type="number"
+							step="0.01"
+							min="0"
+							bind:value={timeSpecificPrice}
+						/>
+						<p class="text-xs text-muted-foreground">{m.time_specific_price_desc()}</p>
 					</div>
-					<Button type="submit">{m.action_save()}</Button>
-				</form>
-			</Card.Content>
-		</Card.Root>
-	{/key}
+					<div class="space-y-2">
+						<Label for="out_of_zone_base">{m.out_of_zone_base()}</Label>
+						<Input
+							id="out_of_zone_base"
+							name="out_of_zone_base"
+							type="number"
+							step="0.01"
+							min="0"
+							bind:value={outOfZoneBase}
+						/>
+						<p class="text-xs text-muted-foreground">{m.out_of_zone_base_desc()}</p>
+					</div>
+					<div class="space-y-2">
+						<Label for="out_of_zone_per_km">{m.out_of_zone_per_km()}</Label>
+						<Input
+							id="out_of_zone_per_km"
+							name="out_of_zone_per_km"
+							type="number"
+							step="0.01"
+							min="0"
+							bind:value={outOfZonePerKm}
+						/>
+						<p class="text-xs text-muted-foreground">{m.out_of_zone_per_km_desc()}</p>
+					</div>
+				</div>
+				<Button type="submit">{m.action_save()}</Button>
+			</form>
+		</Card.Content>
+	</Card.Root>
 {/if}
 
 <!-- Pricing Preferences -->
@@ -237,24 +239,29 @@
 				/>
 			</div>
 
-			<Separator />
+			{#if pricingMode !== 'type'}
+				<Separator />
 
-			<!-- Default urgency fee -->
-			<div class="space-y-2">
-				<Label for="default_urgency_fee_id">{m.settings_default_urgency()}</Label>
-				<select
-					id="default_urgency_fee_id"
-					name="default_urgency_fee_id"
-					bind:value={defaultUrgencyFeeId}
-					class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-				>
-					<option value="">{m.none()}</option>
-					{#each urgencyFees.filter((f) => f.active) as fee (fee.id)}
-						<option value={fee.id}>{fee.name}</option>
-					{/each}
-				</select>
-				<p class="text-xs text-muted-foreground">{m.settings_default_urgency_desc()}</p>
-			</div>
+				<!-- Default urgency fee (hidden for type-based pricing) -->
+				<div class="space-y-2">
+					<Label for="default_urgency_fee_id">{m.settings_default_urgency()}</Label>
+					<select
+						id="default_urgency_fee_id"
+						name="default_urgency_fee_id"
+						bind:value={defaultUrgencyFeeId}
+						class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+					>
+						<option value="">{m.none()}</option>
+						{#each urgencyFees.filter((f) => f.active) as fee (fee.id)}
+							<option value={fee.id}>{fee.name}</option>
+						{/each}
+					</select>
+					<p class="text-xs text-muted-foreground">{m.settings_default_urgency_desc()}</p>
+				</div>
+			{:else}
+				<!-- Preserve value when hidden -->
+				<input type="hidden" name="default_urgency_fee_id" value="" />
+			{/if}
 
 			<!-- Minimum charge -->
 			<div class="space-y-2">
@@ -360,10 +367,11 @@
 	</Card.Content>
 </Card.Root>
 
-<!-- Urgency Fees -->
+<!-- Urgency Fees (hidden for type-based pricing - redundant since time preference triggers premium) -->
+{#if pricingMode !== 'type'}
 <Card.Root>
 	<Card.Header>
-		<div class="flex items-center justify-between">
+		<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 			<div>
 				<Card.Title class="flex items-center gap-2">
 					<Zap class="size-5" />
@@ -371,7 +379,7 @@
 				</Card.Title>
 				<Card.Description>{m.settings_urgency_fees_desc()}</Card.Description>
 			</div>
-			<Button variant="outline" onclick={() => (showNewUrgencyForm = !showNewUrgencyForm)}>
+			<Button variant="outline" onclick={() => (showNewUrgencyForm = !showNewUrgencyForm)} class="w-full sm:w-auto">
 				<Plus class="mr-2 size-4" />
 				{m.settings_add_urgency()}
 			</Button>
@@ -461,45 +469,47 @@
 							</div>
 						</form>
 					{:else}
-						<div class="flex items-center justify-between">
-							<div>
+						<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+							<div class="min-w-0 flex-1">
 								<h4 class="font-medium">{fee.name}</h4>
-								<p class="text-sm text-muted-foreground">{fee.description || '-'}</p>
+								<p class="truncate text-sm text-muted-foreground">{fee.description || '-'}</p>
 							</div>
-							<div class="flex items-center gap-2">
-								<div class="mr-2 text-right">
+							<div class="flex items-center justify-between gap-2 sm:justify-end">
+								<div class="text-left sm:mr-2 sm:text-right">
 									<p class="text-sm font-medium">{fee.multiplier}x + {fee.flat_fee.toFixed(2)}EUR</p>
 									<p class="text-xs text-muted-foreground">
 										{fee.active ? m.status_active() : m.settings_inactive()}
 									</p>
 								</div>
-								<!-- Toggle active/inactive -->
-								<form method="POST" action="?/toggleUrgencyFee" use:enhance>
-									<input type="hidden" name="id" value={fee.id} />
-									<input type="hidden" name="active" value={fee.active.toString()} />
+								<div class="flex items-center gap-1">
+									<!-- Toggle active/inactive -->
+									<form method="POST" action="?/toggleUrgencyFee" use:enhance>
+										<input type="hidden" name="id" value={fee.id} />
+										<input type="hidden" name="active" value={fee.active.toString()} />
+										<Button
+											type="submit"
+											variant="ghost"
+											size="icon"
+											title={fee.active ? m.settings_deactivate() : m.settings_activate()}
+										>
+											<Power class="size-4 {fee.active ? 'text-green-500' : 'text-muted-foreground'}" />
+										</Button>
+									</form>
+									<!-- Edit -->
+									<Button variant="ghost" size="icon" onclick={() => (editingFeeId = fee.id)}>
+										<span class="sr-only">{m.action_edit()}</span>
+										<Pencil class="size-4" />
+									</Button>
+									<!-- Delete -->
 									<Button
-										type="submit"
 										variant="ghost"
 										size="icon"
-										title={fee.active ? m.settings_deactivate() : m.settings_activate()}
+										class="text-destructive hover:text-destructive"
+										onclick={() => openDeleteDialog(fee.id)}
 									>
-										<Power class="size-4 {fee.active ? 'text-green-500' : 'text-muted-foreground'}" />
+										<Trash2 class="size-4" />
 									</Button>
-								</form>
-								<!-- Edit -->
-								<Button variant="ghost" size="icon" onclick={() => (editingFeeId = fee.id)}>
-									<span class="sr-only">{m.action_edit()}</span>
-									<Pencil class="size-4" />
-								</Button>
-								<!-- Delete -->
-								<Button
-									variant="ghost"
-									size="icon"
-									class="text-destructive hover:text-destructive"
-									onclick={() => openDeleteDialog(fee.id)}
-								>
-									<Trash2 class="size-4" />
-								</Button>
+								</div>
 							</div>
 						</div>
 					{/if}
@@ -531,3 +541,4 @@
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>
+{/if}

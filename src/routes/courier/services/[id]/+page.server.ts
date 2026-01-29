@@ -1,6 +1,6 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import type { Service, ServiceStatusHistory, Profile } from '$lib/database.types';
+import type { Service, ServiceStatusHistory, Profile, ServiceType } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
@@ -9,10 +9,10 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 		redirect(303, localizeHref('/login'));
 	}
 
-	// Load service with client info
+	// Load service with client info and service type
 	const { data: service, error: serviceError } = await supabase
 		.from('services')
-		.select('*, profiles!client_id(id, name, phone, default_pickup_location)')
+		.select('*, profiles!client_id(id, name, phone, default_pickup_location), service_types(id, name, price)')
 		.eq('id', params.id)
 		.single();
 
@@ -28,7 +28,10 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 		.order('changed_at', { ascending: false });
 
 	return {
-		service: service as Service & { profiles: Pick<Profile, 'id' | 'name' | 'phone' | 'default_pickup_location'> },
+		service: service as Service & {
+			profiles: Pick<Profile, 'id' | 'name' | 'phone' | 'default_pickup_location'>;
+			service_types: Pick<ServiceType, 'id' | 'name' | 'price'> | null;
+		},
 		statusHistory: (statusHistory || []) as (ServiceStatusHistory & { profiles: { name: string } | null })[]
 	};
 };

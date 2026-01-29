@@ -46,6 +46,30 @@ const count = value ?? 0;
 </script>
 ```
 
+### Form State Management
+**CRITICAL**: Use `$derived` for form values that come from props, NOT `$state`. This ensures form data syncs when props change.
+
+```svelte
+<!-- CORRECT: Props become $derived -->
+<script lang="ts">
+  let { formData }: { formData: FormData } = $props();
+
+  let email = $derived(formData.email);      // Syncs with prop
+  let phone = $derived(formData.phone);      // Syncs with prop
+  let isLoading = $state(false);             // Local UI state
+</script>
+
+<!-- WRONG: Local $state loses sync -->
+<script lang="ts">
+  let { formData }: { formData: FormData } = $props();
+
+  let email = $state(formData.email);        // Doesn't sync!
+  let phone = $state(formData.phone);        // Doesn't sync!
+</script>
+```
+
+See [svelte-form-state.md](./svelte-form-state.md) for detailed patterns and testing strategies.
+
 ### Event Handlers
 ```svelte
 <!-- CORRECT: Svelte 5 -->

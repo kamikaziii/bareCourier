@@ -709,6 +709,10 @@
 	"out_of_zone": "Out of zone",
 	"out_of_zone_warning": "Outside distribution zone",
 	"out_of_zone_client_warning": "Additional costs may apply",
+	"zone_status": "Zone",
+	"time_preference_label": "Time preference",
+	"distance_label": "Distance",
+	"yes": "Yes",
 	"no_results": "No results found",
 
 	"tolls": "Tolls",
