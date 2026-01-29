@@ -632,5 +632,10 @@
 
 	"error_accept_suggestions": "Falha ao aceitar sugestões",
 	"error_decline_suggestions": "Falha ao recusar sugestões",
-	"error_generic": "Ocorreu um erro"
+	"error_generic": "Ocorreu um erro",
+
+	"navigate_to_location": "Navegar",
+	"service_lifecycle": "Ciclo de Vida",
+	"show_map": "Mostrar mapa",
+	"hide_map": "Ocultar mapa"
 }

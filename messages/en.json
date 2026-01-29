@@ -632,5 +632,10 @@
 
 	"error_accept_suggestions": "Failed to accept suggestions",
 	"error_decline_suggestions": "Failed to decline suggestions",
-	"error_generic": "An error occurred"
+	"error_generic": "An error occurred",
+
+	"navigate_to_location": "Navigate",
+	"service_lifecycle": "Service Lifecycle",
+	"show_map": "Show map",
+	"hide_map": "Hide map"
 }

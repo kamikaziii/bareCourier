@@ -7,7 +7,6 @@
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Textarea } from '$lib/components/ui/textarea/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import RouteMap from '$lib/components/RouteMap.svelte';
 	import ServiceLocationCard from '$lib/components/ServiceLocationCard.svelte';
 	import StatusHistory from '$lib/components/StatusHistory.svelte';
 	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
@@ -18,7 +17,7 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	import type { PageData } from './$types';
 	import type { TimeSlot } from '$lib/database.types.js';
 	import { PUBLIC_MAPBOX_TOKEN } from '$env/static/public';
-	import { ArrowLeft, MapPin, Clock, Calendar, CalendarClock, AlertCircle } from '@lucide/svelte';
+	import { ArrowLeft, Clock, Calendar, CalendarClock, AlertCircle } from '@lucide/svelte';
 
 	const hasMapbox = !!PUBLIC_MAPBOX_TOKEN;
 

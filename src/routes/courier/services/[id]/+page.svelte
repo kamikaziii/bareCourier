@@ -9,8 +9,6 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import { Separator } from '$lib/components/ui/separator/index.js';
-	import RouteMap from '$lib/components/RouteMap.svelte';
 	import ServiceLocationCard from '$lib/components/ServiceLocationCard.svelte';
 	import StatusHistory from '$lib/components/StatusHistory.svelte';
 	import UrgencyBadge from '$lib/components/UrgencyBadge.svelte';
@@ -28,7 +26,6 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 		Edit,
 		Trash2,
 		MoreVertical,
-		MapPin,
 		Clock,
 		User,
 		CheckCircle,
@@ -300,6 +297,21 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 		</Tabs.List>
 
 		<Tabs.Content value="details" class="space-y-4 pt-4">
+			<!-- Locations (first for field use) -->
+			<ServiceLocationCard {service} {hasMapbox} />
+
+			<!-- Notes -->
+			{#if service.notes}
+				<Card.Root>
+					<Card.Header>
+						<Card.Title>{m.form_notes()}</Card.Title>
+					</Card.Header>
+					<Card.Content>
+						<p class="whitespace-pre-wrap">{service.notes}</p>
+					</Card.Content>
+				</Card.Root>
+			{/if}
+
 			<!-- Client Info -->
 			<Card.Root>
 				<Card.Header>
@@ -322,49 +334,6 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 							{m.view_client_profile()}
 						</Button>
 					</div>
-				</Card.Content>
-			</Card.Root>
-
-			<!-- Locations -->
-			<ServiceLocationCard {service} {hasMapbox} />
-
-			<!-- Notes -->
-			{#if service.notes}
-				<Card.Root>
-					<Card.Header>
-						<Card.Title>{m.form_notes()}</Card.Title>
-					</Card.Header>
-					<Card.Content>
-						<p class="whitespace-pre-wrap">{service.notes}</p>
-					</Card.Content>
-				</Card.Root>
-			{/if}
-
-			<!-- Timestamps -->
-			<Card.Root>
-				<Card.Header>
-					<Card.Title class="flex items-center gap-2">
-						<Clock class="size-5" />
-						{m.timestamps()}
-					</Card.Title>
-				</Card.Header>
-				<Card.Content class="space-y-2">
-					<div class="flex justify-between">
-						<span class="text-muted-foreground">{m.label_created()}</span>
-						<span>{formatDateTime(service.created_at)}</span>
-					</div>
-					{#if service.updated_at}
-						<div class="flex justify-between">
-							<span class="text-muted-foreground">{m.label_updated()}</span>
-							<span>{formatDateTime(service.updated_at)}</span>
-						</div>
-					{/if}
-					{#if service.delivered_at}
-						<div class="flex justify-between">
-							<span class="text-muted-foreground">{m.label_delivered()}</span>
-							<span>{formatDateTime(service.delivered_at)}</span>
-						</div>
-					{/if}
 				</Card.Content>
 			</Card.Root>
 
@@ -401,7 +370,36 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 			</Card.Root>
 		</Tabs.Content>
 
-		<Tabs.Content value="history" class="pt-4">
+		<Tabs.Content value="history" class="pt-4 space-y-4">
+			<!-- Service Lifecycle -->
+			<Card.Root>
+				<Card.Header>
+					<Card.Title class="flex items-center gap-2">
+						<Clock class="size-5" />
+						{m.service_lifecycle()}
+					</Card.Title>
+				</Card.Header>
+				<Card.Content class="space-y-2">
+					<div class="flex justify-between">
+						<span class="text-muted-foreground">{m.label_created()}</span>
+						<span>{formatDateTime(service.created_at)}</span>
+					</div>
+					{#if service.updated_at}
+						<div class="flex justify-between">
+							<span class="text-muted-foreground">{m.label_updated()}</span>
+							<span>{formatDateTime(service.updated_at)}</span>
+						</div>
+					{/if}
+					{#if service.delivered_at}
+						<div class="flex justify-between">
+							<span class="text-muted-foreground">{m.label_delivered()}</span>
+							<span>{formatDateTime(service.delivered_at)}</span>
+						</div>
+					{/if}
+				</Card.Content>
+			</Card.Root>
+
+			<!-- Status History -->
 			<Card.Root>
 				<Card.Header>
 					<Card.Title>{m.status_history()}</Card.Title>

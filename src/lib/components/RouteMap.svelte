@@ -10,6 +10,7 @@
 		routeGeometry?: string | null; // Encoded polyline
 		distanceKm?: number | null;
 		height?: string;
+		hideFooter?: boolean;
 	}
 
 	let {
@@ -17,7 +18,8 @@
 		deliveryCoords = null,
 		routeGeometry = null,
 		distanceKm = null,
-		height = '300px'
+		height = '300px',
+		hideFooter = false
 	}: Props = $props();
 
 	let mapContainer: HTMLDivElement;
@@ -178,7 +180,7 @@
 		style="height: {height}"
 	></div>
 
-	{#if distanceKm !== null || (pickupCoords && deliveryCoords)}
+	{#if !hideFooter && (distanceKm !== null || (pickupCoords && deliveryCoords))}
 		<div class="flex items-center justify-between">
 			{#if distanceKm !== null}
 				<span class="text-sm text-muted-foreground">
