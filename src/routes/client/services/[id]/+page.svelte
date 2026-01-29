@@ -56,7 +56,7 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	}
 
 	// Reschedule availability checks
-	const canReschedule = $derived(() => {
+	const canReschedule = $derived.by(() => {
 		if (service.status !== 'pending') return { allowed: false, reason: 'not_pending' };
 		if (!data.rescheduleSettings.allowed) return { allowed: false, reason: 'disabled' };
 		if ((service.reschedule_count || 0) >= data.rescheduleSettings.maxReschedules) {
@@ -271,17 +271,16 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 			{/if}
 		{:else}
 			<!-- Reschedule Button -->
-			{@const check = canReschedule()}
-			{#if check.allowed}
+			{#if canReschedule.allowed}
 				<Button variant="outline" class="w-full" onclick={openRescheduleDialog}>
 					<CalendarClock class="size-4 mr-2" />
 					{m.client_request_reschedule()}
 				</Button>
-			{:else if check.reason === 'max_reached'}
+			{:else if canReschedule.reason === 'max_reached'}
 				<div class="text-sm text-muted-foreground text-center p-2">
 					{m.client_reschedule_max_reached()}
 				</div>
-			{:else if check.reason === 'disabled'}
+			{:else if canReschedule.reason === 'disabled'}
 				<div class="text-sm text-muted-foreground text-center p-2">
 					{m.client_reschedule_disabled()}
 				</div>
