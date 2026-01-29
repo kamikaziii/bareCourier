@@ -17,7 +17,7 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	import type { PageData } from './$types';
 	import type { TimeSlot } from '$lib/database.types.js';
 	import { PUBLIC_MAPBOX_TOKEN } from '$env/static/public';
-	import { ArrowLeft, Clock, Calendar, CalendarClock, AlertCircle, Euro, Printer } from '@lucide/svelte';
+	import { ArrowLeft, Clock, Calendar, CalendarClock, AlertCircle, Euro, Printer, Copy, UserCheck } from '@lucide/svelte';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import ServiceLabel from '$lib/components/ServiceLabel.svelte';
 
@@ -41,9 +41,18 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	let showDeclineDialog = $state(false);
 	let declineReason = $state('');
 	let showPrintDialog = $state(false);
+	let idCopied = $state(false);
 
 	function handlePrint() {
 		window.print();
+	}
+
+	async function copyDisplayId() {
+		if (service.display_id) {
+			await navigator.clipboard.writeText(service.display_id);
+			idCopied = true;
+			setTimeout(() => (idCopied = false), 2000);
+		}
 	}
 
 	// Reschedule availability checks
@@ -172,9 +181,25 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 		</Card.Root>
 	{/if}
 
-	<!-- Status Badge -->
+	<!-- Status Badge & Service Info -->
 	<Card.Root>
-		<Card.Content class="flex items-center justify-between p-4">
+		<Card.Content class="space-y-3 p-4">
+			<!-- Display ID with copy button -->
+			<div class="flex items-center gap-2">
+				<span class="font-mono text-lg font-semibold">{service.display_id}</span>
+				<Button variant="ghost" size="sm" onclick={copyDisplayId} class="h-7 px-2">
+					<Copy class="size-4" />
+				</Button>
+				{#if idCopied}
+					<span class="text-xs text-green-600">{m.service_id_copied()}</span>
+				{/if}
+			</div>
+			{#if service.customer_reference}
+				<p class="text-sm text-muted-foreground">
+					{m.customer_reference()}: {service.customer_reference}
+				</p>
+			{/if}
+
 			<div class="flex items-center gap-3">
 				<Badge
 					variant={service.status === 'pending' ? 'default' : 'secondary'}
@@ -273,6 +298,28 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 		<Tabs.Content value="details" class="space-y-4 pt-4">
 			<!-- Locations -->
 			<ServiceLocationCard {service} {hasMapbox} />
+
+			<!-- Recipient Info (conditional) -->
+			{#if service.recipient_name || service.recipient_phone}
+				<Card.Root>
+					<Card.Header>
+						<Card.Title class="flex items-center gap-2">
+							<UserCheck class="size-5" />
+							{m.recipient()}
+						</Card.Title>
+					</Card.Header>
+					<Card.Content class="space-y-1">
+						{#if service.recipient_name}
+							<p class="font-medium">{service.recipient_name}</p>
+						{/if}
+						{#if service.recipient_phone}
+							<a href="tel:{service.recipient_phone}" class="text-sm text-primary hover:underline">
+								{service.recipient_phone}
+							</a>
+						{/if}
+					</Card.Content>
+				</Card.Root>
+			{/if}
 
 			<!-- Scheduling Info -->
 			{#if service.requested_date || service.scheduled_date}
