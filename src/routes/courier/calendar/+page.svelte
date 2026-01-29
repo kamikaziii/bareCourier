@@ -129,6 +129,7 @@
 	function goToToday() {
 		const today = new Date();
 		const monthStr = today.toISOString().slice(0, 7);
+		selectedDay = today.getDate();
 		goto(`${page.url.pathname}?month=${monthStr}`);
 	}
 
@@ -157,8 +158,10 @@
 		});
 	});
 
-	// Selected day for detail view
-	let selectedDay = $state<number | null>(null);
+	// Selected day for detail view - auto-select today if viewing current month
+	const today = new Date();
+	const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+	let selectedDay = $state<number | null>(isCurrentMonth ? today.getDate() : null);
 	let selectedDayServices = $derived<ServiceWithClient[]>(
 		selectedDay ? getServicesForDay(selectedDay) : []
 	);
@@ -233,9 +236,9 @@
 						<button
 							type="button"
 							class="bg-background p-1 sm:p-2 transition-colors flex flex-col min-h-[64px] sm:min-h-[72px]
-								{isToday ? 'bg-primary/10 ring-1 ring-inset ring-primary' : ''}
-								{isSelected ? 'bg-accent' : ''}
-								{!isToday && !isSelected ? 'hover:bg-accent/50' : ''}
+								{isSelected ? 'bg-primary' : ''}
+								{isToday && !isSelected ? 'ring-2 ring-inset ring-primary' : ''}
+								{!isSelected ? 'hover:bg-accent/50' : ''}
 								{!isCurrentMonth ? 'opacity-40' : ''}"
 							onclick={() => {
 								if (isCurrentMonth) {
@@ -246,7 +249,8 @@
 						>
 							<span
 								class="text-xs sm:text-sm leading-none
-									{isToday ? 'font-bold text-primary' : ''}
+									{isSelected ? 'font-semibold text-primary-foreground' : ''}
+									{isToday && !isSelected ? 'font-bold text-primary' : ''}
 									{!isCurrentMonth ? 'text-muted-foreground' : ''}"
 							>
 								{cell.day}
@@ -278,7 +282,7 @@
 		</Card.Root>
 
 		<!-- Day Detail Panel - Desktop: side panel, Mobile: below -->
-		<Card.Root class="lg:h-fit lg:sticky lg:top-20">
+		<Card.Root class="lg:h-fit lg:sticky lg:top-20 overflow-hidden">
 			<Card.Header class="pb-3">
 				{#if selectedDay !== null}
 					<Card.Title class="text-lg">
