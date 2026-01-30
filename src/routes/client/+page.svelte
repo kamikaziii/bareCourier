@@ -199,8 +199,11 @@
 					serviceToCancel = null;
 				}
 			}
-		} catch {
-			// Silent fail, user will see the service still there
+		} catch (error) {
+			console.error('Failed to cancel request:', error);
+			actionError = error instanceof Error
+				? error.message
+				: 'Não foi possível cancelar o pedido. Por favor, tente novamente.';
 		}
 		actionLoading = false;
 	}
