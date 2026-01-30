@@ -238,13 +238,4 @@
 		font-size: 8pt;
 		color: #666;
 	}
-
-	/* Print styles */
-	@media print {
-		.service-label {
-			border: none;
-			margin: 0;
-			padding: 5mm;
-		}
-	}
 </style>

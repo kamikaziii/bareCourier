@@ -38,6 +38,7 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 		Printer
 	} from '@lucide/svelte';
 	import ServiceLabel from '$lib/components/ServiceLabel.svelte';
+	import { printElement } from '$lib/utils/print-label.js';
 
 	const hasMapbox = !!PUBLIC_MAPBOX_TOKEN;
 
@@ -59,7 +60,11 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	let showPrintDialog = $state(false);
 
 	function handlePrint() {
-		window.print();
+		const labelElement = document.querySelector('.service-label');
+		if (labelElement instanceof HTMLElement) {
+			const title = service.display_id ? `${service.display_id} - Etiqueta` : 'Etiqueta';
+			printElement(labelElement, title);
+		}
 	}
 
 	async function copyDisplayId() {

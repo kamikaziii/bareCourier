@@ -20,6 +20,7 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	import { ArrowLeft, Clock, Calendar, CalendarClock, AlertCircle, Euro, Printer, Copy, UserCheck } from '@lucide/svelte';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import ServiceLabel from '$lib/components/ServiceLabel.svelte';
+	import { printElement } from '$lib/utils/print-label.js';
 
 	const hasMapbox = !!PUBLIC_MAPBOX_TOKEN;
 
@@ -44,7 +45,11 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	let idCopied = $state(false);
 
 	function handlePrint() {
-		window.print();
+		const labelElement = document.querySelector('.service-label');
+		if (labelElement instanceof HTMLElement) {
+			const title = service.display_id ? `${service.display_id} - Etiqueta` : 'Etiqueta';
+			printElement(labelElement, title);
+		}
 	}
 
 	async function copyDisplayId() {
