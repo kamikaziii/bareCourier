@@ -686,7 +686,7 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 
 <!-- Print Label Dialog -->
 <AlertDialog.Root bind:open={showPrintDialog}>
-	<AlertDialog.Content class="max-w-lg print:max-w-none print:p-0 print:border-none print:shadow-none">
+	<AlertDialog.Content class="max-w-lg print:max-w-none print:p-0 print:border-none print:shadow-none" interactOutsideBehavior="close">
 		<AlertDialog.Header class="print:hidden">
 			<AlertDialog.Title>{m.print_label()}</AlertDialog.Title>
 		</AlertDialog.Header>
