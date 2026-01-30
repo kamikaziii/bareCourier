@@ -8,6 +8,7 @@
 	import { getLocale } from '$lib/paraglide/runtime.js';
 import { formatDate } from '$lib/utils.js';
 	import type { PageData } from './$types';
+	import type { Service } from '$lib/database.types';
 	import { Euro, MapPin, Package, Receipt, Download } from '@lucide/svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import SkeletonList from '$lib/components/SkeletonList.svelte';
@@ -15,6 +16,8 @@ import { formatDate } from '$lib/utils.js';
 	import PaginationControls from '$lib/components/PaginationControls.svelte';
 
 	let { data }: { data: PageData } = $props();
+
+	type BillingService = Pick<Service, 'id' | 'status' | 'distance_km' | 'calculated_price' | 'created_at' | 'pickup_location' | 'delivery_location'>;
 
 	// Date range (default to current month)
 	const now = new Date();
@@ -25,7 +28,7 @@ import { formatDate } from '$lib/utils.js';
 	let endDate = $state(lastOfMonth.toISOString().split('T')[0]);
 
 	// State for billing data
-	let services = $state<any[]>([]);
+	let services = $state<BillingService[]>([]);
 	let loading = $state(true);
 	let totals = $state({ services: 0, km: 0, cost: 0 });
 

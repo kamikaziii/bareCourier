@@ -26,11 +26,13 @@
 	import ZoneOverrideToggle from '$lib/components/ZoneOverrideToggle.svelte';
 	import TypePricePreview from '$lib/components/TypePricePreview.svelte';
 	import type { PageData } from './$types';
-	import type { TimeSlot, UrgencyFee, ServiceType } from '$lib/database.types.js';
+	import type { TimeSlot, UrgencyFee, ServiceType, Profile } from '$lib/database.types.js';
 
 	let { data }: { data: PageData } = $props();
 
-	let clients = $state<any[]>([]);
+	type ClientOption = Pick<Profile, 'id' | 'name' | 'default_pickup_location' | 'default_service_type_id'>;
+
+	let clients = $state<ClientOption[]>([]);
 	let loading = $state(true);
 
 	// Form state

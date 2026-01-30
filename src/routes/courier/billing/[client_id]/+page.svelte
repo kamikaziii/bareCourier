@@ -9,11 +9,13 @@
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime.js';
 import { formatDate } from '$lib/utils.js';
 	import type { PageData, ActionData } from './$types';
-	import type { PricingModel } from '$lib/database.types';
+	import type { PricingModel, Service } from '$lib/database.types';
 	import { ArrowLeft, Euro, MapPin, Trash2, Plus, FileText, Calculator, AlertTriangle } from '@lucide/svelte';
 	import { calculateVat } from '$lib/services/pricing.js';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+
+	type BillingService = Pick<Service, 'id' | 'status' | 'distance_km' | 'calculated_price' | 'created_at' | 'scheduled_date' | 'pickup_location' | 'delivery_location' | 'vat_rate_snapshot' | 'prices_include_vat_snapshot'>;
 
 	// VAT settings from courier profile (via parent layout)
 	const vatEnabled = $derived(data.profile.vat_enabled ?? false);
@@ -40,7 +42,7 @@ import { formatDate } from '$lib/utils.js';
 	);
 
 	// State for services list
-	let services = $state<any[]>([]);
+	let services = $state<BillingService[]>([]);
 	let loadingServices = $state(true);
 	let totalStats = $state({ services: 0, km: 0, revenue: 0, totalNet: 0, totalVat: 0, totalGross: 0 });
 	let recalculating = $state(false);
@@ -221,7 +223,7 @@ import { formatDate } from '$lib/utils.js';
 				: [(s.calculated_price || 0).toFixed(2)];
 
 			return [
-				new Date(s.created_at).toLocaleDateString(locale),
+				s.created_at ? new Date(s.created_at).toLocaleDateString(locale) : '-',
 				s.pickup_location,
 				s.delivery_location,
 				(s.distance_km || 0).toFixed(1),
