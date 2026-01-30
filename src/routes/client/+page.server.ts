@@ -223,10 +223,9 @@ export const actions: Actions = {
 			return { success: false, error: 'Some services not found or unauthorized' };
 		}
 
-		// Accept each suggestion
-		let failCount = 0;
-		for (const svc of servicesData) {
-			const { error } = await supabase
+		// Accept all suggestions in parallel
+		const updatePromises = servicesData.map(svc =>
+			supabase
 				.from('services')
 				.update({
 					request_status: 'accepted',
@@ -237,9 +236,11 @@ export const actions: Actions = {
 					suggested_time_slot: null,
 					suggested_time: null
 				})
-				.eq('id', svc.id);
-			if (error) failCount++;
-		}
+				.eq('id', svc.id)
+		);
+
+		const results = await Promise.all(updatePromises);
+		const failCount = results.filter(r => r.error).length;
 
 		if (failCount > 0) {
 			if (failCount < servicesData.length) {
@@ -303,10 +304,9 @@ export const actions: Actions = {
 			return { success: false, error: 'Some services not found or unauthorized' };
 		}
 
-		// Decline all
-		let failCount = 0;
-		for (const svc of servicesData) {
-			const { error } = await supabase
+		// Decline all suggestions in parallel
+		const updatePromises = servicesData.map(svc =>
+			supabase
 				.from('services')
 				.update({
 					request_status: 'pending',
@@ -314,9 +314,11 @@ export const actions: Actions = {
 					suggested_time_slot: null,
 					suggested_time: null
 				})
-				.eq('id', svc.id);
-			if (error) failCount++;
-		}
+				.eq('id', svc.id)
+		);
+
+		const results = await Promise.all(updatePromises);
+		const failCount = results.filter(r => r.error).length;
 
 		if (failCount > 0) {
 			if (failCount < servicesData.length) {
