@@ -1,5 +1,25 @@
-import type { Actions } from './$types';
+import type { Actions, PageServerLoad } from './$types';
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
+
+export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
+	const { user } = await safeGetSession();
+
+	if (!user) {
+		return { services: [] };
+	}
+
+	// Load all services (filtering happens client-side for better UX)
+	const { data: services } = await supabase
+		.from('services')
+		.select('*, profiles!client_id(name)')
+		.is('deleted_at', null)
+		.order('scheduled_date', { ascending: true, nullsFirst: false })
+		.order('created_at', { ascending: false });
+
+	return {
+		services: services || []
+	};
+};
 
 // Helper to send notification
 async function notifyClient(params: {

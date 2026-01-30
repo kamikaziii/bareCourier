@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
-	import { goto } from '$app/navigation';
+	import { goto, invalidate } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
@@ -33,8 +33,8 @@
 	type ServiceWithProfile = Service & { profiles: { name: string } | null };
 
 	let filter = $state<'today' | 'tomorrow' | 'all'>('today');
-	let services = $state<ServiceWithProfile[]>([]);
-	let loading = $state(true);
+	let services = $derived(data.services);
+	let loading = $state(false);
 	// Track which services are currently syncing
 	let syncingIds = $state<Set<string>>(new Set());
 	// Workload state
@@ -90,7 +90,8 @@
 			const result = await response.json();
 			if (result.data?.success) {
 				batchRescheduleSuccess = m.reschedule_success();
-				await loadServices();
+				// Reload from server
+				await invalidate('app:services');
 				showBatchRescheduleDialog = false;
 				batch.reset();
 				// Clear success message after 3 seconds
@@ -114,45 +115,6 @@
 	tomorrow.setDate(tomorrow.getDate() + 1);
 	const dayAfter = new Date(tomorrow);
 	dayAfter.setDate(dayAfter.getDate() + 1);
-
-	async function loadServices() {
-		loading = true;
-		let query = data.supabase
-			.from('services')
-			.select('*, profiles!client_id(name)')
-			.is('deleted_at', null);
-
-		// Format dates as YYYY-MM-DD for scheduled_date comparison
-		const todayStr = today.toISOString().split('T')[0];
-		const tomorrowStr = tomorrow.toISOString().split('T')[0];
-		const dayAfterStr = dayAfter.toISOString().split('T')[0];
-
-		if (filter === 'today') {
-			// Services scheduled for today OR unscheduled services created today
-			query = query.or(
-				`scheduled_date.eq.${todayStr},and(scheduled_date.is.null,created_at.gte.${today.toISOString()},created_at.lt.${tomorrow.toISOString()})`
-			);
-		} else if (filter === 'tomorrow') {
-			// Services scheduled for tomorrow OR unscheduled services created tomorrow
-			query = query.or(
-				`scheduled_date.eq.${tomorrowStr},and(scheduled_date.is.null,created_at.gte.${tomorrow.toISOString()},created_at.lt.${dayAfter.toISOString()})`
-			);
-		}
-
-		// Order by scheduled_date first (nulls last), then by created_at descending
-		query = query
-			.order('scheduled_date', { ascending: true, nullsFirst: false })
-			.order('created_at', { ascending: false });
-
-		const { data: result } = await query;
-		services = result || [];
-		loading = false;
-
-		// Cache services for offline access
-		if (browser && result) {
-			cacheServices(result);
-		}
-	}
 
 	async function loadWorkload() {
 		workloadLoading = true;
@@ -236,7 +198,6 @@
 	let workloadLoaded = false;
 
 	$effect(() => {
-		loadServices();
 		if (!workloadLoaded) {
 			workloadLoaded = true;
 			loadWorkload();
@@ -250,7 +211,7 @@
 		function handleSyncComplete(event: MessageEvent) {
 			if (event.data?.type === 'SYNC_COMPLETE') {
 				// Reload services and workload when sync completes
-				loadServices();
+				invalidate('app:services');
 				loadWorkload();
 			}
 		}
@@ -262,9 +223,37 @@
 		};
 	});
 
-	const pendingCount = $derived(services.filter((s) => s.status === 'pending').length);
-	const deliveredCount = $derived(services.filter((s) => s.status === 'delivered').length);
-	const sortedServices = $derived(sortByUrgency(services, pastDueConfig));
+	// Client-side filtering for instant filter changes
+	const filteredServices = $derived.by(() => {
+		const todayStr = today.toISOString().split('T')[0];
+		const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+		if (filter === 'today') {
+			return services.filter(s => {
+				if (s.scheduled_date === todayStr) return true;
+				if (!s.scheduled_date && s.created_at) {
+					const createdDate = new Date(s.created_at);
+					return createdDate >= today && createdDate < tomorrow;
+				}
+				return false;
+			});
+		} else if (filter === 'tomorrow') {
+			return services.filter(s => {
+				if (s.scheduled_date === tomorrowStr) return true;
+				if (!s.scheduled_date && s.created_at) {
+					const createdDate = new Date(s.created_at);
+					return createdDate >= tomorrow && createdDate < dayAfter;
+				}
+				return false;
+			});
+		}
+
+		return services; // 'all' filter
+	});
+
+	const pendingCount = $derived(filteredServices.filter((s) => s.status === 'pending').length);
+	const deliveredCount = $derived(filteredServices.filter((s) => s.status === 'delivered').length);
+	const sortedServices = $derived(sortByUrgency(filteredServices, pastDueConfig));
 
 </script>
 
