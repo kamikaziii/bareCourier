@@ -6,6 +6,7 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
+	import AddressInput from '$lib/components/AddressInput.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData, ActionData } from './$types';
@@ -53,6 +54,10 @@
 
 	function removeZone(index: number) {
 		zones = zones.filter((_, i) => i !== index);
+	}
+
+	function handleAddressSelect(address: string, _coords: [number, number] | null) {
+		defaultPickupLocation = address;
 	}
 </script>
 
@@ -108,13 +113,15 @@
 
 				<div class="space-y-2">
 					<Label for="location">{m.clients_default_location()}</Label>
-					<Input
+					<AddressInput
 						id="location"
-						name="default_pickup_location"
-						type="text"
 						bind:value={defaultPickupLocation}
+						onSelect={handleAddressSelect}
+						placeholder={m.form_pickup_placeholder()}
 						disabled={loading}
+						showHint={false}
 					/>
+					<input type="hidden" name="default_pickup_location" value={defaultPickupLocation} />
 				</div>
 
 				{#if data.pricingMode === 'type' && data.serviceTypes.length > 0}
@@ -141,29 +148,30 @@
 					</div>
 				{/if}
 
-				<Separator />
+				{#if data.pricingMode !== 'type'}
+					<Separator />
 
-				<!-- Pricing Configuration -->
-				<div class="space-y-4">
-					<button
-						type="button"
-						class="flex w-full items-center justify-between text-left"
-						onclick={() => (showPricingSection = !showPricingSection)}
-						disabled={loading}
-					>
-						<div class="flex items-center gap-2">
-							<Euro class="size-5 text-muted-foreground" />
-							<span class="font-medium">{m.billing_pricing_config()}</span>
-							{#if data.pricing}
-								<Badge variant="outline">{m.billing_configured()}</Badge>
-							{/if}
-						</div>
-						<ChevronDown
-							class="size-5 text-muted-foreground transition-transform {showPricingSection
-								? 'rotate-180'
-								: ''}"
-						/>
-					</button>
+					<!-- Pricing Configuration - Only shown for distance-based pricing -->
+					<div class="space-y-4">
+						<button
+							type="button"
+							class="flex w-full items-center justify-between text-left"
+							onclick={() => (showPricingSection = !showPricingSection)}
+							disabled={loading}
+						>
+							<div class="flex items-center gap-2">
+								<Euro class="size-5 text-muted-foreground" />
+								<span class="font-medium">{m.billing_pricing_config()}</span>
+								{#if data.pricing}
+									<Badge variant="outline">{m.billing_configured()}</Badge>
+								{/if}
+							</div>
+							<ChevronDown
+								class="size-5 text-muted-foreground transition-transform {showPricingSection
+									? 'rotate-180'
+									: ''}"
+							/>
+						</button>
 
 					{#if showPricingSection}
 						<div class="rounded-md border p-4 space-y-4">
@@ -289,6 +297,7 @@
 						</div>
 					{/if}
 				</div>
+				{/if}
 
 				<div class="flex gap-3 pt-4">
 					<Button type="submit" disabled={loading}>

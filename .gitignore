@@ -47,6 +47,4 @@ src/lib/paraglide/
 test-results/
 .playwright-mcp/
 playwright-report/
-
-# Landing page concept (WIP)
-static/landing/
+.vercel

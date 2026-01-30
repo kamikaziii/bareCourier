@@ -9,13 +9,18 @@ import { calculateDayWorkload, getWorkloadSettings, type WorkloadEstimate } from
 const LOOKAHEAD_DAYS = 14;
 
 // Helper to send notification to client
-async function notifyClient(
-	session: { access_token: string },
-	clientId: string,
-	serviceId: string,
-	subject: string,
-	message: string
-) {
+async function notifyClient(params: {
+	session: { access_token: string };
+	clientId: string;
+	serviceId: string;
+	category: 'schedule_change' | 'service_status';
+	title: string;
+	message: string;
+	emailTemplate?: string;
+	emailData?: Record<string, string>;
+}) {
+	const { session, clientId, serviceId, category, title, message, emailTemplate, emailData } = params;
+
 	try {
 		const response = await fetch(`${PUBLIC_SUPABASE_URL}/functions/v1/send-notification`, {
 			method: 'POST',
@@ -25,12 +30,13 @@ async function notifyClient(
 				'apikey': PUBLIC_SUPABASE_ANON_KEY
 			},
 			body: JSON.stringify({
-				type: 'both',
 				user_id: clientId,
-				subject,
+				category,
+				title,
 				message,
 				service_id: serviceId,
-				url: `/client/services/${serviceId}`
+				email_template: emailTemplate,
+				email_data: emailData
 			})
 		});
 
@@ -164,10 +170,10 @@ export const actions: Actions = {
 			return { success: false, error: 'Service ID required' };
 		}
 
-		// Get the service to copy requested schedule to scheduled
+		// Get the service to copy requested schedule to scheduled and fetch data for email
 		const { data: serviceData } = await supabase
 			.from('services')
-			.select('client_id, requested_date, requested_time_slot, requested_time')
+			.select('client_id, pickup_location, delivery_location, requested_date, requested_time_slot, requested_time')
 			.eq('id', serviceId)
 			.single();
 
@@ -177,6 +183,8 @@ export const actions: Actions = {
 
 		const service = serviceData as {
 			client_id: string;
+			pickup_location: string;
+			delivery_location: string;
 			requested_date: string | null;
 			requested_time_slot: string | null;
 			requested_time: string | null;
@@ -197,14 +205,22 @@ export const actions: Actions = {
 			return { success: false, error: 'Failed to update request' };
 		}
 
-		// Notify client
-		await notifyClient(
+		// Notify client with email
+		await notifyClient({
 			session,
-			service.client_id,
+			clientId: service.client_id,
 			serviceId,
-			'Pedido Aceite',
-			'O seu pedido de serviço foi aceite pelo estafeta. Verifique os detalhes na aplicação.'
-		);
+			category: 'schedule_change',
+			title: 'Pedido Aceite',
+			message: 'O seu pedido de serviço foi aceite pelo estafeta. Verifique os detalhes na aplicação.',
+			emailTemplate: 'request_accepted',
+			emailData: {
+				pickup_location: service.pickup_location,
+				delivery_location: service.delivery_location,
+				scheduled_date: service.requested_date || '',
+				app_url: PUBLIC_SUPABASE_URL.replace('/functions/v1', '')
+			}
+		});
 
 		return { success: true };
 	},
@@ -235,14 +251,14 @@ export const actions: Actions = {
 			return { success: false, error: 'Service ID required' };
 		}
 
-		// Get client_id before updating
+		// Get service data for email
 		const { data: serviceData } = await supabase
 			.from('services')
-			.select('client_id')
+			.select('client_id, pickup_location, delivery_location')
 			.eq('id', serviceId)
 			.single();
 
-		const service = serviceData as { client_id: string } | null;
+		const service = serviceData as { client_id: string; pickup_location: string; delivery_location: string } | null;
 
 		const { error: updateError } = await supabase
 			.from('services')
@@ -257,16 +273,24 @@ export const actions: Actions = {
 			return { success: false, error: 'Failed to update request' };
 		}
 
-		// Notify client
+		// Notify client with email
 		if (service?.client_id) {
 			const reasonText = rejectionReason ? ` Motivo: ${rejectionReason}` : '';
-			await notifyClient(
+			await notifyClient({
 				session,
-				service.client_id,
+				clientId: service.client_id,
 				serviceId,
-				'Pedido Rejeitado',
-				`O seu pedido de serviço foi rejeitado.${reasonText}`
-			);
+				category: 'schedule_change',
+				title: 'Pedido Rejeitado',
+				message: `O seu pedido de serviço foi rejeitado.${reasonText}`,
+				emailTemplate: 'request_rejected',
+				emailData: {
+					pickup_location: service.pickup_location,
+					delivery_location: service.delivery_location,
+					reason: rejectionReason || '',
+					app_url: PUBLIC_SUPABASE_URL.replace('/functions/v1', '')
+				}
+			});
 		}
 
 		return { success: true };
@@ -308,14 +332,19 @@ export const actions: Actions = {
 			return { success: false, error: 'Specific time is required when "specific" time slot is selected' };
 		}
 
-		// Get client_id before updating
+		// Get service data for email
 		const { data: serviceData } = await supabase
 			.from('services')
-			.select('client_id')
+			.select('client_id, pickup_location, delivery_location, requested_date')
 			.eq('id', serviceId)
 			.single();
 
-		const service = serviceData as { client_id: string } | null;
+		const service = serviceData as {
+			client_id: string;
+			pickup_location: string;
+			delivery_location: string;
+			requested_date: string | null;
+		} | null;
 
 		const { error: updateError } = await supabase
 			.from('services')
@@ -332,7 +361,7 @@ export const actions: Actions = {
 			return { success: false, error: 'Failed to update request' };
 		}
 
-		// Notify client
+		// Notify client with email
 		if (service?.client_id) {
 			// Use the current request's locale for formatting the notification
 			const locale = extractLocaleFromRequest(request);
@@ -369,13 +398,22 @@ export const actions: Actions = {
 			};
 			const msg = messages[locale] || messages['pt-PT'];
 
-			await notifyClient(
+			await notifyClient({
 				session,
-				service.client_id,
+				clientId: service.client_id,
 				serviceId,
-				msg.subject,
-				msg.body
-			);
+				category: 'schedule_change',
+				title: msg.subject,
+				message: msg.body,
+				emailTemplate: 'request_suggested',
+				emailData: {
+					pickup_location: service.pickup_location,
+					delivery_location: service.delivery_location,
+					requested_date: service.requested_date || '',
+					suggested_date: suggestedDate,
+					app_url: PUBLIC_SUPABASE_URL.replace('/functions/v1', '')
+				}
+			});
 		}
 
 		return { success: true };
@@ -426,13 +464,30 @@ export const actions: Actions = {
 
 		// Notify client
 		if (result.client_id) {
-			await notifyClient(
+			// Fetch service data for email
+			const { data: serviceData } = await supabase
+				.from('services')
+				.select('pickup_location, delivery_location, scheduled_date')
+				.eq('id', serviceId)
+				.single();
+
+			const svcData = serviceData as { pickup_location: string; delivery_location: string; scheduled_date: string | null } | null;
+
+			await notifyClient({
 				session,
-				result.client_id,
+				clientId: result.client_id,
 				serviceId,
-				'Reagendamento Aprovado',
-				'O seu pedido de reagendamento foi aprovado.'
-			);
+				category: 'schedule_change',
+				title: 'Reagendamento Aprovado',
+				message: 'O seu pedido de reagendamento foi aprovado.',
+				emailTemplate: 'request_accepted',
+				emailData: {
+					pickup_location: svcData?.pickup_location || '',
+					delivery_location: svcData?.delivery_location || '',
+					scheduled_date: svcData?.scheduled_date || '',
+					app_url: PUBLIC_SUPABASE_URL.replace('/functions/v1', '')
+				}
+			});
 		}
 
 		return { success: true };
@@ -469,7 +524,7 @@ export const actions: Actions = {
 		// Get all services to copy requested schedule to scheduled
 		const { data: servicesData } = await supabase
 			.from('services')
-			.select('id, client_id, requested_date, requested_time_slot, requested_time')
+			.select('id, client_id, pickup_location, delivery_location, requested_date, requested_time_slot, requested_time')
 			.in('id', serviceIds);
 
 		if (!servicesData?.length) {
@@ -477,7 +532,15 @@ export const actions: Actions = {
 		}
 
 		let accepted = 0;
-		for (const svc of servicesData as Array<{ id: string; client_id: string; requested_date: string | null; requested_time_slot: string | null; requested_time: string | null }>) {
+		for (const svc of servicesData as Array<{
+			id: string;
+			client_id: string;
+			pickup_location: string;
+			delivery_location: string;
+			requested_date: string | null;
+			requested_time_slot: string | null;
+			requested_time: string | null;
+		}>) {
 			const { error: updateError } = await supabase
 				.from('services')
 				.update({
@@ -490,13 +553,21 @@ export const actions: Actions = {
 
 			if (!updateError) {
 				accepted++;
-				await notifyClient(
+				await notifyClient({
 					session,
-					svc.client_id,
-					svc.id,
-					'Pedido Aceite',
-					'O seu pedido de serviço foi aceite pelo estafeta. Verifique os detalhes na aplicação.'
-				);
+					clientId: svc.client_id,
+					serviceId: svc.id,
+					category: 'schedule_change',
+					title: 'Pedido Aceite',
+					message: 'O seu pedido de serviço foi aceite pelo estafeta. Verifique os detalhes na aplicação.',
+					emailTemplate: 'request_accepted',
+					emailData: {
+						pickup_location: svc.pickup_location,
+						delivery_location: svc.delivery_location,
+						scheduled_date: svc.requested_date || '',
+						app_url: PUBLIC_SUPABASE_URL.replace('/functions/v1', '')
+					}
+				});
 			}
 		}
 
@@ -550,14 +621,31 @@ export const actions: Actions = {
 
 		// Notify client
 		if (result.client_id) {
+			// Fetch service data for email
+			const { data: serviceData } = await supabase
+				.from('services')
+				.select('pickup_location, delivery_location')
+				.eq('id', serviceId)
+				.single();
+
+			const svcData = serviceData as { pickup_location: string; delivery_location: string } | null;
+
 			const reasonText = denialReason ? ` Motivo: ${denialReason}` : '';
-			await notifyClient(
+			await notifyClient({
 				session,
-				result.client_id,
+				clientId: result.client_id,
 				serviceId,
-				'Reagendamento Recusado',
-				`O seu pedido de reagendamento foi recusado.${reasonText}`
-			);
+				category: 'schedule_change',
+				title: 'Reagendamento Recusado',
+				message: `O seu pedido de reagendamento foi recusado.${reasonText}`,
+				emailTemplate: 'request_rejected',
+				emailData: {
+					pickup_location: svcData?.pickup_location || '',
+					delivery_location: svcData?.delivery_location || '',
+					reason: denialReason || '',
+					app_url: PUBLIC_SUPABASE_URL.replace('/functions/v1', '')
+				}
+			});
 		}
 
 		return { success: true };

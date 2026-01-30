@@ -77,7 +77,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // Parse and validate request body
-    const { email, password, name, phone, default_pickup_location } = await req.json();
+    const { email, password, name, phone, default_pickup_location, default_service_type_id } = await req.json();
 
     if (!email || !password || !name) {
       return new Response(
@@ -112,6 +112,7 @@ Deno.serve(async (req: Request) => {
         .update({
           phone: phone || null,
           default_pickup_location: default_pickup_location || null,
+          default_service_type_id: default_service_type_id || null,
         })
         .eq("id", authData.user.id);
 

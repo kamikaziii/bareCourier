@@ -2,13 +2,18 @@ import type { Actions } from './$types';
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
 
 // Helper to send notification
-async function notifyClient(
-	session: { access_token: string },
-	clientId: string,
-	serviceId: string,
-	subject: string,
-	message: string
-) {
+async function notifyClient(params: {
+	session: { access_token: string };
+	clientId: string;
+	serviceId: string;
+	category: 'schedule_change';
+	title: string;
+	message: string;
+	emailTemplate?: string;
+	emailData?: Record<string, string>;
+}) {
+	const { session, clientId, serviceId, category, title, message, emailTemplate, emailData } = params;
+
 	try {
 		await fetch(`${PUBLIC_SUPABASE_URL}/functions/v1/send-notification`, {
 			method: 'POST',
@@ -18,12 +23,13 @@ async function notifyClient(
 				apikey: PUBLIC_SUPABASE_ANON_KEY
 			},
 			body: JSON.stringify({
-				type: 'both',
 				user_id: clientId,
-				subject,
+				category,
+				title,
 				message,
 				service_id: serviceId,
-				url: `/client/services/${serviceId}`
+				email_template: emailTemplate,
+				email_data: emailData
 			})
 		});
 	} catch (error) {
@@ -127,6 +133,16 @@ export const actions: Actions = {
 			year: 'numeric'
 		});
 
+		// Fetch service data for email templates
+		const { data: servicesData } = await supabase
+			.from('services')
+			.select('id, client_id, pickup_location, delivery_location')
+			.in('id', serviceIds);
+
+		const servicesMap = new Map(
+			(servicesData || []).map((s) => [s.id, s as { id: string; client_id: string; pickup_location: string; delivery_location: string }])
+		);
+
 		await Promise.all(
 			Array.from(clientNotifications).map(([clientId, serviceIdList]) => {
 				const count = serviceIdList.length;
@@ -135,13 +151,24 @@ export const actions: Actions = {
 						? `A sua entrega foi reagendada para ${formattedDate}.`
 						: `${count} entregas foram reagendadas para ${formattedDate}.`;
 
-				return notifyClient(
+				// Get first service for email template data
+				const firstService = servicesMap.get(serviceIdList[0]);
+
+				return notifyClient({
 					session,
 					clientId,
-					serviceIdList[0], // Link to first service
-					'Entregas Reagendadas',
-					message
-				);
+					serviceId: serviceIdList[0], // Link to first service
+					category: 'schedule_change',
+					title: 'Entregas Reagendadas',
+					message,
+					emailTemplate: 'request_accepted',
+					emailData: {
+						pickup_location: firstService?.pickup_location || '',
+						delivery_location: firstService?.delivery_location || '',
+						scheduled_date: newDate,
+						app_url: PUBLIC_SUPABASE_URL.replace('/functions/v1', '')
+					}
+				});
 			})
 		);
 

@@ -15,13 +15,18 @@ async function getCourierId(supabase: SupabaseClient): Promise<string | null> {
 }
 
 // Helper to notify courier
-async function notifyCourier(
-	supabase: SupabaseClient,
-	session: { access_token: string },
-	serviceId: string,
-	subject: string,
-	message: string
-) {
+async function notifyCourier(params: {
+	supabase: SupabaseClient;
+	session: { access_token: string };
+	serviceId: string;
+	category: 'schedule_change' | 'new_request';
+	title: string;
+	message: string;
+	emailTemplate?: string;
+	emailData?: Record<string, string>;
+}) {
+	const { supabase, session, serviceId, category, title, message, emailTemplate, emailData } = params;
+
 	try {
 		const courierId = await getCourierId(supabase);
 
@@ -35,12 +40,13 @@ async function notifyCourier(
 				'apikey': PUBLIC_SUPABASE_ANON_KEY
 			},
 			body: JSON.stringify({
-				type: 'both',
 				user_id: courierId,
-				subject,
+				category,
+				title,
 				message,
 				service_id: serviceId,
-				url: `/courier/services/${serviceId}`
+				email_template: emailTemplate,
+				email_data: emailData
 			})
 		});
 	} catch (error) {
@@ -103,14 +109,15 @@ export const actions: Actions = {
 			return { success: false, error: 'Failed to accept suggestion' };
 		}
 
-		// Notify courier
-		await notifyCourier(
+		// Notify courier (no email template needed for this direction)
+		await notifyCourier({
 			supabase,
 			session,
 			serviceId,
-			'Sugestão Aceite',
-			'O cliente aceitou a data sugerida para o serviço.'
-		);
+			category: 'schedule_change',
+			title: 'Sugestão Aceite',
+			message: 'O cliente aceitou a data sugerida para o serviço.'
+		});
 
 		return { success: true };
 	},
@@ -161,14 +168,15 @@ export const actions: Actions = {
 			return { success: false, error: 'Failed to decline suggestion' };
 		}
 
-		// Notify courier
-		await notifyCourier(
+		// Notify courier (no email template needed for this direction)
+		await notifyCourier({
 			supabase,
 			session,
 			serviceId,
-			'Sugestão Recusada',
-			'O cliente recusou a data sugerida. O pedido está novamente pendente.'
-		);
+			category: 'schedule_change',
+			title: 'Sugestão Recusada',
+			message: 'O cliente recusou a data sugerida. O pedido está novamente pendente.'
+		});
 
 		return { success: true };
 	},
@@ -236,14 +244,26 @@ export const actions: Actions = {
 		if (failCount > 0) {
 			if (failCount < servicesData.length) {
 				// Partial success — still notify
-				await notifyCourier(supabase, session, servicesData[0].id, 'Sugestões Aceites',
-					`O cliente aceitou ${servicesData.length - failCount} de ${servicesData.length} sugestão(ões) de data.`);
+				await notifyCourier({
+					supabase,
+					session,
+					serviceId: servicesData[0].id,
+					category: 'schedule_change',
+					title: 'Sugestões Aceites',
+					message: `O cliente aceitou ${servicesData.length - failCount} de ${servicesData.length} sugestão(ões) de data.`
+				});
 			}
 			return { success: true, error: `${failCount} of ${serviceIds.length} failed` };
 		}
 
-		await notifyCourier(supabase, session, servicesData[0].id, 'Sugestões Aceites',
-			`O cliente aceitou ${servicesData.length} sugestão(ões) de data.`);
+		await notifyCourier({
+			supabase,
+			session,
+			serviceId: servicesData[0].id,
+			category: 'schedule_change',
+			title: 'Sugestões Aceites',
+			message: `O cliente aceitou ${servicesData.length} sugestão(ões) de data.`
+		});
 		return { success: true };
 	},
 
@@ -300,14 +320,26 @@ export const actions: Actions = {
 
 		if (failCount > 0) {
 			if (failCount < servicesData.length) {
-				await notifyCourier(supabase, session, servicesData[0].id, 'Sugestões Recusadas',
-					`O cliente recusou ${servicesData.length - failCount} de ${servicesData.length} sugestão(ões). Os pedidos estão novamente pendentes.`);
+				await notifyCourier({
+					supabase,
+					session,
+					serviceId: servicesData[0].id,
+					category: 'schedule_change',
+					title: 'Sugestões Recusadas',
+					message: `O cliente recusou ${servicesData.length - failCount} de ${servicesData.length} sugestão(ões). Os pedidos estão novamente pendentes.`
+				});
 			}
 			return { success: true, error: `${failCount} of ${serviceIds.length} failed` };
 		}
 
-		await notifyCourier(supabase, session, servicesData[0].id, 'Sugestões Recusadas',
-			`O cliente recusou ${servicesData.length} sugestão(ões). Os pedidos estão novamente pendentes.`);
+		await notifyCourier({
+			supabase,
+			session,
+			serviceId: servicesData[0].id,
+			category: 'schedule_change',
+			title: 'Sugestões Recusadas',
+			message: `O cliente recusou ${servicesData.length} sugestão(ões). Os pedidos estão novamente pendentes.`
+		});
 		return { success: true };
 	},
 
@@ -324,10 +356,10 @@ export const actions: Actions = {
 			return { success: false, error: 'Service ID required' };
 		}
 
-		// Get the service and verify ownership + status
+		// Get the service and verify ownership + status + data for email
 		const { data: serviceData } = await supabase
 			.from('services')
-			.select('client_id, request_status')
+			.select('client_id, request_status, pickup_location, delivery_location, profiles!client_id(name)')
 			.eq('id', serviceId)
 			.single();
 
@@ -335,7 +367,13 @@ export const actions: Actions = {
 			return { success: false, error: 'Service not found' };
 		}
 
-		const service = serviceData as { client_id: string; request_status: string };
+		const service = serviceData as {
+			client_id: string;
+			request_status: string;
+			pickup_location: string;
+			delivery_location: string;
+			profiles: { name: string };
+		};
 
 		if (service.client_id !== user.id) {
 			return { success: false, error: 'Unauthorized' };
@@ -359,14 +397,22 @@ export const actions: Actions = {
 			return { success: false, error: 'Failed to cancel request' };
 		}
 
-		// Notify courier
-		await notifyCourier(
+		// Notify courier with email
+		await notifyCourier({
 			supabase,
 			session,
 			serviceId,
-			'Pedido Cancelado',
-			'O cliente cancelou um pedido de serviço pendente.'
-		);
+			category: 'new_request',
+			title: 'Pedido Cancelado',
+			message: 'O cliente cancelou um pedido de serviço pendente.',
+			emailTemplate: 'request_cancelled',
+			emailData: {
+				client_name: service.profiles.name,
+				pickup_location: service.pickup_location,
+				delivery_location: service.delivery_location,
+				app_url: PUBLIC_SUPABASE_URL.replace('/functions/v1', '')
+			}
+		});
 
 		return { success: true };
 	}
