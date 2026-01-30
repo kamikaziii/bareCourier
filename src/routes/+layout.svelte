@@ -8,6 +8,7 @@
 	import type { Snippet } from 'svelte';
 	import ReloadPrompt from '$lib/components/ReloadPrompt.svelte';
 	import OfflineIndicator from '$lib/components/OfflineIndicator.svelte';
+	import LoadingBar from '$lib/components/LoadingBar.svelte';
 	import { deLocalizeUrl } from '$lib/paraglide/runtime.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
@@ -36,6 +37,8 @@
 	<link rel="alternate" hreflang="en" href="https://barecourier.vercel.app/en{basePathname}" />
 	<link rel="alternate" hreflang="x-default" href="https://barecourier.vercel.app{basePathname}" />
 </svelte:head>
+
+<LoadingBar />
 
 <!-- Skip link for keyboard navigation -->
 <a href="#main-content" class="skip-link">{m.skip_to_content()}</a>
