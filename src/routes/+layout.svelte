@@ -1,6 +1,6 @@
 <script lang="ts">
 	import '../app.css';
-	import { invalidate } from '$app/navigation';
+	import { invalidate, onNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
@@ -25,6 +25,19 @@
 		});
 
 		return () => subscription.unsubscribe();
+	});
+
+	// View Transitions API support (progressive enhancement)
+	onNavigate((navigation) => {
+		// Check if browser supports View Transitions
+		if (!document.startViewTransition) return;
+
+		return new Promise((resolve) => {
+			document.startViewTransition(async () => {
+				resolve();
+				await navigation.complete;
+			});
+		});
 	});
 
 	// Get delocalized pathname for hreflang tags using Paraglide's proper function
