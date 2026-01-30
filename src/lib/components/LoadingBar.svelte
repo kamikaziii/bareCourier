@@ -5,6 +5,7 @@
 	let progress = $state(0);
 	let isVisible = $state(false);
 	let animationFrame: number | undefined = $state();
+	let hideTimeout: ReturnType<typeof setTimeout> | undefined = $state();
 
 	// Watch navigation state changes
 	$effect(() => {
@@ -38,7 +39,7 @@
 			progress = 100;
 
 			// Hide after transition completes
-			setTimeout(() => {
+			hideTimeout = setTimeout(() => {
 				isVisible = false;
 				progress = 0;
 			}, 200);
@@ -47,6 +48,9 @@
 		return () => {
 			if (animationFrame) {
 				cancelAnimationFrame(animationFrame);
+			}
+			if (hideTimeout) {
+				clearTimeout(hideTimeout);
 			}
 		};
 	});

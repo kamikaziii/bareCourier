@@ -30,7 +30,7 @@ export async function notifyClient(params: {
 	const { session, clientId, serviceId, category, title, message, emailTemplate, emailData } = params;
 
 	try {
-		await fetch(`${PUBLIC_SUPABASE_URL}/functions/v1/send-notification`, {
+		const response = await fetch(`${PUBLIC_SUPABASE_URL}/functions/v1/send-notification`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -47,6 +47,10 @@ export async function notifyClient(params: {
 				email_data: emailData
 			})
 		});
+
+		if (!response.ok) {
+			console.error('Notification failed:', response.status, await response.text());
+		}
 	} catch (error) {
 		console.error('Notification error:', error);
 	}
@@ -75,7 +79,7 @@ export async function notifyCourier(params: {
 			return;
 		}
 
-		await fetch(`${PUBLIC_SUPABASE_URL}/functions/v1/send-notification`, {
+		const response = await fetch(`${PUBLIC_SUPABASE_URL}/functions/v1/send-notification`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -92,6 +96,10 @@ export async function notifyCourier(params: {
 				email_data: emailData
 			})
 		});
+
+		if (!response.ok) {
+			console.error('Notification failed:', response.status, await response.text());
+		}
 	} catch (error) {
 		console.error('Notification error:', error);
 	}
