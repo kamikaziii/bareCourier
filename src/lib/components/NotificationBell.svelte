@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
@@ -128,7 +129,7 @@
 	}
 
 	// Load notifications + real-time subscription
-	$effect(() => {
+	onMount(() => {
 		let canceled = false;
 
 		(async () => {

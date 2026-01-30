@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
+	import { onMount } from 'svelte';
 	import { goto, invalidate } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -194,14 +195,9 @@
 		}
 	}
 
-	// Track if workload has been loaded (only needs to load once since it's always for today)
-	let workloadLoaded = false;
-
-	$effect(() => {
-		if (!workloadLoaded) {
-			workloadLoaded = true;
-			loadWorkload();
-		}
+	// Load workload on mount
+	onMount(() => {
+		loadWorkload();
 	});
 
 	// Listen for sync completion from service worker

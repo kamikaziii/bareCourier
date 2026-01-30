@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { navigating } from '$app/state';
+	import { untrack } from 'svelte';
 
 	// Track progress state
 	let progress = $state(0);
@@ -9,8 +10,11 @@
 
 	// Watch navigation state changes
 	$effect(() => {
-		if (navigating) {
-			// Start loading
+		// Check if navigation is actually in progress (navigating.to !== null)
+		const isNavigating = !!(navigating && navigating.to);
+
+		if (isNavigating) {
+			// Navigation started
 			isVisible = true;
 			progress = 0;
 
@@ -30,19 +34,22 @@
 			};
 
 			animationFrame = requestAnimationFrame(animate);
-		} else if (isVisible) {
-			// Navigation complete - jump to 100%
-			if (animationFrame) {
-				cancelAnimationFrame(animationFrame);
+		} else {
+			// Navigation complete - but only if bar is visible
+			// Use untrack to read isVisible without creating a dependency
+			if (untrack(() => isVisible)) {
+				if (animationFrame) {
+					cancelAnimationFrame(animationFrame);
+				}
+
+				progress = 100;
+
+				// Hide after transition completes
+				hideTimeout = setTimeout(() => {
+					isVisible = false;
+					progress = 0;
+				}, 200);
 			}
-
-			progress = 100;
-
-			// Hide after transition completes
-			hideTimeout = setTimeout(() => {
-				isVisible = false;
-				progress = 0;
-			}, 200);
 		}
 
 		return () => {

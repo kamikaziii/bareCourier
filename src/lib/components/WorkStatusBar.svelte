@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { Coffee, Play } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as m from '$lib/paraglide/messages.js';
@@ -19,7 +20,7 @@
 	let error = $state<string | null>(null);
 
 	// Load initial state
-	$effect(() => {
+	onMount(() => {
 		loadBreakStatus();
 	});
 

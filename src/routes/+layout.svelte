@@ -28,6 +28,8 @@
 	});
 
 	// View Transitions API support (progressive enhancement)
+	// DISABLED: Causes navigation to block
+	/*
 	onNavigate((navigation) => {
 		// Check if browser supports View Transitions
 		if (!document.startViewTransition) return;
@@ -39,6 +41,7 @@
 			});
 		});
 	});
+	*/
 
 	// Get delocalized pathname for hreflang tags using Paraglide's proper function
 	const basePathname = $derived(deLocalizeUrl(page.url).pathname);
