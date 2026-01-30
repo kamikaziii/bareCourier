@@ -39,13 +39,14 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
 		redirect(303, localizeHref('/login'));
 	}
 
-	// Fetch count of services awaiting client response (suggested by courier)
-	const { count: suggestedCount } = await supabase
+	// Stream badge count (non-blocking)
+	const suggestedCountPromise = supabase
 		.from('services')
 		.select('*', { count: 'exact', head: true })
 		.eq('client_id', user.id)
 		.eq('request_status', 'suggested')
-		.is('deleted_at', null);
+		.is('deleted_at', null)
+		.then(({ count }) => count ?? 0);
 
 	return {
 		sidebarCollapsed: cookies.get('sidebar-collapsed') === 'true',
@@ -56,7 +57,7 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
 			default_pickup_location: profile.default_pickup_location
 		} satisfies ClientLayoutProfile,
 		navCounts: {
-			suggestedServices: suggestedCount ?? 0
+			suggestedServices: suggestedCountPromise
 		}
 	};
 };

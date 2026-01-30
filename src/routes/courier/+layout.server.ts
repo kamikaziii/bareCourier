@@ -13,26 +13,29 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
 	// Declare dependency for manual invalidation of nav counts
 	depends('app:nav-counts');
 
-	// Fetch profile and pending request count in parallel
-	const [profileResult, pendingRequestsResult, pendingReschedulesResult] = await Promise.all([
-		supabase.from('profiles').select('*').eq('id', user.id).single(),
-		supabase
-			.from('services')
-			.select('*', { count: 'exact', head: true })
-			.eq('request_status', 'pending')
-			.is('deleted_at', null),
-		supabase
-			.from('services')
-			.select('*', { count: 'exact', head: true })
-			.not('pending_reschedule_date', 'is', null)
-			.is('deleted_at', null)
-	]);
+	// Only await profile - critical for auth
+	const profileResult = await supabase.from('profiles').select('*').eq('id', user.id).single();
 
 	const profile = profileResult.data as Profile | null;
 
 	if (!profile || profile.role !== 'courier') {
 		redirect(303, localizeHref('/client'));
 	}
+
+	// Stream badge counts (non-blocking)
+	const pendingRequestsPromise = supabase
+		.from('services')
+		.select('*', { count: 'exact', head: true })
+		.eq('request_status', 'pending')
+		.is('deleted_at', null)
+		.then(({ count }) => count ?? 0);
+
+	const pendingReschedulesPromise = supabase
+		.from('services')
+		.select('*', { count: 'exact', head: true })
+		.not('pending_reschedule_date', 'is', null)
+		.is('deleted_at', null)
+		.then(({ count }) => count ?? 0);
 
 	return {
 		sidebarCollapsed: cookies.get('sidebar-collapsed') === 'true',
@@ -55,7 +58,8 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
 			label_tagline: profile.label_tagline
 		} satisfies CourierLayoutProfile,
 		navCounts: {
-			pendingRequests: (pendingRequestsResult.count ?? 0) + (pendingReschedulesResult.count ?? 0)
+			pendingRequests: Promise.all([pendingRequestsPromise, pendingReschedulesPromise])
+				.then(([pending, reschedules]) => pending + reschedules)
 		}
 	};
 };
