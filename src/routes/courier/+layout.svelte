@@ -13,15 +13,14 @@
 		BarChart3,
 		Settings
 	} from '@lucide/svelte';
+	import type { NavItem } from '$lib/types/navigation.js';
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
-	const pendingRequests = $derived(data.navCounts?.pendingRequests ?? 0);
-
-	const allNavItems = $derived([
+	const allNavItems: NavItem[] = $derived([
 		{ href: '/courier', label: m.nav_dashboard(), icon: LayoutDashboard },
 		{ href: '/courier/services', label: m.nav_services(), icon: Package },
-		{ href: '/courier/requests', label: m.nav_requests(), icon: Inbox, badge: pendingRequests },
+		{ href: '/courier/requests', label: m.nav_requests(), icon: Inbox, badge: data.navCounts?.pendingRequests },
 		{ href: '/courier/calendar', label: m.nav_calendar(), icon: Calendar },
 		{ href: '/courier/clients', label: m.nav_clients(), icon: Users },
 		{ href: '/courier/billing', label: m.nav_billing(), icon: Receipt },

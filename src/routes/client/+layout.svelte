@@ -4,13 +4,12 @@
 	import type { LayoutData } from './$types';
 	import type { Snippet } from 'svelte';
 	import { Package, PlusCircle, Calendar, Receipt, Settings } from '@lucide/svelte';
+	import type { NavItem } from '$lib/types/navigation.js';
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
-	const suggestedServices = $derived(data.navCounts?.suggestedServices ?? 0);
-
-	const allNavItems = $derived([
-		{ href: '/client', label: m.nav_my_services(), icon: Package, badge: suggestedServices },
+	const allNavItems: NavItem[] = $derived([
+		{ href: '/client', label: m.nav_my_services(), icon: Package, badge: data.navCounts?.suggestedServices },
 		{ href: '/client/new', label: m.nav_new_request(), icon: PlusCircle },
 		{ href: '/client/calendar', label: m.nav_calendar(), icon: Calendar },
 		{ href: '/client/billing', label: m.nav_billing(), icon: Receipt },

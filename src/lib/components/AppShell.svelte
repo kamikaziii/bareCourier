@@ -10,13 +10,7 @@
 	import { localizeHref, getLocale, deLocalizeUrl } from '$lib/paraglide/runtime.js';
 	import type { Snippet } from 'svelte';
 	import type { SupabaseClient } from '@supabase/supabase-js';
-
-	interface NavItem {
-		href: string;
-		label: string;
-		icon: any;
-		badge?: number;
-	}
+	import type { NavItem } from '$lib/types/navigation.js';
 
 	interface AppShellProps {
 		profile: { id: string; name: string; role: string };

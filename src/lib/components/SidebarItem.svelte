@@ -10,12 +10,27 @@
 		icon: Component;
 		isActive: boolean;
 		collapsed: boolean;
-		badge?: number;
+		badge?: number | PromiseLike<number>;
 	}
 
 	let { href, label, icon: Icon, isActive, collapsed, badge }: SidebarItemProps = $props();
 
-	const displayBadge = $derived(formatBadge(badge));
+	// Resolve badge value (handle both sync and async)
+	let badgeValue = $state<number | undefined>(undefined);
+
+	$effect(() => {
+		if (badge === undefined) {
+			badgeValue = undefined;
+		} else if (typeof badge === 'number') {
+			badgeValue = badge;
+		} else {
+			badge.then(value => {
+				badgeValue = value;
+			});
+		}
+	});
+
+	const displayBadge = $derived(formatBadge(badgeValue));
 </script>
 
 <a
@@ -26,7 +41,7 @@
 		: 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'}
 		{collapsed ? 'justify-center' : ''}"
 	title={collapsed ? label : undefined}
-	aria-label={displayBadge ? `${label}, ${badge} pending` : label}
+	aria-label={displayBadge ? `${label}, ${badgeValue} pending` : label}
 >
 	<span class="relative">
 		<Icon class="size-5 shrink-0" />

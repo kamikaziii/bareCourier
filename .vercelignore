@@ -1,0 +1,13 @@
+# Auto-generated paraglide i18n files (regenerated during build)
+src/lib/paraglide/
+src/paraglide/
+
+# Documentation (not needed for production)
+docs/
+
+# Playwright test screenshots
+.playwright-mcp/
+
+# Development files
+.DS_Store
+*.log

@@ -1,5 +1,33 @@
 import { fail } from '@sveltejs/kit';
-import type { Actions } from './$types';
+import type { Actions, PageServerLoad } from './$types';
+
+export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
+	const { user } = await safeGetSession();
+
+	if (!user) {
+		return { services: [], clients: [] };
+	}
+
+	// Fetch services and clients in parallel
+	const [servicesResult, clientsResult] = await Promise.all([
+		supabase
+			.from('services')
+			.select('*, profiles!client_id(id, name, default_pickup_location)')
+			.is('deleted_at', null)
+			.order('created_at', { ascending: false }),
+		supabase
+			.from('profiles')
+			.select('id, name, default_pickup_location')
+			.eq('role', 'client')
+			.eq('active', true)
+			.order('name')
+	]);
+
+	return {
+		services: servicesResult.data || [],
+		clients: clientsResult.data || []
+	};
+};
 
 export const actions: Actions = {
 	batchStatusChange: async ({ request, locals: { supabase, safeGetSession } }) => {

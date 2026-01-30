@@ -17,12 +17,48 @@
 
 	let drawerOpen = $state(false);
 
+	// Resolve badge promises for main items
+	let resolvedMainBadges = $state<Map<string, number>>(new Map());
+
+	$effect(() => {
+		mainItems.forEach(item => {
+			if (item.badge === undefined) {
+				resolvedMainBadges.set(item.href, 0);
+			} else if (typeof item.badge === 'number') {
+				resolvedMainBadges.set(item.href, item.badge);
+			} else {
+				item.badge.then(value => {
+					resolvedMainBadges.set(item.href, value);
+					resolvedMainBadges = new Map(resolvedMainBadges); // Trigger reactivity
+				});
+			}
+		});
+	});
+
+	// Resolve badge promises for more items
+	let resolvedMoreBadges = $state<Map<string, number>>(new Map());
+
+	$effect(() => {
+		moreItems.forEach(item => {
+			if (item.badge === undefined) {
+				resolvedMoreBadges.set(item.href, 0);
+			} else if (typeof item.badge === 'number') {
+				resolvedMoreBadges.set(item.href, item.badge);
+			} else {
+				item.badge.then(value => {
+					resolvedMoreBadges.set(item.href, value);
+					resolvedMoreBadges = new Map(resolvedMoreBadges); // Trigger reactivity
+				});
+			}
+		});
+	});
+
 	// Check if any "more" item is active
 	const isMoreActive = $derived(moreItems.some((item) => isItemActive(item.href, currentPath)));
 
 	// Check if any "more" item has a badge
 	const moreBadgeCount = $derived(
-		moreItems.reduce((sum, item) => sum + (item.badge || 0), 0)
+		Array.from(resolvedMoreBadges.values()).reduce((sum, count) => sum + count, 0)
 	);
 
 	// Mobile bottom nav uses smaller badges (max 9)
@@ -37,12 +73,13 @@
 		{#each mainItems as item (item.href)}
 			{@const Icon = item.icon}
 			{@const active = isItemActive(item.href, currentPath)}
-			{@const displayBadge = formatMobileBadge(item.badge)}
+			{@const badgeCount = resolvedMainBadges.get(item.href) || 0}
+			{@const displayBadge = formatMobileBadge(badgeCount)}
 			<a
 				href={localizeHref(item.href)}
 				class="flex flex-1 flex-col items-center gap-1 py-2 text-xs transition-colors
 					{active ? 'text-primary' : 'text-muted-foreground'}"
-				aria-label={displayBadge ? `${item.label}, ${item.badge} pending` : item.label}
+				aria-label={displayBadge ? `${item.label}, ${badgeCount} pending` : item.label}
 			>
 				<span class="relative">
 					<Icon class="size-5" />

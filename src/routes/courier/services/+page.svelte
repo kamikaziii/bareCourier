@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto, replaceState } from '$app/navigation';
+	import { goto, replaceState, invalidate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -15,18 +15,24 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { useBatchSelection } from '$lib/composables/use-batch-selection.svelte.js';
 	import type { PageData } from './$types';
+	import type { Service, Profile } from '$lib/database.types';
 	import SkeletonList from '$lib/components/SkeletonList.svelte';
 	import PullToRefresh from '$lib/components/PullToRefresh.svelte';
 	import { usePagination } from '$lib/composables/use-pagination.svelte.js';
 	import PaginationControls from '$lib/components/PaginationControls.svelte';
 
+	type ServiceWithClient = Service & {
+		profiles: Pick<Profile, 'id' | 'name' | 'default_pickup_location'> | null;
+	};
+
 	let { data }: { data: PageData } = $props();
 
 	const pastDueConfig = $derived(settingsToConfig(data.profile.past_due_settings, data.profile.time_slots));
 
-	let services = $state<any[]>([]);
-	let clients = $state<any[]>([]);
-	let loading = $state(true);
+	// Use server-loaded data directly
+	let services = $derived(data.services);
+	let clients = $derived(data.clients);
+	let loading = $state(false);
 
 	// Filters
 	let statusFilter = $state<'all' | 'pending' | 'delivered'>('all');
@@ -60,7 +66,8 @@
 			if (result.data?.success) {
 				batchMessage = { type: 'success', text: m.batch_mark_delivered_success({ count: batch.selectedCount }) };
 				batch.reset();
-				await loadData();
+				// Reload page data from server
+				await invalidate('app:services');
 				setTimeout(() => { batchMessage = null; }, 3000);
 			} else {
 				batchMessage = { type: 'error', text: result.data?.error || m.error_generic() };
@@ -70,33 +77,6 @@
 		}
 		batchLoading = false;
 	}
-
-	async function loadData() {
-		loading = true;
-
-		const [servicesResult, clientsResult] = await Promise.all([
-			data.supabase
-				.from('services')
-				.select('*, profiles!client_id(id, name, default_pickup_location)')
-				.is('deleted_at', null)
-				.order('created_at', { ascending: false }),
-			data.supabase
-				.from('profiles')
-				.select('id, name, default_pickup_location')
-				.eq('role', 'client')
-				.eq('active', true)
-				.order('name')
-		]);
-
-		services = servicesResult.data || [];
-		clients = clientsResult.data || [];
-		loading = false;
-
-	}
-
-	$effect(() => {
-		loadData();
-	});
 
 	$effect(() => {
 		const warning = $page.url.searchParams.get('warning');

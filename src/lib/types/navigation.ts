@@ -4,7 +4,7 @@ export interface NavItem {
 	href: string;
 	label: string;
 	icon: Component;
-	badge?: number;
+	badge?: number | PromiseLike<number>;
 }
 
 /**

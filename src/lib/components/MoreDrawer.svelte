@@ -15,6 +15,24 @@
 
 	let { items, currentPath, open = $bindable() }: MoreDrawerProps = $props();
 
+	// Resolve badge promises
+	let resolvedBadges = $state<Map<string, number>>(new Map());
+
+	$effect(() => {
+		items.forEach(item => {
+			if (item.badge === undefined) {
+				resolvedBadges.set(item.href, 0);
+			} else if (typeof item.badge === 'number') {
+				resolvedBadges.set(item.href, item.badge);
+			} else {
+				item.badge.then(value => {
+					resolvedBadges.set(item.href, value);
+					resolvedBadges = new Map(resolvedBadges); // Trigger reactivity
+				});
+			}
+		});
+	});
+
 	function handleItemClick(href: string) {
 		open = false;
 		goto(localizeHref(href));
@@ -30,14 +48,15 @@
 			{#each items as item (item.href)}
 				{@const Icon = item.icon}
 				{@const active = isItemActive(item.href, currentPath)}
-				{@const displayBadge = formatBadge(item.badge)}
+				{@const badgeCount = resolvedBadges.get(item.href) || 0}
+				{@const displayBadge = formatBadge(badgeCount)}
 				<button
 					onclick={() => handleItemClick(item.href)}
 					class="flex items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-medium transition-colors
 						{active
 						? 'bg-accent text-accent-foreground'
 						: 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'}"
-					aria-label={displayBadge ? `${item.label}, ${item.badge} pending` : item.label}
+					aria-label={displayBadge ? `${item.label}, ${badgeCount} pending` : item.label}
 				>
 					<Icon class="size-5" />
 					<span class="flex-1">{item.label}</span>

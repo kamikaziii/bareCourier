@@ -357,14 +357,13 @@
 						id="pastDueReminderInterval"
 						name="pastDueReminderInterval"
 						class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-						value={pastDueSettings.pastDueReminderInterval}
-						onchange={(e) => pastDueSettings.pastDueReminderInterval = parseInt((e.target as HTMLSelectElement).value)}
+						bind:value={pastDueSettings.pastDueReminderInterval}
 					>
-						<option value="0">{m.settings_reminder_disabled()}</option>
-						<option value="15">15 {m.minutes()}</option>
-						<option value="30">30 {m.minutes()}</option>
-						<option value="60">1 {m.hour()}</option>
-						<option value="120">2 {m.hours()}</option>
+						<option value={0}>{m.settings_reminder_disabled()}</option>
+						<option value={15}>15 {m.minutes()}</option>
+						<option value={30}>30 {m.minutes()}</option>
+						<option value={60}>1 {m.hour()}</option>
+						<option value={120}>2 {m.hours()}</option>
 					</select>
 					<p class="text-xs text-muted-foreground">{m.settings_past_due_reminder_interval_desc()}</p>
 				</div>
