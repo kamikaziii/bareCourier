@@ -33,10 +33,10 @@ export default defineConfig({
 			},
 		},
 		// Override apple touch icon to use dark background
-		// Padding 0.111 (~11%) = 20px margin on 180px icon (iOS best practice)
+		// Padding 0.22 (22%) = ~40px margin on 180px icon (matches maskable icon spacing)
 		apple: {
 			sizes: [180],
-			padding: 0.111,
+			padding: 0.22,
 			resizeOptions: {
 				background: darkBackground,
 				fit: 'contain',
