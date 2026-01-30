@@ -337,7 +337,7 @@
 				<span class="text-sm text-muted-foreground">
 					{m.batch_selected_count({ count: batch.selectedCount })}
 				</span>
-				<Button size="sm" onclick={handleBatchAccept} disabled={batchLoading}>
+				<Button size="sm" onclick={handleBatchAccept} disabled={batchLoading || batch.exceedsLimit}>
 					{batchLoading ? m.saving() : m.batch_accept()}
 				</Button>
 				<Button size="sm" variant="ghost" onclick={batch.deselectAll}>
@@ -345,6 +345,13 @@
 				</Button>
 			{/if}
 		</div>
+
+		<!-- Warning when exceeding batch limit -->
+		{#if batch.exceedsLimit}
+			<div class="rounded-md bg-orange-500/10 p-3 text-orange-600 text-sm">
+				Maximum {batch.maxBatchSize} services per batch. Currently selected: {batch.selectedCount}. Please deselect {batch.selectedCount - batch.maxBatchSize} service(s) to continue.
+			</div>
+		{/if}
 	{/if}
 
 	<!-- Batch feedback -->

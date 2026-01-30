@@ -482,6 +482,15 @@ export const actions: Actions = {
 			return { success: false, error: 'No services selected' };
 		}
 
+		const MAX_BATCH_SIZE = 50;
+
+		if (serviceIds.length > MAX_BATCH_SIZE) {
+			return {
+				success: false,
+				error: `Maximum ${MAX_BATCH_SIZE} services per batch. Please select fewer services.`
+			};
+		}
+
 		// Get all services to copy requested schedule to scheduled
 		const { data: servicesData } = await supabase
 			.from('services')
@@ -492,8 +501,8 @@ export const actions: Actions = {
 			return { success: false, error: 'Services not found' };
 		}
 
-		let accepted = 0;
-		for (const svc of servicesData as Array<{
+		// Parallelize database updates for performance
+		const updatePromises = (servicesData as Array<{
 			id: string;
 			client_id: string;
 			pickup_location: string;
@@ -501,7 +510,7 @@ export const actions: Actions = {
 			requested_date: string | null;
 			requested_time_slot: string | null;
 			requested_time: string | null;
-		}>) {
+		}>).map(async (svc) => {
 			const { error: updateError } = await supabase
 				.from('services')
 				.update({
@@ -513,26 +522,50 @@ export const actions: Actions = {
 				.eq('id', svc.id);
 
 			if (!updateError) {
-				accepted++;
-				await notifyClient({
-					session,
+				return {
+					id: svc.id,
+					success: true,
 					clientId: svc.client_id,
-					serviceId: svc.id,
-					category: 'schedule_change',
-					title: 'Pedido Aceite',
-					message: 'O seu pedido de serviço foi aceite pelo estafeta. Verifique os detalhes na aplicação.',
-					emailTemplate: 'request_accepted',
-					emailData: {
-						pickup_location: svc.pickup_location,
-						delivery_location: svc.delivery_location,
-						scheduled_date: svc.requested_date || '',
-						app_url: PUBLIC_SUPABASE_URL.replace('/functions/v1', '')
-					}
-				});
+					pickup_location: svc.pickup_location,
+					delivery_location: svc.delivery_location,
+					scheduled_date: svc.requested_date
+				};
 			}
+			return { id: svc.id, success: false, error: updateError };
+		});
+
+		const results = await Promise.all(updatePromises);
+		const successful = results.filter((r): r is Extract<typeof r, { success: true }> => r.success);
+		const failed = results.filter((r): r is Extract<typeof r, { success: false }> => !r.success);
+
+		// Send notifications in parallel for successful updates
+		if (successful.length > 0) {
+			await Promise.all(
+				successful.map(({ id, clientId, pickup_location, delivery_location, scheduled_date }) =>
+					notifyClient({
+						session,
+						clientId,
+						serviceId: id,
+						category: 'schedule_change',
+						title: 'Pedido Aceite',
+						message: 'O seu pedido de serviço foi aceite pelo estafeta. Verifique os detalhes na aplicação.',
+						emailTemplate: 'request_accepted',
+						emailData: {
+							pickup_location,
+							delivery_location,
+							scheduled_date: scheduled_date || '',
+							app_url: PUBLIC_SUPABASE_URL.replace('/functions/v1', '')
+						}
+					})
+				)
+			);
 		}
 
-		return { success: true, accepted };
+		return {
+			success: true,
+			accepted: successful.length,
+			failed: failed.length
+		};
 	},
 
 	denyReschedule: async ({ request, locals: { supabase, safeGetSession } }) => {

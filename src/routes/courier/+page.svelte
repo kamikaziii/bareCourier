@@ -353,7 +353,7 @@
 				<span class="text-sm text-muted-foreground">
 					{m.batch_selected_count({ count: batch.selectedCount })}
 				</span>
-				<Button size="sm" onclick={openBatchRescheduleDialog}>
+				<Button size="sm" onclick={openBatchRescheduleDialog} disabled={batch.exceedsLimit}>
 					<CalendarClock class="size-4 mr-1" />
 					{m.batch_reschedule()}
 				</Button>
@@ -362,6 +362,13 @@
 				</Button>
 			{/if}
 		</div>
+
+		<!-- Warning when exceeding batch limit -->
+		{#if batch.exceedsLimit}
+			<div class="rounded-md bg-orange-500/10 p-3 text-orange-600 text-sm">
+				Maximum {batch.maxBatchSize} services per batch. Currently selected: {batch.selectedCount}. Please deselect {batch.selectedCount - batch.maxBatchSize} service(s) to continue.
+			</div>
+		{/if}
 	{/if}
 
 	<!-- Batch operation feedback messages -->

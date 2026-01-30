@@ -2,6 +2,13 @@ import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/publi
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
+ * Result of a notification operation
+ */
+export type NotificationResult =
+	| { success: true }
+	| { success: false; error: string };
+
+/**
  * Get courier ID
  */
 async function getCourierId(supabase: SupabaseClient): Promise<string | null> {
@@ -26,7 +33,7 @@ export async function notifyClient(params: {
 	message: string;
 	emailTemplate?: string;
 	emailData?: Record<string, string>;
-}): Promise<void> {
+}): Promise<NotificationResult> {
 	const { session, clientId, serviceId, category, title, message, emailTemplate, emailData } = params;
 
 	try {
@@ -49,10 +56,15 @@ export async function notifyClient(params: {
 		});
 
 		if (!response.ok) {
-			console.error('Notification failed:', response.status, await response.text());
+			const errorText = await response.text();
+			console.error('Notification failed:', response.status, errorText);
+			return { success: false, error: `HTTP ${response.status}: ${errorText}` };
 		}
+
+		return { success: true };
 	} catch (error) {
 		console.error('Notification error:', error);
+		return { success: false, error: String(error) };
 	}
 }
 
@@ -68,7 +80,7 @@ export async function notifyCourier(params: {
 	message: string;
 	emailTemplate?: string;
 	emailData?: Record<string, string>;
-}): Promise<void> {
+}): Promise<NotificationResult> {
 	const { supabase, session, serviceId, category, title, message, emailTemplate, emailData } = params;
 
 	try {
@@ -76,7 +88,7 @@ export async function notifyCourier(params: {
 
 		if (!courierId) {
 			console.warn('No courier found to notify');
-			return;
+			return { success: false, error: 'No courier found in system' };
 		}
 
 		const response = await fetch(`${PUBLIC_SUPABASE_URL}/functions/v1/send-notification`, {
@@ -98,9 +110,14 @@ export async function notifyCourier(params: {
 		});
 
 		if (!response.ok) {
-			console.error('Notification failed:', response.status, await response.text());
+			const errorText = await response.text();
+			console.error('Notification failed:', response.status, errorText);
+			return { success: false, error: `HTTP ${response.status}: ${errorText}` };
 		}
+
+		return { success: true };
 	} catch (error) {
 		console.error('Notification error:', error);
+		return { success: false, error: String(error) };
 	}
 }

@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { timingSafeEqual } from "node:crypto";
 import { dispatchNotification, type NotificationCategory } from "../_shared/notify.ts";
 
 /**
@@ -17,6 +18,20 @@ import { dispatchNotification, type NotificationCategory } from "../_shared/noti
  *   - VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (for push)
  *   - RESEND_API_KEY, RESEND_FROM_EMAIL (for email)
  */
+
+/**
+ * Timing-safe comparison for service role key authentication.
+ * Prevents timing attacks that could leak key information.
+ */
+function isServiceRoleKey(authHeader: string, serviceKey: string): boolean {
+  const bearerToken = authHeader.replace('Bearer ', '');
+  if (bearerToken.length !== serviceKey.length) return false;
+
+  return timingSafeEqual(
+    Buffer.from(bearerToken),
+    Buffer.from(serviceKey)
+  );
+}
 
 // Allowed origins for CORS
 const allowedOrigins = [
@@ -67,8 +82,8 @@ Deno.serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Determine if caller is using service role key or user token
-    const isServiceRole = authHeader.includes(supabaseServiceKey.substring(0, 20));
+    // Determine if caller is using service role key or user token (timing-safe comparison)
+    const isServiceRole = isServiceRoleKey(authHeader, supabaseServiceKey);
 
     let userId: string | null = null;
 

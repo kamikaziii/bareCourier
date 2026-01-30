@@ -3,35 +3,53 @@
  * Encapsulates selection mode toggle, individual/bulk selection, and derived counts.
  */
 export function useBatchSelection() {
+	const MAX_BATCH_SIZE = 50;
+
 	let selectionMode = $state(false);
 	let selectedIds = $state<Set<string>>(new Set());
+	let exceedsLimit = $state(false);
 
 	const selectedCount = $derived(selectedIds.size);
 	const hasSelection = $derived(selectedCount > 0);
 
 	function toggleSelectionMode() {
 		selectionMode = !selectionMode;
-		if (!selectionMode) selectedIds = new Set();
+		if (!selectionMode) {
+			selectedIds = new Set();
+			exceedsLimit = false;
+		}
 	}
 
 	function toggle(id: string) {
 		const s = new Set(selectedIds);
-		if (s.has(id)) s.delete(id);
-		else s.add(id);
+		if (s.has(id)) {
+			s.delete(id);
+		} else {
+			s.add(id);
+		}
 		selectedIds = s;
+		exceedsLimit = s.size > MAX_BATCH_SIZE;
 	}
 
 	function selectAll(ids: string[]) {
-		selectedIds = new Set(ids);
+		if (ids.length > MAX_BATCH_SIZE) {
+			selectedIds = new Set(ids.slice(0, MAX_BATCH_SIZE));
+			exceedsLimit = true;
+		} else {
+			selectedIds = new Set(ids);
+			exceedsLimit = false;
+		}
 	}
 
 	function deselectAll() {
 		selectedIds = new Set();
+		exceedsLimit = false;
 	}
 
 	function reset() {
 		selectionMode = false;
 		selectedIds = new Set();
+		exceedsLimit = false;
 	}
 
 	function has(id: string): boolean {
@@ -44,6 +62,8 @@ export function useBatchSelection() {
 		get selectedIds() { return selectedIds; },
 		get selectedCount() { return selectedCount; },
 		get hasSelection() { return hasSelection; },
+		get exceedsLimit() { return exceedsLimit; },
+		get maxBatchSize() { return MAX_BATCH_SIZE; },
 		toggleSelectionMode,
 		toggle,
 		selectAll,

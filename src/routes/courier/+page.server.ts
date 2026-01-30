@@ -54,6 +54,15 @@ export const actions: Actions = {
 			return { success: false, error: 'Invalid service selection' };
 		}
 
+		const MAX_BATCH_SIZE = 50;
+
+		if (serviceIds.length > MAX_BATCH_SIZE) {
+			return {
+				success: false,
+				error: `Maximum ${MAX_BATCH_SIZE} services per batch. Please select fewer services.`
+			};
+		}
+
 		const newDate = formData.get('date') as string;
 		const newTimeSlot = formData.get('time_slot') as string;
 		const newTime = (formData.get('time') as string) || null;

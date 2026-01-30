@@ -152,6 +152,15 @@ export const actions: Actions = {
 			return { success: false, error: 'No services selected' };
 		}
 
+		const MAX_BATCH_SIZE = 50;
+
+		if (serviceIds.length > MAX_BATCH_SIZE) {
+			return {
+				success: false,
+				error: `Maximum ${MAX_BATCH_SIZE} services per batch. Please select fewer services.`
+			};
+		}
+
 		// Get all services and verify ownership
 		const { data: rawServicesData } = await supabase
 			.from('services')
@@ -237,6 +246,15 @@ export const actions: Actions = {
 
 		if (serviceIds.length === 0) {
 			return { success: false, error: 'No services selected' };
+		}
+
+		const MAX_BATCH_SIZE = 50;
+
+		if (serviceIds.length > MAX_BATCH_SIZE) {
+			return {
+				success: false,
+				error: `Maximum ${MAX_BATCH_SIZE} services per batch. Please select fewer services.`
+			};
 		}
 
 		// Verify ownership
