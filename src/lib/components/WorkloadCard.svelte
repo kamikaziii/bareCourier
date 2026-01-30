@@ -2,7 +2,7 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { ChevronDown, ChevronUp, MapPin } from '@lucide/svelte';
+	import { ChevronDown, ChevronUp, MapPin, Loader2 } from '@lucide/svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import type { WorkloadEstimate } from '$lib/services/workload.js';
 	import { getWorkloadStyles } from '$lib/services/workload-styles.js';
@@ -10,9 +10,10 @@
 
 	interface Props {
 		workload: WorkloadEstimate;
+		loading?: boolean;
 	}
 
-	let { workload }: Props = $props();
+	let { workload, loading = false }: Props = $props();
 	let cardExpanded = $state(false);
 	let detailsExpanded = $state(false);
 
@@ -33,12 +34,16 @@
 </script>
 
 <Collapsible.Root bind:open={cardExpanded}>
-	<Card.Root class="{styles.bg} {cardExpanded ? '' : '!py-0 !gap-0'}">
-		<Collapsible.Trigger class="w-full text-left">
+	<Card.Root class="{styles.bg} {cardExpanded ? '' : '!py-0 !gap-0'} {loading ? 'opacity-50' : ''}">
+		<Collapsible.Trigger class="w-full text-left" disabled={loading}>
 			<Card.Header class={cardExpanded ? "pb-2" : "py-3 !grid-rows-1 !gap-0"}>
 				<Card.Title class="flex items-center justify-between text-base">
 					<span class="flex items-center gap-2">
-						<StatusIcon class="size-5 {styles.text}" />
+						{#if loading}
+							<Loader2 class="size-5 animate-spin {styles.text}" />
+						{:else}
+							<StatusIcon class="size-5 {styles.text}" />
+						{/if}
 						{m.workload_title()}
 					</span>
 					<span class="flex items-center gap-2 text-sm font-normal text-muted-foreground">

@@ -34,8 +34,13 @@
 	type ServiceWithProfile = Service & { profiles: { name: string } | null };
 
 	let filter = $state<'today' | 'tomorrow' | 'all'>('today');
-	let services = $derived(data.services);
+	let services = $state<ServiceWithProfile[]>(data.services);
 	let loading = $state(false);
+
+	// Sync services when data changes (e.g., after invalidate)
+	$effect(() => {
+		services = data.services;
+	});
 	// Track which services are currently syncing
 	let syncingIds = $state<Set<string>>(new Set());
 	// Workload state
@@ -291,10 +296,10 @@
 	</div>
 
 	<!-- Workload Card -->
-	{#if workloadLoading}
+	{#if workloadLoading && !workload}
 		<SkeletonCard variant="stat" />
 	{:else if workload}
-		<WorkloadCard {workload} />
+		<WorkloadCard {workload} loading={workloadLoading} />
 	{/if}
 
 	<!-- Filters -->
