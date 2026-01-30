@@ -10,7 +10,9 @@
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"generate-pwa-assets": "pwa-assets-generator",
+		"convert-logo": "node scripts/convert-logo.mjs",
+		"copy-pwa-assets": "node scripts/copy-pwa-assets.mjs",
+		"generate-pwa-assets": "node scripts/convert-logo.mjs && pwa-assets-generator && node scripts/copy-pwa-assets.mjs",
 		"types:generate": "npx supabase gen types typescript --project-id $PROJECT_ID > src/lib/database.generated.ts"
 	},
 	"devDependencies": {
