@@ -2,51 +2,12 @@ import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import type { Service, Profile } from '$lib/database.types';
 import { localizeHref, extractLocaleFromRequest } from '$lib/paraglide/runtime.js';
-import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
 import { calculateDayWorkload, getWorkloadSettings, type WorkloadEstimate } from '$lib/services/workload.js';
+import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { notifyClient } from '$lib/services/notifications';
 
 // Number of days to scan ahead when finding the next compatible day
 const LOOKAHEAD_DAYS = 14;
-
-// Helper to send notification to client
-async function notifyClient(params: {
-	session: { access_token: string };
-	clientId: string;
-	serviceId: string;
-	category: 'schedule_change' | 'service_status';
-	title: string;
-	message: string;
-	emailTemplate?: string;
-	emailData?: Record<string, string>;
-}) {
-	const { session, clientId, serviceId, category, title, message, emailTemplate, emailData } = params;
-
-	try {
-		const response = await fetch(`${PUBLIC_SUPABASE_URL}/functions/v1/send-notification`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'Authorization': `Bearer ${session.access_token}`,
-				'apikey': PUBLIC_SUPABASE_ANON_KEY
-			},
-			body: JSON.stringify({
-				user_id: clientId,
-				category,
-				title,
-				message,
-				service_id: serviceId,
-				email_template: emailTemplate,
-				email_data: emailData
-			})
-		});
-
-		if (!response.ok) {
-			console.error('Failed to send notification:', await response.text());
-		}
-	} catch (error) {
-		console.error('Notification error:', error);
-	}
-}
 
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
 	const { session, user } = await safeGetSession();

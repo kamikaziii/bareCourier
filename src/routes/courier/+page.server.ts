@@ -1,5 +1,6 @@
 import type { Actions, PageServerLoad } from './$types';
-import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
+import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { notifyClient } from '$lib/services/notifications';
 
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
 	const { user } = await safeGetSession();
@@ -20,42 +21,6 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 		services: services || []
 	};
 };
-
-// Helper to send notification
-async function notifyClient(params: {
-	session: { access_token: string };
-	clientId: string;
-	serviceId: string;
-	category: 'schedule_change';
-	title: string;
-	message: string;
-	emailTemplate?: string;
-	emailData?: Record<string, string>;
-}) {
-	const { session, clientId, serviceId, category, title, message, emailTemplate, emailData } = params;
-
-	try {
-		await fetch(`${PUBLIC_SUPABASE_URL}/functions/v1/send-notification`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${session.access_token}`,
-				apikey: PUBLIC_SUPABASE_ANON_KEY
-			},
-			body: JSON.stringify({
-				user_id: clientId,
-				category,
-				title,
-				message,
-				service_id: serviceId,
-				email_template: emailTemplate,
-				email_data: emailData
-			})
-		});
-	} catch (error) {
-		console.error('Notification error:', error);
-	}
-}
 
 export const actions: Actions = {
 	batchReschedule: async ({ request, locals: { supabase, safeGetSession } }) => {

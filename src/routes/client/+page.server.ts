@@ -1,58 +1,6 @@
 import type { Actions } from './$types';
-import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
-
-import type { SupabaseClient } from '@supabase/supabase-js';
-
-// Helper to get courier ID (single row by role, indexed)
-async function getCourierId(supabase: SupabaseClient): Promise<string | null> {
-	const { data: courierData } = await supabase
-		.from('profiles')
-		.select('id')
-		.eq('role', 'courier')
-		.single();
-
-	return courierData?.id ?? null;
-}
-
-// Helper to notify courier
-async function notifyCourier(params: {
-	supabase: SupabaseClient;
-	session: { access_token: string };
-	serviceId: string;
-	category: 'schedule_change' | 'new_request';
-	title: string;
-	message: string;
-	emailTemplate?: string;
-	emailData?: Record<string, string>;
-}) {
-	const { supabase, session, serviceId, category, title, message, emailTemplate, emailData } = params;
-
-	try {
-		const courierId = await getCourierId(supabase);
-
-		if (!courierId) return;
-
-		await fetch(`${PUBLIC_SUPABASE_URL}/functions/v1/send-notification`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'Authorization': `Bearer ${session.access_token}`,
-				'apikey': PUBLIC_SUPABASE_ANON_KEY
-			},
-			body: JSON.stringify({
-				user_id: courierId,
-				category,
-				title,
-				message,
-				service_id: serviceId,
-				email_template: emailTemplate,
-				email_data: emailData
-			})
-		});
-	} catch (error) {
-		console.error('Notification error:', error);
-	}
-}
+import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { notifyCourier } from '$lib/services/notifications';
 
 export const actions: Actions = {
 	acceptSuggestion: async ({ request, locals: { supabase, safeGetSession } }) => {
