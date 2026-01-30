@@ -12,19 +12,31 @@ export default defineConfig({
 	},
 	preset: {
 		...minimal2023Preset,
+		// Override "any" icons to ensure 10% padding (standard PWA best practice)
+		transparent: {
+			sizes: [64, 192, 512],
+			padding: 0.1,
+			resizeOptions: {
+				background: 'transparent',
+				fit: 'contain',
+			},
+		},
 		// Override maskable icon to use dark background
+		// Padding 0.22 (22%) ensures icon fits within 40% radius safe zone
+		// (40% radius circle = 80% diameter, square inscribed needs ~22% padding)
 		maskable: {
 			sizes: [512],
-			padding: 0.1,
+			padding: 0.22,
 			resizeOptions: {
 				background: darkBackground,
 				fit: 'contain',
 			},
 		},
 		// Override apple touch icon to use dark background
+		// Padding 0.111 (~11%) = 20px margin on 180px icon (iOS best practice)
 		apple: {
 			sizes: [180],
-			padding: 0.1,
+			padding: 0.111,
 			resizeOptions: {
 				background: darkBackground,
 				fit: 'contain',
