@@ -87,6 +87,17 @@ export async function subscribeToPush(
 			return { success: false, error: error.message };
 		}
 
+		// Enable push notifications in profile
+		const { error: profileError } = await supabase
+			.from('profiles')
+			.update({ push_notifications_enabled: true })
+			.eq('id', userId);
+
+		if (profileError) {
+			console.error('Failed to enable push notifications in profile:', profileError);
+			// Don't fail the subscription - user can manually enable later
+		}
+
 		return { success: true };
 	} catch (error) {
 		console.error('Push subscription error:', error);
@@ -119,6 +130,17 @@ export async function unsubscribeFromPush(
 				.delete()
 				.eq('user_id', userId)
 				.eq('endpoint', subscription.endpoint);
+		}
+
+		// Disable push notifications in profile
+		const { error: profileError } = await supabase
+			.from('profiles')
+			.update({ push_notifications_enabled: false })
+			.eq('id', userId);
+
+		if (profileError) {
+			console.error('Failed to disable push notifications in profile:', profileError);
+			// Don't fail the unsubscription - profile can be updated manually
 		}
 
 		return { success: true };
