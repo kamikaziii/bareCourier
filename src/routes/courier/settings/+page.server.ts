@@ -834,13 +834,24 @@ export const actions: Actions = {
 		}
 
 		// Check if this service type is in use by any services
-		const { count } = await supabase
+		const { count: servicesCount } = await supabase
 			.from('services')
 			.select('id', { count: 'exact', head: true })
 			.eq('service_type_id', id);
 
-		if (count && count > 0) {
+		if (servicesCount && servicesCount > 0) {
 			return fail(409, { error: 'service_type_in_use' });
+		}
+
+		// Check if this service type is assigned to any clients
+		const { count: clientsCount } = await supabase
+			.from('profiles')
+			.select('id', { count: 'exact', head: true })
+			.eq('default_service_type_id', id)
+			.eq('role', 'client');
+
+		if (clientsCount && clientsCount > 0) {
+			return fail(409, { error: 'service_type_assigned_to_clients' });
 		}
 
 		const { error } = await supabase.from('service_types').delete().eq('id', id);

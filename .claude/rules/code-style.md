@@ -46,29 +46,43 @@ const count = value ?? 0;
 </script>
 ```
 
-### Form State Management
-**CRITICAL**: Use `$derived` for form values that come from props, NOT `$state`. This ensures form data syncs when props change.
+### State Management ($state vs $derived)
+**CRITICAL**: Choose the correct rune based on whether you need mutations.
 
 ```svelte
-<!-- CORRECT: Props become $derived -->
+<!-- CORRECT: Read-only prop values -->
 <script lang="ts">
   let { formData }: { formData: FormData } = $props();
 
-  let email = $derived(formData.email);      // Syncs with prop
-  let phone = $derived(formData.phone);      // Syncs with prop
-  let isLoading = $state(false);             // Local UI state
+  let email = $derived(formData.email);      // ✅ Syncs with prop
+  let phone = $derived(formData.phone);      // ✅ Syncs with prop
+  let isLoading = $state(false);             // ✅ Local UI state
 </script>
 
-<!-- WRONG: Local $state loses sync -->
+<!-- WRONG: Prop values with $state -->
 <script lang="ts">
   let { formData }: { formData: FormData } = $props();
 
-  let email = $state(formData.email);        // Doesn't sync!
-  let phone = $state(formData.phone);        // Doesn't sync!
+  let email = $state(formData.email);        // ❌ Doesn't sync!
+  let phone = $state(formData.phone);        // ❌ Doesn't sync!
+</script>
+
+<!-- WRONG: Derived arrays with mutations -->
+<script lang="ts">
+  let items = $derived(data.items);
+  items.push(newItem);                       // ❌ Mutation won't trigger reactivity!
+</script>
+
+<!-- CORRECT: Local state with immutable updates -->
+<script lang="ts">
+  let items = $state<Item[]>([]);
+  items = [...items, newItem];               // ✅ Reassignment works
 </script>
 ```
 
-See [svelte-form-state.md](./svelte-form-state.md) for detailed patterns and testing strategies.
+**See also:**
+- [svelte-form-state.md](./svelte-form-state.md) - Form-specific patterns
+- [svelte-reactive-mutation-prevention.md](./svelte-reactive-mutation-prevention.md) - Array/object mutation patterns
 
 ### Event Handlers
 ```svelte

@@ -357,5 +357,6 @@ test('form syncs with prop updates after submission', async ({ page }) => {
 ## Related Resources
 
 - [Svelte 5 Runes Guide](https://svelte.dev/docs/svelte/runes)
+- [Reactive Mutation Prevention](./svelte-reactive-mutation-prevention.md) - Arrays/objects mutation patterns
 - [Architecture Rules](./architecture.md) - Component structure patterns
 - [Code Style Rules](./code-style.md) - General Svelte 5 syntax rules
