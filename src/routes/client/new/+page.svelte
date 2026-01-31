@@ -24,7 +24,6 @@
 	import type { PageData } from './$types';
 	import type { TimeSlot, UrgencyFee } from '$lib/database.types.js';
 	import { PUBLIC_MAPBOX_TOKEN } from '$env/static/public';
-	import ZoneOverrideToggle from '$lib/components/ZoneOverrideToggle.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -220,15 +219,33 @@
 							disabled={loading}
 						/>
 					{/if}
-					<!-- Zone status indicator with manual override (type-based pricing only) -->
+					<!-- Zone status indicator (read-only for client) -->
 					{#if isTypePricingMode && deliveryAddressSelected}
-						<ZoneOverrideToggle
-							{isOutOfZone}
-							{detectedMunicipality}
-							{checkingZone}
-							onOverride={(outOfZone) => (isOutOfZone = outOfZone)}
-							disabled={loading}
-						/>
+						{#if checkingZone}
+							<p class="text-sm text-muted-foreground">
+								{m.loading()}
+							</p>
+						{:else if isOutOfZone === true}
+							<div class="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-400">
+								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 shrink-0">
+									<circle cx="12" cy="12" r="10"/>
+									<path d="M12 8v4"/>
+									<path d="M12 16h.01"/>
+								</svg>
+								<div>
+									<p class="font-medium">{m.out_of_zone_warning()}</p>
+									<p class="text-xs mt-1">{m.out_of_zone_client_warning()}</p>
+								</div>
+							</div>
+						{:else if isOutOfZone === false}
+							<div class="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
+								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+									<polyline points="22 4 12 14.01 9 11.01"/>
+								</svg>
+								<p>{m.in_zone()}</p>
+							</div>
+						{/if}
 					{/if}
 				</div>
 
