@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -74,7 +75,7 @@
 	const hasMapbox = !!PUBLIC_MAPBOX_TOKEN;
 
 	// Load courier settings and urgency fees on mount
-	$effect(() => {
+	onMount(() => {
 		if (!settingsLoaded) {
 			loadSettings();
 		}
