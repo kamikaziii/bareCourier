@@ -66,6 +66,7 @@
 	let isOutOfZone = $state<boolean | null>(null);
 	let detectedMunicipality = $state<string | null>(null);
 	let checkingZone = $state(false);
+	let deliveryAddressSelected = $state(false); // Track if address was selected from autocomplete
 
 	// Derived: is type-based pricing mode
 	const isTypePricingMode = $derived(data.pricingMode === 'type');
@@ -100,6 +101,7 @@
 	async function handleDeliverySelect(address: string, coords: [number, number] | null) {
 		deliveryLocation = address;
 		deliveryCoords = coords;
+		deliveryAddressSelected = true; // Mark that address was selected from autocomplete
 		calculateDistanceIfReady();
 
 		// If type-based pricing, detect municipality and check zone
@@ -219,7 +221,7 @@
 						/>
 					{/if}
 					<!-- Zone status indicator with manual override (type-based pricing only) -->
-					{#if isTypePricingMode && deliveryLocation}
+					{#if isTypePricingMode && deliveryAddressSelected}
 						<ZoneOverrideToggle
 							{isOutOfZone}
 							{detectedMunicipality}
