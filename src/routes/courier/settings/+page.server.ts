@@ -844,11 +844,17 @@ export const actions: Actions = {
 		}
 
 		// Check if this service type is assigned to any clients
-		const { count: clientsCount } = await supabase
+		const { count: clientsCount, error: clientsError } = await supabase
 			.from('profiles')
 			.select('id', { count: 'exact', head: true })
 			.eq('default_service_type_id', id)
 			.eq('role', 'client');
+
+		console.log('🔍 Delete service type check:', {
+			serviceTypeId: id,
+			clientsCount,
+			clientsError: clientsError?.message
+		});
 
 		if (clientsCount && clientsCount > 0) {
 			return fail(409, { error: 'service_type_assigned_to_clients' });

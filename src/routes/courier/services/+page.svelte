@@ -63,16 +63,19 @@
 		try {
 			const response = await fetch('?/batchStatusChange', { method: 'POST', body: formData });
 			const result = await response.json();
-			if (result.data?.success) {
+			// Check both result.data.success (wrapped) and result.success (direct)
+			const success = result.data?.success || result.success || result.type === 'success';
+			if (success) {
 				batchMessage = { type: 'success', text: m.batch_mark_delivered_success({ count: batch.selectedCount }) };
 				batch.reset();
 				// Reload page data from server
 				await invalidate('app:services');
 				setTimeout(() => { batchMessage = null; }, 3000);
 			} else {
-				batchMessage = { type: 'error', text: result.data?.error || m.error_generic() };
+				batchMessage = { type: 'error', text: result.data?.error || result.error || m.error_generic() };
 			}
-		} catch {
+		} catch (err) {
+			console.error('Batch update error:', err);
 			batchMessage = { type: 'error', text: m.error_generic() };
 		}
 		batchLoading = false;

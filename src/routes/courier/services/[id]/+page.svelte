@@ -110,7 +110,11 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 
 		try {
 			const response = await fetch(`?/deleteService`, {
-				method: 'POST'
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded'
+				},
+				body: new URLSearchParams()
 			});
 
 			if (response.redirected) {
