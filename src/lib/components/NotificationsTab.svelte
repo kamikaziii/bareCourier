@@ -71,7 +71,16 @@
 		channel: 'inApp' | 'push' | 'email',
 		value: boolean
 	) {
-		notificationPrefs.categories[category][channel] = value;
+		notificationPrefs = {
+			...notificationPrefs,
+			categories: {
+				...notificationPrefs.categories,
+				[category]: {
+					...notificationPrefs.categories[category],
+					[channel]: value
+				}
+			}
+		};
 	}
 
 	// Timezone state
@@ -381,7 +390,7 @@
 						<Switch
 							checked={pastDueSettings.dailySummaryEnabled}
 							onCheckedChange={(checked) => {
-								pastDueSettings.dailySummaryEnabled = checked;
+								pastDueSettings = { ...pastDueSettings, dailySummaryEnabled: checked };
 							}}
 						/>
 					</div>

@@ -393,19 +393,29 @@
 					<div class="rounded-md bg-muted/50 p-4 space-y-2">
 						<p class="text-sm font-medium">{m.price_estimate()}</p>
 
+						<!-- Service type name -->
+						{#if data.clientServiceType?.name}
+							<p class="text-sm text-muted-foreground">
+								{m.service_type()}: <span class="font-medium text-foreground">{data.clientServiceType.name}</span>
+							</p>
+						{/if}
+
 						{#if isOutOfZone === true}
 							<p class="text-lg font-bold text-amber-600">
 								€{data.typePricingSettings.outOfZoneBase.toFixed(2)} + {m.distance_charge()}
 							</p>
 							<p class="text-xs text-muted-foreground">{m.out_of_zone_client_warning()}</p>
+							<p class="text-xs text-muted-foreground italic">{m.price_final_note()}</p>
 						{:else if hasTimePreference}
 							<p class="text-lg font-bold">
 								€{data.typePricingSettings.timeSpecificPrice.toFixed(2)}
 							</p>
+							<p class="text-xs text-muted-foreground italic">{m.price_final_note()}</p>
 						{:else if data.clientServiceType}
 							<p class="text-lg font-bold">
 								€{data.clientServiceType.price.toFixed(2)}
 							</p>
+							<p class="text-xs text-muted-foreground italic">{m.price_final_note()}</p>
 						{:else}
 							<p class="text-muted-foreground text-sm">
 								{m.price_final_note()}

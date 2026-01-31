@@ -30,22 +30,26 @@
 	const defaultWorkingDays = DEFAULT_WORKING_DAYS;
 
 	// Past due settings state
-	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
 	let pastDueSettings = $state<PastDueSettings>(
 		profile.past_due_settings ?? defaultPastDueSettings
 	);
 
 	// Time slots state
-	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
 	let timeSlots = $state<TimeSlotDefinitions>(
 		profile.time_slots ?? defaultTimeSlots
 	);
 
 	// Working days state
-	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
 	let workingDays = $state<WorkingDay[]>(
 		profile.working_days ?? defaultWorkingDays
 	);
+
+	// Sync with props after form submission
+	$effect(() => {
+		pastDueSettings = profile.past_due_settings ?? defaultPastDueSettings;
+		timeSlots = profile.time_slots ?? defaultTimeSlots;
+		workingDays = profile.working_days ?? defaultWorkingDays;
+	});
 
 	// All days of the week for iteration
 	const allDays = VALID_DAYS;
@@ -269,7 +273,7 @@
 				<Switch
 					checked={pastDueSettings.allowClientReschedule}
 					onCheckedChange={(checked) => {
-						pastDueSettings.allowClientReschedule = checked;
+						pastDueSettings = { ...pastDueSettings, allowClientReschedule: checked };
 					}}
 				/>
 			</div>

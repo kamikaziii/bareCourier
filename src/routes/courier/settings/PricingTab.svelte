@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import { enhance, applyAction } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -32,24 +33,38 @@
 	let deletingFeeId = $state<string | null>(null);
 	let deleteDialogOpen = $state(false);
 
-	// Form state - using $derived with override capability (Svelte 5.25+)
-	// These values derive from profile props but can be temporarily overridden by user interaction.
-	// When profile props change (e.g., after form submission), the derived values automatically
-	// recalculate to match the new props, keeping UI in sync with server state.
-	let pricingMode = $derived((profile.pricing_mode as 'warehouse' | 'zone' | 'type') ?? 'warehouse');
-	let showPriceToCourier = $derived(profile.show_price_to_courier ?? true);
-	let showPriceToClient = $derived(profile.show_price_to_client ?? true);
-	let defaultUrgencyFeeId = $derived(profile.default_urgency_fee_id || '');
-	let minimumCharge = $derived(profile.minimum_charge ?? 0);
-	let roundDistance = $derived(profile.round_distance ?? false);
-	let vatEnabled = $derived(profile.vat_enabled ?? false);
-	let vatRate = $derived(profile.vat_rate ?? DEFAULT_VAT_RATE);
-	let pricesIncludeVat = $derived(profile.prices_include_vat ?? false);
+	// Form state - Initialize with default values, sync with props in $effect
+	// Using $state because these values are bound to form inputs (bind:value/bind:group)
+	let pricingMode = $state<'warehouse' | 'zone' | 'type'>('warehouse');
+	let showPriceToCourier = $state(true);
+	let showPriceToClient = $state(true);
+	let defaultUrgencyFeeId = $state<string>('');
+	let minimumCharge = $state(0);
+	let roundDistance = $state(false);
+	let vatEnabled = $state(false);
+	let vatRate = $state(DEFAULT_VAT_RATE);
+	let pricesIncludeVat = $state(false);
 
 	// Special pricing (type-based mode)
-	let timeSpecificPrice = $derived(profile.time_specific_price ?? 13);
-	let outOfZoneBase = $derived(profile.out_of_zone_base ?? 13);
-	let outOfZonePerKm = $derived(profile.out_of_zone_per_km ?? 0.5);
+	let timeSpecificPrice = $state(13);
+	let outOfZoneBase = $state(13);
+	let outOfZonePerKm = $state(0.5);
+
+	// Sync all form state with props (runs on mount and when profile changes)
+	$effect(() => {
+		pricingMode = (profile.pricing_mode as 'warehouse' | 'zone' | 'type') ?? 'warehouse';
+		showPriceToCourier = profile.show_price_to_courier ?? true;
+		showPriceToClient = profile.show_price_to_client ?? true;
+		defaultUrgencyFeeId = profile.default_urgency_fee_id || '';
+		minimumCharge = profile.minimum_charge ?? 0;
+		roundDistance = profile.round_distance ?? false;
+		vatEnabled = profile.vat_enabled ?? false;
+		vatRate = profile.vat_rate ?? DEFAULT_VAT_RATE;
+		pricesIncludeVat = profile.prices_include_vat ?? false;
+		timeSpecificPrice = profile.time_specific_price ?? 13;
+		outOfZoneBase = profile.out_of_zone_base ?? 13;
+		outOfZonePerKm = profile.out_of_zone_per_km ?? 0.5;
+	});
 
 	function openDeleteDialog(feeId: string) {
 		deletingFeeId = feeId;
@@ -67,7 +82,19 @@
 		<Card.Description>{m.settings_pricing_mode_desc()}</Card.Description>
 	</Card.Header>
 	<Card.Content>
-		<form method="POST" action="?/updatePricingMode" use:enhance class="space-y-4">
+		<form
+			method="POST"
+			action="?/updatePricingMode"
+			use:enhance={async () => {
+				return async ({ result }) => {
+					await applyAction(result);
+					if (result.type === 'success') {
+						await invalidateAll();
+					}
+				};
+			}}
+			class="space-y-4"
+		>
 			<div class="space-y-3">
 				<!-- Warehouse Option -->
 				<label
@@ -151,7 +178,19 @@
 			<Card.Description>{m.special_pricing_desc()}</Card.Description>
 		</Card.Header>
 		<Card.Content>
-			<form method="POST" action="?/updateSpecialPricing" use:enhance class="space-y-4">
+			<form
+				method="POST"
+				action="?/updateSpecialPricing"
+				use:enhance={async () => {
+					return async ({ result }) => {
+						await applyAction(result);
+						if (result.type === 'success') {
+							await invalidateAll();
+						}
+					};
+				}}
+				class="space-y-4"
+			>
 				<div class="grid gap-4 md:grid-cols-3">
 					<div class="space-y-2">
 						<Label for="time_specific_price">{m.time_specific_price()}</Label>
@@ -206,7 +245,19 @@
 		<Card.Description>{m.settings_pricing_preferences_desc()}</Card.Description>
 	</Card.Header>
 	<Card.Content>
-		<form method="POST" action="?/updatePricingPreferences" use:enhance class="space-y-6">
+		<form
+			method="POST"
+			action="?/updatePricingPreferences"
+			use:enhance={async () => {
+				return async ({ result }) => {
+					await applyAction(result);
+					if (result.type === 'success') {
+						await invalidateAll();
+					}
+				};
+			}}
+			class="space-y-6"
+		>
 			<!-- Show price to courier toggle -->
 			<div class="flex items-center justify-between">
 				<div class="space-y-0.5">
@@ -307,7 +358,19 @@
 		<Card.Description>{m.settings_vat_desc()}</Card.Description>
 	</Card.Header>
 	<Card.Content>
-		<form method="POST" action="?/updateVatSettings" use:enhance class="space-y-6">
+		<form
+			method="POST"
+			action="?/updateVatSettings"
+			use:enhance={async () => {
+				return async ({ result }) => {
+					await applyAction(result);
+					if (result.type === 'success') {
+						await invalidateAll();
+					}
+				};
+			}}
+			class="space-y-6"
+		>
 			<!-- VAT enabled toggle -->
 			<div class="flex items-center justify-between">
 				<div class="space-y-0.5">
@@ -387,7 +450,21 @@
 	</Card.Header>
 	<Card.Content class="space-y-4">
 		{#if showNewUrgencyForm}
-			<form method="POST" action="?/createUrgencyFee" use:enhance={() => { return async ({ result, update }) => { if (result.type === 'success') { showNewUrgencyForm = false; newUrgency = { name: '', description: '', multiplier: '1.0', flat_fee: '0' }; } await update(); }; }} class="space-y-4 rounded-lg border p-4">
+			<form
+				method="POST"
+				action="?/createUrgencyFee"
+				use:enhance={async () => {
+					return async ({ result }) => {
+						await applyAction(result);
+						if (result.type === 'success') {
+							showNewUrgencyForm = false;
+							newUrgency = { name: '', description: '', multiplier: '1.0', flat_fee: '0' };
+							await invalidateAll();
+						}
+					};
+				}}
+				class="space-y-4 rounded-lg border p-4"
+			>
 				<h4 class="font-medium">{m.settings_new_urgency()}</h4>
 				<div class="grid gap-4 md:grid-cols-2">
 					<div class="space-y-2">
@@ -435,7 +512,19 @@
 			{#each urgencyFees as fee (fee.id)}
 				<div class="rounded-lg border p-4 {fee.active ? '' : 'opacity-60'}">
 					{#if editingFeeId === fee.id}
-						<form method="POST" action="?/updateUrgencyFee" use:enhance={() => { return async ({ result, update }) => { if (result.type === 'success') { editingFeeId = null; } await update(); }; }}>
+						<form
+							method="POST"
+							action="?/updateUrgencyFee"
+							use:enhance={async () => {
+								return async ({ result }) => {
+									await applyAction(result);
+									if (result.type === 'success') {
+										editingFeeId = null;
+										await invalidateAll();
+									}
+								};
+							}}
+						>
 							<input type="hidden" name="id" value={fee.id} />
 							<input type="hidden" name="active" value={fee.active.toString()} />
 							<div class="grid gap-4 md:grid-cols-4">
@@ -483,7 +572,18 @@
 								</div>
 								<div class="flex items-center gap-1">
 									<!-- Toggle active/inactive -->
-									<form method="POST" action="?/toggleUrgencyFee" use:enhance>
+									<form
+										method="POST"
+										action="?/toggleUrgencyFee"
+										use:enhance={async () => {
+											return async ({ result }) => {
+												await applyAction(result);
+												if (result.type === 'success') {
+													await invalidateAll();
+												}
+											};
+										}}
+									>
 										<input type="hidden" name="id" value={fee.id} />
 										<input type="hidden" name="active" value={fee.active.toString()} />
 										<Button
@@ -532,7 +632,21 @@
 			<AlertDialog.Cancel onclick={() => (deleteDialogOpen = false)}>
 				{m.action_cancel()}
 			</AlertDialog.Cancel>
-			<form method="POST" action="?/deleteUrgencyFee" use:enhance={() => { return async ({ update }) => { deleteDialogOpen = false; deletingFeeId = null; await update(); }; }} class="inline">
+			<form
+				method="POST"
+				action="?/deleteUrgencyFee"
+				use:enhance={async () => {
+					return async ({ result }) => {
+						await applyAction(result);
+						deleteDialogOpen = false;
+						deletingFeeId = null;
+						if (result.type === 'success') {
+							await invalidateAll();
+						}
+					};
+				}}
+				class="inline"
+			>
 				<input type="hidden" name="id" value={deletingFeeId} />
 				<AlertDialog.Action type="submit" class="bg-destructive text-destructive-foreground hover:bg-destructive/90">
 					{m.action_delete()}

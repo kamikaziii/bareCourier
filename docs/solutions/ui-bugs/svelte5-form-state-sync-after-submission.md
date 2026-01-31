@@ -21,6 +21,17 @@ severity: high
 date_solved: 2025-01-29
 ---
 
+## ⚠️ UPDATE (2026-01-31)
+
+**This pattern causes a FLASH BUG when used with `bind:value` or `bind:group`!**
+
+- **If your form uses `bind:value`** → Use the pattern in [svelte5-form-flash-bind-derived-20260131.md](./svelte5-form-flash-bind-derived-20260131.md) instead (`$state` + `$effect` + `invalidateAll()`)
+- **If your form is read-only** (no `bind:`) → This `$derived` pattern works
+
+The pattern below was superseded for editable forms. See the decision tree in the newer doc for correct pattern selection.
+
+---
+
 ## Problem
 
 After submitting a form in SvelteKit, form inputs (radio buttons, text inputs) visually lose their values. The UI reverts to showing default/initial values even though the data was saved correctly.
@@ -141,6 +152,9 @@ $effect(() => {
 
 ## Related Documentation
 
+- **⭐ REQUIRED READING**: [Svelte + SvelteKit Critical Patterns](../patterns/svelte-sveltekit-critical-patterns.md#pattern-1-sveltekit-server-forms---state-management) - This pattern is now documented as a critical framework gap.
+- **⚠️ FLASH BUG**: See [svelte5-form-flash-bind-derived-20260131.md](./svelte5-form-flash-bind-derived-20260131.md) - This doc recommends `$derived` for forms, but that causes a FLASH BUG when combined with `bind:value`. The pattern in this doc only works for **read-only** form display, NOT editable forms with `bind:value`.
+- **BEST PRACTICE**: [svelte5-sveltekit-form-state-pattern-20260131.md](../best-practices/svelte5-sveltekit-form-state-pattern-20260131.md) - Comprehensive guide explaining why official Svelte pattern fails in SvelteKit.
 - [Svelte 5 Runes Documentation](https://svelte.dev/docs/svelte/$derived)
 - `docs/plans/2025-01-29-type-based-pricing-implementation.md` - Task 16 documents this pattern
 - `.claude/rules/code-style.md` - Svelte 5 runes section

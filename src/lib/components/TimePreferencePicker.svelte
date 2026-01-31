@@ -15,6 +15,16 @@
 		type DateValue
 	} from '@internationalized/date';
 
+	/**
+	 * Format number with locale-specific decimal separator (e.g., 9,00 for Portuguese)
+	 */
+	function formatNumber(value: number): string {
+		return new Intl.NumberFormat(getLocale(), {
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2
+		}).format(value);
+	}
+
 	interface Props {
 		selectedDate: string | null;
 		selectedTimeSlot: TimeSlot | null;
@@ -190,31 +200,40 @@
 	<!-- Time preference section -->
 	{#if !timePreferenceExpanded}
 		<!-- Collapsed: show "Add time preference" button -->
-		<Button
-			type="button"
-			variant="outline"
-			size="sm"
-			class="w-full text-muted-foreground"
-			onclick={expandTimePreference}
-			{disabled}
-		>
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				width="16"
-				height="16"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				class="mr-2"
+		<div class="space-y-2">
+			<Button
+				type="button"
+				variant="outline"
+				size="sm"
+				class="w-full text-muted-foreground"
+				onclick={expandTimePreference}
+				{disabled}
 			>
-				<circle cx="12" cy="12" r="10" />
-				<polyline points="12 6 12 12 16 14" />
-			</svg>
-			{m.time_preference_add()}
-		</Button>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="16"
+					height="16"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					class="mr-2"
+				>
+					<circle cx="12" cy="12" r="10" />
+					<polyline points="12 6 12 12 16 14" />
+				</svg>
+				{m.time_preference_add()}
+			</Button>
+
+			<!-- Warning shown in collapsed state -->
+			{#if showPriceWarning && timePreferencePrice > 0}
+				<p class="text-xs text-muted-foreground pl-1">
+					⚠️ {m.time_preference_warning()}
+				</p>
+			{/if}
+		</div>
 	{:else}
 		<!-- Expanded: show time slot selection -->
 		<div class="space-y-3 rounded-md border p-3">
@@ -250,7 +269,7 @@
 				{@const surcharge = basePrice > 0 ? timePreferencePrice - basePrice : timePreferencePrice}
 				{#if surcharge > 0}
 					<p class="text-xs text-muted-foreground">
-						{m.time_preference_surcharge({ amount: surcharge.toFixed(2) })}
+						{m.time_preference_surcharge({ amount: formatNumber(surcharge) })}
 					</p>
 				{/if}
 			{/if}
@@ -306,7 +325,7 @@
 						<line x1="12" y1="17" x2="12.01" y2="17" />
 					</svg>
 					<span>
-						{m.time_preference_price_warning({ amount: priceDifference.toFixed(2) })}
+						{m.time_preference_price_warning({ amount: formatNumber(priceDifference) })}
 					</span>
 				</div>
 			{/if}
