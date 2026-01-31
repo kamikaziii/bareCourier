@@ -106,18 +106,42 @@ Deno.serve(async (req: Request) => {
     }
 
     // Update profile with additional fields (trigger creates basic profile)
+    // Use a retry loop to handle race condition with trigger
     if (authData.user) {
-      const { error: updateError } = await adminClient
-        .from("profiles")
-        .update({
-          phone: phone || null,
-          default_pickup_location: default_pickup_location || null,
-          default_service_type_id: default_service_type_id || null,
-        })
-        .eq("id", authData.user.id);
+      let retries = 5;
+      let updateError = null;
+
+      while (retries > 0) {
+        const { error } = await adminClient
+          .from("profiles")
+          .update({
+            phone: phone || null,
+            default_pickup_location: default_pickup_location || null,
+            default_service_type_id: default_service_type_id || null,
+          })
+          .eq("id", authData.user.id);
+
+        if (!error) {
+          break; // Success!
+        }
+
+        updateError = error;
+
+        // Wait 100ms before retrying (give trigger time to complete)
+        await new Promise(resolve => setTimeout(resolve, 100));
+        retries--;
+      }
 
       if (updateError) {
-        console.error("Profile update error:", updateError);
+        console.error("Profile update error after retries:", updateError);
+        // Return error to caller so they know something went wrong
+        return new Response(
+          JSON.stringify({
+            error: "Client created but profile update failed. Please edit the client to add missing details.",
+            user: { id: authData.user.id, email: authData.user.email }
+          }),
+          { status: 207, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
     }
 
