@@ -97,21 +97,34 @@
 
 	async function sendTestPush() {
 		loading = true;
-		testResult = 'Sending test push...';
+		testResult = 'Sending test push...\n';
 
 		try {
-			const session = await supabase.auth.getSession();
-			if (!session.data.session) {
+			// Refresh the session to get a fresh token
+			testResult += 'Refreshing session...\n';
+			const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+
+			if (refreshError) {
+				testResult += `Refresh error: ${refreshError.message}\n`;
+				// Fall back to existing session
+			}
+
+			const session = refreshData?.session || (await supabase.auth.getSession()).data.session;
+
+			if (!session) {
 				testResult = 'Error: No active session';
 				loading = false;
 				return;
 			}
 
+			testResult += `Token expires: ${new Date(session.expires_at! * 1000).toLocaleString()}\n`;
+			testResult += 'Calling send-push...\n';
+
 			const response = await fetch(`${PUBLIC_SUPABASE_URL}/functions/v1/send-push`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					'Authorization': `Bearer ${session.data.session.access_token}`,
+					'Authorization': `Bearer ${session.access_token}`,
 					'apikey': PUBLIC_SUPABASE_ANON_KEY
 				},
 				body: JSON.stringify({
@@ -123,9 +136,9 @@
 			});
 
 			const result = await response.json();
-			testResult = `Response (${response.status}): ${JSON.stringify(result, null, 2)}`;
+			testResult += `\nResponse (${response.status}): ${JSON.stringify(result, null, 2)}`;
 		} catch (error) {
-			testResult = `Error: ${(error as Error).message}`;
+			testResult += `\nError: ${(error as Error).message}`;
 		}
 
 		loading = false;
