@@ -54,7 +54,9 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
 			id: profile.id,
 			role: 'client' as const,
 			name: profile.name,
-			default_pickup_location: profile.default_pickup_location
+			default_pickup_location: profile.default_pickup_location,
+			default_pickup_lat: profile.default_pickup_lat,
+			default_pickup_lng: profile.default_pickup_lng
 		} satisfies ClientLayoutProfile,
 		navCounts: {
 			suggestedServices: suggestedCountPromise

@@ -302,6 +302,8 @@ export type ClientLayoutProfile = {
 	role: 'client';
 	name: string;
 	default_pickup_location: string | null;
+	default_pickup_lat: number | null;
+	default_pickup_lng: number | null;
 };
 
 /** Discriminated union of layout profile shapes (discriminant: role) */

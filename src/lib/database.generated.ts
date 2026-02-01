@@ -327,6 +327,8 @@ export type Database = {
         Row: {
           active: boolean | null
           created_at: string | null
+          default_pickup_lat: number | null
+          default_pickup_lng: number | null
           default_pickup_location: string | null
           default_service_type_id: string | null
           default_urgency_fee_id: string | null
@@ -362,6 +364,8 @@ export type Database = {
         Insert: {
           active?: boolean | null
           created_at?: string | null
+          default_pickup_lat?: number | null
+          default_pickup_lng?: number | null
           default_pickup_location?: string | null
           default_service_type_id?: string | null
           default_urgency_fee_id?: string | null
@@ -397,6 +401,8 @@ export type Database = {
         Update: {
           active?: boolean | null
           created_at?: string | null
+          default_pickup_lat?: number | null
+          default_pickup_lng?: number | null
           default_pickup_location?: string | null
           default_service_type_id?: string | null
           default_urgency_fee_id?: string | null

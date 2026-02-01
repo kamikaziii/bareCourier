@@ -31,7 +31,7 @@
 
 	let { data }: { data: PageData } = $props();
 
-	type ClientOption = Pick<Profile, 'id' | 'name' | 'default_pickup_location' | 'default_service_type_id'>;
+	type ClientOption = Pick<Profile, 'id' | 'name' | 'default_pickup_location' | 'default_pickup_lat' | 'default_pickup_lng' | 'default_service_type_id'>;
 
 	let clients = $state<ClientOption[]>([]);
 	let loading = $state(true);
@@ -90,7 +90,7 @@
 		const [clientsResult, feesResult, settings] = await Promise.all([
 			data.supabase
 				.from('profiles')
-				.select('id, name, default_pickup_location, default_service_type_id')
+				.select('id, name, default_pickup_location, default_pickup_lat, default_pickup_lng, default_service_type_id')
 				.eq('role', 'client')
 				.eq('active', true)
 				.order('name'),
@@ -132,7 +132,13 @@
 		const client = clients.find((c) => c.id === selectedClientId);
 		if (client?.default_pickup_location) {
 			pickupLocation = client.default_pickup_location;
-			pickupCoords = null;
+			// Use stored coordinates if available
+			if (client.default_pickup_lng && client.default_pickup_lat) {
+				pickupCoords = [client.default_pickup_lng, client.default_pickup_lat];
+				calculateRouteIfReady();
+			} else {
+				pickupCoords = null;
+			}
 		}
 		// Set client's default service type if available
 		if (isTypePricingMode && client?.default_service_type_id) {

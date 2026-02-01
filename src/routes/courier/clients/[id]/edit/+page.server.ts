@@ -70,6 +70,12 @@ export const actions: Actions = {
 		const name = formData.get('name') as string;
 		const phone = formData.get('phone') as string;
 		const default_pickup_location = formData.get('default_pickup_location') as string;
+		const default_pickup_lat = formData.get('default_pickup_lat')
+			? parseFloat(formData.get('default_pickup_lat') as string)
+			: null;
+		const default_pickup_lng = formData.get('default_pickup_lng')
+			? parseFloat(formData.get('default_pickup_lng') as string)
+			: null;
 		const defaultServiceTypeId = (formData.get('default_service_type_id') as string) || null;
 
 		// Pricing fields
@@ -88,6 +94,8 @@ export const actions: Actions = {
 				name,
 				phone: phone || null,
 				default_pickup_location: default_pickup_location || null,
+				default_pickup_lat: default_pickup_lat,
+				default_pickup_lng: default_pickup_lng,
 				default_service_type_id: defaultServiceTypeId || null
 			})
 			.eq('id', params.id);

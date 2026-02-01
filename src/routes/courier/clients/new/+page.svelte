@@ -28,6 +28,7 @@
 	let password = $state('');
 	let phone = $state('');
 	let defaultPickupLocation = $state('');
+	let defaultPickupCoords = $state<[number, number] | null>(null);
 	let defaultServiceTypeId = $state('');
 	let redirectTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -43,8 +44,9 @@
 		}
 	});
 
-	function handleAddressSelect(address: string, _coords: [number, number] | null) {
+	function handleAddressSelect(address: string, coords: [number, number] | null) {
 		defaultPickupLocation = address;
+		defaultPickupCoords = coords;
 	}
 
 	function handlePricingChange(
@@ -84,6 +86,8 @@
 				name: name.trim(),
 				phone: phone.trim() || null,
 				default_pickup_location: defaultPickupLocation.trim() || null,
+				default_pickup_lat: defaultPickupCoords?.[1] ?? null,
+				default_pickup_lng: defaultPickupCoords?.[0] ?? null,
 				default_service_type_id: defaultServiceTypeId || null
 			})
 		});

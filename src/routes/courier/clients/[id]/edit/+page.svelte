@@ -24,6 +24,12 @@
 	// svelte-ignore state_referenced_locally
 	let defaultPickupLocation = $state(data.client.default_pickup_location || '');
 	// svelte-ignore state_referenced_locally
+	let defaultPickupCoords = $state<[number, number] | null>(
+		data.client.default_pickup_lng && data.client.default_pickup_lat
+			? [data.client.default_pickup_lng, data.client.default_pickup_lat]
+			: null
+	);
+	// svelte-ignore state_referenced_locally
 	let defaultServiceTypeId = $state(data.client.default_service_type_id || '');
 
 	// Pricing state - svelte-ignore state_referenced_locally for all: intentional initial value capture
@@ -57,8 +63,9 @@
 		zones = zones.filter((_, i) => i !== index);
 	}
 
-	function handleAddressSelect(address: string, _coords: [number, number] | null) {
+	function handleAddressSelect(address: string, coords: [number, number] | null) {
 		defaultPickupLocation = address;
+		defaultPickupCoords = coords;
 	}
 </script>
 
@@ -123,6 +130,8 @@
 						showHint={false}
 					/>
 					<input type="hidden" name="default_pickup_location" value={defaultPickupLocation} />
+					<input type="hidden" name="default_pickup_lat" value={defaultPickupCoords?.[1] ?? ''} />
+					<input type="hidden" name="default_pickup_lng" value={defaultPickupCoords?.[0] ?? ''} />
 				</div>
 
 				{#if data.pricingMode === 'type' && data.serviceTypes.length > 0}

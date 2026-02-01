@@ -31,6 +31,11 @@
 
 	// svelte-ignore state_referenced_locally - intentional: prefill form with user's default location
 	const defaultPickup = data.profile?.default_pickup_location || '';
+	// svelte-ignore state_referenced_locally
+	const defaultPickupCoordsFromProfile: [number, number] | null =
+		data.profile?.default_pickup_lng && data.profile?.default_pickup_lat
+			? [data.profile.default_pickup_lng, data.profile.default_pickup_lat]
+			: null;
 	let pickupLocation = $state(defaultPickup);
 	let deliveryLocation = $state('');
 	let notes = $state('');
@@ -40,8 +45,8 @@
 	let loading = $state(false);
 	let error = $state('');
 
-	// Coordinates for maps
-	let pickupCoords = $state<[number, number] | null>(null);
+	// Coordinates for maps - initialize with stored coordinates if available
+	let pickupCoords = $state<[number, number] | null>(defaultPickupCoordsFromProfile);
 	let deliveryCoords = $state<[number, number] | null>(null);
 	let distanceKm = $state<number | null>(null);
 	let durationMinutes = $state<number | null>(null);
