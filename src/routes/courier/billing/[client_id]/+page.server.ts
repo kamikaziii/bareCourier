@@ -24,6 +24,17 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 		supabase.from('urgency_fees').select('*').eq('active', true).order('sort_order')
 	]);
 
+	// Check if type-based pricing is active - if so, redirect to client detail page
+	const { data: courier } = await supabase
+		.from('profiles')
+		.select('pricing_mode')
+		.eq('role', 'courier')
+		.single();
+
+	if (courier?.pricing_mode === 'type') {
+		redirect(303, localizeHref(`/courier/clients/${client_id}?tab=billing`));
+	}
+
 	const client = clientResult.data;
 	const pricing = pricingResult.data;
 	const zones = zonesResult.data;
