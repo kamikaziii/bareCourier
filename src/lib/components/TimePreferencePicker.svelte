@@ -27,6 +27,8 @@
 		showPriceWarning?: boolean;
 		basePrice?: number;
 		timePreferencePrice?: number;
+		/** When true, out-of-zone pricing takes precedence and time preference has no price effect */
+		isOutOfZone?: boolean;
 	}
 
 	let {
@@ -39,7 +41,8 @@
 		disabled = false,
 		showPriceWarning = false,
 		basePrice = 0,
-		timePreferencePrice = 0
+		timePreferencePrice = 0,
+		isOutOfZone = false
 	}: Props = $props();
 
 	// Use a function to get the DateFormatter with current locale
@@ -126,11 +129,15 @@
 	);
 
 	// Show price warning if time preference is selected and adds cost
+	// Don't show when out-of-zone (out-of-zone pricing takes precedence, time preference has no effect)
 	const showWarning = $derived(
-		showPriceWarning && selectedTimeSlot && timePreferencePrice > basePrice
+		showPriceWarning && selectedTimeSlot && timePreferencePrice > basePrice && !isOutOfZone
 	);
 
 	const priceDifference = $derived(timePreferencePrice - basePrice);
+
+	// Whether to show surcharge info (hide when out-of-zone)
+	const showSurchargeInfo = $derived(showPriceWarning && timePreferencePrice > 0 && !isOutOfZone);
 </script>
 
 <div class="space-y-4">
@@ -218,8 +225,8 @@
 				{m.time_preference_add()}
 			</Button>
 
-			<!-- Warning shown in collapsed state -->
-			{#if showPriceWarning && timePreferencePrice > 0}
+			<!-- Warning shown in collapsed state (hidden when out-of-zone) -->
+			{#if showSurchargeInfo}
 				<p class="text-xs text-muted-foreground pl-1">
 					⚠️ {m.time_preference_warning()}
 				</p>
@@ -255,8 +262,8 @@
 				</Button>
 			</div>
 
-			<!-- Info text shown immediately on expansion -->
-			{#if showPriceWarning && timePreferencePrice > 0}
+			<!-- Info text shown immediately on expansion (hidden when out-of-zone) -->
+			{#if showSurchargeInfo}
 				{@const surcharge = basePrice > 0 ? timePreferencePrice - basePrice : timePreferencePrice}
 				{#if surcharge > 0}
 					<p class="text-xs text-muted-foreground">

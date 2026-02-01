@@ -388,6 +388,7 @@
 								showPriceWarning={true}
 								basePrice={selectedServiceType?.price ?? 0}
 								timePreferencePrice={data.typePricingSettings.timeSpecificPrice}
+								isOutOfZone={isOutOfZone === true}
 							/>
 						{:else}
 							<!-- Use traditional SchedulePicker -->
