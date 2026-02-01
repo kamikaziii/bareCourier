@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { timingSafeEqual } from "node:crypto";
 import webpush from "npm:web-push@3.6.7";
 
 /**
@@ -28,6 +29,20 @@ function getCorsHeaders(req: Request) {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   };
+}
+
+/**
+ * Timing-safe comparison for service role key authentication.
+ * Prevents timing attacks that could leak key information.
+ */
+function isServiceRoleKey(authHeader: string, serviceKey: string): boolean {
+  const bearerToken = authHeader.replace('Bearer ', '');
+  if (bearerToken.length !== serviceKey.length) return false;
+
+  return timingSafeEqual(
+    Buffer.from(bearerToken),
+    Buffer.from(serviceKey)
+  );
 }
 
 // Configure VAPID once at startup
@@ -80,17 +95,30 @@ Deno.serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Verify caller
-    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    // Determine if caller is using service role key or user token (timing-safe comparison)
+    const isServiceRole = isServiceRoleKey(authHeader, supabaseServiceKey);
 
-    const { data: { user }, error: userError } = await userClient.auth.getUser();
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Invalid or expired session" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    let userId: string | null = null;
+
+    if (isServiceRole) {
+      // Service role key - trusted internal call (e.g., from notify.ts, cron jobs)
+      // Skip user verification
+      userId = "service-role";
+    } else {
+      // User token - verify authentication
+      const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+
+      const { data: { user }, error: userError } = await userClient.auth.getUser();
+      if (userError || !user) {
+        return new Response(
+          JSON.stringify({ error: "Invalid or expired session" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      userId = user.id;
     }
 
     // Parse request body
@@ -108,13 +136,6 @@ Deno.serve(async (req: Request) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // IDOR Protection: Verify caller has permission to notify target user
-    const { data: callerProfile } = await adminClient
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
     // Get target user's profile (role and push notification preference)
     const { data: targetProfile } = await adminClient
       .from("profiles")
@@ -122,16 +143,25 @@ Deno.serve(async (req: Request) => {
       .eq("id", user_id)
       .single();
 
-    const isCourier = callerProfile?.role === "courier";
-    const isSelfNotification = user_id === user.id;
-    const isNotifyingCourier = targetProfile?.role === "courier";
+    // IDOR Protection (skip for service role - trusted internal calls)
+    if (!isServiceRole) {
+      const { data: callerProfile } = await adminClient
+        .from("profiles")
+        .select("role")
+        .eq("id", userId)
+        .single();
 
-    // Allow if: caller is courier, OR notifying self, OR client notifying courier
-    if (!isCourier && !isSelfNotification && !isNotifyingCourier) {
-      return new Response(
-        JSON.stringify({ error: "Forbidden: Cannot send notifications to other users" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      const isCourier = callerProfile?.role === "courier";
+      const isSelfNotification = user_id === userId;
+      const isNotifyingCourier = targetProfile?.role === "courier";
+
+      // Allow if: caller is courier, OR notifying self, OR client notifying courier
+      if (!isCourier && !isSelfNotification && !isNotifyingCourier) {
+        return new Response(
+          JSON.stringify({ error: "Forbidden: Cannot send notifications to other users" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // Check if user has push notifications enabled
