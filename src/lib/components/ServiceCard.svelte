@@ -90,8 +90,32 @@
 	role="button"
 	tabindex="0"
 >
-	<Card.Root class="overflow-hidden transition-colors hover:bg-muted/50 {isSelected ? 'ring-2 ring-primary' : ''}">
-		<Card.Content class="flex items-start gap-3 p-4">
+	<Card.Root class="relative overflow-hidden transition-colors hover:bg-muted/50 {isSelected ? 'ring-2 ring-primary' : ''}">
+		<!-- Status badge - absolute top-right -->
+		<Tooltip.Root delayDuration={200}>
+			<Tooltip.Trigger class="absolute right-3 top-3 cursor-help">
+				<Badge
+					variant="outline"
+					class="text-xs {service.status === 'pending'
+						? 'border-blue-500 text-blue-500'
+						: 'border-green-500 text-green-500'}"
+				>
+					{getStatusLabel(service.status)}
+				</Badge>
+			</Tooltip.Trigger>
+			<Tooltip.Content>
+				<p>{statusTooltip}</p>
+			</Tooltip.Content>
+		</Tooltip.Root>
+
+		<!-- Action button - absolute bottom-right -->
+		{#if headerActions}
+			<div class="absolute bottom-3 right-3">
+				{@render headerActions()}
+			</div>
+		{/if}
+
+		<Card.Content class="flex items-start gap-3 p-4 pr-24">
 			{#if selectable && service.status === 'pending'}
 				<Checkbox
 					checked={selected}
@@ -100,7 +124,7 @@
 				/>
 			{:else}
 				<div
-					class="mt-1.5 size-3 shrink-0 rounded-full {service.status === 'pending'
+					class="mt-1.5 size-2.5 shrink-0 rounded-full {service.status === 'pending'
 						? 'bg-blue-500'
 						: 'bg-green-500'}"
 				></div>
@@ -111,35 +135,14 @@
 						{service.display_id}
 					</span>
 				{/if}
-				<div class="flex items-center justify-between gap-2">
-					<p class="font-semibold truncate">
-						{#if showClientName}
-							{service.profiles?.name || m.unknown_client()}
-						{:else}
-							{service.pickup_location} &rarr; {service.delivery_location}
-						{/if}
-					</p>
-					<div class="flex items-center gap-2">
-						<Tooltip.Root delayDuration={200}>
-							<Tooltip.Trigger class="cursor-help">
-								<Badge
-									variant="outline"
-									class="shrink-0 {service.status === 'pending'
-										? 'border-blue-500 text-blue-500'
-										: 'border-green-500 text-green-500'}"
-								>
-									{getStatusLabel(service.status)}
-								</Badge>
-							</Tooltip.Trigger>
-							<Tooltip.Content>
-								<p>{statusTooltip}</p>
-							</Tooltip.Content>
-						</Tooltip.Root>
-						{#if headerActions}
-							{@render headerActions()}
-						{/if}
-					</div>
-				</div>
+				<!-- Client name now has full width -->
+				<p class="font-semibold">
+					{#if showClientName}
+						{service.profiles?.name || m.unknown_client()}
+					{:else}
+						{service.pickup_location} &rarr; {service.delivery_location}
+					{/if}
+				</p>
 				{#if urgencyBadge}
 					{@render urgencyBadge()}
 				{/if}
