@@ -128,23 +128,41 @@ function toRad(deg: number): number {
 	return deg * (Math.PI / 180);
 }
 
+/** Maximum iterations for polyline decoding to prevent infinite loops */
+const MAX_POLYLINE_ITERATIONS = 100000;
+
 /**
- * Decode a polyline string into coordinates
+ * Decode a polyline string into coordinates.
+ * Includes validation and iteration guards to prevent infinite loops.
  * @param encoded - Encoded polyline string
- * @returns Array of [lng, lat] coordinates
+ * @returns Array of [lng, lat] coordinates, or empty array if invalid
  */
 export function decodePolyline(encoded: string): [number, number][] {
+	// Validate input
+	if (!encoded || typeof encoded !== 'string' || encoded.length === 0) {
+		console.warn('decodePolyline: invalid or empty polyline string');
+		return [];
+	}
+
 	const points: [number, number][] = [];
 	let index = 0;
 	let lat = 0;
 	let lng = 0;
+	let iterations = 0;
 
 	while (index < encoded.length) {
+		// Iteration guard to prevent infinite loops
+		if (++iterations > MAX_POLYLINE_ITERATIONS) {
+			console.warn('decodePolyline: exceeded maximum iterations, polyline may be malformed');
+			break;
+		}
+
 		let shift = 0;
 		let result = 0;
 		let byte;
 
 		do {
+			if (index >= encoded.length) break;
 			byte = encoded.charCodeAt(index++) - 63;
 			result |= (byte & 0x1f) << shift;
 			shift += 5;
@@ -157,6 +175,7 @@ export function decodePolyline(encoded: string): [number, number][] {
 		result = 0;
 
 		do {
+			if (index >= encoded.length) break;
 			byte = encoded.charCodeAt(index++) - 63;
 			result |= (byte & 0x1f) << shift;
 			shift += 5;
@@ -166,7 +185,13 @@ export function decodePolyline(encoded: string): [number, number][] {
 		lng += dlng;
 
 		// OpenRouteService uses precision 5
-		points.push([lng / 1e5, lat / 1e5]);
+		const lngVal = lng / 1e5;
+		const latVal = lat / 1e5;
+
+		// Basic coordinate validation
+		if (latVal >= -90 && latVal <= 90 && lngVal >= -180 && lngVal <= 180) {
+			points.push([lngVal, latVal]);
+		}
 	}
 
 	return points;

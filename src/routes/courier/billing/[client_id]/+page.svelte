@@ -6,8 +6,8 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as m from '$lib/paraglide/messages.js';
-	import { getLocale, localizeHref } from '$lib/paraglide/runtime.js';
-import { formatDate } from '$lib/utils.js';
+	import { localizeHref } from '$lib/paraglide/runtime.js';
+	import { formatDate, formatCurrency, formatDistance } from '$lib/utils.js';
 	import type { PageData, ActionData } from './$types';
 	import type { PricingModel, Service } from '$lib/database.types';
 	import { ArrowLeft, Euro, MapPin, Trash2, Plus, FileText, Calculator, AlertTriangle } from '@lucide/svelte';
@@ -182,13 +182,6 @@ import { formatDate } from '$lib/utils.js';
 		}
 	}
 
-	function formatCurrency(value: number): string {
-		return new Intl.NumberFormat(getLocale(), {
-			style: 'currency',
-			currency: 'EUR'
-		}).format(value);
-	}
-
 	function handleRecalculate() {
 		recalculating = true;
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -201,8 +194,6 @@ import { formatDate } from '$lib/utils.js';
 	}
 
 	function exportClientCSV() {
-		const locale = getLocale();
-
 		const headers = [
 			m.reports_table_date(),
 			m.form_pickup_location(),
@@ -218,15 +209,15 @@ import { formatDate } from '$lib/utils.js';
 			const priceColumns = vatEnabled
 				? (() => {
 						const vb = calculateVat(s.calculated_price || 0, s.vat_rate_snapshot, s.prices_include_vat_snapshot);
-						return [vb.net.toFixed(2), vb.vat.toFixed(2), vb.gross.toFixed(2)];
+						return [formatCurrency(vb.net), formatCurrency(vb.vat), formatCurrency(vb.gross)];
 					})()
-				: [(s.calculated_price || 0).toFixed(2)];
+				: [formatCurrency(s.calculated_price || 0)];
 
 			return [
-				s.created_at ? new Date(s.created_at).toLocaleDateString(locale) : '-',
+				formatDate(s.created_at),
 				s.pickup_location,
 				s.delivery_location,
-				(s.distance_km || 0).toFixed(1),
+				formatDistance(s.distance_km || 0),
 				...priceColumns,
 				s.status === 'delivered' ? m.status_delivered() : m.status_pending()
 			];
@@ -238,10 +229,10 @@ import { formatDate } from '$lib/utils.js';
 			m.billing_total(),
 			'',
 			'',
-			totalStats.km.toFixed(1),
+			formatDistance(totalStats.km),
 			...(vatEnabled
-				? [totalStats.totalNet.toFixed(2), totalStats.totalVat.toFixed(2), totalStats.totalGross.toFixed(2)]
-				: [totalStats.revenue.toFixed(2)]),
+				? [formatCurrency(totalStats.totalNet), formatCurrency(totalStats.totalVat), formatCurrency(totalStats.totalGross)]
+				: [formatCurrency(totalStats.revenue)]),
 			''
 		]);
 
@@ -500,7 +491,7 @@ import { formatDate } from '$lib/utils.js';
 			</Card.Root>
 			<Card.Root>
 				<Card.Content class="p-4 text-center">
-					<p class="text-2xl font-bold">{totalStats.km} km</p>
+					<p class="text-2xl font-bold">{formatDistance(totalStats.km)} km</p>
 					<p class="text-sm text-muted-foreground">{m.billing_total_km()}</p>
 				</Card.Content>
 			</Card.Root>
@@ -567,7 +558,7 @@ import { formatDate } from '$lib/utils.js';
 											{service.pickup_location} &rarr; {service.delivery_location}
 										</td>
 										<td class="px-4 py-3 text-right text-sm">
-											{(service.distance_km || 0).toFixed(1)} km
+											{formatDistance(service.distance_km || 0)} km
 										</td>
 										{#if vatEnabled && vatBreakdown}
 											<td class="px-4 py-3 text-right text-sm">{formatCurrency(vatBreakdown.net)}</td>

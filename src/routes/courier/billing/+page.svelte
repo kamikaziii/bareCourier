@@ -5,7 +5,8 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import * as m from '$lib/paraglide/messages.js';
-	import { getLocale, localizeHref } from '$lib/paraglide/runtime.js';
+	import { localizeHref } from '$lib/paraglide/runtime.js';
+	import { formatCurrency, formatDistance } from '$lib/utils.js';
 	import type { PageData } from './$types';
 	import type { ClientPricing } from '$lib/database.types';
 	import { Euro, TrendingUp, MapPin, FileText, Receipt } from '@lucide/svelte';
@@ -132,15 +133,7 @@
 		pagination.reset();
 	});
 
-	function formatCurrency(value: number): string {
-		return new Intl.NumberFormat(getLocale(), {
-			style: 'currency',
-			currency: 'EUR'
-		}).format(value);
-	}
-
 	function exportCSV() {
-		const locale = getLocale();
 		const headers = [
 			m.billing_client(),
 			m.billing_services(),
@@ -153,8 +146,8 @@
 			b.clientName,
 			b.servicesCount,
 			b.deliveredCount,
-			b.totalKm,
-			b.estimatedCost.toFixed(2)
+			formatDistance(b.totalKm),
+			formatCurrency(b.estimatedCost)
 		]);
 
 		// Add totals row
@@ -163,8 +156,8 @@
 			m.billing_total(),
 			totalStats.services,
 			'',
-			totalStats.km,
-			totalStats.revenue.toFixed(2)
+			formatDistance(totalStats.km),
+			formatCurrency(totalStats.revenue)
 		]);
 
 		const csvContent = [
@@ -231,7 +224,7 @@
 						<MapPin class="size-6 text-green-500" />
 					</div>
 					<div>
-						<p class="text-3xl font-bold">{totalStats.km} km</p>
+						<p class="text-3xl font-bold">{formatDistance(totalStats.km)} km</p>
 						<p class="text-sm text-muted-foreground">{m.billing_total_distance()}</p>
 					</div>
 				</div>
@@ -290,7 +283,7 @@
 									<td class="px-4 py-3 text-center">
 										<span class="text-green-600">{billing.deliveredCount}</span>
 									</td>
-									<td class="px-4 py-3 text-right">{billing.totalKm} km</td>
+									<td class="px-4 py-3 text-right">{formatDistance(billing.totalKm)} km</td>
 									<td class="px-4 py-3 text-right font-medium">
 										{formatCurrency(billing.estimatedCost)}
 									</td>
@@ -322,7 +315,7 @@
 								<td class="px-4 py-3 font-bold">{m.billing_total()}</td>
 								<td class="px-4 py-3 text-center font-bold">{totalStats.services}</td>
 								<td class="px-4 py-3"></td>
-								<td class="px-4 py-3 text-right font-bold">{totalStats.km} km</td>
+								<td class="px-4 py-3 text-right font-bold">{formatDistance(totalStats.km)} km</td>
 								<td class="px-4 py-3 text-right font-bold">
 									{formatCurrency(totalStats.revenue)}
 								</td>

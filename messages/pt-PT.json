@@ -689,5 +689,6 @@
   "label_delivery": "ENTREGA",
   "label_pickup": "RECOLHA",
   "label_notes": "Notas",
-  "service_type_assigned_to_clients": "Não é possível eliminar: este tipo de serviço está atribuído a um ou mais clientes"
+  "service_type_assigned_to_clients": "Não é possível eliminar: este tipo de serviço está atribuído a um ou mais clientes",
+  "route_calculation_fallback": "Distância calculada em linha reta (cálculo de rota indisponível)"
 }

@@ -5,8 +5,7 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as m from '$lib/paraglide/messages.js';
-	import { getLocale } from '$lib/paraglide/runtime.js';
-import { formatDate } from '$lib/utils.js';
+	import { formatDate, formatCurrency, formatDistance } from '$lib/utils.js';
 	import type { PageData } from './$types';
 	import type { Service } from '$lib/database.types';
 	import { Euro, MapPin, Package, Receipt, Download } from '@lucide/svelte';
@@ -81,13 +80,6 @@ import { formatDate } from '$lib/utils.js';
 		pagination.reset();
 	});
 
-	function formatCurrency(value: number): string {
-		return new Intl.NumberFormat(getLocale(), {
-			style: 'currency',
-			currency: 'EUR'
-		}).format(value);
-	}
-
 	function getPricingModelLabel(model: string): string {
 		switch (model) {
 			case 'per_km':
@@ -117,7 +109,7 @@ import { formatDate } from '$lib/utils.js';
 		const rows = services.map((service) => [
 			formatDate(service.created_at),
 			`${service.pickup_location} → ${service.delivery_location}`,
-			`${(service.distance_km || 0).toFixed(1)} km`,
+			`${formatDistance(service.distance_km || 0)} km`,
 			formatCurrency(service.calculated_price || 0),
 			service.status === 'pending' ? m.status_pending() : m.status_delivered()
 		]);
@@ -126,7 +118,7 @@ import { formatDate } from '$lib/utils.js';
 		rows.push([
 			m.billing_total(),
 			'',
-			`${totals.km} km`,
+			`${formatDistance(totals.km)} km`,
 			formatCurrency(totals.cost),
 			''
 		]);
@@ -252,7 +244,7 @@ import { formatDate } from '$lib/utils.js';
 						<MapPin class="size-6 text-green-500" />
 					</div>
 					<div>
-						<p class="text-2xl font-bold">{totals.km} km</p>
+						<p class="text-2xl font-bold">{formatDistance(totals.km)} km</p>
 						<p class="text-sm text-muted-foreground">{m.billing_total_km()}</p>
 					</div>
 				</div>
@@ -306,7 +298,7 @@ import { formatDate } from '$lib/utils.js';
 										{service.pickup_location} &rarr; {service.delivery_location}
 									</td>
 									<td class="px-4 py-3 text-right text-sm">
-										{(service.distance_km || 0).toFixed(1)} km
+										{formatDistance(service.distance_km || 0)} km
 									</td>
 									<td class="px-4 py-3 text-right text-sm font-medium">
 										{formatCurrency(service.calculated_price || 0)}
@@ -327,7 +319,7 @@ import { formatDate } from '$lib/utils.js';
 						<tfoot>
 							<tr class="border-t bg-muted/50">
 								<td colspan="2" class="px-4 py-3 font-bold">{m.billing_total()}</td>
-								<td class="px-4 py-3 text-right font-bold">{totals.km} km</td>
+								<td class="px-4 py-3 text-right font-bold">{formatDistance(totals.km)} km</td>
 								<td class="px-4 py-3 text-right font-bold">{formatCurrency(totals.cost)}</td>
 								<td></td>
 							</tr>

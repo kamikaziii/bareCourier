@@ -6,6 +6,7 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import * as m from '$lib/paraglide/messages.js';
+	import { formatCurrency } from '$lib/utils.js';
 	import { Tags, Plus, Trash2, Power, Pencil } from '@lucide/svelte';
 	import type { ServiceType } from '$lib/database.types.js';
 
@@ -34,11 +35,6 @@
 	function resetNewForm() {
 		newServiceType = { name: '', price: '', description: '' };
 		showNewForm = false;
-	}
-
-	// Format price for display
-	function formatPrice(price: number): string {
-		return price.toFixed(2);
 	}
 
 </script>
@@ -197,7 +193,7 @@
 								</div>
 								<div class="flex items-center justify-between gap-2 sm:justify-end">
 									<div class="text-left sm:mr-2 sm:text-right">
-										<p class="text-sm font-medium">{formatPrice(type.price)} EUR</p>
+										<p class="text-sm font-medium">{formatCurrency(type.price)}</p>
 										<p class="text-xs text-muted-foreground">
 											{type.active ? m.status_active() : m.settings_inactive()}
 										</p>

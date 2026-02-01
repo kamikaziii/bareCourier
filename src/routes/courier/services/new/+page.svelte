@@ -55,6 +55,7 @@
 	let durationMinutes = $state<number | null>(null);
 	let calculatingDistance = $state(false);
 	let distanceResult = $state<ServiceDistanceResult | null>(null);
+	let routeSource = $state<'api' | 'haversine' | null>(null);
 
 	// Schedule (traditional mode)
 	let scheduledDate = $state<string | null>(null);
@@ -184,6 +185,7 @@
 		durationMinutes = result.durationMinutes;
 		routeGeometry = result.routeGeometry;
 		distanceResult = result.distanceResult;
+		routeSource = result.source;
 		calculatingDistance = false;
 	}
 
@@ -318,6 +320,8 @@
 							/>
 							{#if calculatingDistance}
 								<p class="text-sm text-muted-foreground">{m.map_calculating()}</p>
+							{:else if routeSource === 'haversine' && distanceKm !== null}
+								<p class="text-sm text-amber-600">{m.route_calculation_fallback()}</p>
 							{/if}
 						</div>
 					{/if}

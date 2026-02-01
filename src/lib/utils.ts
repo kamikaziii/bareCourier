@@ -164,3 +164,30 @@ export function formatMinutesToHuman(minutes: number): string {
 	if (mins === 0) return `${hours}h`;
 	return `${hours}h ${mins}m`;
 }
+
+/**
+ * Format a currency value using the current locale.
+ * Uses EUR currency with Portuguese locale formatting (e.g., "1.234,56 €").
+ * @param value - The numeric value to format
+ * @returns Formatted currency string
+ */
+export function formatCurrency(value: number): string {
+	return new Intl.NumberFormat(getLocale(), {
+		style: 'currency',
+		currency: 'EUR'
+	}).format(value);
+}
+
+/**
+ * Format a distance value in kilometers using the current locale.
+ * @param km - The distance in kilometers, or null
+ * @param decimals - Number of decimal places (default: 1)
+ * @returns Formatted distance string with "km" suffix, or empty string if null
+ */
+export function formatDistance(km: number | null, decimals: number = 1): string {
+	if (km === null) return '';
+	return new Intl.NumberFormat(getLocale(), {
+		minimumFractionDigits: decimals,
+		maximumFractionDigits: decimals
+	}).format(km);
+}

@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { PUBLIC_MAPBOX_TOKEN } from '$env/static/public';
 	import { decodePolyline } from '$lib/services/distance.js';
+	import { formatDistance } from '$lib/utils.js';
 	import * as m from '$lib/paraglide/messages.js';
 
 	interface Props {
@@ -187,9 +188,9 @@
 			{#if distanceKm !== null}
 				<span class="text-sm text-muted-foreground">
 					{#if durationMinutes !== null}
-						{m.map_distance_duration({ km: distanceKm.toFixed(1), minutes: String(Math.round(durationMinutes)) })}
+						{m.map_distance_duration({ km: formatDistance(distanceKm), minutes: String(Math.round(durationMinutes)) })}
 					{:else}
-						{m.map_distance({ km: distanceKm.toFixed(1) })}
+						{m.map_distance({ km: formatDistance(distanceKm) })}
 					{/if}
 				</span>
 			{:else}
