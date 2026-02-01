@@ -71,10 +71,22 @@
 	// Type-based pricing state
 	let selectedServiceTypeId = $state<string>('');
 	let hasTimePreference = $state(false);
-	let isOutOfZone = $state<boolean | null>(null);
-	let detectedMunicipality = $state<string | null>(null);
 	let tolls = $state<number | null>(null);
-	let checkingZone = $state(false);
+
+	// Delivery zone state (existing, renamed for clarity)
+	let deliveryIsOutOfZone = $state<boolean | null>(null);
+	let deliveryDetectedMunicipality = $state<string | null>(null);
+	let checkingDeliveryZone = $state(false);
+
+	// Pickup zone state (new)
+	let pickupIsOutOfZone = $state<boolean | null>(null);
+	let pickupDetectedMunicipality = $state<string | null>(null);
+	let checkingPickupZone = $state(false);
+
+	// Combined: if EITHER pickup OR delivery is out of zone
+	const isOutOfZone = $derived(
+		pickupIsOutOfZone === true || deliveryIsOutOfZone === true
+	);
 
 	// Derived: is type-based pricing mode
 	const isTypePricingMode = $derived(data.pricingMode === 'type');
@@ -139,6 +151,10 @@
 			} else {
 				pickupCoords = null;
 			}
+			// Detect pickup zone for client's default address
+			if (isTypePricingMode) {
+				await detectPickupZone(client.default_pickup_location);
+			}
 		}
 		// Set client's default service type if available
 		if (isTypePricingMode && client?.default_service_type_id) {
@@ -146,10 +162,15 @@
 		}
 	}
 
-	function handlePickupSelect(address: string, coords: [number, number] | null) {
+	async function handlePickupSelect(address: string, coords: [number, number] | null) {
 		pickupLocation = address;
 		pickupCoords = coords;
 		calculateRouteIfReady();
+
+		// If type-based pricing, detect municipality and check zone for pickup
+		if (isTypePricingMode && address) {
+			await detectPickupZone(address);
+		}
 	}
 
 	async function handleDeliverySelect(address: string, coords: [number, number] | null) {
@@ -157,32 +178,48 @@
 		deliveryCoords = coords;
 		calculateRouteIfReady();
 
-		// If type-based pricing, detect municipality and check zone
+		// If type-based pricing, detect municipality and check zone for delivery
 		if (isTypePricingMode && address) {
-			await detectMunicipalityAndCheckZone(address);
+			await detectDeliveryZone(address);
 		}
 	}
 
 	/**
-	 * Extract municipality (concelho) from Mapbox address and check if in zone
+	 * Extract municipality (concelho) from Mapbox address and check if pickup is in zone
 	 */
-	async function detectMunicipalityAndCheckZone(address: string) {
-		checkingZone = true;
+	async function detectPickupZone(address: string) {
+		checkingPickupZone = true;
 
-		// Extract municipality using shared utility
 		const municipality = extractMunicipalityFromAddress(address);
-		detectedMunicipality = municipality;
+		pickupDetectedMunicipality = municipality;
 
-		// Check if municipality is in distribution zone
 		if (municipality) {
 			const inZone = await isInDistributionZone(data.supabase, municipality);
-			isOutOfZone = !inZone;
+			pickupIsOutOfZone = !inZone;
 		} else {
-			// Cannot determine, default to null (unknown)
-			isOutOfZone = null;
+			pickupIsOutOfZone = null;
 		}
 
-		checkingZone = false;
+		checkingPickupZone = false;
+	}
+
+	/**
+	 * Extract municipality (concelho) from Mapbox address and check if delivery is in zone
+	 */
+	async function detectDeliveryZone(address: string) {
+		checkingDeliveryZone = true;
+
+		const municipality = extractMunicipalityFromAddress(address);
+		deliveryDetectedMunicipality = municipality;
+
+		if (municipality) {
+			const inZone = await isInDistributionZone(data.supabase, municipality);
+			deliveryIsOutOfZone = !inZone;
+		} else {
+			deliveryIsOutOfZone = null;
+		}
+
+		checkingDeliveryZone = false;
 	}
 
 	async function calculateRouteIfReady() {
@@ -290,6 +327,16 @@
 								placeholder={m.form_pickup_placeholder()}
 								disabled={formLoading}
 							/>
+							<!-- Zone status indicator with manual override for pickup (Type-based pricing only) -->
+							{#if isTypePricingMode && pickupLocation}
+								<ZoneOverrideToggle
+									isOutOfZone={pickupIsOutOfZone}
+									detectedMunicipality={pickupDetectedMunicipality}
+									checkingZone={checkingPickupZone}
+									onOverride={(outOfZone) => (pickupIsOutOfZone = outOfZone)}
+									disabled={formLoading}
+								/>
+							{/if}
 						</div>
 						<div class="space-y-2">
 							<Label for="delivery">{m.form_delivery_location()} *</Label>
@@ -300,13 +347,13 @@
 								placeholder={m.form_delivery_placeholder()}
 								disabled={formLoading}
 							/>
-							<!-- Zone status indicator with manual override (Type-based pricing only) -->
+							<!-- Zone status indicator with manual override for delivery (Type-based pricing only) -->
 							{#if isTypePricingMode && deliveryLocation}
 								<ZoneOverrideToggle
-									{isOutOfZone}
-									{detectedMunicipality}
-									{checkingZone}
-									onOverride={(outOfZone) => (isOutOfZone = outOfZone)}
+									isOutOfZone={deliveryIsOutOfZone}
+									detectedMunicipality={deliveryDetectedMunicipality}
+									checkingZone={checkingDeliveryZone}
+									onOverride={(outOfZone) => (deliveryIsOutOfZone = outOfZone)}
 									disabled={formLoading}
 								/>
 							{/if}
@@ -501,8 +548,12 @@
 					<!-- Type-based pricing hidden fields -->
 					{#if isTypePricingMode}
 						<input type="hidden" name="has_time_preference" value={hasTimePreference} />
-						<input type="hidden" name="is_out_of_zone" value={isOutOfZone ?? false} />
-						<input type="hidden" name="detected_municipality" value={detectedMunicipality ?? ''} />
+						<!-- Delivery zone fields -->
+						<input type="hidden" name="is_out_of_zone" value={deliveryIsOutOfZone ?? false} />
+						<input type="hidden" name="detected_municipality" value={deliveryDetectedMunicipality ?? ''} />
+						<!-- Pickup zone fields -->
+						<input type="hidden" name="pickup_is_out_of_zone" value={pickupIsOutOfZone ?? false} />
+						<input type="hidden" name="pickup_detected_municipality" value={pickupDetectedMunicipality ?? ''} />
 					{/if}
 
 					<div class="flex gap-2">

@@ -101,6 +101,21 @@
 		}
 	});
 
+	// Detect pickup zone for pre-filled default address on mount
+	let hasDetectedInitialPickupZone = false;
+	$effect(() => {
+		if (
+			!hasDetectedInitialPickupZone &&
+			isTypePricingMode &&
+			defaultPickup &&
+			defaultPickupCoordsFromProfile
+		) {
+			hasDetectedInitialPickupZone = true;
+			pickupAddressSelected = true; // Show zone indicator
+			detectPickupZone(defaultPickup);
+		}
+	});
+
 	async function loadSettings() {
 		const [settings, { data: fees }] = await Promise.all([
 			getCourierPricingSettings(data.supabase),
