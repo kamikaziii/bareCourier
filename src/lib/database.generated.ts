@@ -919,6 +919,13 @@ export type Database = {
         }
         Returns: Json
       }
+      bulk_recalculate_type_based_prices: {
+        Args: {
+          p_client_id: string
+          p_service_ids: string[]
+        }
+        Returns: Json
+      }
       bulk_reschedule_services: {
         Args: {
           p_new_date: string

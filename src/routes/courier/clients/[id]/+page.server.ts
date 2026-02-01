@@ -217,5 +217,116 @@ export const actions: Actions = {
 		}
 
 		return { success: true };
+	},
+
+	recalculateMissing: async ({ params, request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		// Verify user is courier
+		const { data: profile } = await supabase
+			.from('profiles')
+			.select('role')
+			.eq('id', user.id)
+			.single();
+
+		const userProfile = profile as { role: string } | null;
+		if (userProfile?.role !== 'courier') {
+			return { success: false, error: 'Unauthorized' };
+		}
+
+		const formData = await request.formData();
+		const startDate = formData.get('startDate') as string;
+		const endDate = formData.get('endDate') as string;
+
+		// Query services with calculated_price IS NULL and service_type_id IS NOT NULL
+		const endDatePlusOne = new Date(endDate);
+		endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
+
+		const { data: services } = await supabase
+			.from('services')
+			.select('id')
+			.eq('client_id', params.id)
+			.is('deleted_at', null)
+			.is('calculated_price', null)
+			.not('service_type_id', 'is', null)
+			.gte('created_at', new Date(startDate).toISOString())
+			.lt('created_at', endDatePlusOne.toISOString());
+
+		if (!services || services.length === 0) {
+			return { success: true, recalculated: 0 };
+		}
+
+		const serviceIds = services.map(s => s.id);
+
+		const { data: rpcResult, error: rpcError } = await supabase.rpc('bulk_recalculate_type_based_prices', {
+			p_service_ids: serviceIds,
+			p_client_id: params.id
+		});
+
+		if (rpcError) {
+			console.error('Failed to recalculate prices:', rpcError);
+			return { success: false, error: 'Failed to recalculate prices' };
+		}
+
+		const result = rpcResult as { success: boolean; updated: number; skipped: number };
+		return { success: result.success, recalculated: result.updated };
+	},
+
+	recalculateAll: async ({ params, request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		// Verify user is courier
+		const { data: profile } = await supabase
+			.from('profiles')
+			.select('role')
+			.eq('id', user.id)
+			.single();
+
+		const userProfile = profile as { role: string } | null;
+		if (userProfile?.role !== 'courier') {
+			return { success: false, error: 'Unauthorized' };
+		}
+
+		const formData = await request.formData();
+		const startDate = formData.get('startDate') as string;
+		const endDate = formData.get('endDate') as string;
+
+		// Query all services with service_type_id IS NOT NULL
+		const endDatePlusOne = new Date(endDate);
+		endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
+
+		const { data: services } = await supabase
+			.from('services')
+			.select('id')
+			.eq('client_id', params.id)
+			.is('deleted_at', null)
+			.not('service_type_id', 'is', null)
+			.gte('created_at', new Date(startDate).toISOString())
+			.lt('created_at', endDatePlusOne.toISOString());
+
+		if (!services || services.length === 0) {
+			return { success: true, recalculated: 0 };
+		}
+
+		const serviceIds = services.map(s => s.id);
+
+		const { data: rpcResult, error: rpcError } = await supabase.rpc('bulk_recalculate_type_based_prices', {
+			p_service_ids: serviceIds,
+			p_client_id: params.id
+		});
+
+		if (rpcError) {
+			console.error('Failed to recalculate prices:', rpcError);
+			return { success: false, error: 'Failed to recalculate prices' };
+		}
+
+		const result = rpcResult as { success: boolean; updated: number; skipped: number };
+		return { success: result.success, recalculated: result.updated };
 	}
 };

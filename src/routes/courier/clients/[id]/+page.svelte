@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { goto, invalidateAll, preloadData } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -13,7 +14,7 @@
 	import { formatDate, formatCurrency, formatDistance } from '$lib/utils.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import { FileText } from '@lucide/svelte';
+	import { FileText, Calculator, AlertTriangle } from '@lucide/svelte';
 	import type { PageData } from './$types';
 	import type { PricingModel } from '$lib/database.types.js';
 	import {
@@ -95,6 +96,12 @@
 	let historyServices = $state<typeof data.services>([]);
 	let historyLoading = $state(false);
 	let historyStats = $state({ services: 0, km: 0, revenue: 0 });
+	let recalculating = $state(false);
+	let recalculateError = $state('');
+	// Only count services that CAN be recalculated (have service_type_id)
+	let missingPriceCount = $derived(
+		historyServices.filter(s => s.calculated_price === null && s.service_type_id !== null).length
+	);
 
 	async function loadServiceHistory() {
 		historyLoading = true;
@@ -172,6 +179,19 @@
 		link.click();
 		document.body.removeChild(link);
 		URL.revokeObjectURL(url);
+	}
+
+	function handleRecalculate() {
+		recalculating = true;
+		recalculateError = '';
+		return async ({ result }: { result: { type: string; data?: { success?: boolean; error?: string } } }) => {
+			recalculating = false;
+			if (result.type === 'success' && result.data?.success) {
+				await loadServiceHistory();
+			} else if (result.type === 'failure' || (result.type === 'success' && !result.data?.success)) {
+				recalculateError = result.data?.error || m.error_generic();
+			}
+		};
 	}
 
 	$effect(() => {
@@ -497,11 +517,47 @@
 			<div class="space-y-4">
 				<div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
 					<h3 class="text-lg font-semibold">{m.billing_services_history()}</h3>
-					<Button variant="outline" size="sm" onclick={exportClientCSV} disabled={historyServices.length === 0}>
-						<FileText class="mr-2 size-4" />
-						{m.billing_export_csv()}
-					</Button>
+					<div class="flex flex-wrap gap-2">
+						{#if pricingMode === 'type' && missingPriceCount > 0}
+							<form method="POST" action="?/recalculateMissing" use:enhance={handleRecalculate}>
+								<input type="hidden" name="startDate" value={historyStartDate} />
+								<input type="hidden" name="endDate" value={historyEndDate} />
+								<Button variant="outline" size="sm" type="submit" disabled={recalculating}>
+									<Calculator class="mr-2 size-4" />
+									{m.billing_recalculate_missing()} ({missingPriceCount})
+								</Button>
+							</form>
+						{/if}
+						{#if pricingMode === 'type'}
+							<form method="POST" action="?/recalculateAll" use:enhance={handleRecalculate}>
+								<input type="hidden" name="startDate" value={historyStartDate} />
+								<input type="hidden" name="endDate" value={historyEndDate} />
+								<Button variant="outline" size="sm" type="submit" disabled={recalculating || historyServices.length === 0}>
+									<Calculator class="mr-2 size-4" />
+									{m.billing_recalculate_all()}
+								</Button>
+							</form>
+						{/if}
+						<Button variant="outline" size="sm" onclick={exportClientCSV} disabled={historyServices.length === 0}>
+							<FileText class="mr-2 size-4" />
+							{m.billing_export_csv()}
+						</Button>
+					</div>
 				</div>
+
+				{#if recalculateError}
+					<div class="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+						<AlertTriangle class="size-4 shrink-0" />
+						<span>{recalculateError}</span>
+					</div>
+				{/if}
+
+				{#if pricingMode === 'type' && missingPriceCount > 0}
+					<div class="flex items-center gap-2 rounded-md border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm text-amber-600 dark:text-amber-400">
+						<AlertTriangle class="size-4 shrink-0" />
+						<span>{m.billing_missing_price_warning()}</span>
+					</div>
+				{/if}
 
 				<!-- Date Range -->
 				<Card.Root>
