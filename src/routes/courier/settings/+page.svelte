@@ -6,6 +6,7 @@
 	import PricingTab from './PricingTab.svelte';
 	import SchedulingTab from './SchedulingTab.svelte';
 	import NotificationsTab from '$lib/components/NotificationsTab.svelte';
+	import PushDebugTab from './PushDebugTab.svelte';
 	import ServiceTypesSection from './ServiceTypesSection.svelte';
 	import DistributionZonesSection from './DistributionZonesSection.svelte';
 	import { Settings } from '@lucide/svelte';
@@ -52,11 +53,12 @@
 	<!-- Desktop: Tabs -->
 	<div class="hidden md:block">
 		<Tabs.Root value={activeTab} onValueChange={setTab} class="w-full">
-			<Tabs.List class="grid w-full grid-cols-4">
+			<Tabs.List class="grid w-full grid-cols-5">
 				<Tabs.Trigger value="account">{m.settings_tab_account()}</Tabs.Trigger>
 				<Tabs.Trigger value="pricing">{m.settings_tab_pricing()}</Tabs.Trigger>
 				<Tabs.Trigger value="scheduling">{m.settings_tab_scheduling()}</Tabs.Trigger>
 				<Tabs.Trigger value="notifications">{m.settings_tab_notifications()}</Tabs.Trigger>
+				<Tabs.Trigger value="debug">Debug</Tabs.Trigger>
 			</Tabs.List>
 
 			<Tabs.Content value="account" class="mt-6 space-y-6">
@@ -78,6 +80,10 @@
 			<Tabs.Content value="notifications" class="mt-6 space-y-6">
 				<NotificationsTab profile={data.profile} supabase={data.supabase} role="courier" />
 			</Tabs.Content>
+
+			<Tabs.Content value="debug" class="mt-6 space-y-6">
+				<PushDebugTab profile={data.profile} supabase={data.supabase} />
+			</Tabs.Content>
 		</Tabs.Root>
 	</div>
 
@@ -92,6 +98,7 @@
 			<option value="pricing">{m.settings_tab_pricing()}</option>
 			<option value="scheduling">{m.settings_tab_scheduling()}</option>
 			<option value="notifications">{m.settings_tab_notifications()}</option>
+			<option value="debug">Debug</option>
 		</select>
 
 		{#if activeTab === 'account'}
@@ -106,6 +113,8 @@
 			<SchedulingTab profile={data.profile} />
 		{:else if activeTab === 'notifications'}
 			<NotificationsTab profile={data.profile} supabase={data.supabase} role="courier" />
+		{:else if activeTab === 'debug'}
+			<PushDebugTab profile={data.profile} supabase={data.supabase} />
 		{/if}
 	</div>
 </div>
