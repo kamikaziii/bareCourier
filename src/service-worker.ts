@@ -139,13 +139,35 @@ registerRoute(
 
 // Push notification handling
 self.addEventListener('push', (event) => {
-	if (!event.data) return;
+	console.log('[SW] Push event received:', event);
+
+	// Always show a notification, even if parsing fails (iOS debugging)
+	if (!event.data) {
+		console.warn('[SW] Push event has no data');
+		event.waitUntil(
+			self.registration.showNotification('bareCourier', {
+				body: 'Notification received (no data)',
+				icon: '/pwa-192x192.png',
+				badge: '/pwa-64x64.png'
+			})
+		);
+		return;
+	}
 
 	let data;
 	try {
 		data = event.data.json();
+		console.log('[SW] Push data parsed:', JSON.stringify(data));
 	} catch (error) {
 		console.error('[SW] Failed to parse push notification:', error);
+		// Show notification anyway for debugging
+		event.waitUntil(
+			self.registration.showNotification('bareCourier', {
+				body: event.data.text() || 'Notification received (parse error)',
+				icon: '/pwa-192x192.png',
+				badge: '/pwa-64x64.png'
+			})
+		);
 		return;
 	}
 
@@ -153,13 +175,22 @@ self.addEventListener('push', (event) => {
 		body: data.message || data.body,
 		icon: '/pwa-192x192.png',
 		badge: '/pwa-64x64.png',
+		// iOS requires these for reliable delivery
+		tag: data.service_id || 'default',
+		renotify: true,
+		requireInteraction: false,
 		data: {
 			url: data.url || '/',
 			serviceId: data.service_id
 		}
 	};
 
-	event.waitUntil(self.registration.showNotification(data.title || 'bareCourier', options));
+	console.log('[SW] Showing notification with options:', JSON.stringify(options));
+	event.waitUntil(
+		self.registration.showNotification(data.title || 'bareCourier', options)
+			.then(() => console.log('[SW] Notification shown successfully'))
+			.catch((err) => console.error('[SW] Failed to show notification:', err))
+	);
 });
 
 // Notification click handling
