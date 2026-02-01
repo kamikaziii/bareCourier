@@ -19,13 +19,17 @@
 	let { profile, session }: Props = $props();
 
 	// Local state for form inputs (mutable, user can edit)
+	// svelte-ignore state_referenced_locally
 	let warehouseAddress = $state(profile.default_pickup_location || '');
+	// svelte-ignore state_referenced_locally
 	let warehouseCoords = $state<[number, number] | null>(
 		profile.warehouse_lat && profile.warehouse_lng
 			? [profile.warehouse_lng, profile.warehouse_lat]
 			: null
 	);
+	// svelte-ignore state_referenced_locally
 	let labelBusinessName = $state(profile.label_business_name || '');
+	// svelte-ignore state_referenced_locally
 	let labelTagline = $state(profile.label_tagline || '');
 
 	// Sync local state when profile updates (after form submission + invalidateAll)

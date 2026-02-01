@@ -34,6 +34,7 @@
 	type ServiceWithProfile = Service & { profiles: { name: string } | null };
 
 	let filter = $state<'today' | 'tomorrow' | 'all'>('today');
+	// svelte-ignore state_referenced_locally
 	let services = $state<ServiceWithProfile[]>(data.services);
 	let loading = $state(false);
 

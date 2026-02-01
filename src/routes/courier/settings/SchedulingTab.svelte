@@ -29,20 +29,13 @@
 	const defaultTimeSlots = DEFAULT_TIME_SLOTS;
 	const defaultWorkingDays = DEFAULT_WORKING_DAYS;
 
-	// Past due settings state
-	let pastDueSettings = $state<PastDueSettings>(
-		profile.past_due_settings ?? defaultPastDueSettings
-	);
-
-	// Time slots state
-	let timeSlots = $state<TimeSlotDefinitions>(
-		profile.time_slots ?? defaultTimeSlots
-	);
-
-	// Working days state
-	let workingDays = $state<WorkingDay[]>(
-		profile.working_days ?? defaultWorkingDays
-	);
+	// Past due settings state (initialized from props, synced via effect)
+	// svelte-ignore state_referenced_locally
+	let pastDueSettings = $state<PastDueSettings>(profile.past_due_settings ?? defaultPastDueSettings);
+	// svelte-ignore state_referenced_locally
+	let timeSlots = $state<TimeSlotDefinitions>(profile.time_slots ?? defaultTimeSlots);
+	// svelte-ignore state_referenced_locally
+	let workingDays = $state<WorkingDay[]>(profile.working_days ?? defaultWorkingDays);
 
 	// Sync with props after form submission
 	$effect(() => {
