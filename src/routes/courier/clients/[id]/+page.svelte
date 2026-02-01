@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto, invalidateAll, preloadData } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
@@ -34,6 +35,9 @@ import { formatDate, formatCurrency } from '$lib/utils.js';
 	let showArchiveDialog = $state(false);
 	let loading = $state(false);
 	let actionError = $state('');
+
+	// Handle ?tab=billing query param for direct navigation
+	const initialTab = $derived($page.url.searchParams.get('tab') || 'info');
 
 	async function handleToggleActive() {
 		loading = true;
@@ -153,7 +157,7 @@ import { formatDate, formatCurrency } from '$lib/utils.js';
 		</Card.Root>
 	</div>
 
-	<Tabs.Root value="info">
+	<Tabs.Root value={initialTab}>
 		<Tabs.List>
 			<Tabs.Trigger value="info">{m.tab_info()}</Tabs.Trigger>
 			<Tabs.Trigger value="services">{m.tab_services()} ({stats.total})</Tabs.Trigger>
