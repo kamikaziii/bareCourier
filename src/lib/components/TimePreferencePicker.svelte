@@ -145,7 +145,7 @@
 	<div class="space-y-2">
 		<Label>{m.schedule_date()}</Label>
 		<Popover.Root bind:open={popoverOpen}>
-			<Popover.Trigger asChild>
+			<Popover.Trigger>
 				{#snippet child({ props })}
 					<Button
 						{...props}
