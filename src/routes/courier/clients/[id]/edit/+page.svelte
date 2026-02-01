@@ -105,6 +105,13 @@
     defaultPickupLocation = address;
     defaultPickupCoords = coords;
   }
+
+  // Clear coordinates when address is emptied (handles case where user clears the field)
+  $effect(() => {
+    if (!defaultPickupLocation) {
+      defaultPickupCoords = null;
+    }
+  });
 </script>
 
 <div class="space-y-6">

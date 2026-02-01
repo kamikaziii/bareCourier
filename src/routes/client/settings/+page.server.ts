@@ -81,14 +81,43 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const name = formData.get('name') as string;
 		const phone = formData.get('phone') as string;
-		const defaultPickupLocation = formData.get('default_pickup_location') as string;
+
+		if (!name?.trim()) {
+			return fail(400, { error: 'Name is required' });
+		}
 
 		const { error } = await supabase
 			.from('profiles')
 			.update({
 				name,
-				phone,
-				default_pickup_location: defaultPickupLocation || null
+				phone
+			})
+			.eq('id', user.id);
+
+		if (error) {
+			return fail(500, { error: error.message });
+		}
+
+		return { success: true };
+	},
+
+	updateLocation: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return fail(401, { error: 'Not authenticated' });
+		}
+
+		const formData = await request.formData();
+		const defaultPickupLocation = formData.get('default_pickup_location') as string;
+		const defaultPickupLat = formData.get('default_pickup_lat') as string;
+		const defaultPickupLng = formData.get('default_pickup_lng') as string;
+
+		const { error } = await supabase
+			.from('profiles')
+			.update({
+				default_pickup_location: defaultPickupLocation || null,
+				default_pickup_lat: defaultPickupLat ? parseFloat(defaultPickupLat) : null,
+				default_pickup_lng: defaultPickupLng ? parseFloat(defaultPickupLng) : null
 			})
 			.eq('id', user.id);
 
