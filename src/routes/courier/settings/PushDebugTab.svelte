@@ -100,18 +100,31 @@
 		testResult = 'Sending test push...\n';
 
 		try {
-			// Refresh the session to get a fresh token
-			testResult += 'Refreshing session...\n';
-			const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+			// Get current session first
+			testResult += 'Getting current session...\n';
+			const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
-			if (refreshError) {
-				testResult += `Refresh error: ${refreshError.message}\n`;
+			if (sessionError) {
+				testResult += `Session error: ${sessionError.message}\n`;
 			}
 
-			const session = refreshData?.session || (await supabase.auth.getSession()).data.session;
+			let session = sessionData?.session;
+			testResult += `Current session: ${session ? 'exists' : 'null'}\n`;
+
+			// Try to refresh if we have a session
+			if (session) {
+				testResult += 'Refreshing session...\n';
+				const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+				if (refreshError) {
+					testResult += `Refresh error: ${refreshError.message}\n`;
+				} else if (refreshData?.session) {
+					session = refreshData.session;
+					testResult += 'Session refreshed successfully\n';
+				}
+			}
 
 			if (!session) {
-				testResult = 'Error: No active session';
+				testResult += 'Error: No active session - try logging out and back in';
 				loading = false;
 				return;
 			}
