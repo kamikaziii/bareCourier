@@ -403,6 +403,7 @@
 					selectable={batch.selectionMode}
 					selected={batch.has(service.id)}
 					onToggle={() => batch.toggle(service.id)}
+					href={localizeHref(`/courier/services/${service.id}`)}
 					onClick={() => { goto(localizeHref(`/courier/services/${service.id}`)); }}
 				>
 					{#snippet headerActions()}

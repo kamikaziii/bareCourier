@@ -7,6 +7,7 @@
 	import * as m from '$lib/paraglide/messages.js';
 	import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 	import { CalendarClock } from '@lucide/svelte';
+	import { preloadData } from '$app/navigation';
 	import type { Snippet } from 'svelte';
 	import type { Service } from '$lib/database.types.js';
 
@@ -23,6 +24,8 @@
 		onToggle?: () => void;
 		/** Callback when the card is clicked */
 		onClick?: () => void;
+		/** URL for preloading on hover (improves navigation speed) */
+		href?: string;
 		/** Show request status badge (client view) */
 		showRequestStatus?: boolean;
 		/** Show delivered_at timestamp instead of created_at when delivered (client view) */
@@ -42,12 +45,19 @@
 		selected = false,
 		onToggle,
 		onClick,
+		href,
 		showRequestStatus = false,
 		showDeliveredAt = false,
 		headerActions,
 		extraContent,
 		urgencyBadge
 	}: ServiceCardProps = $props();
+
+	function handleMouseEnter() {
+		if (href) {
+			preloadData(href);
+		}
+	}
 
 	const isSelected = $derived(selectable && selected);
 
@@ -59,6 +69,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
 	class="block w-full text-left cursor-pointer"
+	onmouseenter={handleMouseEnter}
 	onclick={() => {
 		if (selectable && service.status === 'pending' && onToggle) {
 			onToggle();

@@ -561,6 +561,7 @@
 					showClientName={false}
 					showRequestStatus={true}
 					showDeliveredAt={true}
+					href={localizeHref(`/client/services/${service.id}`)}
 					onClick={() => goto(localizeHref(`/client/services/${service.id}`))}
 				>
 					{#snippet extraContent()}
