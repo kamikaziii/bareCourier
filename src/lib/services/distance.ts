@@ -46,6 +46,8 @@ export interface ServiceDistanceResult {
 	pickupToDeliveryKm: number;
 	/** Encoded polyline geometry for the pickup → delivery leg (for map display) */
 	geometry?: string;
+	/** Source of distance calculation: 'api' if all legs used OpenRouteService, 'haversine' if any leg used fallback */
+	source: 'api' | 'haversine';
 }
 
 const ORS_DIRECTIONS_URL = 'https://api.openrouteservice.org/v2/directions/driving-car';
@@ -128,23 +130,41 @@ function toRad(deg: number): number {
 	return deg * (Math.PI / 180);
 }
 
+/** Maximum iterations for polyline decoding to prevent infinite loops */
+const MAX_POLYLINE_ITERATIONS = 100000;
+
 /**
- * Decode a polyline string into coordinates
+ * Decode a polyline string into coordinates.
+ * Includes validation and iteration guards to prevent infinite loops.
  * @param encoded - Encoded polyline string
- * @returns Array of [lng, lat] coordinates
+ * @returns Array of [lng, lat] coordinates, or empty array if invalid
  */
 export function decodePolyline(encoded: string): [number, number][] {
+	// Validate input
+	if (!encoded || typeof encoded !== 'string' || encoded.length === 0) {
+		console.warn('decodePolyline: invalid or empty polyline string');
+		return [];
+	}
+
 	const points: [number, number][] = [];
 	let index = 0;
 	let lat = 0;
 	let lng = 0;
+	let iterations = 0;
 
 	while (index < encoded.length) {
+		// Iteration guard to prevent infinite loops
+		if (++iterations > MAX_POLYLINE_ITERATIONS) {
+			console.warn('decodePolyline: exceeded maximum iterations, polyline may be malformed');
+			break;
+		}
+
 		let shift = 0;
 		let result = 0;
 		let byte;
 
 		do {
+			if (index >= encoded.length) break;
 			byte = encoded.charCodeAt(index++) - 63;
 			result |= (byte & 0x1f) << shift;
 			shift += 5;
@@ -157,6 +177,7 @@ export function decodePolyline(encoded: string): [number, number][] {
 		result = 0;
 
 		do {
+			if (index >= encoded.length) break;
 			byte = encoded.charCodeAt(index++) - 63;
 			result |= (byte & 0x1f) << shift;
 			shift += 5;
@@ -166,7 +187,13 @@ export function decodePolyline(encoded: string): [number, number][] {
 		lng += dlng;
 
 		// OpenRouteService uses precision 5
-		points.push([lng / 1e5, lat / 1e5]);
+		const lngVal = lng / 1e5;
+		const latVal = lat / 1e5;
+
+		// Basic coordinate validation
+		if (latVal >= -90 && latVal <= 90 && lngVal >= -180 && lngVal <= 180) {
+			points.push([lngVal, latVal]);
+		}
 	}
 
 	return points;
@@ -186,6 +213,7 @@ export async function calculateServiceDistance(
 	let pickupToDeliveryKm: number;
 	let pickupToDeliveryDuration: number | undefined;
 	let geometry: string | undefined;
+	let pickupToDeliveryUsedHaversine = false;
 	const pickupDeliveryRoute = await calculateRoute(pickupCoords, deliveryCoords);
 	if (pickupDeliveryRoute) {
 		pickupToDeliveryKm = pickupDeliveryRoute.distanceKm;
@@ -195,12 +223,14 @@ export async function calculateServiceDistance(
 		// Haversine fallback
 		pickupToDeliveryKm = calculateHaversineDistance(pickupCoords, deliveryCoords);
 		pickupToDeliveryDuration = estimateDrivingMinutes(pickupToDeliveryKm);
+		pickupToDeliveryUsedHaversine = true;
 	}
 
 	// If warehouse mode and coords exist, calculate warehouse → pickup
 	if (pricingMode === 'warehouse' && warehouseCoords) {
 		let warehouseToPickupKm: number;
 		let warehouseToPickupDuration: number | undefined;
+		let warehouseToPickupUsedHaversine = false;
 		const warehousePickupRoute = await calculateRoute(warehouseCoords, pickupCoords);
 		if (warehousePickupRoute) {
 			warehouseToPickupKm = warehousePickupRoute.distanceKm;
@@ -208,6 +238,7 @@ export async function calculateServiceDistance(
 		} else {
 			warehouseToPickupKm = calculateHaversineDistance(warehouseCoords, pickupCoords);
 			warehouseToPickupDuration = estimateDrivingMinutes(warehouseToPickupKm);
+			warehouseToPickupUsedHaversine = true;
 		}
 
 		let totalDistanceKm = warehouseToPickupKm + pickupToDeliveryKm;
@@ -223,13 +254,18 @@ export async function calculateServiceDistance(
 				? warehouseToPickupDuration + pickupToDeliveryDuration
 				: undefined;
 
+		// Source is 'haversine' if ANY leg used haversine fallback
+		const source: 'api' | 'haversine' =
+			warehouseToPickupUsedHaversine || pickupToDeliveryUsedHaversine ? 'haversine' : 'api';
+
 		return {
 			totalDistanceKm,
 			durationMinutes,
 			distanceMode: 'warehouse',
 			warehouseToPickupKm,
 			pickupToDeliveryKm,
-			geometry
+			geometry,
+			source
 		};
 	}
 
@@ -246,6 +282,7 @@ export async function calculateServiceDistance(
 		distanceMode:
 			warehouseCoords === null && pricingMode === 'warehouse' ? 'fallback' : 'zone',
 		pickupToDeliveryKm,
-		geometry
+		geometry,
+		source: pickupToDeliveryUsedHaversine ? 'haversine' : 'api'
 	};
 }

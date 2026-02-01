@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as m from '$lib/paraglide/messages.js';
+	import { formatCurrency, formatDistance } from '$lib/utils.js';
 	import type { TypePricingSettings } from '$lib/services/type-pricing.js';
 	import type { ServiceType } from '$lib/database.types.js';
 
@@ -70,37 +71,37 @@
 			<div class="space-y-1 text-sm">
 				<div class="flex justify-between">
 					<span class="text-muted-foreground">{m.base_price()} ({m.out_of_zone()})</span>
-					<span>€{preview.base.toFixed(2)}</span>
+					<span>{formatCurrency(preview.base)}</span>
 				</div>
 				{#if preview.distance > 0}
 					<div class="flex justify-between">
-						<span class="text-muted-foreground">{m.distance_charge()} ({distanceKm?.toFixed(1)} km)</span>
-						<span>€{preview.distance.toFixed(2)}</span>
+						<span class="text-muted-foreground">{m.distance_charge()} ({formatDistance(distanceKm)} km)</span>
+						<span>{formatCurrency(preview.distance)}</span>
 					</div>
 				{/if}
 				{#if preview.tolls > 0}
 					<div class="flex justify-between">
 						<span class="text-muted-foreground">{m.tolls()}</span>
-						<span>€{preview.tolls.toFixed(2)}</span>
+						<span>{formatCurrency(preview.tolls)}</span>
 					</div>
 				{/if}
 			</div>
 		{:else if preview.reason === 'time_preference'}
 			<div class="flex justify-between text-sm">
 				<span class="text-muted-foreground">{m.time_preference_label()}</span>
-				<span>€{preview.base.toFixed(2)}</span>
+				<span>{formatCurrency(preview.base)}</span>
 			</div>
 		{:else}
 			<div class="flex justify-between text-sm">
 				<span class="text-muted-foreground">{serviceType?.name}</span>
-				<span>€{preview.base.toFixed(2)}</span>
+				<span>{formatCurrency(preview.base)}</span>
 			</div>
 		{/if}
 
 		<Separator />
 		<div class="flex justify-between font-medium">
 			<span>{m.total_price()}</span>
-			<span class="text-lg">€{preview.total.toFixed(2)}</span>
+			<span class="text-lg">{formatCurrency(preview.total)}</span>
 		</div>
 	</div>
 {/if}

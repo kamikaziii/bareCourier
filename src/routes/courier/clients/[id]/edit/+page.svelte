@@ -8,6 +8,7 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import AddressInput from '$lib/components/AddressInput.svelte';
 	import * as m from '$lib/paraglide/messages.js';
+	import { formatCurrency } from '$lib/utils.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData, ActionData } from './$types';
 	import type { PricingModel } from '$lib/database.types.js';
@@ -141,7 +142,7 @@
 						>
 							<option value="">{m.none()}</option>
 							{#each data.serviceTypes as type (type.id)}
-								<option value={type.id}>{type.name} - €{Number(type.price).toFixed(2)}</option>
+								<option value={type.id}>{type.name} - {formatCurrency(Number(type.price))}</option>
 							{/each}
 						</select>
 						<p class="text-xs text-muted-foreground">{m.default_service_type_desc()}</p>

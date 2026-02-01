@@ -88,6 +88,7 @@ export const actions: Actions = {
 			warehouseToPickupKm?: number;
 			pickupToDeliveryKm: number;
 			durationMinutes?: number;
+			source: 'api' | 'haversine';
 		} | null = null;
 
 		if (pickup_lat && pickup_lng && delivery_lat && delivery_lng) {

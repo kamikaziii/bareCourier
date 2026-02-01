@@ -9,7 +9,7 @@
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
-import { formatDate } from '$lib/utils.js';
+import { formatDate, formatCurrency } from '$lib/utils.js';
 	import type { PageData } from './$types';
 	import type { PricingModel } from '$lib/database.types.js';
 	import {
@@ -314,11 +314,11 @@ import { formatDate } from '$lib/utils.js';
 							{#if pricing.pricing_model !== 'zone'}
 								<div class="flex justify-between">
 									<span class="text-muted-foreground">{m.billing_base_fee()}</span>
-									<span>€{pricing.base_fee.toFixed(2)}</span>
+									<span>{formatCurrency(pricing.base_fee)}</span>
 								</div>
 								<div class="flex justify-between">
 									<span class="text-muted-foreground">{m.billing_per_km_rate()}</span>
-									<span>€{pricing.per_km_rate.toFixed(2)}/km</span>
+									<span>{formatCurrency(pricing.per_km_rate)}/km</span>
 								</div>
 							{:else if zones.length > 0}
 								<Separator class="my-2" />
@@ -328,7 +328,7 @@ import { formatDate } from '$lib/utils.js';
 										<span class="text-muted-foreground">
 											{zone.min_km} - {zone.max_km !== null ? `${zone.max_km} km` : '∞'}
 										</span>
-										<span>€{zone.price.toFixed(2)}</span>
+										<span>{formatCurrency(zone.price)}</span>
 									</div>
 								{/each}
 							{/if}

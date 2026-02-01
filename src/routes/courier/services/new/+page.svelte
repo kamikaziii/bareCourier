@@ -21,6 +21,7 @@
 	import { isInDistributionZone, getClientDefaultServiceTypeId } from '$lib/services/type-pricing.js';
 	import { extractMunicipalityFromAddress } from '$lib/services/municipality.js';
 	import * as m from '$lib/paraglide/messages.js';
+	import { formatCurrency } from '$lib/utils.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import { ArrowLeft } from '@lucide/svelte';
 	import ZoneOverrideToggle from '$lib/components/ZoneOverrideToggle.svelte';
@@ -55,6 +56,7 @@
 	let durationMinutes = $state<number | null>(null);
 	let calculatingDistance = $state(false);
 	let distanceResult = $state<ServiceDistanceResult | null>(null);
+	let routeSource = $state<'api' | 'haversine' | null>(null);
 
 	// Schedule (traditional mode)
 	let scheduledDate = $state<string | null>(null);
@@ -184,6 +186,7 @@
 		durationMinutes = result.durationMinutes;
 		routeGeometry = result.routeGeometry;
 		distanceResult = result.distanceResult;
+		routeSource = result.source;
 		calculatingDistance = false;
 	}
 
@@ -261,7 +264,7 @@
 							>
 								{#each data.serviceTypes as serviceType (serviceType.id)}
 									<option value={serviceType.id}>
-										{serviceType.name} - {serviceType.price.toFixed(2)}
+										{serviceType.name} - {formatCurrency(serviceType.price)}
 									</option>
 								{/each}
 							</select>
@@ -318,6 +321,8 @@
 							/>
 							{#if calculatingDistance}
 								<p class="text-sm text-muted-foreground">{m.map_calculating()}</p>
+							{:else if routeSource === 'haversine' && distanceKm !== null}
+								<p class="text-sm text-amber-600">{m.route_calculation_fallback()}</p>
 							{/if}
 						</div>
 					{/if}

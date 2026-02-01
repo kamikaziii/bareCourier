@@ -13,6 +13,7 @@
 	import ZoneOverrideToggle from '$lib/components/ZoneOverrideToggle.svelte';
 	import TypePricePreview from '$lib/components/TypePricePreview.svelte';
 	import * as m from '$lib/paraglide/messages.js';
+	import { formatCurrency } from '$lib/utils.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import { calculateRouteIfReady as calculateRouteShared } from '$lib/services/route.js';
 	import { getCourierPricingSettings } from '$lib/services/pricing.js';
@@ -279,7 +280,7 @@
 						>
 							<option value="">{m.form_select_service_type()}</option>
 							{#each data.serviceTypes as type (type.id)}
-								<option value={type.id}>{type.name} - €{type.price.toFixed(2)}</option>
+								<option value={type.id}>{type.name} - {formatCurrency(type.price)}</option>
 							{/each}
 						</select>
 					</div>

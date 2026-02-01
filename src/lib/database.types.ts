@@ -31,6 +31,8 @@ export type PriceBreakdown = {
 	distance_mode?: 'warehouse' | 'zone' | 'fallback';
 	warehouse_to_pickup_km?: number;
 	pickup_to_delivery_km?: number;
+	// Route calculation source (for audit/debugging)
+	route_source?: 'api' | 'haversine' | 'partial_haversine';
 	// Type-based pricing fields
 	tolls?: number;
 	reason?: 'out_of_zone' | 'time_preference' | 'service_type';

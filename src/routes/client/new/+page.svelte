@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -20,6 +21,7 @@
 	import { isInDistributionZone } from '$lib/services/type-pricing.js';
 	import { extractMunicipalityFromAddress } from '$lib/services/municipality.js';
 	import * as m from '$lib/paraglide/messages.js';
+	import { formatCurrency } from '$lib/utils.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData } from './$types';
 	import type { TimeSlot, UrgencyFee } from '$lib/database.types.js';
@@ -45,6 +47,7 @@
 	let durationMinutes = $state<number | null>(null);
 	let routeGeometry = $state<string | null>(null);
 	let calculatingDistance = $state(false);
+	let routeSource = $state<'api' | 'haversine' | null>(null);
 
 	// Distance breakdown for warehouse mode
 	let distanceResult = $state<ServiceDistanceResult | null>(null);
@@ -74,7 +77,7 @@
 	const hasMapbox = !!PUBLIC_MAPBOX_TOKEN;
 
 	// Load courier settings and urgency fees on mount
-	$effect(() => {
+	onMount(() => {
 		if (!settingsLoaded) {
 			loadSettings();
 		}
@@ -138,6 +141,7 @@
 		durationMinutes = result.durationMinutes;
 		routeGeometry = result.routeGeometry;
 		distanceResult = result.distanceResult;
+		routeSource = result.source;
 		calculatingDistance = false;
 	}
 
@@ -263,6 +267,8 @@
 						/>
 						{#if calculatingDistance}
 							<p class="text-sm text-muted-foreground">{m.map_calculating()}</p>
+						{:else if routeSource === 'haversine' && distanceKm !== null}
+							<p class="text-sm text-amber-600">{m.route_calculation_fallback()}</p>
 						{/if}
 					</div>
 				{/if}
@@ -392,19 +398,29 @@
 					<div class="rounded-md bg-muted/50 p-4 space-y-2">
 						<p class="text-sm font-medium">{m.price_estimate()}</p>
 
+						<!-- Service type name -->
+						{#if data.clientServiceType?.name}
+							<p class="text-sm text-muted-foreground">
+								{m.service_type()}: <span class="font-medium text-foreground">{data.clientServiceType.name}</span>
+							</p>
+						{/if}
+
 						{#if isOutOfZone === true}
 							<p class="text-lg font-bold text-amber-600">
-								€{data.typePricingSettings.outOfZoneBase.toFixed(2)} + {m.distance_charge()}
+								{formatCurrency(data.typePricingSettings.outOfZoneBase)} + {m.distance_charge()}
 							</p>
 							<p class="text-xs text-muted-foreground">{m.out_of_zone_client_warning()}</p>
+							<p class="text-xs text-muted-foreground italic">{m.price_final_note()}</p>
 						{:else if hasTimePreference}
 							<p class="text-lg font-bold">
-								€{data.typePricingSettings.timeSpecificPrice.toFixed(2)}
+								{formatCurrency(data.typePricingSettings.timeSpecificPrice)}
 							</p>
+							<p class="text-xs text-muted-foreground italic">{m.price_final_note()}</p>
 						{:else if data.clientServiceType}
 							<p class="text-lg font-bold">
-								€{data.clientServiceType.price.toFixed(2)}
+								{formatCurrency(data.clientServiceType.price)}
 							</p>
+							<p class="text-xs text-muted-foreground italic">{m.price_final_note()}</p>
 						{:else}
 							<p class="text-muted-foreground text-sm">
 								{m.price_final_note()}

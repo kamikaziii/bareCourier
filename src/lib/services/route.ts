@@ -18,13 +18,16 @@ export interface RouteCalculationResult {
 	durationMinutes: number | null;
 	routeGeometry: string | null;
 	distanceResult: ServiceDistanceResult | null;
+	/** Indicates the source of the distance calculation: 'api' for OpenRouteService, 'haversine' for fallback */
+	source: 'api' | 'haversine' | null;
 }
 
 const EMPTY_RESULT: RouteCalculationResult = {
 	distanceKm: null,
 	durationMinutes: null,
 	routeGeometry: null,
-	distanceResult: null
+	distanceResult: null,
+	source: null
 };
 
 /**
@@ -48,6 +51,7 @@ export async function calculateRouteIfReady(
 	let distanceKm: number | null = null;
 	let durationMinutes: number | null = null;
 	let distanceResult: ServiceDistanceResult | null = null;
+	let source: 'api' | 'haversine' = 'api';
 
 	try {
 		let routeGeometry: string | null = null;
@@ -64,23 +68,27 @@ export async function calculateRouteIfReady(
 			distanceKm = result.totalDistanceKm;
 			durationMinutes = result.durationMinutes ?? null;
 			routeGeometry = result.geometry || null;
+			// Use the source from calculateServiceDistance which tracks if ANY leg used haversine
+			source = result.source;
 		} else {
 			const result = await calculateRoute(pickupCoords, deliveryCoords);
 			if (result) {
 				distanceKm = result.distanceKm;
 				durationMinutes = result.durationMinutes;
 				routeGeometry = result.geometry || null;
+				source = 'api';
 			} else {
 				distanceKm = calculateHaversineDistance(pickupCoords, deliveryCoords);
 				durationMinutes = estimateDrivingMinutes(distanceKm);
+				source = 'haversine';
 			}
 		}
 
-		return { distanceKm, durationMinutes, routeGeometry, distanceResult };
+		return { distanceKm, durationMinutes, routeGeometry, distanceResult, source };
 	} catch {
 		// Haversine fallback
 		distanceKm = calculateHaversineDistance(pickupCoords, deliveryCoords);
 		durationMinutes = estimateDrivingMinutes(distanceKm);
-		return { distanceKm, durationMinutes, routeGeometry: null, distanceResult: null };
+		return { distanceKm, durationMinutes, routeGeometry: null, distanceResult: null, source: 'haversine' };
 	}
 }

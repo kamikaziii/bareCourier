@@ -15,7 +15,7 @@
 	import UrgencyBadge from '$lib/components/UrgencyBadge.svelte';
 	import { settingsToConfig } from '$lib/utils/past-due.js';
 	import { getRequestStatusLabel, getRequestStatusColor } from '$lib/utils/status.js';
-import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
+import { formatDate, formatDateTime, formatTimeSlot, formatCurrency, formatDistance } from '$lib/utils.js';
 	import RescheduleDialog from '$lib/components/RescheduleDialog.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import type { TimeSlot } from '$lib/database.types.js';
@@ -422,7 +422,7 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 					{#if service.calculated_price !== null}
 						<div class="flex items-center justify-between">
 							<div>
-								<p class="text-2xl font-bold">€{service.calculated_price.toFixed(2)}</p>
+								<p class="text-2xl font-bold">{formatCurrency(service.calculated_price)}</p>
 								{#if service.price_override_reason}
 									<p class="text-sm text-muted-foreground">{service.price_override_reason}</p>
 								{/if}
@@ -456,36 +456,36 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 							{#if service.price_breakdown.reason === 'out_of_zone'}
 								<div class="flex justify-between">
 									<span class="text-muted-foreground">{m.base_price()} ({m.out_of_zone()})</span>
-									<span>€{service.price_breakdown.base.toFixed(2)}</span>
+									<span>{formatCurrency(service.price_breakdown.base)}</span>
 								</div>
 								{#if service.price_breakdown.distance > 0}
 									<div class="flex justify-between">
-										<span class="text-muted-foreground">{m.distance_charge()} ({service.distance_km?.toFixed(1)} km)</span>
-										<span>€{service.price_breakdown.distance.toFixed(2)}</span>
+										<span class="text-muted-foreground">{m.distance_charge()} ({formatDistance(service.distance_km)} km)</span>
+										<span>{formatCurrency(service.price_breakdown.distance)}</span>
 									</div>
 								{/if}
 								{#if service.price_breakdown.tolls && service.price_breakdown.tolls > 0}
 									<div class="flex justify-between">
 										<span class="text-muted-foreground">{m.tolls()}</span>
-										<span>€{service.price_breakdown.tolls.toFixed(2)}</span>
+										<span>{formatCurrency(service.price_breakdown.tolls)}</span>
 									</div>
 								{/if}
 							{:else if service.price_breakdown.reason === 'time_preference'}
 								<div class="flex justify-between">
 									<span class="text-muted-foreground">{m.time_preference_label()}</span>
-									<span>€{service.price_breakdown.base.toFixed(2)}</span>
+									<span>{formatCurrency(service.price_breakdown.base)}</span>
 								</div>
 							{:else}
 								<div class="flex justify-between">
 									<span class="text-muted-foreground">{m.base_price()}</span>
-									<span>€{service.price_breakdown.base.toFixed(2)}</span>
+									<span>{formatCurrency(service.price_breakdown.base)}</span>
 								</div>
 							{/if}
 
 							<Separator />
 							<div class="flex justify-between font-medium">
 								<span>{m.total_price()}</span>
-								<span>€{service.price_breakdown.total.toFixed(2)}</span>
+								<span>{formatCurrency(service.price_breakdown.total)}</span>
 							</div>
 						</div>
 					{:else if service.service_type_id || service.is_out_of_zone !== null || service.tolls}
@@ -521,13 +521,13 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 							{#if service.tolls && service.tolls > 0}
 								<div class="flex justify-between">
 									<span class="text-muted-foreground">{m.tolls_label()}</span>
-									<span>€{Number(service.tolls).toFixed(2)}</span>
+									<span>{formatCurrency(Number(service.tolls))}</span>
 								</div>
 							{/if}
 							{#if service.distance_km && service.is_out_of_zone}
 								<div class="flex justify-between">
 									<span class="text-muted-foreground">{m.distance_label()}</span>
-									<span>{service.distance_km.toFixed(1)} km</span>
+									<span>{formatDistance(service.distance_km)} km</span>
 								</div>
 							{/if}
 						</div>
@@ -642,7 +642,7 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 			<div class="space-y-4 py-4">
 				{#if service.calculated_price !== null}
 					<p class="text-sm text-muted-foreground">
-						{m.price_calculated()}: €{service.calculated_price.toFixed(2)}
+						{m.price_calculated()}: {formatCurrency(service.calculated_price)}
 					</p>
 				{/if}
 				{#if priceOverrideError}

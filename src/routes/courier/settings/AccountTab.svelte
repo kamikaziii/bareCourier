@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import { enhance, applyAction } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -17,21 +18,26 @@
 
 	let { profile, session }: Props = $props();
 
-	// Warehouse address state
-	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
+	// Local state for form inputs (mutable, user can edit)
 	let warehouseAddress = $state(profile.default_pickup_location || '');
-	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
 	let warehouseCoords = $state<[number, number] | null>(
 		profile.warehouse_lat && profile.warehouse_lng
 			? [profile.warehouse_lng, profile.warehouse_lat]
 			: null
 	);
-
-	// Label branding state
-	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
 	let labelBusinessName = $state(profile.label_business_name || '');
-	// svelte-ignore state_referenced_locally - intentional: capture initial value for form
 	let labelTagline = $state(profile.label_tagline || '');
+
+	// Sync local state when profile updates (after form submission + invalidateAll)
+	$effect(() => {
+		warehouseAddress = profile.default_pickup_location || '';
+		warehouseCoords =
+			profile.warehouse_lat && profile.warehouse_lng
+				? [profile.warehouse_lng, profile.warehouse_lat]
+				: null;
+		labelBusinessName = profile.label_business_name || '';
+		labelTagline = profile.label_tagline || '';
+	});
 </script>
 
 <!-- Profile Settings -->
@@ -44,7 +50,19 @@
 		<Card.Description>{m.settings_profile_desc()}</Card.Description>
 	</Card.Header>
 	<Card.Content>
-		<form method="POST" action="?/updateProfile" use:enhance class="space-y-4">
+		<form
+			method="POST"
+			action="?/updateProfile"
+			use:enhance={async () => {
+				return async ({ result }) => {
+					await applyAction(result);
+					if (result.type === 'success') {
+						await invalidateAll();
+					}
+				};
+			}}
+			class="space-y-4"
+		>
 			<div class="grid gap-4 md:grid-cols-2">
 				<div class="space-y-2">
 					<Label for="name">{m.form_name()}</Label>
@@ -75,7 +93,19 @@
 		<Card.Description>{m.settings_courier_default_location_desc()}</Card.Description>
 	</Card.Header>
 	<Card.Content>
-		<form method="POST" action="?/updateWarehouseLocation" use:enhance class="space-y-4">
+		<form
+			method="POST"
+			action="?/updateWarehouseLocation"
+			use:enhance={async () => {
+				return async ({ result }) => {
+					await applyAction(result);
+					if (result.type === 'success') {
+						await invalidateAll();
+					}
+				};
+			}}
+			class="space-y-4"
+		>
 			<div class="space-y-2">
 				<Label for="default_pickup_location">{m.settings_warehouse_address()}</Label>
 				<AddressInput
@@ -113,7 +143,19 @@
 		<Card.Description>{m.label_branding_desc()}</Card.Description>
 	</Card.Header>
 	<Card.Content>
-		<form method="POST" action="?/updateLabelBranding" use:enhance class="space-y-4">
+		<form
+			method="POST"
+			action="?/updateLabelBranding"
+			use:enhance={async () => {
+				return async ({ result }) => {
+					await applyAction(result);
+					if (result.type === 'success') {
+						await invalidateAll();
+					}
+				};
+			}}
+			class="space-y-4"
+		>
 			<div class="space-y-2">
 				<Label for="label_business_name">{m.label_business_name()}</Label>
 				<Input

@@ -524,7 +524,8 @@
   "reschedule_new": "New:",
   "schedule_clear_date": "Clear date",
   "time_preference_add": "Add time preference",
-  "time_preference_price_warning": "Adding a time preference increases the price by {amount}",
+  "time_preference_warning": "Services with time preference have additional cost",
+  "time_preference_price_warning": "Adding a time preference increases the price by €{amount}",
   "sidebar_collapse": "Collapse",
   "location_from": "From:",
   "location_to": "To:",
@@ -688,5 +689,6 @@
   "label_delivery": "DELIVERY",
   "label_pickup": "PICKUP",
   "label_notes": "Notes",
-  "service_type_assigned_to_clients": "Cannot delete: this service type is assigned to one or more clients"
+  "service_type_assigned_to_clients": "Cannot delete: this service type is assigned to one or more clients",
+  "route_calculation_fallback": "Distance calculated as straight-line (route calculation unavailable)"
 }
