@@ -93,20 +93,20 @@ Deno.serve(async (req: Request) => {
       // Skip user verification
       userId = "service-role";
     } else {
-      // User token - verify authentication
-      const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-        global: { headers: { Authorization: authHeader } },
-      });
+      // User token - verify using getClaims() (faster, no network round-trip)
+      // https://supabase.com/docs/guides/functions/auth
+      const token = authHeader.replace('Bearer ', '');
+      const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-      const { data: { user }, error: userError } = await userClient.auth.getUser();
-      if (userError || !user) {
+      const { data, error: claimsError } = await supabase.auth.getClaims(token);
+      if (claimsError || !data?.claims?.sub) {
         return new Response(
           JSON.stringify({ error: "Invalid or expired session" }),
           { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      userId = user.id;
+      userId = data.claims.sub as string;
     }
 
     // Parse request body
