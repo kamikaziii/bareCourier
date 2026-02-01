@@ -690,6 +690,8 @@ export type Database = {
           pending_reschedule_requested_by: string | null
           pending_reschedule_time: string | null
           pending_reschedule_time_slot: string | null
+          pickup_detected_municipality: string | null
+          pickup_is_out_of_zone: boolean | null
           pickup_lat: number | null
           pickup_lng: number | null
           pickup_location: string
@@ -744,6 +746,8 @@ export type Database = {
           pending_reschedule_requested_by?: string | null
           pending_reschedule_time?: string | null
           pending_reschedule_time_slot?: string | null
+          pickup_detected_municipality?: string | null
+          pickup_is_out_of_zone?: boolean | null
           pickup_lat?: number | null
           pickup_lng?: number | null
           pickup_location: string
@@ -798,6 +802,8 @@ export type Database = {
           pending_reschedule_requested_by?: string | null
           pending_reschedule_time?: string | null
           pending_reschedule_time_slot?: string | null
+          pickup_detected_municipality?: string | null
+          pickup_is_out_of_zone?: boolean | null
           pickup_lat?: number | null
           pickup_lng?: number | null
           pickup_location?: string

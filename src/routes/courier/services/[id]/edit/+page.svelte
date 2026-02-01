@@ -79,13 +79,27 @@
 	// svelte-ignore state_referenced_locally
 	let serviceTypeId = $state<string>(data.service.service_type_id || '');
 	// svelte-ignore state_referenced_locally
-	let isOutOfZone = $state<boolean | null>(data.service.is_out_of_zone ?? null);
-	// svelte-ignore state_referenced_locally
 	let tolls = $state<string>(data.service.tolls?.toString() || '');
-	// svelte-ignore state_referenced_locally
-	let detectedMunicipality = $state<string | null>(data.service.detected_municipality || null);
-	let checkingZone = $state(false);
 	let hasTimePreference = $derived(!!scheduledTimeSlot);
+
+	// Delivery zone state (existing, renamed for clarity)
+	// svelte-ignore state_referenced_locally
+	let deliveryIsOutOfZone = $state<boolean | null>(data.service.is_out_of_zone ?? null);
+	// svelte-ignore state_referenced_locally
+	let deliveryDetectedMunicipality = $state<string | null>(data.service.detected_municipality || null);
+	let checkingDeliveryZone = $state(false);
+
+	// Pickup zone state (new)
+	// svelte-ignore state_referenced_locally
+	let pickupIsOutOfZone = $state<boolean | null>(data.service.pickup_is_out_of_zone ?? null);
+	// svelte-ignore state_referenced_locally
+	let pickupDetectedMunicipality = $state<string | null>(data.service.pickup_detected_municipality || null);
+	let checkingPickupZone = $state(false);
+
+	// Combined: if EITHER pickup OR delivery is out of zone
+	const isOutOfZone = $derived(
+		pickupIsOutOfZone === true || deliveryIsOutOfZone === true
+	);
 
 	const isTypePricingMode = $derived(data.pricingMode === 'type');
 	const selectedServiceType = $derived(
@@ -122,10 +136,15 @@
 		}
 	}
 
-	function handlePickupSelect(address: string, coords: [number, number] | null) {
+	async function handlePickupSelect(address: string, coords: [number, number] | null) {
 		pickupLocation = address;
 		pickupCoords = coords;
 		calculateRouteIfReady();
+
+		// If type-based pricing, detect municipality and check zone for pickup
+		if (isTypePricingMode && address) {
+			await detectPickupZone(address);
+		}
 	}
 
 	async function handleDeliverySelect(address: string, coords: [number, number] | null) {
@@ -133,32 +152,48 @@
 		deliveryCoords = coords;
 		calculateRouteIfReady();
 
-		// If type-based pricing, detect municipality and check zone
+		// If type-based pricing, detect municipality and check zone for delivery
 		if (isTypePricingMode && address) {
-			await detectMunicipalityAndCheckZone(address);
+			await detectDeliveryZone(address);
 		}
 	}
 
 	/**
-	 * Extract municipality (concelho) from Mapbox address and check if in zone
+	 * Extract municipality (concelho) from Mapbox address and check if pickup is in zone
 	 */
-	async function detectMunicipalityAndCheckZone(address: string) {
-		checkingZone = true;
+	async function detectPickupZone(address: string) {
+		checkingPickupZone = true;
 
-		// Extract municipality using shared utility
 		const municipality = extractMunicipalityFromAddress(address);
-		detectedMunicipality = municipality;
+		pickupDetectedMunicipality = municipality;
 
-		// Check if municipality is in distribution zone
 		if (municipality) {
 			const inZone = await isInDistributionZone(data.supabase, municipality);
-			isOutOfZone = !inZone;
+			pickupIsOutOfZone = !inZone;
 		} else {
-			// Cannot determine, default to null (unknown)
-			isOutOfZone = null;
+			pickupIsOutOfZone = null;
 		}
 
-		checkingZone = false;
+		checkingPickupZone = false;
+	}
+
+	/**
+	 * Extract municipality (concelho) from Mapbox address and check if delivery is in zone
+	 */
+	async function detectDeliveryZone(address: string) {
+		checkingDeliveryZone = true;
+
+		const municipality = extractMunicipalityFromAddress(address);
+		deliveryDetectedMunicipality = municipality;
+
+		if (municipality) {
+			const inZone = await isInDistributionZone(data.supabase, municipality);
+			deliveryIsOutOfZone = !inZone;
+		} else {
+			deliveryIsOutOfZone = null;
+		}
+
+		checkingDeliveryZone = false;
 	}
 
 	async function calculateRouteIfReady() {
@@ -234,6 +269,16 @@
 							placeholder={m.form_pickup_placeholder()}
 							disabled={loading}
 						/>
+						<!-- Zone status indicator with manual override for pickup (Type-based pricing only) -->
+						{#if isTypePricingMode && pickupLocation}
+							<ZoneOverrideToggle
+								isOutOfZone={pickupIsOutOfZone}
+								detectedMunicipality={pickupDetectedMunicipality}
+								checkingZone={checkingPickupZone}
+								onOverride={(outOfZone) => (pickupIsOutOfZone = outOfZone)}
+								disabled={loading}
+							/>
+						{/if}
 					</div>
 					<div class="space-y-2">
 						<Label for="delivery">{m.form_delivery_location()} *</Label>
@@ -244,6 +289,16 @@
 							placeholder={m.form_delivery_placeholder()}
 							disabled={loading}
 						/>
+						<!-- Zone status indicator with manual override for delivery (Type-based pricing only) -->
+						{#if isTypePricingMode && deliveryLocation}
+							<ZoneOverrideToggle
+								isOutOfZone={deliveryIsOutOfZone}
+								detectedMunicipality={deliveryDetectedMunicipality}
+								checkingZone={checkingDeliveryZone}
+								onOverride={(outOfZone) => (deliveryIsOutOfZone = outOfZone)}
+								disabled={loading}
+							/>
+						{/if}
 					</div>
 				</div>
 
@@ -285,19 +340,8 @@
 						</select>
 					</div>
 
-					<!-- Zone indicator -->
-					{#if deliveryLocation}
-						<ZoneOverrideToggle
-							{isOutOfZone}
-							{detectedMunicipality}
-							checkingZone={calculatingDistance || checkingZone}
-							onOverride={(outOfZone) => (isOutOfZone = outOfZone)}
-							disabled={loading}
-						/>
-					{/if}
-
-					<!-- Tolls (only if out of zone) -->
-					{#if isOutOfZone}
+					<!-- Tolls (only if either pickup or delivery is out of zone) -->
+					{#if isOutOfZone === true}
 						<div class="space-y-2">
 							<Label for="tolls">{m.tolls_label()}</Label>
 							<Input
@@ -437,10 +481,14 @@
 				<!-- Type-based pricing hidden fields - only send in type mode -->
 				{#if isTypePricingMode}
 					<input type="hidden" name="service_type_id" value={serviceTypeId} />
-					<input type="hidden" name="is_out_of_zone" value={isOutOfZone ?? ''} />
-					<input type="hidden" name="tolls" value={tolls} />
-					<input type="hidden" name="detected_municipality" value={detectedMunicipality ?? ''} />
 					<input type="hidden" name="has_time_preference" value={hasTimePreference} />
+					<!-- Delivery zone fields -->
+					<input type="hidden" name="is_out_of_zone" value={deliveryIsOutOfZone ?? false} />
+					<input type="hidden" name="detected_municipality" value={deliveryDetectedMunicipality ?? ''} />
+					<!-- Pickup zone fields -->
+					<input type="hidden" name="pickup_is_out_of_zone" value={pickupIsOutOfZone ?? false} />
+					<input type="hidden" name="pickup_detected_municipality" value={pickupDetectedMunicipality ?? ''} />
+					<input type="hidden" name="tolls" value={tolls} />
 				{/if}
 
 				<div class="flex gap-3 pt-4">

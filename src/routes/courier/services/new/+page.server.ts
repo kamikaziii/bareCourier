@@ -112,8 +112,18 @@ export const actions: Actions = {
 		// Type-based pricing fields
 		const service_type_id = (formData.get('service_type_id') as string) || null;
 		const has_time_preference = formData.get('has_time_preference') === 'true';
+
+		// Delivery zone fields
 		const is_out_of_zone = formData.get('is_out_of_zone') === 'true';
 		const detected_municipality = (formData.get('detected_municipality') as string) || null;
+
+		// Pickup zone fields (new)
+		const pickup_is_out_of_zone = formData.get('pickup_is_out_of_zone') === 'true';
+		const pickup_detected_municipality = (formData.get('pickup_detected_municipality') as string) || null;
+
+		// Combined out-of-zone: true if EITHER pickup OR delivery is out of zone
+		const combined_is_out_of_zone = pickup_is_out_of_zone || is_out_of_zone;
+
 		const tollsStr = formData.get('tolls') as string;
 		const tolls = tollsStr ? parseFloat(tollsStr) : null;
 
@@ -165,11 +175,11 @@ export const actions: Actions = {
 		let warning: string | null = null;
 
 		if (pricingMode === 'type' && service_type_id) {
-			// Use type-based pricing
+			// Use type-based pricing (combined: either pickup or delivery out of zone)
 			const typePricingInput: TypePricingInput = {
 				serviceTypeId: service_type_id,
 				hasTimePreference: has_time_preference,
-				isOutOfZone: is_out_of_zone,
+				isOutOfZone: combined_is_out_of_zone,
 				distanceKm: distance_km,
 				tolls: tolls
 			};
@@ -250,8 +260,12 @@ export const actions: Actions = {
 			// Type-based pricing fields
 			service_type_id: service_type_id || null,
 			has_time_preference,
+			// Delivery zone fields
 			is_out_of_zone,
 			detected_municipality,
+			// Pickup zone fields
+			pickup_is_out_of_zone,
+			pickup_detected_municipality,
 			tolls
 		});
 

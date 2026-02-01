@@ -60,8 +60,17 @@ export const actions: Actions = {
 
 		// Type-based pricing fields
 		const has_time_preference = formData.get('has_time_preference') === 'true';
+
+		// Delivery zone fields
 		const is_out_of_zone = formData.get('is_out_of_zone') === 'true';
 		const detected_municipality = (formData.get('detected_municipality') as string) || null;
+
+		// Pickup zone fields (new)
+		const pickup_is_out_of_zone = formData.get('pickup_is_out_of_zone') === 'true';
+		const pickup_detected_municipality = (formData.get('pickup_detected_municipality') as string) || null;
+
+		// Combined out-of-zone: true if EITHER pickup OR delivery is out of zone
+		const combined_is_out_of_zone = pickup_is_out_of_zone || is_out_of_zone;
 
 		// Validate required fields
 		if (!pickup_location || !delivery_location) {
@@ -125,11 +134,11 @@ export const actions: Actions = {
 				});
 			}
 
-			// Use type-based pricing
+			// Use type-based pricing (combined: either pickup or delivery out of zone)
 			const typePricingInput: TypePricingInput = {
 				serviceTypeId: service_type_id,
 				hasTimePreference: has_time_preference,
-				isOutOfZone: is_out_of_zone,
+				isOutOfZone: combined_is_out_of_zone,
 				distanceKm: distance_km,
 				tolls: null // Clients don't set tolls, courier handles that
 			};
@@ -211,8 +220,12 @@ export const actions: Actions = {
 			// Type-based pricing fields
 			service_type_id,
 			has_time_preference,
+			// Delivery zone fields
 			is_out_of_zone,
 			detected_municipality,
+			// Pickup zone fields
+			pickup_is_out_of_zone,
+			pickup_detected_municipality,
 			tolls: null // Clients don't set tolls
 		});
 
