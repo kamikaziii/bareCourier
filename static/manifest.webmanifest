@@ -1,7 +1,7 @@
 {
 	"id": "bare-courier",
 	"name": "bareCourier",
-	"short_name": "Courier",
+	"short_name": "bareCourier",
 	"description": "Gestão de recolhas e entregas",
 	"lang": "pt-PT",
 	"dir": "ltr",
