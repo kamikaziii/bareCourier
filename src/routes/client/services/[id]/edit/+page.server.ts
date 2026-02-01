@@ -66,6 +66,13 @@ export const actions: Actions = {
 			: null;
 		const urgency_fee_id = (formData.get('urgency_fee_id') as string) || null;
 
+		// Type-based pricing fields
+		const has_time_preference = formData.get('has_time_preference') === 'true';
+		const is_out_of_zone = formData.get('is_out_of_zone') === 'true';
+		const detected_municipality = (formData.get('detected_municipality') as string) || null;
+		const pickup_is_out_of_zone = formData.get('pickup_is_out_of_zone') === 'true';
+		const pickup_detected_municipality = (formData.get('pickup_detected_municipality') as string) || null;
+
 		// Validate required fields
 		if (!pickup_location || !delivery_location) {
 			return fail(400, { error: 'Pickup and delivery locations are required' });
@@ -120,7 +127,13 @@ export const actions: Actions = {
 			delivery_lng,
 			distance_km,
 			duration_minutes,
-			urgency_fee_id: urgency_fee_id || null
+			urgency_fee_id: urgency_fee_id || null,
+			// Type-based pricing fields
+			has_time_preference,
+			is_out_of_zone,
+			detected_municipality,
+			pickup_is_out_of_zone,
+			pickup_detected_municipality
 		}).eq('id', params.id);
 
 		if (updateError) {
