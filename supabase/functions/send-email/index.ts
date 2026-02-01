@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { timingSafeEqual } from "node:crypto";
+import { Buffer } from "node:buffer";
 import { emailT } from "../_shared/email-translations.ts";
 import { getLocale, type SupportedLocale } from "../_shared/translations.ts";
 

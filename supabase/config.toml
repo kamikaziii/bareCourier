@@ -1,10 +1,6 @@
-# Supabase Configuration
-# https://supabase.com/docs/guides/cli/config
-
-[project]
-id = "kwqrvhbzxncaatxwmaky"
-
-# Edge Functions configuration
+# Supabase Edge Functions Configuration
+# https://supabase.com/docs/guides/functions/function-configuration
+#
 # --no-verify-jwt is required because Supabase 2026 API keys (sb_publishable_...)
 # are not compatible with gateway JWT verification. Functions handle auth manually
 # via auth.getUser() which is the recommended approach.
