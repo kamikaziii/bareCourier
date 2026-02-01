@@ -106,7 +106,6 @@
 
 			if (refreshError) {
 				testResult += `Refresh error: ${refreshError.message}\n`;
-				// Fall back to existing session
 			}
 
 			const session = refreshData?.session || (await supabase.auth.getSession()).data.session;
@@ -118,9 +117,11 @@
 			}
 
 			testResult += `Token expires: ${new Date(session.expires_at! * 1000).toLocaleString()}\n`;
-			testResult += 'Calling send-push...\n';
+			testResult += `URL: ${PUBLIC_SUPABASE_URL}\n`;
+			testResult += 'Calling send-notification (unified endpoint)...\n';
 
-			const response = await fetch(`${PUBLIC_SUPABASE_URL}/functions/v1/send-push`, {
+			// Use send-notification endpoint (same as rest of app) instead of send-push directly
+			const response = await fetch(`${PUBLIC_SUPABASE_URL}/functions/v1/send-notification`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -129,9 +130,10 @@
 				},
 				body: JSON.stringify({
 					user_id: profile.id,
+					category: 'service_status',
 					title: 'Test Push Notification',
 					message: `Test sent at ${new Date().toLocaleTimeString()}`,
-					url: '/courier/settings?tab=debug'
+					service_id: null
 				})
 			});
 
