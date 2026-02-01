@@ -1,6 +1,6 @@
 import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import type { Profile, Service, ClientPricing, PricingZone } from '$lib/database.types';
+import type { Profile, Service, ClientPricing, PricingZone, ServiceType } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 
 const PAGE_SIZE = 50;
@@ -27,7 +27,7 @@ export const load: PageServerLoad = async ({ params, url, locals: { supabase, sa
 	}
 
 	// Then: parallel queries for remaining data + DB-side counts
-	const [servicesResult, totalCountResult, pendingCountResult, deliveredCountResult, pricingResult, zonesResult] = await Promise.all([
+	const [servicesResult, totalCountResult, pendingCountResult, deliveredCountResult, pricingResult, zonesResult, courierResult, serviceTypesResult] = await Promise.all([
 		supabase
 			.from('services')
 			.select('*')
@@ -53,12 +53,34 @@ export const load: PageServerLoad = async ({ params, url, locals: { supabase, sa
 			.is('deleted_at', null)
 			.eq('status', 'delivered'),
 		supabase.from('client_pricing').select('*').eq('client_id', params.id).single(),
-		supabase.from('pricing_zones').select('*').eq('client_id', params.id).order('min_km')
+		supabase.from('pricing_zones').select('*').eq('client_id', params.id).order('min_km'),
+		supabase
+			.from('profiles')
+			.select('pricing_mode, time_specific_price, out_of_zone_base, out_of_zone_per_km')
+			.eq('role', 'courier')
+			.limit(1)
+			.single(),
+		supabase
+			.from('service_types')
+			.select('*')
+			.eq('active', true)
+			.order('sort_order')
 	]);
 
 	const { data: services } = servicesResult;
 	const { data: pricing } = pricingResult;
 	const { data: zones } = zonesResult;
+	const { data: courier } = courierResult;
+	const { data: serviceTypes } = serviceTypesResult;
+
+	// Get client's default service type with name/price
+	let clientDefaultServiceType: { id: string; name: string; price: number } | null = null;
+	if (client.default_service_type_id && serviceTypes) {
+		const found = serviceTypes.find((t: ServiceType) => t.id === client.default_service_type_id);
+		if (found) {
+			clientDefaultServiceType = { id: found.id, name: found.name, price: Number(found.price) };
+		}
+	}
 
 	const totalCount = totalCountResult.count ?? 0;
 	const pendingCount = pendingCountResult.count ?? 0;
@@ -80,7 +102,14 @@ export const load: PageServerLoad = async ({ params, url, locals: { supabase, sa
 			totalCount
 		},
 		pricing: pricing as ClientPricing | null,
-		zones: (zones || []) as PricingZone[]
+		zones: (zones || []) as PricingZone[],
+		pricingMode: (courier?.pricing_mode || 'warehouse') as 'warehouse' | 'zone' | 'type',
+		clientDefaultServiceType,
+		typePricingSettings: courier?.pricing_mode === 'type' ? {
+			timeSpecificPrice: courier.time_specific_price ?? 13,
+			outOfZoneBase: courier.out_of_zone_base ?? 13,
+			outOfZonePerKm: courier.out_of_zone_per_km ?? 0.5
+		} : null
 	};
 };
 
