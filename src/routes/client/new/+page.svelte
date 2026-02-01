@@ -70,10 +70,23 @@
 
 	// Type-based pricing state
 	let hasTimePreference = $state(false);
-	let isOutOfZone = $state<boolean | null>(null);
-	let detectedMunicipality = $state<string | null>(null);
-	let checkingZone = $state(false);
+
+	// Delivery zone state (existing, renamed for clarity)
+	let deliveryIsOutOfZone = $state<boolean | null>(null);
+	let deliveryDetectedMunicipality = $state<string | null>(null);
+	let checkingDeliveryZone = $state(false);
 	let deliveryAddressSelected = $state(false); // Track if address was selected from autocomplete
+
+	// Pickup zone state (new)
+	let pickupIsOutOfZone = $state<boolean | null>(null);
+	let pickupDetectedMunicipality = $state<string | null>(null);
+	let checkingPickupZone = $state(false);
+	let pickupAddressSelected = $state(false); // Track if address was selected from autocomplete
+
+	// Combined: if EITHER pickup OR delivery is out of zone
+	const isOutOfZone = $derived(
+		pickupIsOutOfZone === true || deliveryIsOutOfZone === true
+	);
 
 	// Derived: is type-based pricing mode
 	const isTypePricingMode = $derived(data.pricingMode === 'type');
@@ -99,10 +112,16 @@
 		settingsLoaded = true;
 	}
 
-	function handlePickupSelect(address: string, coords: [number, number] | null) {
+	async function handlePickupSelect(address: string, coords: [number, number] | null) {
 		pickupLocation = address;
 		pickupCoords = coords;
+		pickupAddressSelected = true;
 		calculateDistanceIfReady();
+
+		// If type-based pricing, detect municipality and check zone for pickup
+		if (isTypePricingMode && address) {
+			await detectPickupZone(address);
+		}
 	}
 
 	async function handleDeliverySelect(address: string, coords: [number, number] | null) {
@@ -111,32 +130,48 @@
 		deliveryAddressSelected = true; // Mark that address was selected from autocomplete
 		calculateDistanceIfReady();
 
-		// If type-based pricing, detect municipality and check zone
+		// If type-based pricing, detect municipality and check zone for delivery
 		if (isTypePricingMode && address) {
-			await detectMunicipalityAndCheckZone(address);
+			await detectDeliveryZone(address);
 		}
 	}
 
 	/**
-	 * Extract municipality (concelho) from Mapbox address and check if in zone
+	 * Extract municipality (concelho) from Mapbox address and check if pickup is in zone
 	 */
-	async function detectMunicipalityAndCheckZone(address: string) {
-		checkingZone = true;
+	async function detectPickupZone(address: string) {
+		checkingPickupZone = true;
 
-		// Extract municipality using shared utility
 		const municipality = extractMunicipalityFromAddress(address);
-		detectedMunicipality = municipality;
+		pickupDetectedMunicipality = municipality;
 
-		// Check if municipality is in distribution zone
 		if (municipality) {
 			const inZone = await isInDistributionZone(data.supabase, municipality);
-			isOutOfZone = !inZone;
+			pickupIsOutOfZone = !inZone;
 		} else {
-			// Cannot determine, default to null (unknown)
-			isOutOfZone = null;
+			pickupIsOutOfZone = null;
 		}
 
-		checkingZone = false;
+		checkingPickupZone = false;
+	}
+
+	/**
+	 * Extract municipality (concelho) from Mapbox address and check if delivery is in zone
+	 */
+	async function detectDeliveryZone(address: string) {
+		checkingDeliveryZone = true;
+
+		const municipality = extractMunicipalityFromAddress(address);
+		deliveryDetectedMunicipality = municipality;
+
+		if (municipality) {
+			const inZone = await isInDistributionZone(data.supabase, municipality);
+			deliveryIsOutOfZone = !inZone;
+		} else {
+			deliveryIsOutOfZone = null;
+		}
+
+		checkingDeliveryZone = false;
 	}
 
 	async function calculateDistanceIfReady() {
@@ -206,6 +241,34 @@
 							disabled={loading}
 						/>
 					{/if}
+					<!-- Zone status indicator for pickup (read-only for client) -->
+					{#if isTypePricingMode && pickupAddressSelected}
+						{#if checkingPickupZone}
+							<p class="text-sm text-muted-foreground">
+								{m.loading()}
+							</p>
+						{:else if pickupIsOutOfZone === true}
+							<div class="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-400">
+								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 shrink-0">
+									<circle cx="12" cy="12" r="10"/>
+									<path d="M12 8v4"/>
+									<path d="M12 16h.01"/>
+								</svg>
+								<div>
+									<p class="font-medium">{m.out_of_zone_warning()}</p>
+									<p class="text-xs mt-1">{m.out_of_zone_client_warning()}</p>
+								</div>
+							</div>
+						{:else if pickupIsOutOfZone === false}
+							<div class="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
+								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+									<polyline points="22 4 12 14.01 9 11.01"/>
+								</svg>
+								<p>{m.in_zone()}</p>
+							</div>
+						{/if}
+					{/if}
 				</div>
 
 				<div class="space-y-2">
@@ -228,13 +291,13 @@
 							disabled={loading}
 						/>
 					{/if}
-					<!-- Zone status indicator (read-only for client) -->
+					<!-- Zone status indicator for delivery (read-only for client) -->
 					{#if isTypePricingMode && deliveryAddressSelected}
-						{#if checkingZone}
+						{#if checkingDeliveryZone}
 							<p class="text-sm text-muted-foreground">
 								{m.loading()}
 							</p>
-						{:else if isOutOfZone === true}
+						{:else if deliveryIsOutOfZone === true}
 							<div class="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-400">
 								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 shrink-0">
 									<circle cx="12" cy="12" r="10"/>
@@ -246,7 +309,7 @@
 									<p class="text-xs mt-1">{m.out_of_zone_client_warning()}</p>
 								</div>
 							</div>
-						{:else if isOutOfZone === false}
+						{:else if deliveryIsOutOfZone === false}
 							<div class="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
 								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 									<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
@@ -450,12 +513,16 @@
 				<!-- Type-based pricing hidden fields -->
 				{#if isTypePricingMode}
 					<input type="hidden" name="has_time_preference" value={hasTimePreference} />
-					<input type="hidden" name="is_out_of_zone" value={isOutOfZone ?? false} />
-					<input type="hidden" name="detected_municipality" value={detectedMunicipality ?? ''} />
+					<!-- Delivery zone fields -->
+					<input type="hidden" name="is_out_of_zone" value={deliveryIsOutOfZone ?? false} />
+					<input type="hidden" name="detected_municipality" value={deliveryDetectedMunicipality ?? ''} />
+					<!-- Pickup zone fields -->
+					<input type="hidden" name="pickup_is_out_of_zone" value={pickupIsOutOfZone ?? false} />
+					<input type="hidden" name="pickup_detected_municipality" value={pickupDetectedMunicipality ?? ''} />
 				{/if}
 
 				<div class="flex gap-2 pt-2">
-					<Button type="button" variant="outline" class="flex-1" onclick={() => goto(localizeHref('/client'))}>
+					<Button variant="outline" class="flex-1" href={localizeHref('/client')}>
 						{m.services_cancel()}
 					</Button>
 					<Button type="submit" class="flex-1" disabled={loading || !pickupLocation || !deliveryLocation || (requestedTimeSlot === 'specific' && !requestedTime)}>

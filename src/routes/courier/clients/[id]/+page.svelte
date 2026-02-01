@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto, invalidateAll } from '$app/navigation';
+	import { goto, invalidateAll, preloadData } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
@@ -101,7 +101,10 @@ import { formatDate, formatCurrency } from '$lib/utils.js';
 				{/snippet}
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content align="end">
-				<DropdownMenu.Item onclick={() => goto(localizeHref(`/courier/clients/${client.id}/edit`))}>
+				<DropdownMenu.Item
+					onmouseenter={() => preloadData(localizeHref(`/courier/clients/${client.id}/edit`))}
+					onclick={() => goto(localizeHref(`/courier/clients/${client.id}/edit`))}
+				>
 					<Edit class="mr-2 size-4" />
 					{m.action_edit()}
 				</DropdownMenu.Item>

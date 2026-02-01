@@ -328,7 +328,7 @@
 				<input type="hidden" name="requested_time" value={requestedTime ?? ''} />
 
 				<div class="flex gap-2 pt-2">
-					<Button type="button" variant="outline" class="flex-1" onclick={() => goto(detailHref)}>
+					<Button variant="outline" class="flex-1" href={detailHref}>
 						{m.services_cancel()}
 					</Button>
 					<Button type="submit" class="flex-1" disabled={loading || !pickupLocation || !deliveryLocation || (requestedTimeSlot === 'specific' && !requestedTime)}>

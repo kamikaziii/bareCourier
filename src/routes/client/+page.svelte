@@ -320,7 +320,7 @@
 <div class="space-y-6">
 	<div class="flex items-center justify-between">
 		<h1 class="text-2xl font-bold">{m.client_my_services()}</h1>
-		<Button onclick={() => goto(localizeHref('/client/new'))}>{m.client_new_request()}</Button>
+		<Button href={localizeHref('/client/new')}>{m.client_new_request()}</Button>
 	</div>
 
 	<!-- Needs Attention Section -->
