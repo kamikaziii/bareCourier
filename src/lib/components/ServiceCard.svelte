@@ -115,7 +115,7 @@
 			</div>
 		{/if}
 
-		<Card.Content class="flex items-start gap-3 p-4 pr-24">
+		<Card.Content class="flex items-start gap-3 p-4 pb-14">
 			{#if selectable && service.status === 'pending'}
 				<Checkbox
 					checked={selected}
@@ -130,19 +130,21 @@
 				></div>
 			{/if}
 			<div class="min-w-0 flex-1 space-y-1">
-				{#if service.display_id}
-					<span class="font-mono text-xs text-muted-foreground">
-						{service.display_id}
-					</span>
-				{/if}
-				<!-- Client name now has full width -->
-				<p class="font-semibold">
-					{#if showClientName}
-						{service.profiles?.name || m.unknown_client()}
-					{:else}
-						{service.pickup_location} &rarr; {service.delivery_location}
+				<!-- Top section: needs right padding for status badge -->
+				<div class="pr-20">
+					{#if service.display_id}
+						<span class="font-mono text-xs text-muted-foreground">
+							{service.display_id}
+						</span>
 					{/if}
-				</p>
+					<p class="font-semibold">
+						{#if showClientName}
+							{service.profiles?.name || m.unknown_client()}
+						{:else}
+							{service.pickup_location} &rarr; {service.delivery_location}
+						{/if}
+					</p>
+				</div>
 				{#if urgencyBadge}
 					{@render urgencyBadge()}
 				{/if}
@@ -160,7 +162,7 @@
 					</div>
 				{/if}
 				{#if showClientName}
-					<p class="text-sm text-muted-foreground truncate">
+					<p class="text-sm text-muted-foreground">
 						{service.pickup_location} &rarr; {service.delivery_location}
 					</p>
 				{/if}
@@ -174,7 +176,7 @@
 					</p>
 				{/if}
 				{#if service.notes}
-					<p class="text-sm text-amber-600 truncate">{service.notes}</p>
+					<p class="text-sm text-amber-600">{service.notes}</p>
 				{/if}
 				<p class="text-xs text-muted-foreground/60">
 					{#if showDeliveredAt && service.delivered_at}
