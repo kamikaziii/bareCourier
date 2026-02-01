@@ -142,6 +142,78 @@ When you need the state to stay synchronized with prop changes:
 </script>
 ```
 
+### Solution 3b: `$state` + `$effect` for Arrays Requiring Mutations (RECOMMENDED for Lists)
+
+**When to use**: When you have an array from props (like SvelteKit load data) that needs:
+1. Index assignment mutations: `services[i] = { ...services[i], status: 'delivered' }`
+2. Initial value without render flash
+3. Automatic sync when props update
+
+**Why alternatives fail**:
+
+| Alternative | Problem |
+|-------------|---------|
+| `$derived(data.services)` | Writable `$derived` is DANGEROUS - index assignment silently fails when source is not deeply reactive (SvelteKit load data is plain objects, not proxies) |
+| `$state([...data.services])` | Doesn't sync when props update (component reuse in SvelteKit) |
+| No initial value + `$effect` only | Causes render flash (empty array on first render) |
+
+**The safe pattern**:
+
+```svelte
+<script lang="ts">
+  let { data }: { data: PageData } = $props();
+
+  // svelte-ignore state_referenced_locally
+  let services = $state(data.services);
+
+  // Sync when props update (e.g., after invalidate() or navigation)
+  $effect(() => {
+    services = data.services;
+  });
+
+  // Now mutations work correctly:
+  function toggleStatus(index: number) {
+    services[index] = {
+      ...services[index],
+      status: services[index].status === 'pending' ? 'delivered' : 'pending'
+    };
+  }
+</script>
+```
+
+**Why this works**:
+1. **Captures correct initial value** - No render flash on first load
+2. **Creates reactive proxy** - `$state()` wraps the array in a Svelte proxy, enabling index mutations
+3. **Effect syncs on prop changes** - When `data.services` updates (e.g., after `invalidate()`), the effect runs and updates the local state
+4. **Warning suppressed intentionally** - We understand the behavior and handle it with the effect
+
+**Real-world example from this codebase** (`src/routes/courier/+page.svelte`):
+
+```svelte
+<script lang="ts">
+  let { data }: { data: PageData } = $props();
+
+  // svelte-ignore state_referenced_locally
+  let services = $state<ServiceWithProfile[]>(data.services);
+
+  // Sync services when data changes (e.g., after invalidate)
+  $effect(() => {
+    services = data.services;
+  });
+
+  async function toggleStatus(service: ServiceWithProfile, e: Event) {
+    // Optimistic UI update - works because services is $state
+    const serviceIndex = services.findIndex((s) => s.id === service.id);
+    if (serviceIndex !== -1) {
+      services[serviceIndex] = { ...services[serviceIndex], ...updates };
+    }
+    // ... server sync
+  }
+</script>
+```
+
+**Key insight from Svelte maintainers**: Rich Harris stated that "almost all of the time, if you're using a prop's initial value, it's a bug." The warning was made stricter in Svelte 5.45.3. However, the `$state` + `$effect` pattern is the **correct** way to handle this when you need both initial values AND mutations.
+
 ### Solution 4: Use `$derived` Instead of `$state`
 
 If you don't need the value to be editable/mutable:
@@ -160,12 +232,29 @@ If you don't need the value to be editable/mutable:
 ```
 Do you need to edit/mutate the value?
 ├── NO → Use $derived()
-└── YES → Is this a SvelteKit page with dynamic route params (e.g., [id])?
-    ├── YES → Use {#key data.entity.id} wrapper + svelte-ignore comment
-    └── NO → Is one-time capture intentional?
-        ├── YES → Name prop "initial*" + svelte-ignore comment
-        └── NO → Use $effect() to sync state with prop changes
+└── YES → Is it an ARRAY that needs index mutations (e.g., list[i] = {...})?
+    ├── YES → Use $state() + $effect() pattern (Solution 3b)
+    │   └─ This creates a reactive proxy that supports mutations
+    └── NO → Is this a SvelteKit page with dynamic route params (e.g., [id])?
+        ├── YES → Use {#key data.entity.id} wrapper + svelte-ignore comment
+        └── NO → Is one-time capture intentional?
+            ├── YES → Name prop "initial*" + svelte-ignore comment
+            └── NO → Use $effect() to sync state with prop changes
 ```
+
+### Why Not Writable `$derived` for Arrays?
+
+You might think `$derived` with reassignment works for arrays:
+
+```svelte
+// DANGEROUS - silently fails for index mutations!
+let services = $derived(data.services);
+services[0] = { ...services[0], status: 'delivered' }; // ❌ Silent failure
+```
+
+**The problem**: When the source (`data.services` from SvelteKit load) is NOT deeply reactive (plain objects, not Svelte proxies), index assignment on the derived array **silently fails**. The mutation appears to work but doesn't trigger reactivity.
+
+This was discussed extensively in Svelte GitHub issues and the warning was made stricter in Svelte 5.45.3 specifically to catch these cases.
 
 ## Comment Format
 
@@ -206,12 +295,17 @@ For any page with editable state derived from route data:
 | Derived display value | `let display = $state(prop.field)` | Change to `$derived(prop.field)` |
 | Counter/accumulator | `let count = $state(0)` | Safe if truly local |
 | Edit form on detail page | Captures route data | **Always use `{#key}`** |
+| **List with optimistic updates** | `let items = $state(data.items)` | **Use `$state` + `$effect` sync** |
+| Array needing index mutation | `items[i] = {...}` | **Must be `$state`, NOT `$derived`** |
 
 ## Files Changed
 
 - `src/routes/client/services/[id]/edit/+page.svelte` - Added `{#key data.service.id}`
 - `src/routes/courier/services/[id]/edit/+page.svelte` - Added `{#key data.service.id}`
 - `src/lib/components/Sidebar.svelte` - `svelte-ignore` is correct (one-time init with `initialCollapsed` prop)
+- `src/routes/courier/+page.svelte` - Uses `$state` + `$effect` pattern for services list (optimistic updates)
+- `src/routes/courier/settings/AccountTab.svelte` - Uses `$state` + `$effect` pattern for form fields
+- `src/routes/courier/settings/SchedulingTab.svelte` - Uses `$state` + `$effect` pattern for settings objects
 
 ## References
 
@@ -219,6 +313,7 @@ For any page with editable state derived from route data:
 - [Svelte 5 $state Documentation](https://svelte.dev/docs/svelte/$state) - `$state` and `$derived` semantics
 - [GitHub Issue #17303](https://github.com/sveltejs/svelte/issues/17303) - $state.snapshot() feature request
 - [GitHub Issue #12877](https://github.com/sveltejs/svelte/issues/12877) - initial value warning discussion
+- **Svelte 5.45.3 Release** - Warning made stricter; Rich Harris noted "almost all of the time, if you're using a prop's initial value, it's a bug"
 
 ## Related Documentation
 

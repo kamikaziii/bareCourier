@@ -584,6 +584,7 @@ When refactoring existing code:
 ## Related Resources
 
 - [Svelte 5 Runes Documentation](https://svelte.dev/docs/svelte/runes)
+- [state_referenced_locally Prevention](./svelte-state-referenced-locally.md) - The `$state(prop)` warning guide
 - [svelte-form-state.md](./svelte-form-state.md) - Form-specific state patterns
 - [code-style.md](./code-style.md) - General coding conventions
 - [architecture.md](./architecture.md) - Component architecture patterns
