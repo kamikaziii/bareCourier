@@ -1,11 +1,12 @@
 -- Migration: Fix race condition in display_id generation
 -- Issue: Multiple concurrent INSERTs can generate duplicate display_ids
--- Solution: Use SELECT ... FOR UPDATE to lock counter row before incrementing
+-- Solution: Use atomic UPSERT (INSERT ... ON CONFLICT DO UPDATE RETURNING)
+--
+-- Note: We only update the function, not the trigger. The existing trigger
+-- (created in the original migration) will automatically use the updated function.
+-- This avoids a window during deployment where no trigger exists.
 
--- Drop existing trigger
-DROP TRIGGER IF EXISTS services_before_insert_display_id ON services;
-
--- Recreate trigger function with proper locking
+-- Update trigger function with atomic UPSERT pattern
 CREATE OR REPLACE FUNCTION generate_service_display_id()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -17,30 +18,20 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  current_year := (EXTRACT(YEAR FROM CURRENT_DATE)::integer % 100)::smallint;
+  current_year := (EXTRACT(YEAR FROM COALESCE(NEW.created_at, CURRENT_TIMESTAMP))::integer % 100)::smallint;
 
-  -- Lock the entire counter table to prevent race conditions
-  -- This ensures only one transaction can generate display_ids at a time
-  LOCK TABLE service_counters IN EXCLUSIVE MODE;
-
-  -- Try to get the current counter for this year with row lock
-  SELECT last_number INTO next_number
-  FROM service_counters
-  WHERE year = current_year
-  FOR UPDATE;
-
-  IF NOT FOUND THEN
-    -- First service for this year
-    INSERT INTO service_counters (year, last_number, updated_at)
-    VALUES (current_year, 1, now());
-    next_number := 1;
-  ELSE
-    -- Increment counter atomically
-    UPDATE service_counters
-    SET last_number = last_number + 1,
+  -- Atomic UPSERT: INSERT or UPDATE in a single statement
+  -- This is inherently race-condition-free without explicit locking
+  INSERT INTO public.service_counters (year, last_number, updated_at)
+  VALUES (current_year, 1, now())
+  ON CONFLICT (year) DO UPDATE
+    SET last_number = public.service_counters.last_number + 1,
         updated_at = now()
-    WHERE year = current_year
-    RETURNING last_number INTO next_number;
+  RETURNING last_number INTO next_number;
+
+  -- Overflow protection: #YY-NNNN format supports max 9999 services per year
+  IF next_number > 9999 THEN
+    RAISE EXCEPTION 'Service counter overflow for year %. Maximum 9999 services per year.', current_year;
   END IF;
 
   -- Format: #YY-NNNN (e.g., #26-0142)
@@ -51,10 +42,4 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER
-SET search_path = public;
-
--- Reattach trigger to services table
-CREATE TRIGGER services_before_insert_display_id
-  BEFORE INSERT ON services
-  FOR EACH ROW
-  EXECUTE FUNCTION generate_service_display_id();
+SET search_path = '';

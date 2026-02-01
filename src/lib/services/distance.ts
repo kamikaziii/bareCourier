@@ -46,6 +46,8 @@ export interface ServiceDistanceResult {
 	pickupToDeliveryKm: number;
 	/** Encoded polyline geometry for the pickup → delivery leg (for map display) */
 	geometry?: string;
+	/** Source of distance calculation: 'api' if all legs used OpenRouteService, 'haversine' if any leg used fallback */
+	source: 'api' | 'haversine';
 }
 
 const ORS_DIRECTIONS_URL = 'https://api.openrouteservice.org/v2/directions/driving-car';
@@ -211,6 +213,7 @@ export async function calculateServiceDistance(
 	let pickupToDeliveryKm: number;
 	let pickupToDeliveryDuration: number | undefined;
 	let geometry: string | undefined;
+	let pickupToDeliveryUsedHaversine = false;
 	const pickupDeliveryRoute = await calculateRoute(pickupCoords, deliveryCoords);
 	if (pickupDeliveryRoute) {
 		pickupToDeliveryKm = pickupDeliveryRoute.distanceKm;
@@ -220,12 +223,14 @@ export async function calculateServiceDistance(
 		// Haversine fallback
 		pickupToDeliveryKm = calculateHaversineDistance(pickupCoords, deliveryCoords);
 		pickupToDeliveryDuration = estimateDrivingMinutes(pickupToDeliveryKm);
+		pickupToDeliveryUsedHaversine = true;
 	}
 
 	// If warehouse mode and coords exist, calculate warehouse → pickup
 	if (pricingMode === 'warehouse' && warehouseCoords) {
 		let warehouseToPickupKm: number;
 		let warehouseToPickupDuration: number | undefined;
+		let warehouseToPickupUsedHaversine = false;
 		const warehousePickupRoute = await calculateRoute(warehouseCoords, pickupCoords);
 		if (warehousePickupRoute) {
 			warehouseToPickupKm = warehousePickupRoute.distanceKm;
@@ -233,6 +238,7 @@ export async function calculateServiceDistance(
 		} else {
 			warehouseToPickupKm = calculateHaversineDistance(warehouseCoords, pickupCoords);
 			warehouseToPickupDuration = estimateDrivingMinutes(warehouseToPickupKm);
+			warehouseToPickupUsedHaversine = true;
 		}
 
 		let totalDistanceKm = warehouseToPickupKm + pickupToDeliveryKm;
@@ -248,13 +254,18 @@ export async function calculateServiceDistance(
 				? warehouseToPickupDuration + pickupToDeliveryDuration
 				: undefined;
 
+		// Source is 'haversine' if ANY leg used haversine fallback
+		const source: 'api' | 'haversine' =
+			warehouseToPickupUsedHaversine || pickupToDeliveryUsedHaversine ? 'haversine' : 'api';
+
 		return {
 			totalDistanceKm,
 			durationMinutes,
 			distanceMode: 'warehouse',
 			warehouseToPickupKm,
 			pickupToDeliveryKm,
-			geometry
+			geometry,
+			source
 		};
 	}
 
@@ -271,6 +282,7 @@ export async function calculateServiceDistance(
 		distanceMode:
 			warehouseCoords === null && pricingMode === 'warehouse' ? 'fallback' : 'zone',
 		pickupToDeliveryKm,
-		geometry
+		geometry,
+		source: pickupToDeliveryUsedHaversine ? 'haversine' : 'api'
 	};
 }

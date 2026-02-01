@@ -13,7 +13,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import * as m from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
-import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
+import { formatDate, formatDateTime, formatTimeSlot, formatCurrency } from '$lib/utils.js';
 	import type { PageData } from './$types';
 	import type { TimeSlot } from '$lib/database.types.js';
 	import { PUBLIC_MAPBOX_TOKEN } from '$env/static/public';
@@ -406,7 +406,7 @@ import { formatDate, formatDateTime, formatTimeSlot } from '$lib/utils.js';
 							<Separator />
 							<div class="flex justify-between font-medium">
 								<span>{m.total_price()}</span>
-								<span class="text-lg">€{service.calculated_price.toFixed(2)}</span>
+								<span class="text-lg">{formatCurrency(service.calculated_price)}</span>
 							</div>
 						{/if}
 					</Card.Content>

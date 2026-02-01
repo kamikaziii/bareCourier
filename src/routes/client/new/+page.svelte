@@ -21,6 +21,7 @@
 	import { isInDistributionZone } from '$lib/services/type-pricing.js';
 	import { extractMunicipalityFromAddress } from '$lib/services/municipality.js';
 	import * as m from '$lib/paraglide/messages.js';
+	import { formatCurrency } from '$lib/utils.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import type { PageData } from './$types';
 	import type { TimeSlot, UrgencyFee } from '$lib/database.types.js';
@@ -406,18 +407,18 @@
 
 						{#if isOutOfZone === true}
 							<p class="text-lg font-bold text-amber-600">
-								€{data.typePricingSettings.outOfZoneBase.toFixed(2)} + {m.distance_charge()}
+								{formatCurrency(data.typePricingSettings.outOfZoneBase)} + {m.distance_charge()}
 							</p>
 							<p class="text-xs text-muted-foreground">{m.out_of_zone_client_warning()}</p>
 							<p class="text-xs text-muted-foreground italic">{m.price_final_note()}</p>
 						{:else if hasTimePreference}
 							<p class="text-lg font-bold">
-								€{data.typePricingSettings.timeSpecificPrice.toFixed(2)}
+								{formatCurrency(data.typePricingSettings.timeSpecificPrice)}
 							</p>
 							<p class="text-xs text-muted-foreground italic">{m.price_final_note()}</p>
 						{:else if data.clientServiceType}
 							<p class="text-lg font-bold">
-								€{data.clientServiceType.price.toFixed(2)}
+								{formatCurrency(data.clientServiceType.price)}
 							</p>
 							<p class="text-xs text-muted-foreground italic">{m.price_final_note()}</p>
 						{:else}

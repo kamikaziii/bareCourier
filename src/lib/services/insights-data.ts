@@ -3,7 +3,7 @@ import type { Profile, Service } from '$lib/database.types';
 import type { ChartData } from 'chart.js';
 import { getLocale } from '$lib/paraglide/runtime.js';
 import * as m from '$lib/paraglide/messages.js';
-import { formatDate as formatDateUtil } from '$lib/utils.js';
+import { formatDate as formatDateUtil, formatCurrency } from '$lib/utils.js';
 import { getStatusLabel } from '$lib/utils/status.js';
 
 // Constants
@@ -214,15 +214,8 @@ export function formatMonthLabel(monthKey: string): string {
 	return date.toLocaleDateString(getLocale(), { month: 'short', year: '2-digit' });
 }
 
-/**
- * Format currency value
- */
-export function formatCurrency(value: number): string {
-	return new Intl.NumberFormat(getLocale(), {
-		style: 'currency',
-		currency: 'EUR'
-	}).format(value);
-}
+// Re-export formatCurrency from canonical source for backwards compatibility
+export { formatCurrency };
 
 /**
  * Format date string

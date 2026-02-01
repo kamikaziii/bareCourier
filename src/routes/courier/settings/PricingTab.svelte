@@ -9,6 +9,7 @@
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import * as m from '$lib/paraglide/messages.js';
+	import { formatCurrency } from '$lib/utils.js';
 	import { Zap, Plus, Trash2, Power, MapPin, Warehouse, Calculator, Pencil, Receipt, Package } from '@lucide/svelte';
 	import type { Profile, UrgencyFee } from '$lib/database.types.js';
 
@@ -565,7 +566,7 @@
 							</div>
 							<div class="flex items-center justify-between gap-2 sm:justify-end">
 								<div class="text-left sm:mr-2 sm:text-right">
-									<p class="text-sm font-medium">{fee.multiplier}x + {fee.flat_fee.toFixed(2)}EUR</p>
+									<p class="text-sm font-medium">{fee.multiplier}x + {formatCurrency(fee.flat_fee)}</p>
 									<p class="text-xs text-muted-foreground">
 										{fee.active ? m.status_active() : m.settings_inactive()}
 									</p>

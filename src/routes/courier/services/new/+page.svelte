@@ -21,6 +21,7 @@
 	import { isInDistributionZone, getClientDefaultServiceTypeId } from '$lib/services/type-pricing.js';
 	import { extractMunicipalityFromAddress } from '$lib/services/municipality.js';
 	import * as m from '$lib/paraglide/messages.js';
+	import { formatCurrency } from '$lib/utils.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import { ArrowLeft } from '@lucide/svelte';
 	import ZoneOverrideToggle from '$lib/components/ZoneOverrideToggle.svelte';
@@ -263,7 +264,7 @@
 							>
 								{#each data.serviceTypes as serviceType (serviceType.id)}
 									<option value={serviceType.id}>
-										{serviceType.name} - {serviceType.price.toFixed(2)}
+										{serviceType.name} - {formatCurrency(serviceType.price)}
 									</option>
 								{/each}
 							</select>

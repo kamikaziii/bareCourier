@@ -85,6 +85,7 @@ export const actions: Actions = {
 			warehouseToPickupKm?: number;
 			pickupToDeliveryKm: number;
 			durationMinutes?: number;
+			source: 'api' | 'haversine';
 		} | null = null;
 
 		if (pickup_lat && pickup_lng && delivery_lat && delivery_lng) {
@@ -146,6 +147,8 @@ export const actions: Actions = {
 						total: typeResult.breakdown.total,
 						model: 'type',
 						distance_km: distance_km ?? 0,
+						// Route calculation source for audit trail
+						route_source: distanceResult?.source,
 						// Type-based pricing specific fields
 						tolls: typeResult.breakdown.tolls,
 						reason: typeResult.breakdown.reason,
@@ -174,6 +177,10 @@ export const actions: Actions = {
 				if (priceResult.success) {
 					calculated_price = priceResult.price;
 					price_breakdown = priceResult.breakdown;
+					// Add route calculation source to breakdown for audit trail
+					if (price_breakdown && distanceResult?.source) {
+						price_breakdown = { ...price_breakdown, route_source: distanceResult.source };
+					}
 				}
 			}
 		}

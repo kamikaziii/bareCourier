@@ -6,6 +6,7 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as m from '$lib/paraglide/messages.js';
 	import { getLocale } from '$lib/paraglide/runtime.js';
+	import { formatCurrency } from '$lib/utils.js';
 	import type { TimeSlot } from '$lib/database.types.js';
 	import {
 		DateFormatter,
@@ -14,16 +15,6 @@
 		today,
 		type DateValue
 	} from '@internationalized/date';
-
-	/**
-	 * Format number with locale-specific decimal separator (e.g., 9,00 for Portuguese)
-	 */
-	function formatNumber(value: number): string {
-		return new Intl.NumberFormat(getLocale(), {
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2
-		}).format(value);
-	}
 
 	interface Props {
 		selectedDate: string | null;
@@ -269,7 +260,7 @@
 				{@const surcharge = basePrice > 0 ? timePreferencePrice - basePrice : timePreferencePrice}
 				{#if surcharge > 0}
 					<p class="text-xs text-muted-foreground">
-						{m.time_preference_surcharge({ amount: formatNumber(surcharge) })}
+						{m.time_preference_surcharge({ amount: formatCurrency(surcharge) })}
 					</p>
 				{/if}
 			{/if}
@@ -325,7 +316,7 @@
 						<line x1="12" y1="17" x2="12.01" y2="17" />
 					</svg>
 					<span>
-						{m.time_preference_price_warning({ amount: formatNumber(priceDifference) })}
+						{m.time_preference_price_warning({ amount: formatCurrency(priceDifference) })}
 					</span>
 				</div>
 			{/if}

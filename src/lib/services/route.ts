@@ -68,8 +68,8 @@ export async function calculateRouteIfReady(
 			distanceKm = result.totalDistanceKm;
 			durationMinutes = result.durationMinutes ?? null;
 			routeGeometry = result.geometry || null;
-			// If no geometry, API call failed and we used haversine fallback
-			source = routeGeometry ? 'api' : 'haversine';
+			// Use the source from calculateServiceDistance which tracks if ANY leg used haversine
+			source = result.source;
 		} else {
 			const result = await calculateRoute(pickupCoords, deliveryCoords);
 			if (result) {
