@@ -2,7 +2,7 @@
  * Shared pagination composable.
  * Accepts a getter for the items array and an optional page size.
  */
-export function usePagination<T>(items: () => T[], pageSize = 20) {
+export function usePagination<T>(items: () => T[], pageSize = 15) {
 	let currentPage = $state(1);
 
 	const totalPages = $derived(Math.max(1, Math.ceil(items().length / pageSize)));
