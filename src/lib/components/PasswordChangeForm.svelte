@@ -29,6 +29,17 @@
     currentPassword.length > 0 && newPassword.length >= 6 && passwordsMatch,
   );
 
+  function mapAuthError(errorMessage: string): string {
+    if (errorMessage.includes("Password should be at least 6 characters")) {
+      return m.password_min_length();
+    }
+    if (errorMessage.includes("New password should be different")) {
+      return m.password_must_differ();
+    }
+    // Fallback to generic error
+    return m.error_generic();
+  }
+
   async function handleSubmit(e: Event) {
     e.preventDefault();
     loading = true;
@@ -52,7 +63,7 @@
     });
 
     if (updateError) {
-      error = updateError.message;
+      error = mapAuthError(updateError.message);
       loading = false;
       return;
     }

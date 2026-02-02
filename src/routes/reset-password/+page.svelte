@@ -23,36 +23,45 @@
   const isValid = $derived(newPassword.length >= 6 && passwordsMatch);
 
   onMount(() => {
-    // Listen for PASSWORD_RECOVERY event when Supabase validates the token
-    const { data: authListener } = data.supabase.auth.onAuthStateChange(
-      (event) => {
-        if (event === "PASSWORD_RECOVERY") {
-          isValidSession = true;
-          checking = false;
-        } else if (event === "SIGNED_IN") {
-          // User was already signed in or token was already processed
-          isValidSession = true;
-          checking = false;
-        }
-      },
-    );
+    let authSubscription: { unsubscribe: () => void } | null = null;
+    let timeout: ReturnType<typeof setTimeout> | null = null;
 
-    // Set a timeout to show error if no event fires
-    const timeout = setTimeout(() => {
-      if (checking) {
+    // Check session FIRST - no need to wait if user already has a valid session
+    data.supabase.auth.getSession().then(({ data: sessionData }) => {
+      if (sessionData.session) {
+        isValidSession = true;
         checking = false;
-        // Check if we have a valid session anyway
-        data.supabase.auth.getSession().then(({ data: { session } }) => {
-          if (session) {
-            isValidSession = true;
-          }
-        });
+        return;
       }
-    }, 3000);
+
+      // No session found - set up listener for PASSWORD_RECOVERY event
+      // This handles the case where Supabase is still processing the token from URL
+      const { data: authListener } = data.supabase.auth.onAuthStateChange(
+        (event) => {
+          if (event === "PASSWORD_RECOVERY") {
+            isValidSession = true;
+            checking = false;
+          } else if (event === "SIGNED_IN") {
+            // Token was processed and user is now signed in
+            isValidSession = true;
+            checking = false;
+          }
+        },
+      );
+      authSubscription = authListener.subscription;
+
+      // Final fallback timeout for truly invalid/expired links
+      timeout = setTimeout(() => {
+        if (checking) {
+          checking = false;
+          // isValidSession remains false - will show error
+        }
+      }, 5000);
+    });
 
     return () => {
-      authListener.subscription.unsubscribe();
-      clearTimeout(timeout);
+      authSubscription?.unsubscribe();
+      if (timeout) clearTimeout(timeout);
     };
   });
 

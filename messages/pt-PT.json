@@ -703,6 +703,7 @@
   "password_new": "Nova Palavra-passe",
   "password_confirm": "Confirmar Nova Palavra-passe",
   "password_min_length": "Mínimo 6 caracteres",
+  "password_must_differ": "A nova palavra-passe deve ser diferente da atual",
   "password_mismatch": "As palavras-passe não coincidem",
   "password_current_incorrect": "A palavra-passe atual está incorreta",
   "password_change_button": "Alterar Palavra-passe",

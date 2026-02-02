@@ -703,6 +703,7 @@
   "password_new": "New Password",
   "password_confirm": "Confirm New Password",
   "password_min_length": "Minimum 6 characters",
+  "password_must_differ": "New password must be different from current password",
   "password_mismatch": "Passwords do not match",
   "password_current_incorrect": "Current password is incorrect",
   "password_change_button": "Change Password",

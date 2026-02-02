@@ -47,6 +47,16 @@
   let passwordResetSuccess = $state(false);
   let newPassword = $state("");
 
+  // Reset password dialog state when opened
+  $effect(() => {
+    if (showPasswordDialog) {
+      newPassword = "";
+      passwordResetError = "";
+      passwordResetSuccess = false;
+      passwordResetLoading = false;
+    }
+  });
+
   // Handle ?tab=billing query param for direct navigation
   const initialTab = $derived($page.url.searchParams.get("tab") || "info");
 
@@ -85,13 +95,21 @@
 
     try {
       const { data: sessionData } = await data.supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      if (!accessToken) {
+        passwordResetError = m.session_expired();
+        passwordResetLoading = false;
+        return;
+      }
+
       const response = await fetch(
         `${PUBLIC_SUPABASE_URL}/functions/v1/reset-client-password`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${sessionData.session?.access_token}`,
+            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
             client_id: client.id,

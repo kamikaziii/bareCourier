@@ -4,16 +4,16 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 // NOTE: This function uses verify_jwt: false (set in Supabase Dashboard or config.toml)
 // We validate the JWT ourselves using getUser() which uses the modern validation path.
 
-// Allowed origins for CORS
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "https://barecourier.vercel.app",
-];
-
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get("Origin") || "";
-  const allowedOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+
+  const isAllowed =
+    origin.startsWith("http://localhost:") ||
+    origin === "https://barecourier.vercel.app" ||
+    (origin.endsWith(".vercel.app") && origin.includes("barecourier"));
+
+  const allowedOrigin = isAllowed ? origin : "https://barecourier.vercel.app";
+
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",

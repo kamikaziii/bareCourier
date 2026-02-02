@@ -19,18 +19,19 @@
     loading = true;
     error = "";
 
-    const { error: resetError } =
+    try {
       await data.supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}${localizeHref("/reset-password")}`,
       });
-
-    if (resetError) {
-      error = resetError.message;
+    } catch {
+      // Only show error for network failures, not for email existence
+      error = m.error_generic();
       loading = false;
       return;
     }
 
-    // Always show success message (prevents email enumeration)
+    // Always show success message regardless of whether email exists
+    // This prevents email enumeration attacks
     submitted = true;
     loading = false;
   }
