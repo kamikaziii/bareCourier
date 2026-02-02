@@ -8,6 +8,7 @@
   import { Input } from "$lib/components/ui/input/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
   import AddressInput from "$lib/components/AddressInput.svelte";
+  import PasswordChangeForm from "$lib/components/PasswordChangeForm.svelte";
   import * as m from "$lib/paraglide/messages.js";
   import type { PageData, ActionData } from "./$types";
   import { Settings, User, MapPin } from "@lucide/svelte";
@@ -185,6 +186,12 @@
       </form>
     </Card.Content>
   </Card.Root>
+
+  <!-- Password Change -->
+  <PasswordChangeForm
+    supabase={data.supabase}
+    userEmail={data.session?.user?.email || ""}
+  />
 {/snippet}
 
 {#snippet locationContent()}

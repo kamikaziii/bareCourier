@@ -23,7 +23,15 @@ const supabaseHandle: Handle = async ({ event, resolve }) => {
 			getAll: () => event.cookies.getAll(),
 			setAll: (cookiesToSet) => {
 				cookiesToSet.forEach(({ name, value, options }) => {
-					event.cookies.set(name, value, { ...options, path: '/' });
+					// Set 400-day default only if Supabase didn't specify maxAge
+					// This preserves maxAge: 0 for logout (cookie deletion)
+					// and respects any explicit maxAge from token rotation
+					const maxAge =
+						options.maxAge === undefined
+							? 60 * 60 * 24 * 400 // 400 days default
+							: options.maxAge; // Respect Supabase's value (including 0)
+
+					event.cookies.set(name, value, { ...options, path: '/', maxAge });
 				});
 			}
 		}

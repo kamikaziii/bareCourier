@@ -7,16 +7,20 @@
   import { Label } from "$lib/components/ui/label/index.js";
   import * as m from "$lib/paraglide/messages.js";
   import AddressInput from "$lib/components/AddressInput.svelte";
+  import PasswordChangeForm from "$lib/components/PasswordChangeForm.svelte";
   import { User, Warehouse, Tag } from "@lucide/svelte";
   import type { Profile } from "$lib/database.types.js";
   import type { SafeSession } from "$lib/utils.js";
+  import type { SupabaseClient } from "@supabase/supabase-js";
+  import type { Database } from "$lib/database.types.js";
 
   interface Props {
     profile: Profile;
     session: SafeSession;
+    supabase: SupabaseClient<Database>;
   }
 
-  let { profile, session }: Props = $props();
+  let { profile, session, supabase }: Props = $props();
 
   // Local state for form inputs (mutable, user can edit)
   // svelte-ignore state_referenced_locally
@@ -217,3 +221,6 @@
     </form>
   </Card.Content>
 </Card.Root>
+
+<!-- Password Change -->
+<PasswordChangeForm {supabase} userEmail={session?.user?.email || ""} />
