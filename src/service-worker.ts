@@ -115,7 +115,7 @@ registerRoute(
 		plugins: [
 			new ExpirationPlugin({
 				maxEntries: 100,
-				maxAgeSeconds: 60 * 60 * 24 // 24 hours
+				maxAgeSeconds: 60 * 60 * 4 // 4 hours - balances freshness with offline use
 			})
 			// CacheableResponsePlugin removed - uses default [0, 200]
 		]

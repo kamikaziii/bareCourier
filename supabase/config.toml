@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.bootstrap-courier]
 verify_jwt = false
+
+[functions.reset-client-password]
+verify_jwt = false
