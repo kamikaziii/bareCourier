@@ -1,8 +1,8 @@
 ---
 status: pending
-priority: p2
+priority: p3
 issue_id: "212"
-tags: [infrastructure, auth, code-review]
+tags: [infrastructure, auth, config]
 dependencies: []
 ---
 
@@ -17,8 +17,9 @@ The password reset flow requires `/reset-password` to be added to Supabase's all
 ## Findings
 
 - **Location:** Supabase Dashboard → Auth → URL Configuration → Redirect URLs
-- **Current state:** `/reset-password` likely not configured
+- **Current state:** Unknown - requires checking Supabase Dashboard (not verifiable from code)
 - **Email links:** Use `redirectTo` parameter that Supabase validates against allowlist
+- **Note:** This is an infrastructure configuration task, not a code bug. Cannot be verified from codebase alone.
 
 **Code evidence (from forgot-password page):**
 ```svelte
@@ -116,3 +117,4 @@ _To be filled during triage._
 - This is a manual configuration step, not a code change
 - Should be done before testing password reset flow in production
 - Consider documenting this in README or deployment checklist
+- **Verification required:** Check Supabase Dashboard to confirm current configuration state before marking as needed

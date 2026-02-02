@@ -10,17 +10,21 @@ dependencies: []
 
 ## Problem Statement
 
-When the password reset dialog is closed and re-opened, the previous state (error messages, success messages, loading state, input values) may persist. This leads to confusing UX where users see stale error messages or previous form data when they open the dialog again.
+When the password reset dialog is closed after an error or partial input and re-opened, the previous state (error messages, input values) persists. This leads to confusing UX where users see stale error messages or previous form data when they open the dialog again.
 
-**Impact:** Minor UX issue - users may be confused by stale state in the dialog.
+**Note:** After successful password reset, the state IS properly cleared (newPassword reset, success flag reset before close). This issue only affects:
+1. Error cases: `passwordResetError` persists
+2. Partial input: If user enters password but closes without submitting, `newPassword` persists
+
+**Impact:** Minor UX issue - users may see stale error messages when re-opening dialog after a failed attempt.
 
 ## Findings
 
 - **Component:** Password reset dialog (likely in client detail page or settings)
 - **Current behavior:**
-  - Dialog opens with previous state preserved
-  - Error/success messages from previous attempt visible
-  - Form inputs may retain previous values
+  - After ERROR: Dialog opens with previous error message preserved
+  - After PARTIAL INPUT: Form input retains previous value
+  - After SUCCESS: State IS properly reset (success path clears newPassword and success flag)
 - **Expected behavior:**
   - Dialog should reset to initial state when opened
   - Clean form with no error messages
@@ -115,12 +119,14 @@ _To be filled during triage._
 
 **Actions:**
 - Identified dialog state persistence issue from security review findings
-- Documented expected vs actual behavior
+- Verified that success path DOES reset state properly
+- Confirmed issue only affects error and partial input scenarios
 - Proposed $effect reset approach
 
 **Learnings:**
 - Dialog state should always be reset on open for clean UX
 - Svelte 5 $effect can watch for open state changes
+- Success path was correctly implemented; only error/abort paths need fixing
 
 ## Notes
 

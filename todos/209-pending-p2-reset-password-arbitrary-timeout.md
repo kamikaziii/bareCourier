@@ -1,21 +1,23 @@
 ---
 status: pending
-priority: p1
+priority: p2
 issue_id: "209"
-tags: [security, auth, code-review]
+tags: [ux, auth, code-review]
 dependencies: []
 ---
 
-# Fix Token Validation Race Condition in Reset Password Page
+# Fix Arbitrary Timeout in Reset Password Page
 
 ## Problem Statement
 
-The reset password page relies on an event listener with an arbitrary 3-second timeout to detect if the password recovery token is valid. This creates several issues:
-1. The PASSWORD_RECOVERY event may fire before onMount runs (during SSR or before component mounts)
-2. The 3-second timeout is arbitrary and may fail on slow connections
+The reset password page uses an arbitrary 3-second timeout to detect if the password recovery token is valid. This creates UX issues:
+1. The 3-second timeout is arbitrary and may be too short on slow connections
+2. Users experience unnecessary delay even with valid tokens
 3. If user refreshes after token is consumed, they see "invalid link" even if they haven't set a password
 
-**Impact:** Users may be unable to reset their password, leading to frustration and support tickets.
+**Note:** The original claim of a "race condition" where PASSWORD_RECOVERY fires before onMount was overstated. In SvelteKit, auth events fire client-side after hydration, and the code does have a fallback (getSession check). The real issue is the arbitrary delay and lack of immediate session check.
+
+**Impact:** Users experience unnecessary 3-second delays and may see false "invalid link" errors on slow connections.
 
 ## Findings
 
@@ -25,16 +27,16 @@ The reset password page relies on an event listener with an arbitrary 3-second t
   - Waits for PASSWORD_RECOVERY or SIGNED_IN events
   - Falls back to getSession() after 3-second timeout
 - **Problems identified:**
-  1. Event might fire before listener is set up (race condition)
-  2. 3-second timeout is arbitrary - slow networks may not complete in time
-  3. No session check on component initialization
+  1. 3-second timeout is arbitrary - slow networks may not complete in time
+  2. No immediate session check on component initialization (waits for event or timeout)
+  3. Unnecessary delay for users with already-processed tokens
 
 **Code evidence:**
 ```svelte
 onMount(() => {
   const { data: authListener } = data.supabase.auth.onAuthStateChange((event) => {
     if (event === "PASSWORD_RECOVERY") {
-      isValidSession = true;  // May never fire if event already occurred
+      isValidSession = true;
       checking = false;
     }
     // ...
@@ -43,11 +45,12 @@ onMount(() => {
   const timeout = setTimeout(() => {
     if (checking) {
       checking = false;
+      // Fallback session check - but why wait 3 seconds?
       data.supabase.auth.getSession().then(({ data: { session } }) => {
         if (session) isValidSession = true;
       });
     }
-  }, 3000);  // Arbitrary timeout
+  }, 3000);  // Arbitrary - should check session immediately instead
 });
 ```
 
@@ -156,14 +159,13 @@ _To be filled during triage._
 **By:** Claude Code
 
 **Actions:**
-- Identified race condition in reset-password page token validation
+- Identified arbitrary timeout in reset-password page token validation
 - Analyzed onMount logic at lines 25-51
-- Documented that event may fire before listener is attached
-- Proposed session-first check approach
+- Proposed session-first check approach to eliminate unnecessary delay
 
 **Learnings:**
-- Supabase auth state change events can fire during SSR/hydration
-- Session check is more reliable than event listener for already-processed tokens
+- Session check should happen immediately on mount, not after arbitrary timeout
+- Event listener is still needed for fresh token processing, but shouldn't be the only path
 
 ## Notes
 
