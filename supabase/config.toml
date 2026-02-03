@@ -1,3 +1,13 @@
+# Supabase Auth Configuration
+[auth]
+site_url = "https://barecourier.vercel.app"
+additional_redirect_urls = [
+  "https://barecourier.vercel.app/reset-password",
+  "https://barecourier.vercel.app/pt-PT/reset-password",
+  "http://localhost:5173/reset-password",
+  "http://localhost:5173/pt-PT/reset-password"
+]
+
 # Supabase Edge Functions Configuration
 # https://supabase.com/docs/guides/functions/function-configuration
 #
