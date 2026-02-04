@@ -190,13 +190,13 @@ export const actions: Actions = {
 				category: 'schedule_change',
 				title: 'Pedido de Reagendamento',
 				message: 'O cliente pediu para reagendar uma entrega. Requer a sua aprovação.',
-				emailTemplate: 'request_suggested',  // Reuse existing template
+				emailTemplate: 'request_suggested',
 				emailData: {
 					client_name: clientName,
 					pickup_location: service.pickup_location,
 					delivery_location: service.delivery_location,
-					requested_date: formatDatePtPT(newDate),
-					reason: reason || '',
+					requested_date: formatDatePtPT(service.scheduled_date),  // Original date
+					suggested_date: formatDatePtPT(newDate),  // New requested date
 					app_url: APP_URL
 				}
 			});
@@ -252,12 +252,13 @@ export const actions: Actions = {
 				category: 'schedule_change',
 				title: 'Reagendamento Automático',
 				message: 'Um cliente reagendou uma entrega automaticamente.',
-				emailTemplate: 'request_suggested',  // Reuse existing template
+				emailTemplate: 'request_suggested',
 				emailData: {
 					client_name: clientName,
 					pickup_location: service.pickup_location,
 					delivery_location: service.delivery_location,
-					new_date: formatDatePtPT(newDate),
+					requested_date: formatDatePtPT(service.scheduled_date),  // Original date
+					suggested_date: formatDatePtPT(newDate),  // New date
 					app_url: APP_URL
 				}
 			});
