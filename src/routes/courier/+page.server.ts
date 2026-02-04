@@ -1,10 +1,10 @@
 import type { Actions, PageServerLoad } from './$types';
-import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { notifyClient } from '$lib/services/notifications.js';
 import { formatDatePtPT } from '$lib/utils/date-format.js';
 
 // Process notifications in chunks to avoid overwhelming the system
 const NOTIFICATION_CHUNK_SIZE = 5;
+const APP_URL = 'https://barecourier.vercel.app';
 
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
 	const { user } = await safeGetSession();
@@ -160,7 +160,7 @@ export const actions: Actions = {
 					pickup_location: firstService?.pickup_location || '',
 					delivery_location: firstService?.delivery_location || '',
 					scheduled_date: newDate,
-					app_url: PUBLIC_SUPABASE_URL.replace('/functions/v1', '')
+					app_url: APP_URL
 				}
 			};
 		});

@@ -93,20 +93,24 @@ export const actions: Actions = {
 			const service = serviceData as { client_id: string; pickup_location: string; delivery_location: string };
 			const formattedDeliveredAt = formatDateTimePtPT(new Date());
 
-			await notifyClient({
-				session,
-				clientId: service.client_id,
-				serviceId: params.id,
-				category: 'service_status',
-				title: 'Serviço Entregue',
-				message: 'O seu serviço foi marcado como entregue.',
-				emailTemplate: 'delivered',
-				emailData: {
-					pickup_location: service.pickup_location,
-					delivery_location: service.delivery_location,
-					delivered_at: formattedDeliveredAt
-				}
-			});
+			try {
+				await notifyClient({
+					session,
+					clientId: service.client_id,
+					serviceId: params.id,
+					category: 'service_status',
+					title: 'Serviço Entregue',
+					message: 'O seu serviço foi marcado como entregue.',
+					emailTemplate: 'delivered',
+					emailData: {
+						pickup_location: service.pickup_location,
+						delivery_location: service.delivery_location,
+						delivered_at: formattedDeliveredAt
+					}
+				});
+			} catch (error) {
+				console.error('Notification failed for service', params.id, error);
+			}
 		}
 
 		return { success: true };

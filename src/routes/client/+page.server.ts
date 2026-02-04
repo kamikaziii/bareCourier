@@ -62,23 +62,27 @@ export const actions: Actions = {
 		const formattedNewDate = formatDatePtPT(service.suggested_date);
 
 		// Notify courier with email
-		await notifyCourier({
-			supabase,
-			session,
-			serviceId,
-			category: 'schedule_change',
-			title: 'Sugestão Aceite',
-			message: 'O cliente aceitou a data sugerida para o serviço.',
-			emailTemplate: 'suggestion_accepted',
-			emailData: {
-				client_name: service.profiles?.name || 'Cliente',
-				pickup_location: service.pickup_location,
-				delivery_location: service.delivery_location,
-				new_date: formattedNewDate,
-				service_id: serviceId,
-				app_url: APP_URL
-			}
-		});
+		try {
+			await notifyCourier({
+				supabase,
+				session,
+				serviceId,
+				category: 'schedule_change',
+				title: 'Sugestão Aceite',
+				message: 'O cliente aceitou a data sugerida para o serviço.',
+				emailTemplate: 'suggestion_accepted',
+				emailData: {
+					client_name: service.profiles?.name || 'Cliente',
+					pickup_location: service.pickup_location,
+					delivery_location: service.delivery_location,
+					new_date: formattedNewDate,
+					service_id: serviceId,
+					app_url: APP_URL
+				}
+			});
+		} catch (error) {
+			console.error('Notification failed for service', serviceId, error);
+		}
 
 		return { success: true };
 	},
@@ -138,24 +142,28 @@ export const actions: Actions = {
 		const formattedOriginalDate = formatDatePtPT(service.scheduled_date, 'Não agendada');
 
 		// Notify courier with email
-		await notifyCourier({
-			supabase,
-			session,
-			serviceId,
-			category: 'schedule_change',
-			title: 'Sugestão Recusada',
-			message: 'O cliente recusou a data sugerida. O pedido está novamente pendente.',
-			emailTemplate: 'suggestion_declined',
-			emailData: {
-				client_name: service.profiles?.name || 'Cliente',
-				pickup_location: service.pickup_location,
-				delivery_location: service.delivery_location,
-				original_date: formattedOriginalDate,
-				reason: '',
-				service_id: serviceId,
-				app_url: APP_URL
-			}
-		});
+		try {
+			await notifyCourier({
+				supabase,
+				session,
+				serviceId,
+				category: 'schedule_change',
+				title: 'Sugestão Recusada',
+				message: 'O cliente recusou a data sugerida. O pedido está novamente pendente.',
+				emailTemplate: 'suggestion_declined',
+				emailData: {
+					client_name: service.profiles?.name || 'Cliente',
+					pickup_location: service.pickup_location,
+					delivery_location: service.delivery_location,
+					original_date: formattedOriginalDate,
+					reason: '',
+					service_id: serviceId,
+					app_url: APP_URL
+				}
+			});
+		} catch (error) {
+			console.error('Notification failed for service', serviceId, error);
+		}
 
 		return { success: true };
 	},
@@ -242,46 +250,54 @@ export const actions: Actions = {
 				// Partial success — still notify
 				const formattedNewDate = formatDatePtPT(firstService.suggested_date);
 
-				await notifyCourier({
-					supabase,
-					session,
-					serviceId: servicesData[0].id,
-					category: 'schedule_change',
-					title: 'Sugestões Aceites',
-					message: `O cliente aceitou ${servicesData.length - failCount} de ${servicesData.length} sugestão(ões) de data.`,
-					emailTemplate: 'suggestion_accepted',
-					emailData: {
-						client_name: clientName,
-						pickup_location: firstService.pickup_location,
-						delivery_location: firstService.delivery_location,
-						new_date: formattedNewDate,
-						service_id: firstService.id,
-						app_url: APP_URL
-					}
-				});
+				try {
+					await notifyCourier({
+						supabase,
+						session,
+						serviceId: servicesData[0].id,
+						category: 'schedule_change',
+						title: 'Sugestões Aceites',
+						message: `O cliente aceitou ${servicesData.length - failCount} de ${servicesData.length} sugestão(ões) de data.`,
+						emailTemplate: 'suggestion_accepted',
+						emailData: {
+							client_name: clientName,
+							pickup_location: firstService.pickup_location,
+							delivery_location: firstService.delivery_location,
+							new_date: formattedNewDate,
+							service_id: firstService.id,
+							app_url: APP_URL
+						}
+					});
+				} catch (error) {
+					console.error('Notification failed for batch accept', error);
+				}
 			}
 			return { success: true, error: `${failCount} of ${serviceIds.length} failed` };
 		}
 
 		const formattedNewDate = formatDatePtPT(firstService.suggested_date);
 
-		await notifyCourier({
-			supabase,
-			session,
-			serviceId: servicesData[0].id,
-			category: 'schedule_change',
-			title: 'Sugestões Aceites',
-			message: `O cliente aceitou ${servicesData.length} sugestão(ões) de data.`,
-			emailTemplate: 'suggestion_accepted',
-			emailData: {
-				client_name: clientName,
-				pickup_location: firstService.pickup_location,
-				delivery_location: firstService.delivery_location,
-				new_date: formattedNewDate,
-				service_id: firstService.id,
-				app_url: APP_URL
-			}
-		});
+		try {
+			await notifyCourier({
+				supabase,
+				session,
+				serviceId: servicesData[0].id,
+				category: 'schedule_change',
+				title: 'Sugestões Aceites',
+				message: `O cliente aceitou ${servicesData.length} sugestão(ões) de data.`,
+				emailTemplate: 'suggestion_accepted',
+				emailData: {
+					client_name: clientName,
+					pickup_location: firstService.pickup_location,
+					delivery_location: firstService.delivery_location,
+					new_date: formattedNewDate,
+					service_id: firstService.id,
+					app_url: APP_URL
+				}
+			});
+		} catch (error) {
+			console.error('Notification failed for batch accept', error);
+		}
 		return { success: true };
 	},
 
@@ -360,46 +376,54 @@ export const actions: Actions = {
 
 		if (failCount > 0) {
 			if (failCount < servicesData.length) {
-				await notifyCourier({
-					supabase,
-					session,
-					serviceId: servicesData[0].id,
-					category: 'schedule_change',
-					title: 'Sugestões Recusadas',
-					message: `O cliente recusou ${servicesData.length - failCount} de ${servicesData.length} sugestão(ões). Os pedidos estão novamente pendentes.`,
-					emailTemplate: 'suggestion_declined',
-					emailData: {
-						client_name: clientName,
-						pickup_location: firstService.pickup_location,
-						delivery_location: firstService.delivery_location,
-						original_date: formattedOriginalDate,
-						reason: '',
-						service_id: firstService.id,
-						app_url: APP_URL
-					}
-				});
+				try {
+					await notifyCourier({
+						supabase,
+						session,
+						serviceId: servicesData[0].id,
+						category: 'schedule_change',
+						title: 'Sugestões Recusadas',
+						message: `O cliente recusou ${servicesData.length - failCount} de ${servicesData.length} sugestão(ões). Os pedidos estão novamente pendentes.`,
+						emailTemplate: 'suggestion_declined',
+						emailData: {
+							client_name: clientName,
+							pickup_location: firstService.pickup_location,
+							delivery_location: firstService.delivery_location,
+							original_date: formattedOriginalDate,
+							reason: '',
+							service_id: firstService.id,
+							app_url: APP_URL
+						}
+					});
+				} catch (error) {
+					console.error('Notification failed for batch decline', error);
+				}
 			}
 			return { success: true, error: `${failCount} of ${serviceIds.length} failed` };
 		}
 
-		await notifyCourier({
-			supabase,
-			session,
-			serviceId: servicesData[0].id,
-			category: 'schedule_change',
-			title: 'Sugestões Recusadas',
-			message: `O cliente recusou ${servicesData.length} sugestão(ões). Os pedidos estão novamente pendentes.`,
-			emailTemplate: 'suggestion_declined',
-			emailData: {
-				client_name: clientName,
-				pickup_location: firstService.pickup_location,
-				delivery_location: firstService.delivery_location,
-				original_date: formattedOriginalDate,
-				reason: '',
-				service_id: firstService.id,
-				app_url: APP_URL
-			}
-		});
+		try {
+			await notifyCourier({
+				supabase,
+				session,
+				serviceId: servicesData[0].id,
+				category: 'schedule_change',
+				title: 'Sugestões Recusadas',
+				message: `O cliente recusou ${servicesData.length} sugestão(ões). Os pedidos estão novamente pendentes.`,
+				emailTemplate: 'suggestion_declined',
+				emailData: {
+					client_name: clientName,
+					pickup_location: firstService.pickup_location,
+					delivery_location: firstService.delivery_location,
+					original_date: formattedOriginalDate,
+					reason: '',
+					service_id: firstService.id,
+					app_url: APP_URL
+				}
+			});
+		} catch (error) {
+			console.error('Notification failed for batch decline', error);
+		}
 		return { success: true };
 	},
 
@@ -458,21 +482,25 @@ export const actions: Actions = {
 		}
 
 		// Notify courier with email
-		await notifyCourier({
-			supabase,
-			session,
-			serviceId,
-			category: 'new_request',
-			title: 'Pedido Cancelado',
-			message: 'O cliente cancelou um pedido de serviço pendente.',
-			emailTemplate: 'request_cancelled',
-			emailData: {
-				client_name: service.profiles.name,
-				pickup_location: service.pickup_location,
-				delivery_location: service.delivery_location,
-				app_url: APP_URL
-			}
-		});
+		try {
+			await notifyCourier({
+				supabase,
+				session,
+				serviceId,
+				category: 'new_request',
+				title: 'Pedido Cancelado',
+				message: 'O cliente cancelou um pedido de serviço pendente.',
+				emailTemplate: 'request_cancelled',
+				emailData: {
+					client_name: service.profiles.name,
+					pickup_location: service.pickup_location,
+					delivery_location: service.delivery_location,
+					app_url: APP_URL
+				}
+			});
+		} catch (error) {
+			console.error('Notification failed for service', serviceId, error);
+		}
 
 		return { success: true };
 	}

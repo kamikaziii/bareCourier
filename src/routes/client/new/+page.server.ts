@@ -243,22 +243,26 @@ export const actions: Actions = {
 		// Notify courier with email
 		const formattedDate = formatDatePtPT(requested_date, 'Não especificada');
 
-		await notifyCourier({
-			supabase,
-			session,
-			serviceId: insertedService.id,
-			category: 'new_request',
-			title: 'Novo Pedido de Serviço',
-			message: `${userProfile?.name || 'Cliente'} criou um novo pedido de serviço.`,
-			emailTemplate: 'new_request',
-			emailData: {
-				client_name: userProfile?.name || 'Cliente',
-				pickup_location,
-				delivery_location,
-				requested_date: formattedDate,
-				notes: notes || ''
-			}
-		});
+		try {
+			await notifyCourier({
+				supabase,
+				session,
+				serviceId: insertedService.id,
+				category: 'new_request',
+				title: 'Novo Pedido de Serviço',
+				message: `${userProfile?.name || 'Cliente'} criou um novo pedido de serviço.`,
+				emailTemplate: 'new_request',
+				emailData: {
+					client_name: userProfile?.name || 'Cliente',
+					pickup_location,
+					delivery_location,
+					requested_date: formattedDate,
+					notes: notes || ''
+				}
+			});
+		} catch (error) {
+			console.error('Notification failed for new service', insertedService.id, error);
+		}
 
 		redirect(303, localizeHref('/client'));
 	}

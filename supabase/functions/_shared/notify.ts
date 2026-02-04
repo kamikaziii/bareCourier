@@ -29,7 +29,7 @@ type NotificationPreferences = {
 type DispatchResult = {
 	inApp: { success: boolean; notificationId?: string; error?: string };
 	push: { success: boolean; error?: string } | null;
-	email: { success: boolean; error?: string } | null;
+	email: { success: boolean; emailId?: string; error?: string } | null;
 };
 
 interface DispatchParams {
@@ -197,9 +197,29 @@ export async function dispatchNotification(params: DispatchParams): Promise<Disp
 				})
 			});
 			const emailResult = await response.json();
-			result.email = { success: emailResult.success ?? false, error: emailResult.error };
+			const emailId = emailResult.email_id;
+			result.email = { success: emailResult.success ?? false, emailId, error: emailResult.error };
+
+			// Update notification with email tracking info
+			if (result.inApp.notificationId) {
+				await supabase
+					.from('notifications')
+					.update({
+						email_sent_at: emailResult.success ? new Date().toISOString() : null,
+						email_id: emailId || null,
+						email_status: emailResult.success ? 'sent' : 'failed'
+					})
+					.eq('id', result.inApp.notificationId);
+			}
 		} catch (e) {
 			result.email = { success: false, error: (e as Error).message };
+			// Update notification with failed status
+			if (result.inApp.notificationId) {
+				await supabase
+					.from('notifications')
+					.update({ email_status: 'failed' })
+					.eq('id', result.inApp.notificationId);
+			}
 		}
 	}
 

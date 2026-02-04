@@ -3,6 +3,9 @@ import type { Actions, PageServerLoad } from './$types';
 import { notifyClient } from '$lib/services/notifications.js';
 import { formatDateTimePtPT } from '$lib/utils/date-format.js';
 
+// Process notifications in chunks to avoid overwhelming the system
+const NOTIFICATION_CHUNK_SIZE = 5;
+
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
 	const { user } = await safeGetSession();
 
@@ -99,25 +102,28 @@ export const actions: Actions = {
 		if (status === 'delivered' && servicesToNotify.length > 0) {
 			const formattedDeliveredAt = formatDateTimePtPT(new Date());
 
-			// Send notifications in parallel
-			await Promise.all(
-				servicesToNotify.map((service) =>
-					notifyClient({
-						session,
-						clientId: service.client_id,
-						serviceId: service.id,
-						category: 'service_status',
-						title: 'Serviço Entregue',
-						message: 'O seu serviço foi marcado como entregue.',
-						emailTemplate: 'delivered',
-						emailData: {
-							pickup_location: service.pickup_location,
-							delivery_location: service.delivery_location,
-							delivered_at: formattedDeliveredAt
-						}
-					})
-				)
-			);
+			// Send notifications in chunks to avoid overwhelming the system
+			for (let i = 0; i < servicesToNotify.length; i += NOTIFICATION_CHUNK_SIZE) {
+				const chunk = servicesToNotify.slice(i, i + NOTIFICATION_CHUNK_SIZE);
+				await Promise.all(
+					chunk.map((service) =>
+						notifyClient({
+							session,
+							clientId: service.client_id,
+							serviceId: service.id,
+							category: 'service_status',
+							title: 'Serviço Entregue',
+							message: 'O seu serviço foi marcado como entregue.',
+							emailTemplate: 'delivered',
+							emailData: {
+								pickup_location: service.pickup_location,
+								delivery_location: service.delivery_location,
+								delivered_at: formattedDeliveredAt
+							}
+						})
+					)
+				);
+			}
 		}
 
 		return { success: true };
