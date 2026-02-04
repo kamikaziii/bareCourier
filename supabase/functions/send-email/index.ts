@@ -15,6 +15,7 @@ interface ResendErrorResponse {
 const RETRY_CONFIG = {
   BASE_DELAY_MS: 500,
   MAX_JITTER_MS: 300,
+  MAX_RETRY_DELAY_MS: 10000, // Cap retry-after to stay within Edge Function limits
 } as const;
 
 /**
@@ -59,8 +60,9 @@ function escapeHtml(str: string | undefined | null): string {
  */
 async function isRetryableRateLimit(response: Response): Promise<{ retryable: boolean; errorName?: string }> {
   try {
-    // No need to clone - we'll retry with a fresh request anyway
-    const body = (await response.json()) as ResendErrorResponse;
+    // Clone to preserve body for main handler if we return this response
+    const cloned = response.clone();
+    const body = (await cloned.json()) as ResendErrorResponse;
     const errorName = body?.name ?? "unknown";
     // Only rate_limit_exceeded is retryable; quota errors are not
     return { retryable: errorName === "rate_limit_exceeded", errorName };
@@ -141,11 +143,9 @@ async function fetchWithRetry(
       if ((response.status === 429 || response.status >= 500) && attempt < maxRetries) {
         const retryAfterHeader = response.headers.get("retry-after");
         const parsedRetryAfter = retryAfterHeader ? parseInt(retryAfterHeader, 10) : NaN;
-        // Cap retry-after at 10s to stay within Edge Function execution limits
-        // (prevents malicious/misconfigured servers from blocking indefinitely)
-        const MAX_RETRY_DELAY_MS = 10000;
+        // Cap retry-after to stay within Edge Function execution limits
         const baseDelay = !isNaN(parsedRetryAfter)
-          ? Math.min(parsedRetryAfter * 1000, MAX_RETRY_DELAY_MS)
+          ? Math.min(parsedRetryAfter * 1000, RETRY_CONFIG.MAX_RETRY_DELAY_MS)
           : Math.pow(2, attempt) * RETRY_CONFIG.BASE_DELAY_MS;
 
         const jitter = Math.random() * RETRY_CONFIG.MAX_JITTER_MS;
