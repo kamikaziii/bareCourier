@@ -1,5 +1,5 @@
 ---
-status: pending
+status: ready
 priority: p1
 issue_id: "240"
 tags: [code-review, data-integrity, audit-trail, pr-13]

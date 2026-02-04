@@ -1,5 +1,5 @@
 ---
-status: pending
+status: ready
 priority: p2
 issue_id: "245"
 tags: [code-review, api-design, error-handling, pr-13]

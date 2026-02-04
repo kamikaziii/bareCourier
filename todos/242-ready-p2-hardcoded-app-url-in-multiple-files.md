@@ -1,5 +1,5 @@
 ---
-status: pending
+status: ready
 priority: p2
 issue_id: "242"
 tags: [code-review, architecture, maintainability, pr-13]

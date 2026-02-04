@@ -1,5 +1,5 @@
 ---
-status: pending
+status: ready
 priority: p1
 issue_id: "238"
 tags: [code-review, migration, database, pr-13]

@@ -1,5 +1,5 @@
 ---
-status: pending
+status: ready
 priority: p3
 issue_id: "251"
 tags: [code-review, code-quality, dry, pr-13]

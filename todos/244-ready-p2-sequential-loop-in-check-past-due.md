@@ -1,5 +1,5 @@
 ---
-status: pending
+status: ready
 priority: p2
 issue_id: "244"
 tags: [code-review, performance, edge-function, pr-13]

@@ -1,5 +1,5 @@
 ---
-status: pending
+status: ready
 priority: p2
 issue_id: "247"
 tags: [code-review, input-validation, database, pr-13]
