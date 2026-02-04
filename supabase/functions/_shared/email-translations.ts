@@ -174,6 +174,126 @@ const emailTranslations: Record<string, Record<SupportedLocale, string>> = {
 		en: 'View Dashboard'
 	},
 
+	// daily_summary template (courier receives daily summary)
+	email_daily_summary_subject: {
+		'pt-PT': 'Resumo Diário - {date}',
+		en: 'Daily Summary - {date}'
+	},
+	email_daily_summary_title: {
+		'pt-PT': 'O Seu Resumo Diário',
+		en: 'Your Daily Summary'
+	},
+	email_daily_summary_intro: {
+		'pt-PT': 'Aqui está o resumo dos seus serviços para hoje:',
+		en: 'Here\'s your service summary for today:'
+	},
+	email_daily_summary_total_label: {
+		'pt-PT': 'Total de Serviços:',
+		en: 'Total Services:'
+	},
+	email_daily_summary_pending_label: {
+		'pt-PT': 'Pendentes:',
+		en: 'Pending:'
+	},
+	email_daily_summary_delivered_label: {
+		'pt-PT': 'Entregues:',
+		en: 'Delivered:'
+	},
+	email_daily_summary_urgent_label: {
+		'pt-PT': 'Urgentes:',
+		en: 'Urgent:'
+	},
+	email_daily_summary_no_services: {
+		'pt-PT': 'Não tem serviços agendados para hoje.',
+		en: 'You have no services scheduled for today.'
+	},
+	email_daily_summary_button: {
+		'pt-PT': 'Ver Painel',
+		en: 'View Dashboard'
+	},
+
+	// past_due template (courier receives past due alert)
+	email_past_due_subject: {
+		'pt-PT': 'Aviso: Serviço em Atraso',
+		en: 'Alert: Overdue Service'
+	},
+	email_past_due_title: {
+		'pt-PT': 'Serviço em Atraso',
+		en: 'Overdue Service'
+	},
+	email_past_due_intro: {
+		'pt-PT': 'O seguinte serviço está em atraso e requer a sua atenção:',
+		en: 'The following service is overdue and requires your attention:'
+	},
+	email_past_due_client_label: {
+		'pt-PT': 'Cliente:',
+		en: 'Client:'
+	},
+	email_past_due_scheduled_label: {
+		'pt-PT': 'Agendado:',
+		en: 'Scheduled:'
+	},
+	email_past_due_days_overdue_label: {
+		'pt-PT': 'Dias em Atraso:',
+		en: 'Days Overdue:'
+	},
+	email_past_due_button: {
+		'pt-PT': 'Ver Serviço',
+		en: 'View Service'
+	},
+
+	// suggestion_accepted template (courier receives when client accepts)
+	email_suggestion_accepted_subject: {
+		'pt-PT': 'Sugestão de Data Aceite',
+		en: 'Date Suggestion Accepted'
+	},
+	email_suggestion_accepted_title: {
+		'pt-PT': 'Sugestão Aceite',
+		en: 'Suggestion Accepted'
+	},
+	email_suggestion_accepted_intro: {
+		'pt-PT': 'O cliente <strong>{client_name}</strong> aceitou a sua sugestão de data.',
+		en: 'Client <strong>{client_name}</strong> has accepted your suggested date.'
+	},
+	email_suggestion_accepted_new_date_label: {
+		'pt-PT': 'Data Confirmada:',
+		en: 'Confirmed Date:'
+	},
+	email_suggestion_accepted_button: {
+		'pt-PT': 'Ver Serviço',
+		en: 'View Service'
+	},
+
+	// suggestion_declined template (courier receives when client declines)
+	email_suggestion_declined_subject: {
+		'pt-PT': 'Sugestão de Data Recusada',
+		en: 'Date Suggestion Declined'
+	},
+	email_suggestion_declined_title: {
+		'pt-PT': 'Sugestão Recusada',
+		en: 'Suggestion Declined'
+	},
+	email_suggestion_declined_intro: {
+		'pt-PT': 'O cliente <strong>{client_name}</strong> recusou a sua sugestão de data.',
+		en: 'Client <strong>{client_name}</strong> has declined your suggested date.'
+	},
+	email_suggestion_declined_reason_label: {
+		'pt-PT': 'Motivo:',
+		en: 'Reason:'
+	},
+	email_suggestion_declined_original_date_label: {
+		'pt-PT': 'Data Original Mantida:',
+		en: 'Original Date Kept:'
+	},
+	email_suggestion_declined_cta: {
+		'pt-PT': 'O serviço está novamente pendente para revisão.',
+		en: 'The service is pending again for your review.'
+	},
+	email_suggestion_declined_button: {
+		'pt-PT': 'Ver Serviço',
+		en: 'View Service'
+	},
+
 	// Default/fallback template
 	email_default_subject: {
 		'pt-PT': 'Notificação bareCourier',

@@ -2,6 +2,9 @@ import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import type { Service, ServiceStatusHistory, Profile, PastDueSettings, ServiceType } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
+import { notifyCourier } from '$lib/services/notifications.js';
+import { formatDatePtPT } from '$lib/utils/date-format.js';
+import { APP_URL } from '$lib/constants.js';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
 	const { session, user } = await safeGetSession();
@@ -171,16 +174,32 @@ export const actions: Actions = {
 				approval_status: 'pending'
 			});
 
-			// Notify courier
-			if (courierProfile?.id) {
-				await supabase.from('notifications').insert({
-					user_id: courierProfile.id,
-					type: 'schedule_change',
-					title: 'Pedido de Reagendamento',
-					message: 'O cliente pediu para reagendar uma entrega.',
-					service_id: params.id
-				});
-			}
+			// Get client name for email
+			const { data: clientProfile } = await supabase
+				.from('profiles')
+				.select('name')
+				.eq('id', user.id)
+				.single();
+			const clientName = (clientProfile as { name: string } | null)?.name || 'Cliente';
+
+			// Notify courier with email
+			await notifyCourier({
+				supabase,
+				session,
+				serviceId: params.id,
+				category: 'schedule_change',
+				title: 'Pedido de Reagendamento',
+				message: 'O cliente pediu para reagendar uma entrega. Requer a sua aprovação.',
+				emailTemplate: 'request_suggested',
+				emailData: {
+					client_name: clientName,
+					pickup_location: service.pickup_location,
+					delivery_location: service.delivery_location,
+					requested_date: formatDatePtPT(service.scheduled_date),  // Original date
+					suggested_date: formatDatePtPT(newDate),  // New requested date
+					app_url: APP_URL
+				}
+			});
 
 			return { success: true, needsApproval: true };
 		} else {
@@ -217,16 +236,32 @@ export const actions: Actions = {
 				approval_status: 'auto_approved'
 			});
 
-			// Notify courier of auto-approved reschedule
-			if (courierProfile?.id) {
-				await supabase.from('notifications').insert({
-					user_id: courierProfile.id,
-					type: 'schedule_change',
-					title: 'Reagendamento Automático',
-					message: 'Um cliente reagendou uma entrega automaticamente.',
-					service_id: params.id
-				});
-			}
+			// Get client name for email
+			const { data: clientProfile } = await supabase
+				.from('profiles')
+				.select('name')
+				.eq('id', user.id)
+				.single();
+			const clientName = (clientProfile as { name: string } | null)?.name || 'Cliente';
+
+			// Notify courier of auto-approved reschedule with email
+			await notifyCourier({
+				supabase,
+				session,
+				serviceId: params.id,
+				category: 'schedule_change',
+				title: 'Reagendamento Automático',
+				message: 'Um cliente reagendou uma entrega automaticamente.',
+				emailTemplate: 'request_suggested',
+				emailData: {
+					client_name: clientName,
+					pickup_location: service.pickup_location,
+					delivery_location: service.delivery_location,
+					requested_date: formatDatePtPT(service.scheduled_date),  // Original date
+					suggested_date: formatDatePtPT(newDate),  // New date
+					app_url: APP_URL
+				}
+			});
 
 			return { success: true, needsApproval: false };
 		}
@@ -237,6 +272,21 @@ export const actions: Actions = {
 		if (!session || !user) {
 			return { success: false, error: 'Not authenticated' };
 		}
+
+		// Fetch service data for email template before the RPC (which changes the data)
+		const { data: serviceData } = await supabase
+			.from('services')
+			.select('pickup_location, delivery_location, suggested_date, profiles!client_id(name)')
+			.eq('id', params.id)
+			.eq('client_id', user.id)
+			.single();
+
+		const service = serviceData as {
+			pickup_location: string;
+			delivery_location: string;
+			suggested_date: string | null;
+			profiles: { name: string };
+		} | null;
 
 		const { data, error: rpcError } = await supabase.rpc('client_approve_reschedule', {
 			p_service_id: params.id
@@ -252,21 +302,27 @@ export const actions: Actions = {
 			return { success: false, error: result.error || 'Failed to approve' };
 		}
 
-		// Notify courier
-		const { data: courierData } = await supabase
-			.from('profiles')
-			.select('id')
-			.eq('role', 'courier')
-			.single();
-
-		if (courierData) {
-			await supabase.from('notifications').insert({
-				user_id: (courierData as { id: string }).id,
-				type: 'schedule_change',
+		// Notify courier with email
+		try {
+			await notifyCourier({
+				supabase,
+				session,
+				serviceId: params.id,
+				category: 'schedule_change',
 				title: 'Reagendamento Aceite',
 				message: 'O cliente aceitou a proposta de reagendamento.',
-				service_id: params.id
+				emailTemplate: 'suggestion_accepted',
+				emailData: {
+					client_name: service?.profiles?.name || 'Cliente',
+					pickup_location: service?.pickup_location || 'N/A',
+					delivery_location: service?.delivery_location || 'N/A',
+					new_date: formatDatePtPT(service?.suggested_date ?? null),
+					service_id: params.id,
+					app_url: APP_URL
+				}
 			});
+		} catch (error) {
+			console.error('Notification failed for acceptReschedule', params.id, error);
 		}
 
 		return { success: true };
@@ -280,6 +336,21 @@ export const actions: Actions = {
 
 		const formData = await request.formData();
 		const reason = (formData.get('reason') as string) || null;
+
+		// Fetch service data for email template
+		const { data: serviceData } = await supabase
+			.from('services')
+			.select('pickup_location, delivery_location, scheduled_date, profiles!client_id(name)')
+			.eq('id', params.id)
+			.eq('client_id', user.id)
+			.single();
+
+		const service = serviceData as {
+			pickup_location: string;
+			delivery_location: string;
+			scheduled_date: string | null;
+			profiles: { name: string };
+		} | null;
 
 		const { data, error: rpcError } = await supabase.rpc('client_deny_reschedule', {
 			p_service_id: params.id,
@@ -296,22 +367,29 @@ export const actions: Actions = {
 			return { success: false, error: result.error || 'Failed to decline' };
 		}
 
-		// Notify courier
-		const { data: courierData } = await supabase
-			.from('profiles')
-			.select('id')
-			.eq('role', 'courier')
-			.single();
-
-		if (courierData) {
-			const reasonText = reason ? ` Motivo: ${reason}` : '';
-			await supabase.from('notifications').insert({
-				user_id: (courierData as { id: string }).id,
-				type: 'schedule_change',
+		// Notify courier with email
+		const reasonText = reason ? ` Motivo: ${reason}` : '';
+		try {
+			await notifyCourier({
+				supabase,
+				session,
+				serviceId: params.id,
+				category: 'schedule_change',
 				title: 'Reagendamento Recusado',
 				message: `O cliente recusou a proposta de reagendamento.${reasonText}`,
-				service_id: params.id
+				emailTemplate: 'suggestion_declined',
+				emailData: {
+					client_name: service?.profiles?.name || 'Cliente',
+					pickup_location: service?.pickup_location || 'N/A',
+					delivery_location: service?.delivery_location || 'N/A',
+					original_date: formatDatePtPT(service?.scheduled_date ?? null, 'Não agendada'),
+					reason: reason || 'Não especificado',
+					service_id: params.id,
+					app_url: APP_URL
+				}
 			});
+		} catch (error) {
+			console.error('Notification failed for declineReschedule', params.id, error);
 		}
 
 		return { success: true };

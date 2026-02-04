@@ -166,7 +166,7 @@ Deno.serve(async (req: Request) => {
 		const { data: services } = await supabase
 			.from('services')
 			.select(
-				'id, client_id, scheduled_date, scheduled_time_slot, scheduled_time, status, last_past_due_notification_at, profiles!client_id(name)'
+				'id, client_id, scheduled_date, scheduled_time_slot, scheduled_time, status, last_past_due_notification_at, pickup_location, delivery_location, profiles!client_id(name)'
 			)
 			.eq('status', 'pending')
 			.lte('scheduled_date', todayStr)
@@ -212,11 +212,22 @@ Deno.serve(async (req: Request) => {
 			.eq('id', courier.id)
 			.single();
 
+		// Phase 1: Claim services sequentially (preserves atomicity, prevents duplicates)
+		interface ClaimedService {
+			service: Service & { pickup_location?: string; delivery_location?: string };
+			overdueMinutes: number;
+			clientName: string;
+			overdueText: string;
+			daysOverdue: number;
+			formattedScheduledDate: string;
+		}
+		const claimedServices: ClaimedService[] = [];
+
 		for (const { service, overdueMinutes } of pastDueServices) {
 			const clientName = service.profiles?.name || (locale === 'en' ? 'Client' : 'Cliente');
 			const overdueText = formatOverdueTime(overdueMinutes, locale);
 
-			// Atomic claim-then-dispatch: update timestamp FIRST with a WHERE condition
+			// Atomic claim: update timestamp FIRST with a WHERE condition
 			// checking the old value, so only one concurrent invocation can win the race.
 			const previousValue = service.last_past_due_notification_at;
 			let claimQuery = supabase
@@ -237,19 +248,55 @@ Deno.serve(async (req: Request) => {
 				continue;
 			}
 
-			// We won the race — dispatch notification with translated text
-			await dispatchNotification({
-				supabase,
-				userId: courier.id,
-				category: 'past_due',
-				title: t('past_due_title', locale),
-				message: t('past_due_message', locale, { client_name: clientName, overdue_text: overdueText }),
-				serviceId: service.id,
-				profile: courierProfile
+			// Pre-calculate values needed for dispatch
+			const scheduledDate = new Date(service.scheduled_date);
+			const daysOverdue = Math.floor((now.getTime() - scheduledDate.getTime()) / (1000 * 60 * 60 * 24));
+			const formattedScheduledDate = scheduledDate.toLocaleDateString(locale === 'en' ? 'en-GB' : 'pt-PT', {
+				day: 'numeric',
+				month: 'long',
+				year: 'numeric'
 			});
 
-			notifiedCount++;
+			claimedServices.push({
+				service: service as ClaimedService['service'],
+				overdueMinutes,
+				clientName,
+				overdueText,
+				daysOverdue,
+				formattedScheduledDate
+			});
 		}
+
+		// Phase 2: Dispatch notifications in parallel batches (improves throughput)
+		const BATCH_SIZE = 5;
+		for (let i = 0; i < claimedServices.length; i += BATCH_SIZE) {
+			const batch = claimedServices.slice(i, i + BATCH_SIZE);
+			await Promise.all(
+				batch.map(({ service, clientName, overdueText, daysOverdue, formattedScheduledDate }) =>
+					dispatchNotification({
+						supabase,
+						userId: courier.id,
+						category: 'past_due',
+						title: t('past_due_title', locale),
+						message: t('past_due_message', locale, { client_name: clientName, overdue_text: overdueText }),
+						serviceId: service.id,
+						profile: courierProfile,
+						emailTemplate: 'past_due',
+						emailData: {
+							client_name: clientName,
+							pickup_location: service.pickup_location || '',
+							delivery_location: service.delivery_location || '',
+							scheduled_date: formattedScheduledDate,
+							days_overdue: String(daysOverdue),
+							service_id: service.id,
+							app_url: Deno.env.get('APP_URL') || 'https://barecourier.vercel.app'
+						}
+					})
+				)
+			);
+		}
+
+		notifiedCount = claimedServices.length;
 
 		return new Response(
 			JSON.stringify({

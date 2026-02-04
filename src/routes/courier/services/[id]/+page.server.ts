@@ -2,6 +2,9 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import type { Service, ServiceStatusHistory, Profile, ServiceType } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
+import { notifyClient } from '$lib/services/notifications.js';
+import { formatDatePtPT, formatDateTimePtPT } from '$lib/utils/date-format.js';
+import { APP_URL } from '$lib/constants.js';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
 	const { session } = await safeGetSession();
@@ -63,13 +66,18 @@ export const actions: Actions = {
 			return { success: false, error: 'Invalid status value' };
 		}
 
-		const updates: Partial<Service> = { status: newStatus };
+		const deliveredAt = newStatus === 'delivered' ? new Date().toISOString() : null;
+		const updates: Partial<Service> = {
+			status: newStatus,
+			delivered_at: deliveredAt
+		};
 
-		if (newStatus === 'delivered') {
-			updates.delivered_at = new Date().toISOString();
-		} else {
-			updates.delivered_at = null;
-		}
+		// Get service details for notification before update
+		const { data: serviceData } = await supabase
+			.from('services')
+			.select('client_id, pickup_location, delivery_location')
+			.eq('id', params.id)
+			.single();
 
 		const { error: updateError } = await supabase
 			.from('services')
@@ -79,6 +87,32 @@ export const actions: Actions = {
 		if (updateError) {
 			console.error('Failed to update service status:', updateError);
 			return { success: false, error: 'Failed to update service status' };
+		}
+
+		// Notify client when marked as delivered
+		if (newStatus === 'delivered' && serviceData) {
+			const service = serviceData as { client_id: string; pickup_location: string; delivery_location: string };
+			const formattedDeliveredAt = formatDateTimePtPT(new Date());
+
+			try {
+				await notifyClient({
+					session,
+					clientId: service.client_id,
+					serviceId: params.id,
+					category: 'service_status',
+					title: 'Serviço Entregue',
+					message: 'O seu serviço foi marcado como entregue.',
+					emailTemplate: 'delivered',
+					emailData: {
+						pickup_location: service.pickup_location,
+						delivery_location: service.delivery_location,
+						delivered_at: formattedDeliveredAt,
+						app_url: APP_URL
+					}
+				});
+			} catch (error) {
+				console.error('Notification failed for service', params.id, error);
+			}
 		}
 
 		return { success: true };
@@ -241,24 +275,42 @@ export const actions: Actions = {
 			});
 
 			// Notify client
-			const formattedDate = new Date(newDate).toLocaleDateString('pt-PT', {
-				day: 'numeric', month: 'long', year: 'numeric'
-			});
+			const formattedDate = formatDatePtPT(newDate);
 			const reasonText = reason ? ` Motivo: ${reason}` : '';
-			await supabase.from('notifications').insert({
-				user_id: service.client_id,
-				type: 'schedule_change',
+			await notifyClient({
+				session,
+				clientId: service.client_id,
+				serviceId: params.id,
+				category: 'schedule_change',
 				title: 'Proposta de Reagendamento',
 				message: `O estafeta propõe reagendar para ${formattedDate}.${reasonText}`,
-				service_id: params.id
+				emailTemplate: 'request_suggested',
+				emailData: {
+					pickup_location: service.pickup_location,
+					delivery_location: service.delivery_location,
+					requested_date: service.scheduled_date || '',
+					suggested_date: newDate,
+					reason: reason || '',
+					app_url: APP_URL
+				}
 			});
 
 			return { success: true, pendingApproval: true };
 		} else {
 			// Immediate reschedule (existing flow)
-			const formattedDate = new Date(newDate).toLocaleDateString('pt-PT', {
-				day: 'numeric', month: 'long', year: 'numeric'
-			});
+			// Fetch service data for email notification
+			const { data: serviceData } = await supabase
+				.from('services')
+				.select('client_id, pickup_location, delivery_location, scheduled_date')
+				.eq('id', params.id)
+				.single();
+
+			if (!serviceData) {
+				return { success: false, error: 'Service not found' };
+			}
+			const service = serviceData as { client_id: string; pickup_location: string; delivery_location: string; scheduled_date: string | null };
+
+			const formattedDate = formatDatePtPT(newDate);
 			const reasonText = reason ? ` Motivo: ${reason}` : '';
 			const notificationMessage = `A sua entrega foi reagendada para ${formattedDate}.${reasonText}`;
 
@@ -281,6 +333,25 @@ export const actions: Actions = {
 			if (!result.success) {
 				return { success: false, error: result.error || 'Reschedule failed' };
 			}
+
+			// Send email notification (RPC only creates in-app notification)
+			await notifyClient({
+				session,
+				clientId: service.client_id,
+				serviceId: params.id,
+				category: 'schedule_change',
+				title: 'Entrega Reagendada',
+				message: notificationMessage,
+				emailTemplate: 'request_suggested',
+				emailData: {
+					pickup_location: service.pickup_location,
+					delivery_location: service.delivery_location,
+					requested_date: service.scheduled_date || '',
+					suggested_date: newDate,
+					reason: reason || '',
+					app_url: APP_URL
+				}
+			});
 
 			return { success: true };
 		}

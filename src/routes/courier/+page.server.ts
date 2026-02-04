@@ -1,6 +1,10 @@
 import type { Actions, PageServerLoad } from './$types';
-import { PUBLIC_SUPABASE_URL } from '$env/static/public';
-import { notifyClient } from '$lib/services/notifications';
+import { notifyClient } from '$lib/services/notifications.js';
+import { formatDatePtPT } from '$lib/utils/date-format.js';
+import { APP_URL } from '$lib/constants.js';
+
+// Process notifications in chunks to avoid overwhelming the system
+const NOTIFICATION_CHUNK_SIZE = 5;
 
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
 	const { user } = await safeGetSession();
@@ -121,11 +125,7 @@ export const actions: Actions = {
 		}
 
 		// Send grouped notifications to clients
-		const formattedDate = new Date(newDate).toLocaleDateString('pt-PT', {
-			day: 'numeric',
-			month: 'long',
-			year: 'numeric'
-		});
+		const formattedDate = formatDatePtPT(newDate);
 
 		// Fetch service data for email templates
 		const { data: servicesData } = await supabase
@@ -137,34 +137,38 @@ export const actions: Actions = {
 			(servicesData || []).map((s) => [s.id, s as { id: string; client_id: string; pickup_location: string; delivery_location: string }])
 		);
 
-		await Promise.all(
-			Array.from(clientNotifications).map(([clientId, serviceIdList]) => {
-				const count = serviceIdList.length;
-				const message =
-					count === 1
-						? `A sua entrega foi reagendada para ${formattedDate}.`
-						: `${count} entregas foram reagendadas para ${formattedDate}.`;
+		// Process notifications in chunks to avoid overwhelming the system
+		const notificationsToSend = Array.from(clientNotifications).map(([clientId, serviceIdList]) => {
+			const count = serviceIdList.length;
+			const message =
+				count === 1
+					? `A sua entrega foi reagendada para ${formattedDate}.`
+					: `${count} entregas foram reagendadas para ${formattedDate}.`;
 
-				// Get first service for email template data
-				const firstService = servicesMap.get(serviceIdList[0]);
+			// Get first service for email template data
+			const firstService = servicesMap.get(serviceIdList[0]);
 
-				return notifyClient({
-					session,
-					clientId,
-					serviceId: serviceIdList[0], // Link to first service
-					category: 'schedule_change',
-					title: 'Entregas Reagendadas',
-					message,
-					emailTemplate: 'request_accepted',
-					emailData: {
-						pickup_location: firstService?.pickup_location || '',
-						delivery_location: firstService?.delivery_location || '',
-						scheduled_date: newDate,
-						app_url: PUBLIC_SUPABASE_URL.replace('/functions/v1', '')
-					}
-				});
-			})
-		);
+			return {
+				session,
+				clientId,
+				serviceId: serviceIdList[0], // Link to first service
+				category: 'schedule_change' as const,
+				title: 'Entregas Reagendadas',
+				message,
+				emailTemplate: 'request_accepted' as const,
+				emailData: {
+					pickup_location: firstService?.pickup_location || '',
+					delivery_location: firstService?.delivery_location || '',
+					scheduled_date: newDate,
+					app_url: APP_URL
+				}
+			};
+		});
+
+		for (let i = 0; i < notificationsToSend.length; i += NOTIFICATION_CHUNK_SIZE) {
+			const chunk = notificationsToSend.slice(i, i + NOTIFICATION_CHUNK_SIZE);
+			await Promise.all(chunk.map((notification) => notifyClient(notification)));
+		}
 
 		return { success: true, results };
 	}

@@ -91,7 +91,39 @@ import * as Card from '$lib/components/ui/card/index.js';  // Multi-part compone
 ### External Services (`src/lib/services/`)
 - `distance.ts` - OpenRouteService API + Haversine fallback
 - `geocoding.ts` - Mapbox address search
+- `notifications.ts` - Centralized notification dispatch
 - Requires: `PUBLIC_MAPBOX_TOKEN`, `PUBLIC_OPENROUTE_API_KEY`
+
+### Notifications (IMPORTANT)
+**Never use direct `supabase.from('notifications').insert()` in route files.**
+
+Always use the centralized notification functions:
+- `notifyClient()` - Notify a client (from courier actions)
+- `notifyCourier()` - Notify the courier (from client actions)
+
+```typescript
+import { notifyClient } from '$lib/services/notifications.js';
+import { notifyCourier } from '$lib/services/notifications.js';
+import { APP_URL } from '$lib/constants.js';
+
+// Correct pattern:
+await notifyCourier({
+  supabase,
+  session,
+  serviceId,
+  category: 'schedule_change',
+  title: 'Title',
+  message: 'Message',
+  emailTemplate: 'template_name',
+  emailData: { app_url: APP_URL, ... }
+});
+```
+
+**Why?** Direct inserts bypass:
+- Email notifications (only creates in-app notification)
+- Push notifications
+- User notification preferences (quiet hours, working days)
+- Email tracking columns (email_id, email_status, email_sent_at)
 
 ## Database Changes
 

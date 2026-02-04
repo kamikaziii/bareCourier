@@ -12,6 +12,9 @@ import {
 	type TypePricingInput
 } from '$lib/services/type-pricing.js';
 import { localizeHref } from '$lib/paraglide/runtime.js';
+import { notifyCourier } from '$lib/services/notifications.js';
+import { formatDatePtPT } from '$lib/utils/date-format.js';
+import { APP_URL } from '$lib/constants.js';
 
 export const actions: Actions = {
 	default: async ({ request, locals: { supabase, safeGetSession } }) => {
@@ -20,14 +23,14 @@ export const actions: Actions = {
 			return fail(401, { error: 'Not authenticated' });
 		}
 
-		// Verify user has client role (defense-in-depth)
+		// Verify user has client role (defense-in-depth) and get name for notification
 		const { data: profile } = await supabase
 			.from('profiles')
-			.select('role')
+			.select('role, name')
 			.eq('id', user.id)
 			.single();
 
-		const userProfile = profile as { role: string } | null;
+		const userProfile = profile as { role: string; name: string } | null;
 		if (userProfile?.role !== 'client') {
 			return fail(403, { error: 'Unauthorized' });
 		}
@@ -194,44 +197,73 @@ export const actions: Actions = {
 			}
 		}
 
-		// Insert service
-		const { error: insertError } = await supabase.from('services').insert({
-			client_id: user.id,
-			pickup_location,
-			delivery_location,
-			notes,
-			recipient_name,
-			recipient_phone,
-			customer_reference,
-			requested_date,
-			requested_time_slot,
-			requested_time,
-			pickup_lat,
-			pickup_lng,
-			delivery_lat,
-			delivery_lng,
-			distance_km,
-			duration_minutes,
-			urgency_fee_id: urgency_fee_id || null,
-			calculated_price,
-			price_breakdown,
-			vat_rate_snapshot: courierSettings.vatRate ?? 0,
-			prices_include_vat_snapshot: courierSettings.pricesIncludeVat,
-			// Type-based pricing fields
-			service_type_id,
-			has_time_preference,
-			// Delivery zone fields
-			is_out_of_zone,
-			detected_municipality,
-			// Pickup zone fields
-			pickup_is_out_of_zone,
-			pickup_detected_municipality,
-			tolls: null // Clients don't set tolls
-		});
+		// Insert service and get the ID for notification
+		const { data: insertedService, error: insertError } = await supabase
+			.from('services')
+			.insert({
+				client_id: user.id,
+				pickup_location,
+				delivery_location,
+				notes,
+				recipient_name,
+				recipient_phone,
+				customer_reference,
+				requested_date,
+				requested_time_slot,
+				requested_time,
+				pickup_lat,
+				pickup_lng,
+				delivery_lat,
+				delivery_lng,
+				distance_km,
+				duration_minutes,
+				urgency_fee_id: urgency_fee_id || null,
+				calculated_price,
+				price_breakdown,
+				vat_rate_snapshot: courierSettings.vatRate ?? 0,
+				prices_include_vat_snapshot: courierSettings.pricesIncludeVat,
+				// Type-based pricing fields
+				service_type_id,
+				has_time_preference,
+				// Delivery zone fields
+				is_out_of_zone,
+				detected_municipality,
+				// Pickup zone fields
+				pickup_is_out_of_zone,
+				pickup_detected_municipality,
+				tolls: null // Clients don't set tolls
+			})
+			.select('id')
+			.single();
 
-		if (insertError) {
+		if (insertError || !insertedService) {
 			console.error('Failed to create client service request:', insertError);
 			return fail(500, { error: 'Failed to create service request' });
+		}
+
+		// Notify courier with email
+		const formattedDate = formatDatePtPT(requested_date, 'Não especificada');
+
+		try {
+			await notifyCourier({
+				supabase,
+				session,
+				serviceId: insertedService.id,
+				category: 'new_request',
+				title: 'Novo Pedido de Serviço',
+				message: `${userProfile?.name || 'Cliente'} criou um novo pedido de serviço.`,
+				emailTemplate: 'new_request',
+				emailData: {
+					client_name: userProfile?.name || 'Cliente',
+					pickup_location,
+					delivery_location,
+					requested_date: formattedDate,
+					notes: notes || '',
+					app_url: APP_URL
+				}
+			});
+		} catch (error) {
+			console.error('Notification failed for new service', insertedService.id, error);
 		}
 
 		redirect(303, localizeHref('/client'));

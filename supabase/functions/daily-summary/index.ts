@@ -85,7 +85,9 @@ Deno.serve(async (req: Request) => {
 		const prefTotalMin = prefHour * 60 + prefMin;
 		const localTotalMin = localHour * 60 + localMin;
 
-		if (Math.abs(localTotalMin - prefTotalMin) > 7) {
+		// Use 14-minute tolerance to handle DST transitions (60-min offset)
+		// and allow for 15-minute cron interval
+		if (Math.abs(localTotalMin - prefTotalMin) > 14) {
 			return new Response(JSON.stringify({ message: 'Not the right time', sent: false }), {
 				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
 			});
@@ -167,13 +169,29 @@ Deno.serve(async (req: Request) => {
 			.eq('id', courier.id)
 			.single();
 
+		// Format today's date for email
+		const formattedDate = localDate.toLocaleDateString(locale === 'en' ? 'en-GB' : 'pt-PT', {
+			day: 'numeric',
+			month: 'long',
+			year: 'numeric'
+		});
+
 		await dispatchNotification({
 			supabase,
 			userId: courier.id,
 			category: 'daily_summary',
 			title: t('daily_summary_title', locale),
 			message,
-			profile: courierProfile
+			profile: courierProfile,
+			emailTemplate: 'daily_summary',
+			emailData: {
+				date: formattedDate,
+				total: String(total),
+				pending: String(pending),
+				delivered: String(delivered),
+				urgent: String(urgent),
+				app_url: Deno.env.get('APP_URL') || 'https://barecourier.vercel.app'
+			}
 		});
 
 		return new Response(
