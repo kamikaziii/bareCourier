@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p3
 issue_id: "242"
 tags: [code-review, pr-14, code-quality, logging]

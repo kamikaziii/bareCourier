@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "241"
 tags: [code-review, pr-14, agent-native, api-design, error-handling]
