@@ -64,9 +64,31 @@ POST /functions/v1/send-email
 ### Error
 ```json
 {
-  "error": "Error message"
+  "success": false,
+  "error": {
+    "code": "API_ERROR",
+    "message": "Failed to send email",
+    "retryable": true,
+    "retryAfterMs": 60000
+  }
 }
 ```
+
+### Error Codes
+
+| Code | HTTP | Retryable | Description |
+|------|------|-----------|-------------|
+| `CONFIG_ERROR` | 500 | No | Email service not configured |
+| `AUTH_ERROR` | 401 | No | Missing or invalid authorization |
+| `VALIDATION_ERROR` | 400 | No | Missing required fields |
+| `USER_NOT_FOUND` | 404 | No | Target user email not found |
+| `FORBIDDEN` | 403 | No | IDOR protection - cannot email other users |
+| `NOTIFICATIONS_DISABLED` | 200 | No | User has disabled email notifications |
+| `RATE_LIMIT` | 429 | Yes | Resend rate limit exceeded |
+| `QUOTA_EXCEEDED` | 429 | No | Daily/monthly quota exceeded |
+| `API_ERROR` | 500 | Maybe | Resend API error (5xx retryable, 4xx not) |
+| `TIMEOUT_ERROR` | 504 | Yes | Request or function timeout |
+| `INTERNAL_ERROR` | 500 | No | Unexpected server error |
 
 ## Retry Behavior
 

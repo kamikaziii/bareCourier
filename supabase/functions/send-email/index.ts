@@ -11,6 +11,10 @@ interface ResendErrorResponse {
   statusCode?: number;
 }
 
+interface ResendSuccessResponse {
+  id: string;
+}
+
 /**
  * Structured error codes for machine-parseable error responses.
  * Used by automated callers (agents, cron jobs) to handle errors appropriately.
@@ -778,7 +782,7 @@ Deno.serve(async (req: Request) => {
       return createErrorResponse("API_ERROR", "Failed to send email", 500, corsHeaders, isRetryable);
     }
 
-    const resendData = await resendResponse.json();
+    const resendData = await resendResponse.json() as ResendSuccessResponse;
 
     // Log successful email delivery for observability
     console.log(`[send-email] Email sent successfully to ${targetUser.email}, id: ${resendData.id}`);
