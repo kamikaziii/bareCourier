@@ -355,7 +355,7 @@ function isValidActionUrl(url: string): boolean {
     return isValidProtocol &&
            (parsed.hostname.endsWith('supabase.co') ||
             parsed.hostname === 'barecourier.vercel.app' ||
-            parsed.hostname.endsWith('.vercel.app') ||
+            (parsed.hostname.endsWith('.vercel.app') && parsed.hostname.includes('barecourier')) ||
             isLocalhost);
   } catch {
     return false;

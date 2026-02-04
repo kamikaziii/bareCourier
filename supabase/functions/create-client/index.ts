@@ -169,8 +169,9 @@ Deno.serve(async (req: Request) => {
       }
 
       // Check if user already exists using O(1) indexed lookup (not O(n) listUsers scan)
-      const { data: existingUser } = await adminClient.auth.admin.getUserByEmail(email);
-      // Note: getUserByEmail returns { data: null, error } when user doesn't exist, which is fine
+      // Note: getUserByEmail returns { data: { user: User | null } } matching getUserById pattern
+      const { data: existingUserData } = await adminClient.auth.admin.getUserByEmail(email);
+      const existingUser = existingUserData?.user;
 
       if (existingUser) {
         if (existingUser.email_confirmed_at) {
