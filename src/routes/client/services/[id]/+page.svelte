@@ -130,11 +130,11 @@
         }
       } else {
         toast.error(result.data?.error || m.toast_error_generic(), {
-          duration: Infinity,
+          duration: 8000,
         });
       }
     } catch {
-      toast.error(m.toast_error_generic(), { duration: Infinity });
+      toast.error(m.toast_error_generic(), { duration: 8000 });
     }
 
     rescheduleLoading = false;
@@ -150,11 +150,11 @@
         await invalidateAll();
       } else {
         toast.error(result.data?.error || m.toast_error_generic(), {
-          duration: Infinity,
+          duration: 8000,
         });
       }
     } catch {
-      toast.error(m.toast_error_generic(), { duration: Infinity });
+      toast.error(m.toast_error_generic(), { duration: 8000 });
     }
     rescheduleActionLoading = false;
   }
@@ -176,11 +176,11 @@
         await invalidateAll();
       } else {
         toast.error(result.data?.error || m.toast_error_generic(), {
-          duration: Infinity,
+          duration: 8000,
         });
       }
     } catch {
-      toast.error(m.toast_error_generic(), { duration: Infinity });
+      toast.error(m.toast_error_generic(), { duration: 8000 });
     }
     rescheduleActionLoading = false;
   }

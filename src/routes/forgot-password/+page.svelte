@@ -24,7 +24,7 @@
       });
     } catch {
       // Only show error for network failures, not for email existence
-      toast.error(m.toast_error_network(), { duration: Infinity });
+      toast.error(m.toast_error_network(), { duration: 8000 });
       loading = false;
       return;
     }

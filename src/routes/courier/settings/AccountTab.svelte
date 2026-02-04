@@ -75,6 +75,8 @@
           if (result.type === "success") {
             await invalidateAll();
             toast.success(m.toast_profile_updated());
+          } else if (result.type === "failure") {
+            toast.error(m.toast_settings_failed(), { duration: 8000 });
           }
         };
       }}
@@ -128,6 +130,8 @@
           if (result.type === "success") {
             await invalidateAll();
             toast.success(m.toast_settings_saved());
+          } else if (result.type === "failure") {
+            toast.error(m.toast_settings_failed(), { duration: 8000 });
           }
         };
       }}
@@ -197,6 +201,8 @@
           if (result.type === "success") {
             await invalidateAll();
             toast.success(m.toast_settings_saved());
+          } else if (result.type === "failure") {
+            toast.error(m.toast_settings_failed(), { duration: 8000 });
           }
         };
       }}

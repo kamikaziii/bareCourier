@@ -750,6 +750,7 @@
   "toast_error_network": "Network error. Check your connection.",
 
   "toast_settings_saved": "Settings saved",
+  "toast_settings_failed": "Failed to save settings. Please try again.",
   "toast_profile_updated": "Profile updated",
 
   "toast_client_created": "Client created successfully",

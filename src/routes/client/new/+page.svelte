@@ -240,8 +240,8 @@
         const errorMessage =
           result.data.error === "no_service_type_assigned"
             ? m.client_no_service_type_error()
-            : result.data.error;
-        toast.error(errorMessage, { duration: Infinity });
+            : m.toast_error_generic();
+        toast.error(errorMessage, { duration: 8000 });
         loading = false;
       } else if (result.type === "redirect") {
         // Show success toast before redirect

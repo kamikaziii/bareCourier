@@ -153,7 +153,7 @@
               await invalidateAll();
               toast.success(m.toast_client_updated());
             } else if (result.type === "failure" && result.data?.error) {
-              toast.error(result.data.error, { duration: Infinity });
+              toast.error(result.data.error, { duration: 8000 });
             } else {
               await update();
             }

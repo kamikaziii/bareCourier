@@ -750,6 +750,7 @@
   "toast_error_network": "Erro de rede. Verifique a ligação.",
 
   "toast_settings_saved": "Definições guardadas",
+  "toast_settings_failed": "Falha ao guardar definições. Por favor, tente novamente.",
   "toast_profile_updated": "Perfil atualizado",
 
   "toast_client_created": "Cliente criado com sucesso",

@@ -111,16 +111,16 @@
         } else {
           showStatusDialog = false;
           toast.error(result.data?.error || m.toast_error_generic(), {
-            duration: Infinity,
+            duration: 8000,
           });
         }
       } else {
         showStatusDialog = false;
-        toast.error(m.toast_error_generic(), { duration: Infinity });
+        toast.error(m.toast_error_generic(), { duration: 8000 });
       }
     } catch {
       showStatusDialog = false;
-      toast.error(m.toast_error_generic(), { duration: Infinity });
+      toast.error(m.toast_error_generic(), { duration: 8000 });
     }
     loading = false;
   }
@@ -150,16 +150,16 @@
         } else {
           showDeleteDialog = false;
           toast.error(result.data?.error || m.toast_error_generic(), {
-            duration: Infinity,
+            duration: 8000,
           });
         }
       } else {
         showDeleteDialog = false;
-        toast.error(m.toast_error_generic(), { duration: Infinity });
+        toast.error(m.toast_error_generic(), { duration: 8000 });
       }
     } catch {
       showDeleteDialog = false;
-      toast.error(m.toast_error_generic(), { duration: Infinity });
+      toast.error(m.toast_error_generic(), { duration: 8000 });
     }
     loading = false;
   }
@@ -209,7 +209,7 @@
     }) => {
       if (result.type === "failure" && result.data?.error) {
         showPriceOverride = false;
-        toast.error(result.data.error, { duration: Infinity });
+        toast.error(result.data.error, { duration: 8000 });
       } else if (result.type === "success" && result.data?.success) {
         showPriceOverride = false;
         await invalidateAll();

@@ -62,7 +62,7 @@
       result: { type: string; data?: { error?: string; success?: boolean } };
     }) => {
       if (result.type === "failure" && result.data?.error) {
-        toast.error(result.data.error, { duration: Infinity });
+        toast.error(result.data.error, { duration: 8000 });
       } else if (result.type === "success" && result.data?.success) {
         toast.success(m.toast_profile_updated());
       }
@@ -76,7 +76,7 @@
       result: { type: string; data?: { error?: string; success?: boolean } };
     }) => {
       if (result.type === "failure" && result.data?.error) {
-        toast.error(result.data.error, { duration: Infinity });
+        toast.error(result.data.error, { duration: 8000 });
       } else if (result.type === "success" && result.data?.success) {
         toast.success(m.toast_settings_saved());
       }

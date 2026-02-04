@@ -50,7 +50,7 @@
     });
 
     if (authError) {
-      toast.error(m.password_current_incorrect(), { duration: Infinity });
+      toast.error(m.password_current_incorrect(), { duration: 8000 });
       loading = false;
       return;
     }
@@ -61,7 +61,7 @@
     });
 
     if (updateError) {
-      toast.error(mapAuthError(updateError.message), { duration: Infinity });
+      toast.error(mapAuthError(updateError.message), { duration: 8000 });
       loading = false;
       return;
     }

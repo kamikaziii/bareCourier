@@ -234,15 +234,15 @@
           serviceToCancel = null;
         } else {
           toast.error(result.data?.error || m.toast_error_generic(), {
-            duration: Infinity,
+            duration: 8000,
           });
         }
       } else {
-        toast.error(m.toast_error_generic(), { duration: Infinity });
+        toast.error(m.toast_error_generic(), { duration: 8000 });
       }
     } catch (error) {
       console.error("Failed to cancel request:", error);
-      toast.error(m.toast_error_generic(), { duration: Infinity });
+      toast.error(m.toast_error_generic(), { duration: 8000 });
     }
     actionLoading = false;
   }
@@ -268,14 +268,14 @@
           showSuggestionDialog = false;
         } else {
           toast.error(result.data?.error || m.toast_error_generic(), {
-            duration: Infinity,
+            duration: 8000,
           });
         }
       } else {
-        toast.error(m.toast_error_generic(), { duration: Infinity });
+        toast.error(m.toast_error_generic(), { duration: 8000 });
       }
     } catch {
-      toast.error(m.toast_error_generic(), { duration: Infinity });
+      toast.error(m.toast_error_generic(), { duration: 8000 });
     }
     actionLoading = false;
   }
@@ -301,14 +301,14 @@
           showSuggestionDialog = false;
         } else {
           toast.error(result.data?.error || m.toast_error_generic(), {
-            duration: Infinity,
+            duration: 8000,
           });
         }
       } else {
-        toast.error(m.toast_error_generic(), { duration: Infinity });
+        toast.error(m.toast_error_generic(), { duration: 8000 });
       }
     } catch {
-      toast.error(m.toast_error_generic(), { duration: Infinity });
+      toast.error(m.toast_error_generic(), { duration: 8000 });
     }
     actionLoading = false;
   }
@@ -339,11 +339,11 @@
         await loadServices();
       } else {
         toast.error(result.data?.error || m.toast_error_generic(), {
-          duration: Infinity,
+          duration: 8000,
         });
       }
     } catch {
-      toast.error(m.toast_error_generic(), { duration: Infinity });
+      toast.error(m.toast_error_generic(), { duration: 8000 });
     }
     batchActionLoading = false;
   }
@@ -375,11 +375,11 @@
         await loadServices();
       } else {
         toast.error(result.data?.error || m.toast_error_generic(), {
-          duration: Infinity,
+          duration: 8000,
         });
       }
     } catch {
-      toast.error(m.toast_error_generic(), { duration: Infinity });
+      toast.error(m.toast_error_generic(), { duration: 8000 });
     }
     batchActionLoading = false;
   }

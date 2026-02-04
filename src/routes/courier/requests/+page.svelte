@@ -15,6 +15,7 @@
   import { useBatchSelection } from "$lib/composables/use-batch-selection.svelte.js";
   import * as m from "$lib/paraglide/messages.js";
   import { toast } from "$lib/utils/toast.js";
+  import { fetchWithToast } from "$lib/utils/api.js";
   import type { WorkloadEstimate } from "$lib/services/workload.js";
   import { localizeHref } from "$lib/paraglide/runtime.js";
   import { formatDateWithWeekday, formatDate } from "$lib/utils.js";
@@ -47,28 +48,24 @@
     if (!batch.hasSelection) return;
     batchLoading = true;
 
+    const count = batch.selectedCount;
     const formData = new FormData();
     formData.set("service_ids", JSON.stringify(Array.from(batch.selectedIds)));
 
-    try {
-      const response = await fetch("?/batchAccept", {
-        method: "POST",
-        body: formData,
-      });
-      const result = await response.json();
-      if (result.data?.success) {
-        const count = batch.selectedCount;
-        batch.reset();
-        await invalidateAll();
-        toast.success(m.batch_accept_success({ count }));
-      } else {
-        toast.error(result.data?.error || m.toast_error_generic(), {
-          duration: Infinity,
-        });
-      }
-    } catch {
-      toast.error(m.toast_error_generic(), { duration: Infinity });
+    const result = await fetchWithToast(
+      "?/batchAccept",
+      { method: "POST", body: formData },
+      {
+        successMessage: m.batch_accept_success({ count }),
+        errorMessage: m.toast_error_generic(),
+      },
+    );
+
+    if (result) {
+      batch.reset();
+      await invalidateAll();
     }
+
     batchLoading = false;
   }
 
@@ -165,16 +162,16 @@
         } else {
           showAcceptDialog = false;
           toast.error(result.data?.error || m.toast_error_generic(), {
-            duration: Infinity,
+            duration: 8000,
           });
         }
       } else {
         showAcceptDialog = false;
-        toast.error(m.toast_error_generic(), { duration: Infinity });
+        toast.error(m.toast_error_generic(), { duration: 8000 });
       }
     } catch {
       showAcceptDialog = false;
-      toast.error(m.toast_error_generic(), { duration: Infinity });
+      toast.error(m.toast_error_generic(), { duration: 8000 });
     }
     loading = false;
   }
@@ -202,16 +199,16 @@
         } else {
           showRejectDialog = false;
           toast.error(result.data?.error || m.toast_error_generic(), {
-            duration: Infinity,
+            duration: 8000,
           });
         }
       } else {
         showRejectDialog = false;
-        toast.error(m.toast_error_generic(), { duration: Infinity });
+        toast.error(m.toast_error_generic(), { duration: 8000 });
       }
     } catch {
       showRejectDialog = false;
-      toast.error(m.toast_error_generic(), { duration: Infinity });
+      toast.error(m.toast_error_generic(), { duration: 8000 });
     }
     loading = false;
   }
@@ -242,16 +239,16 @@
         } else {
           showSuggestDialog = false;
           toast.error(result.data?.error || m.toast_error_generic(), {
-            duration: Infinity,
+            duration: 8000,
           });
         }
       } else {
         showSuggestDialog = false;
-        toast.error(m.toast_error_generic(), { duration: Infinity });
+        toast.error(m.toast_error_generic(), { duration: 8000 });
       }
     } catch {
       showSuggestDialog = false;
-      toast.error(m.toast_error_generic(), { duration: Infinity });
+      toast.error(m.toast_error_generic(), { duration: 8000 });
     }
     loading = false;
   }
@@ -286,14 +283,14 @@
           toast.success(m.reschedule_approved());
         } else {
           toast.error(result.data?.error || m.toast_error_generic(), {
-            duration: Infinity,
+            duration: 8000,
           });
         }
       } else {
-        toast.error(m.toast_error_generic(), { duration: Infinity });
+        toast.error(m.toast_error_generic(), { duration: 8000 });
       }
     } catch {
-      toast.error(m.toast_error_generic(), { duration: Infinity });
+      toast.error(m.toast_error_generic(), { duration: 8000 });
     }
     loading = false;
   }
@@ -321,16 +318,16 @@
         } else {
           showDenyRescheduleDialog = false;
           toast.error(result.data?.error || m.toast_error_generic(), {
-            duration: Infinity,
+            duration: 8000,
           });
         }
       } else {
         showDenyRescheduleDialog = false;
-        toast.error(m.toast_error_generic(), { duration: Infinity });
+        toast.error(m.toast_error_generic(), { duration: 8000 });
       }
     } catch {
       showDenyRescheduleDialog = false;
-      toast.error(m.toast_error_generic(), { duration: Infinity });
+      toast.error(m.toast_error_generic(), { duration: 8000 });
     }
     loading = false;
   }

@@ -12,6 +12,7 @@
   } from "$lib/utils/past-due.js";
   import * as m from "$lib/paraglide/messages.js";
   import { toast } from "$lib/utils/toast.js";
+  import { fetchWithToast } from "$lib/utils/api.js";
   import { localizeHref } from "$lib/paraglide/runtime.js";
   import { formatDate, formatTimeSlot } from "$lib/utils.js";
   import ServiceCard from "$lib/components/ServiceCard.svelte";
@@ -70,37 +71,25 @@
     if (!batch.hasSelection) return;
     batchLoading = true;
 
+    const count = batch.selectedCount;
     const formData = new FormData();
     formData.set("service_ids", JSON.stringify(Array.from(batch.selectedIds)));
     formData.set("status", "delivered");
 
-    try {
-      const response = await fetch("?/batchStatusChange", {
-        method: "POST",
-        body: formData,
-      });
-      const result = await response.json();
-      // Check both result.data.success (wrapped) and result.success (direct)
-      const success =
-        result.data?.success || result.success || result.type === "success";
-      if (success) {
-        const count = batch.selectedCount;
-        batch.reset();
-        // Reload page data from server
-        await invalidate("app:services");
-        toast.success(m.toast_batch_success({ count }));
-      } else {
-        toast.error(
-          result.data?.error || result.error || m.toast_error_generic(),
-          {
-            duration: Infinity,
-          },
-        );
-      }
-    } catch (err) {
-      console.error("Batch update error:", err);
-      toast.error(m.toast_error_generic(), { duration: Infinity });
+    const result = await fetchWithToast(
+      "?/batchStatusChange",
+      { method: "POST", body: formData },
+      {
+        successMessage: m.toast_batch_success({ count }),
+        errorMessage: m.toast_error_generic(),
+      },
+    );
+
+    if (result) {
+      batch.reset();
+      await invalidate("app:services");
     }
+
     batchLoading = false;
   }
 

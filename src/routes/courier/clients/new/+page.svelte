@@ -80,7 +80,7 @@
     const accessToken = sessionData.session?.access_token;
 
     if (!accessToken) {
-      toast.error(m.session_expired(), { duration: Infinity });
+      toast.error(m.session_expired(), { duration: 8000 });
       loading = false;
       return;
     }
@@ -111,9 +111,7 @@
     const result = await response.json();
 
     if (!response.ok) {
-      toast.error(result.error || m.error_create_client_failed(), {
-        duration: Infinity,
-      });
+      toast.error(m.error_create_client_failed(), { duration: 8000 });
       loading = false;
       return;
     }

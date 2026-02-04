@@ -305,6 +305,8 @@
           if (result.type === "success") {
             await invalidateAll();
             toast.success(m.toast_zones_saved());
+          } else if (result.type === "failure") {
+            toast.error(m.toast_settings_failed(), { duration: 8000 });
           }
         };
       }}
