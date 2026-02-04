@@ -162,7 +162,12 @@
       } else if (result.type === "success" && result.data?.success) {
         toast.success(m.toast_service_created());
         if (result.data.warning) {
-          toast.warning(result.data.warning, { duration: 6000 });
+          // Map warning key to localized message
+          const warningMessage =
+            result.data.warning === "service_created_no_pricing"
+              ? m.service_created_no_pricing()
+              : m.toast_error_generic(); // Fallback for unknown warnings
+          toast.warning(warningMessage, { duration: 6000 });
         }
         goto(localizeHref("/courier/services"));
       } else {
