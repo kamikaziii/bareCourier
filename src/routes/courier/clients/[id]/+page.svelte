@@ -34,6 +34,8 @@
     ChevronLeft,
     ChevronRight,
     KeyRound,
+    Mail,
+    Send,
   } from "@lucide/svelte";
 
   let { data }: { data: PageData } = $props();
@@ -47,6 +49,14 @@
   let passwordResetSuccess = $state(false);
   let newPassword = $state("");
 
+  // Invitation status
+  let clientIsConfirmed = $state<boolean | null>(null);
+  let clientEmail = $state<string | null>(null);
+  let checkingStatus = $state(true);
+  let resendingInvitation = $state(false);
+  let resendError = $state("");
+  let resendSuccess = $state(false);
+
   // Reset password dialog state when opened
   $effect(() => {
     if (showPasswordDialog) {
@@ -56,6 +66,94 @@
       passwordResetLoading = false;
     }
   });
+
+  // Check client email confirmation status on mount
+  $effect(() => {
+    checkClientStatus();
+  });
+
+  async function checkClientStatus() {
+    checkingStatus = true;
+    try {
+      const { data: sessionData } = await data.supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      if (!accessToken) {
+        checkingStatus = false;
+        return;
+      }
+
+      const response = await fetch(
+        `${PUBLIC_SUPABASE_URL}/functions/v1/check-client-status`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ client_id: data.client.id }),
+        },
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        clientIsConfirmed = result.is_confirmed;
+        clientEmail = result.email;
+      }
+    } catch {
+      // Silently fail - just don't show the resend button
+    }
+    checkingStatus = false;
+  }
+
+  async function handleResendInvitation() {
+    resendingInvitation = true;
+    resendError = "";
+    resendSuccess = false;
+
+    try {
+      const { data: sessionData } = await data.supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      if (!accessToken) {
+        resendError = m.session_expired();
+        resendingInvitation = false;
+        return;
+      }
+
+      const response = await fetch(
+        `${PUBLIC_SUPABASE_URL}/functions/v1/create-client`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            email: clientEmail,
+            name: data.client.name,
+            send_invitation: true,
+          }),
+        },
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        resendError = result.error || m.error_generic();
+      } else if (result.invitation_sent) {
+        resendSuccess = true;
+        // Clear success after 3 seconds
+        setTimeout(() => {
+          resendSuccess = false;
+        }, 3000);
+      }
+    } catch {
+      resendError = m.error_generic();
+    }
+
+    resendingInvitation = false;
+  }
 
   // Handle ?tab=billing query param for direct navigation
   const initialTab = $derived($page.url.searchParams.get("tab") || "info");
@@ -438,6 +536,41 @@
             <span class="text-muted-foreground">{m.label_member_since()}</span>
             <span>{formatDate(client.created_at)}</span>
           </div>
+
+          {#if !checkingStatus && clientIsConfirmed === false}
+            <Separator class="my-3" />
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <Mail class="size-4 text-amber-500" />
+                  <span class="text-sm text-amber-600">{m.invitation_pending()}</span>
+                </div>
+              </div>
+
+              {#if resendError}
+                <div class="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {resendError}
+                </div>
+              {/if}
+
+              {#if resendSuccess}
+                <div class="rounded-md bg-green-500/10 px-3 py-2 text-sm text-green-600">
+                  {m.invitation_sent({ email: clientEmail || "" })}
+                </div>
+              {:else}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="w-full"
+                  onclick={handleResendInvitation}
+                  disabled={resendingInvitation}
+                >
+                  <Send class="size-4 mr-2" />
+                  {resendingInvitation ? m.loading() : m.resend_invitation()}
+                </Button>
+              {/if}
+            </div>
+          {/if}
         </Card.Content>
       </Card.Root>
     </Tabs.Content>

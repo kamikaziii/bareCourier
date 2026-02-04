@@ -87,7 +87,7 @@ function createErrorResponse(
 }
 
 // Email templates
-type EmailTemplate = "new_request" | "delivered" | "request_accepted" | "request_rejected" | "request_suggested" | "request_cancelled" | "daily_summary" | "past_due" | "suggestion_accepted" | "suggestion_declined";
+type EmailTemplate = "new_request" | "delivered" | "request_accepted" | "request_rejected" | "request_suggested" | "request_cancelled" | "daily_summary" | "past_due" | "suggestion_accepted" | "suggestion_declined" | "client_invitation";
 
 // Required fields for each email template - validates templateData before sending
 const TEMPLATE_REQUIRED_FIELDS: Record<EmailTemplate, string[]> = {
@@ -97,6 +97,11 @@ const TEMPLATE_REQUIRED_FIELDS: Record<EmailTemplate, string[]> = {
   request_rejected: ["pickup_location", "delivery_location", "app_url"],
   request_suggested: ["pickup_location", "delivery_location", "requested_date", "suggested_date", "app_url"],
   request_cancelled: ["client_name", "pickup_location", "delivery_location", "app_url"],
+  daily_summary: ["date", "app_url"],
+  past_due: ["client_name", "pickup_location", "delivery_location", "scheduled_date", "days_overdue", "app_url"],
+  suggestion_accepted: ["client_name", "pickup_location", "delivery_location", "confirmed_date", "app_url"],
+  suggestion_declined: ["client_name", "pickup_location", "delivery_location", "original_date", "app_url"],
+  client_invitation: ["client_name", "courier_name", "confirmation_url"],
 };
 
 interface EmailData {
@@ -595,6 +600,36 @@ function generateEmailHtml(
           },
           footer: defaultFooter,
         }),
+      };
+
+    case "client_invitation":
+      return {
+        subject: emailT("email_invitation_subject", locale, { courier_name: data.courier_name }),
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>${baseStyles}</head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>${emailT("email_invitation_title", locale)}</h1>
+              </div>
+              <div class="content">
+                <p>${emailT("email_invitation_intro", locale, {
+                  client_name: data.client_name,
+                  courier_name: data.courier_name
+                })}</p>
+                <p>${emailT("email_invitation_instructions", locale)}</p>
+                <a href="${data.action_link}" class="button">${emailT("email_invitation_button", locale)}</a>
+                <p class="small" style="font-size: 12px; color: #6b7280; margin-top: 16px;">${emailT("email_invitation_expiry", locale)}</p>
+              </div>
+              <div class="footer">
+                <p>${emailT("email_invitation_help", locale)}</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
       };
 
     default:

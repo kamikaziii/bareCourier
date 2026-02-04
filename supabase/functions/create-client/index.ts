@@ -62,32 +62,191 @@ Deno.serve(async (req: Request) => {
     }
 
     // Parse and validate request body
-    const { email, password, name, phone, default_pickup_location, default_pickup_lat, default_pickup_lng, default_service_type_id } = await req.json();
+    const { email, password, name, phone, default_pickup_location, default_pickup_lat, default_pickup_lng, default_service_type_id, send_invitation } = await req.json();
 
-    if (!email || !password || !name) {
+    if (!email || !name) {
       return new Response(
-        JSON.stringify({ error: "Email, password, and name are required" }),
+        JSON.stringify({ error: "Email and name are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Create client user with admin API (no confirmation email)
+    // Create admin client for privileged operations
     const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { name, role: "client" },
-    });
+    // Get site URL for redirect
+    const siteUrl = Deno.env.get("SITE_URL") || "https://barecourier.vercel.app";
 
-    if (authError) {
-      return new Response(
-        JSON.stringify({ error: authError.message }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    let authData: { user: { id: string; email: string | undefined } | null } = { user: null };
+    let invitationSent = false;
+    let isResend = false;
+
+    if (send_invitation) {
+      // === INVITATION FLOW ===
+      // Check if user already exists
+      const { data: existingUsers } = await adminClient.auth.admin.listUsers();
+      const existingUser = existingUsers?.users?.find(u => u.email === email);
+
+      if (existingUser) {
+        if (existingUser.email_confirmed_at) {
+          // User already confirmed - can't resend invite
+          return new Response(
+            JSON.stringify({ error: "This email is already registered" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // User exists but unconfirmed - regenerate invite link (resend case)
+        isResend = true;
+        const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
+          type: "invite",
+          email,
+          options: {
+            redirectTo: `${siteUrl}/accept-invite`,
+          }
+        });
+
+        if (linkError) {
+          return new Response(
+            JSON.stringify({ error: linkError.message }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Fetch courier name for personalized email
+        const { data: courierProfile } = await adminClient
+          .from("profiles")
+          .select("name")
+          .eq("id", user.id)
+          .single();
+
+        // Get existing client's name from profile
+        const { data: clientProfile } = await adminClient
+          .from("profiles")
+          .select("name")
+          .eq("id", existingUser.id)
+          .single();
+
+        // Send invitation email
+        const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${supabaseServiceKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            user_id: existingUser.id,
+            template: "client_invitation",
+            data: {
+              action_link: linkData.properties.action_link,
+              client_name: clientProfile?.name || name,
+              courier_name: courierProfile?.name || "Your courier",
+              app_url: siteUrl
+            }
+          })
+        });
+
+        if (!emailResponse.ok) {
+          return new Response(
+            JSON.stringify({ error: "Failed to send invitation email" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            user: { id: existingUser.id, email },
+            invitation_sent: true,
+            resend: true
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // New user - generate invite link
+      const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
+        type: "invite",
+        email,
+        options: {
+          redirectTo: `${siteUrl}/accept-invite`,
+          data: {
+            role: "client",
+            name: name || "",
+            phone: phone || null,
+          }
+        }
+      });
+
+      if (linkError) {
+        return new Response(
+          JSON.stringify({ error: linkError.message }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      authData = { user: linkData.user ? { id: linkData.user.id, email: linkData.user.email } : null };
+      invitationSent = true;
+
+      // Fetch courier name for personalized email
+      const { data: courierProfile } = await adminClient
+        .from("profiles")
+        .select("name")
+        .eq("id", user.id)
+        .single();
+
+      // Send invitation email
+      const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${supabaseServiceKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          user_id: linkData.user.id,
+          template: "client_invitation",
+          data: {
+            action_link: linkData.properties.action_link,
+            client_name: name,
+            courier_name: courierProfile?.name || "Your courier",
+            app_url: siteUrl
+          }
+        })
+      });
+
+      if (!emailResponse.ok) {
+        return new Response(
+          JSON.stringify({ error: "Failed to send invitation email" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+    } else {
+      // === PASSWORD FLOW (existing behavior) ===
+      if (!password) {
+        return new Response(
+          JSON.stringify({ error: "Password required when not sending invitation" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: createData, error: authError } = await adminClient.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { name, role: "client" },
+      });
+
+      if (authError) {
+        return new Response(
+          JSON.stringify({ error: authError.message }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      authData = { user: createData.user ? { id: createData.user.id, email: createData.user.email } : null };
     }
 
     // Update profile with additional fields (trigger creates basic profile)
@@ -125,7 +284,8 @@ Deno.serve(async (req: Request) => {
         return new Response(
           JSON.stringify({
             error: "Client created but profile update failed. Please edit the client to add missing details.",
-            user: { id: authData.user.id, email: authData.user.email }
+            user: { id: authData.user.id, email: authData.user.email },
+            invitation_sent: invitationSent
           }),
           { status: 207, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
@@ -135,7 +295,9 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         success: true,
-        user: { id: authData.user?.id, email: authData.user?.email }
+        user: { id: authData.user?.id, email: authData.user?.email },
+        invitation_sent: invitationSent,
+        resend: isResend
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
