@@ -154,7 +154,7 @@ $$;
 -- Grant execute to authenticated users only
 GRANT EXECUTE ON FUNCTION reschedule_service(uuid, date, text, text, text, text, text) TO authenticated;
 
-COMMENT ON FUNCTION reschedule_service IS 'Courier reschedules a service directly. Creates notification for client and records history.';
+COMMENT ON FUNCTION reschedule_service(uuid, date, text, text, text, text, text) IS 'Courier reschedules a service directly. Creates notification for client and records history.';
 
 
 -- 2. client_approve_reschedule: Called by client to approve courier's suggested reschedule
@@ -276,7 +276,7 @@ $$;
 -- Grant execute to authenticated users only
 GRANT EXECUTE ON FUNCTION client_approve_reschedule(uuid) TO authenticated;
 
-COMMENT ON FUNCTION client_approve_reschedule IS 'Client approves a courier-suggested reschedule. Applies suggested date/time as scheduled.';
+COMMENT ON FUNCTION client_approve_reschedule(uuid) IS 'Client approves a courier-suggested reschedule. Applies suggested date/time as scheduled.';
 
 
 -- 3. client_deny_reschedule: Called by client to deny courier's suggested reschedule
@@ -389,4 +389,4 @@ $$;
 -- Grant execute to authenticated users only
 GRANT EXECUTE ON FUNCTION client_deny_reschedule(uuid, text) TO authenticated;
 
-COMMENT ON FUNCTION client_deny_reschedule IS 'Client denies a courier-suggested reschedule. Clears suggestion, keeps original schedule.';
+COMMENT ON FUNCTION client_deny_reschedule(uuid, text) IS 'Client denies a courier-suggested reschedule. Clears suggestion, keeps original schedule.';

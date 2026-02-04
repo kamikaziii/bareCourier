@@ -152,4 +152,4 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$;
 
-COMMENT ON FUNCTION reschedule_service IS 'Courier reschedules a service directly. Creates notification for client and records history. Fixed: Added FOR UPDATE lock to prevent race conditions.';
+COMMENT ON FUNCTION reschedule_service(uuid, date, text, text, text, text, text) IS 'Courier reschedules a service directly. Creates notification for client and records history. Fixed: Added FOR UPDATE lock to prevent race conditions.';
