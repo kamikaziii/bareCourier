@@ -10,7 +10,9 @@ dependencies: []
 
 ## Problem Statement
 
-All four edge functions contain nearly identical authentication validation code (~40 lines each). This duplicated boilerplate:
+Three edge functions contain nearly identical authentication validation code (~40 lines each). This duplicated boilerplate:
+
+**Note:** `send-email/index.ts` uses service key authentication (not user JWT), so it's excluded from this refactoring.
 
 1. Increases maintenance burden (fixes must be applied 4x)
 2. Creates risk of inconsistent auth handling across functions
@@ -72,9 +74,7 @@ Identical pattern with minor variations in error messages.
 
 Identical pattern.
 
-### send-email/index.ts (Lines 35-75)
-
-Identical pattern.
+**Note:** `send-email/index.ts` is excluded - it uses service key authentication for internal calls.
 
 ## Proposed Solution
 
@@ -186,7 +186,6 @@ Deno.serve(async (req) => {
 - [ ] Refactor `create-client/index.ts` to use helper
 - [ ] Refactor `check-client-status/index.ts` to use helper
 - [ ] Refactor `reset-client-password/index.ts` to use helper
-- [ ] Refactor `send-email/index.ts` to use helper
 - [ ] All existing tests pass
 - [ ] Manual test: All four endpoints still work correctly
 

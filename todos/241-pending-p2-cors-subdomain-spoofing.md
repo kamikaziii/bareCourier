@@ -10,44 +10,52 @@ dependencies: []
 
 ## Problem Statement
 
-The CORS origin validation in the edge function uses a loose string matching pattern that could allow malicious subdomains to bypass security controls.
+The CORS origin validation in the edge function uses a pattern that could allow malicious Vercel deployments to bypass security controls.
 
 ## Findings
 
 **Location:** `supabase/functions/_shared/cors.ts:17-20`
 
-**Issue:** The pattern `origin.includes("barecourier")` is too permissive and allows malicious subdomains like:
-- `https://barecourier.malicious-site.com`
-- `https://evil-barecourier.vercel.app`
-- `https://barecourier-phishing.attacker.com`
+**Actual code:**
+```typescript
+const isAllowed =
+  origin.startsWith("http://localhost:") ||
+  origin === "https://barecourier.vercel.app" ||
+  (origin.endsWith(".vercel.app") && origin.includes("barecourier"));
+```
 
-An attacker could register a domain containing "barecourier" and make cross-origin requests to the edge functions.
+**Issue:** While the check requires `.vercel.app` suffix (blocking arbitrary domains), it still allows:
+- `https://evil-barecourier.vercel.app` ✓ (ends with .vercel.app AND includes barecourier)
+- `https://barecourier-phishing.vercel.app` ✓ (same pattern)
+
+**Note:** This does NOT allow `https://barecourier.malicious-site.com` (doesn't end with .vercel.app).
+
+An attacker could deploy a malicious Vercel app with "barecourier" in the subdomain to make cross-origin requests.
 
 ## Proposed Solution
 
-Replace the loose `includes()` check with a stricter regex pattern:
+Replace the loose pattern with a stricter regex that only allows the exact project name:
 
 ```typescript
 // Instead of:
-if (origin.includes("barecourier")) {
-  return origin;
-}
+(origin.endsWith(".vercel.app") && origin.includes("barecourier"))
 
-// Use:
+// Use a regex that matches only barecourier preview deployments:
 const vercelPattern = /^https:\/\/barecourier(-[a-z0-9]+)?\.vercel\.app$/;
-if (vercelPattern.test(origin)) {
-  return origin;
-}
+const isAllowed =
+  origin.startsWith("http://localhost:") ||
+  origin === "https://barecourier.vercel.app" ||
+  vercelPattern.test(origin);
 ```
 
-This ensures only legitimate Vercel preview deployments and the production domain are allowed.
+This ensures only legitimate Vercel preview deployments (`barecourier-abc123.vercel.app`) are allowed, not arbitrary subdomains containing "barecourier".
 
 ## Acceptance Criteria
 
 - [ ] CORS validation uses regex pattern instead of `includes()`
 - [ ] Pattern matches production domain: `https://barecourier.vercel.app`
 - [ ] Pattern matches preview deployments: `https://barecourier-abc123.vercel.app`
-- [ ] Pattern rejects malicious domains containing "barecourier"
+- [ ] Pattern rejects malicious Vercel deployments containing "barecourier"
 - [ ] Edge functions tested with valid and invalid origins
 
 ## Work Log
