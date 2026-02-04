@@ -5,6 +5,18 @@ import { isServiceRoleKey } from "../_shared/auth.ts";
 import { emailT } from "../_shared/email-translations.ts";
 import { getLocale, type SupportedLocale } from "../_shared/translations.ts";
 
+interface ResendErrorResponse {
+  name?: string;
+  message?: string;
+  statusCode?: number;
+}
+
+/** Retry configuration for fetchWithRetry */
+const RETRY_CONFIG = {
+  BASE_DELAY_MS: 500,
+  MAX_JITTER_MS: 300,
+} as const;
+
 /**
  * Send Email Notification Edge Function
  *
@@ -41,16 +53,23 @@ function escapeHtml(str: string | undefined | null): string {
  * Checks if a 429 error is a retryable rate limit vs non-retryable quota error.
  * Resend returns 429 for: rate_limit_exceeded (retry), daily_quota_exceeded (don't retry),
  * monthly_quota_exceeded (don't retry - needs plan upgrade).
+ *
+ * @param response - The HTTP response with status 429
+ * @returns Object indicating if retry should be attempted and the error type
  */
 async function isRetryableRateLimit(response: Response): Promise<{ retryable: boolean; errorName?: string }> {
   try {
-    const cloned = response.clone();
-    const body = await cloned.json();
-    const errorName = body?.name || "unknown";
+    // No need to clone - we'll retry with a fresh request anyway
+    const body = (await response.json()) as ResendErrorResponse;
+    const errorName = body?.name ?? "unknown";
     // Only rate_limit_exceeded is retryable; quota errors are not
     return { retryable: errorName === "rate_limit_exceeded", errorName };
-  } catch {
-    // If we can't parse body, assume retryable (safer for transient issues)
+  } catch (error) {
+    console.warn(
+      '[send-email] Failed to parse rate limit response:',
+      error instanceof Error ? error.message : String(error)
+    );
+    // Assume retryable on parse error (safer for transient issues)
     return { retryable: true, errorName: "parse_error" };
   }
 }
@@ -65,6 +84,13 @@ async function isRetryableRateLimit(response: Response): Promise<{ retryable: bo
  * - 5xx: Retry with backoff
  * - 4xx (except 429): Fail immediately (permanent error)
  * - Network/timeout errors: Retry with backoff
+ *
+ * @param url - The URL to fetch
+ * @param options - Standard fetch RequestInit options
+ * @param maxRetries - Maximum retry attempts (default: 3). 0 = one attempt, no retries.
+ * @param timeoutMs - Request timeout in milliseconds (default: 30000)
+ * @returns The Response object (may be error response if all retries exhausted)
+ * @throws Error if all retries fail due to network/timeout errors
  */
 async function fetchWithRetry(
   url: string,
@@ -72,6 +98,13 @@ async function fetchWithRetry(
   maxRetries = 3,
   timeoutMs = 30000
 ): Promise<Response> {
+  if (maxRetries < 0) {
+    throw new Error("fetchWithRetry: maxRetries must be >= 0");
+  }
+  if (timeoutMs <= 0) {
+    throw new Error("fetchWithRetry: timeoutMs must be > 0");
+  }
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -108,11 +141,14 @@ async function fetchWithRetry(
       if ((response.status === 429 || response.status >= 500) && attempt < maxRetries) {
         const retryAfterHeader = response.headers.get("retry-after");
         const parsedRetryAfter = retryAfterHeader ? parseInt(retryAfterHeader, 10) : NaN;
+        // Cap retry-after at 10s to stay within Edge Function execution limits
+        // (prevents malicious/misconfigured servers from blocking indefinitely)
+        const MAX_RETRY_DELAY_MS = 10000;
         const baseDelay = !isNaN(parsedRetryAfter)
-          ? parsedRetryAfter * 1000
-          : Math.pow(2, attempt) * 500; // 500ms, 1s, 2s
+          ? Math.min(parsedRetryAfter * 1000, MAX_RETRY_DELAY_MS)
+          : Math.pow(2, attempt) * RETRY_CONFIG.BASE_DELAY_MS;
 
-        const jitter = Math.random() * 300;
+        const jitter = Math.random() * RETRY_CONFIG.MAX_JITTER_MS;
         const delay = baseDelay + jitter;
 
         console.log(
@@ -128,13 +164,13 @@ async function fetchWithRetry(
     } catch (error) {
       clearTimeout(timeoutId);
 
-      const errorName = (error as Error).name;
+      const errorName = error instanceof Error ? error.name : String(error);
       if (errorName === "AbortError") {
         console.log(`[send-email] Request timeout (attempt ${attempt + 1}/${maxRetries + 1})`);
       }
 
       if (attempt < maxRetries) {
-        const delay = Math.pow(2, attempt) * 500 + Math.random() * 300;
+        const delay = Math.pow(2, attempt) * RETRY_CONFIG.BASE_DELAY_MS + Math.random() * RETRY_CONFIG.MAX_JITTER_MS;
         console.log(`[send-email] Retry ${attempt + 1}/${maxRetries} after ${errorName}, waiting ${Math.round(delay)}ms`);
         await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
@@ -614,20 +650,26 @@ Deno.serve(async (req: Request) => {
     // Generate email content
     const { subject, html } = generateEmailHtml(template, templateData || {}, locale);
 
-    // Send email via Resend with automatic retry for transient errors
-    const resendResponse = await fetchWithRetry("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${resendApiKey}`,
-        "Content-Type": "application/json",
+    // Send email via Resend (with retry for rate limits and transient errors)
+    // Worst-case: 4 attempts × 10s timeout + ~4s backoff = ~44s (safe for free tier 60s limit)
+    const resendResponse = await fetchWithRetry(
+      "https://api.resend.com/emails",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: `bareCourier <${resendFromEmail}>`,
+          to: [targetUser.email],
+          subject,
+          html,
+        }),
       },
-      body: JSON.stringify({
-        from: `bareCourier <${resendFromEmail}>`,
-        to: [targetUser.email],
-        subject,
-        html,
-      }),
-    });
+      3,      // maxRetries
+      10000   // 10s timeout (Resend typically responds in <2s)
+    );
 
     if (!resendResponse.ok) {
       const errorData = await resendResponse.json();
