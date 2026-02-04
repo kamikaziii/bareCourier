@@ -1,5 +1,5 @@
 ---
-status: pending
+status: ready
 priority: p3
 issue_id: "225"
 tags: [code-review, typescript, api-design, pr-15]

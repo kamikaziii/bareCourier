@@ -1,5 +1,5 @@
 ---
-status: pending
+status: ready
 priority: p3
 issue_id: "223"
 tags: [code-review, debugging, error-handling, pr-15]

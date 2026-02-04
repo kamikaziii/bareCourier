@@ -1,5 +1,5 @@
 ---
-status: pending
+status: ready
 priority: p1
 issue_id: "216"
 tags: [code-review, performance, scalability, pr-15]

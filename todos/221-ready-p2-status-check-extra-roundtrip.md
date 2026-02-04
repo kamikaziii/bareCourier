@@ -1,5 +1,5 @@
 ---
-status: pending
+status: ready
 priority: p2
 issue_id: "221"
 tags: [code-review, performance, ux, pr-15]

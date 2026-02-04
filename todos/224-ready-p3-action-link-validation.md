@@ -1,5 +1,5 @@
 ---
-status: pending
+status: ready
 priority: p3
 issue_id: "224"
 tags: [code-review, security, defense-in-depth, pr-15]
