@@ -1,6 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { requireCourier } from "../_shared/auth.ts";
+import { mapErrorToUserMessage } from "../_shared/errors.ts";
 
 // ============================================================================
 // Rate Limiting (In-Memory)
@@ -94,46 +96,16 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    // Get the authorization header to verify the caller
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "No authorization header" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // Authenticate caller as courier
+    const auth = await requireCourier(req);
+    if (!auth.success) {
+      return auth.response;
     }
+    const { user, supabaseAdmin: adminClient } = auth.context;
 
-    // Create client with user's JWT to check permissions
+    // Get environment variables needed for email sending
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    // Verify the caller using modern JWT validation (recommended by Supabase)
-    const { data: { user }, error: userError } = await userClient.auth.getUser();
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Invalid or expired session" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Verify caller is a courier
-    const { data: profile, error: profileError } = await userClient
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profileError || profile?.role !== "courier") {
-      return new Response(
-        JSON.stringify({ error: "Only couriers can create clients" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
 
     // Parse and validate request body
     const { email, password, name, phone, default_pickup_location, default_pickup_lat, default_pickup_lng, default_service_type_id, send_invitation } = await req.json();
@@ -144,11 +116,6 @@ Deno.serve(async (req: Request) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    // Create admin client for privileged operations
-    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
 
     // Get site URL for redirect
     const siteUrl = Deno.env.get("SITE_URL") || "https://barecourier.vercel.app";
@@ -194,7 +161,7 @@ Deno.serve(async (req: Request) => {
 
         if (linkError) {
           return new Response(
-            JSON.stringify({ error: linkError.message }),
+            JSON.stringify({ error: mapErrorToUserMessage(linkError, 'create-client:resend-invite') }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
@@ -255,7 +222,7 @@ Deno.serve(async (req: Request) => {
 
       if (linkError) {
         return new Response(
-          JSON.stringify({ error: linkError.message }),
+          JSON.stringify({ error: mapErrorToUserMessage(linkError, 'create-client:generate-invite') }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -311,7 +278,7 @@ Deno.serve(async (req: Request) => {
 
       if (authError) {
         return new Response(
-          JSON.stringify({ error: authError.message }),
+          JSON.stringify({ error: mapErrorToUserMessage(authError, 'create-client:create-user') }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -372,9 +339,11 @@ Deno.serve(async (req: Request) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'An unknown error occurred';
+    // Log the full error server-side for debugging
+    console.error('[create-client] Unhandled error:', error);
+    // Return generic message to client - never expose internal details
     return new Response(
-      JSON.stringify({ error: message }),
+      JSON.stringify({ error: 'An unexpected error occurred. Please try again.' }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

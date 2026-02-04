@@ -135,6 +135,14 @@
       return;
     }
 
+    // Handle partial success (e.g., client created but email failed)
+    const isPartialSuccess = response.status === 207;
+    if (isPartialSuccess) {
+      warning =
+        result.warning ||
+        "Client created, but there was an issue sending the invitation.";
+    }
+
     // If pricing config was set, save it for the new client
     let pricingSaveFailed = false;
     if (pendingPricingConfig && result.user?.id) {
@@ -182,24 +190,32 @@
     }
 
     // Success - show message briefly then redirect
-    if (pricingSaveFailed) {
-      success = result.invitation_sent
-        ? m.invitation_sent({ email: email.trim() })
-        : m.clients_success();
+    // Set success message (207 partial success still shows success for client creation)
+    success = result.invitation_sent
+      ? m.invitation_sent({ email: email.trim() })
+      : m.clients_success();
+
+    // Handle warnings - prioritize 207 warning, then pricing failure
+    if (pricingSaveFailed && !isPartialSuccess) {
       warning =
         "Client created, but pricing configuration failed to save. You can add it later.";
-    } else {
-      success = result.invitation_sent
-        ? m.invitation_sent({ email: email.trim() })
-        : m.clients_success();
+    } else if (pricingSaveFailed && isPartialSuccess) {
+      // Both issues occurred - combine warnings
+      warning =
+        (warning ? warning + " " : "") +
+        "Additionally, pricing configuration failed to save.";
     }
+    // If only isPartialSuccess, warning was already set above
+
     loading = false;
 
+    // Extend redirect timeout if there are warnings to read
+    const hasWarnings = isPartialSuccess || pricingSaveFailed;
     redirectTimeout = setTimeout(
       () => {
         goto(localizeHref("/courier/clients"));
       },
-      pricingSaveFailed ? 3000 : 1500,
+      hasWarnings ? 3000 : 1500,
     );
   }
 </script>

@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { requireCourier } from "../_shared/auth.ts";
 
 /**
  * Check Client Status Edge Function
@@ -19,46 +19,12 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    // Get the authorization header to verify the caller
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "No authorization header" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // Authenticate caller as courier
+    const auth = await requireCourier(req);
+    if (!auth.success) {
+      return auth.response;
     }
-
-    // Create client with user's JWT to check permissions
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    // Verify the caller using modern JWT validation
-    const { data: { user }, error: userError } = await userClient.auth.getUser();
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Invalid or expired session" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Verify caller is a courier
-    const { data: profile, error: profileError } = await userClient
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profileError || profile?.role !== "courier") {
-      return new Response(
-        JSON.stringify({ error: "Only couriers can check client status" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const { supabaseAdmin: adminClient } = auth.context;
 
     // Parse request body
     const { client_id } = await req.json();
@@ -71,10 +37,6 @@ Deno.serve(async (req: Request) => {
     }
 
     // Use admin client to check user's email confirmation status
-    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-
     const { data: { user: clientUser }, error: clientError } = await adminClient.auth.admin.getUserById(client_id);
 
     if (clientError || !clientUser) {

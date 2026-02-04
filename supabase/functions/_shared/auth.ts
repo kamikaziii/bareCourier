@@ -6,6 +6,8 @@
 
 import { timingSafeEqual } from "node:crypto";
 import { Buffer } from "node:buffer";
+import { createClient, SupabaseClient, User } from "jsr:@supabase/supabase-js@2";
+import { getCorsHeaders } from "./cors.ts";
 
 /**
  * Timing-safe comparison for service role key authentication.
@@ -28,4 +30,110 @@ export function isServiceRoleKey(authHeader: string, serviceKey: string): boolea
     Buffer.from(bearerToken),
     Buffer.from(serviceKey)
   );
+}
+
+/**
+ * Context returned on successful courier authentication
+ */
+export interface CourierAuthContext {
+  user: User;
+  supabaseAdmin: SupabaseClient;
+  supabaseUser: SupabaseClient;
+}
+
+/**
+ * Result type for requireCourier()
+ */
+export type CourierAuthResult =
+  | { success: true; context: CourierAuthContext }
+  | { success: false; response: Response };
+
+/**
+ * Validates that the request is from an authenticated courier.
+ *
+ * Performs the following checks:
+ * 1. Authorization header is present
+ * 2. User is authenticated (valid JWT via getUser)
+ * 3. User has courier role in profiles table
+ *
+ * @param req - The incoming request
+ * @returns Either success with auth context, or failure with pre-built Response
+ *
+ * @example
+ * ```typescript
+ * const auth = await requireCourier(req);
+ * if (!auth.success) {
+ *   return auth.response;
+ * }
+ * const { user, supabaseAdmin } = auth.context;
+ * // Function-specific logic...
+ * ```
+ */
+export async function requireCourier(req: Request): Promise<CourierAuthResult> {
+  const corsHeaders = getCorsHeaders(req);
+
+  // Check for authorization header
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    return {
+      success: false,
+      response: new Response(
+        JSON.stringify({ error: "No authorization header" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      ),
+    };
+  }
+
+  // Get environment variables
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+  // Create client with user's JWT to check permissions
+  const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
+
+  // Verify the caller using modern JWT validation (recommended by Supabase)
+  const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
+  if (userError || !user) {
+    return {
+      success: false,
+      response: new Response(
+        JSON.stringify({ error: "Invalid or expired session" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      ),
+    };
+  }
+
+  // Verify caller is a courier
+  const { data: profile, error: profileError } = await supabaseUser
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profileError || profile?.role !== "courier") {
+    return {
+      success: false,
+      response: new Response(
+        JSON.stringify({ error: "Only couriers can perform this action" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      ),
+    };
+  }
+
+  // Create admin client for privileged operations
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  return {
+    success: true,
+    context: {
+      user,
+      supabaseAdmin,
+      supabaseUser,
+    },
+  };
 }
