@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "222"
 tags: [code-review, security, rate-limiting, pr-15]
@@ -95,15 +95,16 @@ if (recentInvitation) {
 
 ## Acceptance Criteria
 
-- [ ] Rate limit enforced (e.g., 1 invitation per email per hour)
-- [ ] Clear error message returned when rate limited
-- [ ] UI handles 429 response gracefully
+- [x] Rate limit enforced (e.g., 1 invitation per email per hour)
+- [x] Clear error message returned when rate limited
+- [x] UI handles 429 response gracefully (existing error handling displays the message)
 
 ## Work Log
 
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-02-04 | Created from PR #15 review | Security agent flagged abuse potential |
+| 2026-02-04 | Implemented in-memory rate limiting | Added 1-hour rate limit per email address. In-memory Map resets on cold start but provides basic protection. Existing UI error handling displays the rate limit message. |
 
 ## Resources
 

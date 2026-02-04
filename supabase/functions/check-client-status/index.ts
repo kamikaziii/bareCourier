@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { getCorsHeaders } from "../_shared/cors.ts";
 
 /**
  * Check Client Status Edge Function
@@ -8,21 +9,6 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
  * Used to determine if "Resend Invitation" button should be shown.
  */
 
-function getCorsHeaders(req: Request) {
-  const origin = req.headers.get("Origin") || "";
-
-  const isAllowed =
-    origin.startsWith("http://localhost:") ||
-    origin === "https://barecourier.vercel.app" ||
-    (origin.endsWith(".vercel.app") && origin.includes("barecourier"));
-
-  const allowedOrigin = isAllowed ? origin : "https://barecourier.vercel.app";
-
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  };
-}
 
 Deno.serve(async (req: Request) => {
   const corsHeaders = getCorsHeaders(req);
@@ -98,6 +84,20 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Verify the target user is actually a client (prevents IDOR)
+    const { data: clientProfile } = await adminClient
+      .from("profiles")
+      .select("role")
+      .eq("id", client_id)
+      .single();
+
+    if (!clientProfile || clientProfile.role !== "client") {
+      return new Response(
+        JSON.stringify({ error: "Client not found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     return new Response(
       JSON.stringify({
         client_id: clientUser.id,
@@ -109,8 +109,9 @@ Deno.serve(async (req: Request) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'An unknown error occurred';
     return new Response(
-      JSON.stringify({ error: (error as Error).message }),
+      JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

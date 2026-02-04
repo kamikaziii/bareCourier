@@ -1,6 +1,80 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient, SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+
+// ============================================================================
+// Rate Limiting (In-Memory)
+// ============================================================================
+// NOTE: This is an in-memory rate limit that resets on function cold start.
+// For production-grade rate limiting, consider using a database table.
+// This provides immediate protection against basic abuse.
+
+const rateLimitMap = new Map<string, number>();
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour in milliseconds
+
+/**
+ * Checks if an email address is rate limited.
+ * Returns true if an invitation was sent to this email within the rate limit window.
+ */
+function isRateLimited(email: string): boolean {
+  const normalizedEmail = email.toLowerCase();
+  const lastSent = rateLimitMap.get(normalizedEmail);
+  if (lastSent && Date.now() - lastSent < RATE_LIMIT_WINDOW_MS) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Records that an invitation email was sent to the given address.
+ */
+function recordEmailSent(email: string): void {
+  rateLimitMap.set(email.toLowerCase(), Date.now());
+}
+
+/**
+ * Sends a client invitation email via the send-email Edge Function.
+ * Fetches the courier's name for personalization before sending.
+ */
+async function sendInvitationEmail(params: {
+  adminClient: SupabaseClient;
+  supabaseUrl: string;
+  serviceKey: string;
+  recipientUserId: string;
+  courierUserId: string;
+  actionLink: string;
+  clientName: string;
+  siteUrl: string;
+}): Promise<{ success: boolean; error?: string }> {
+  // Fetch courier name for personalized email
+  const { data: courierProfile } = await params.adminClient
+    .from("profiles")
+    .select("name")
+    .eq("id", params.courierUserId)
+    .single();
+
+  const response = await fetch(`${params.supabaseUrl}/functions/v1/send-email`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${params.serviceKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      user_id: params.recipientUserId,
+      template: "client_invitation",
+      data: {
+        action_link: params.actionLink,
+        client_name: params.clientName,
+        courier_name: courierProfile?.name || "Your courier",
+        app_url: params.siteUrl,
+      },
+    }),
+  });
+
+  return response.ok
+    ? { success: true }
+    : { success: false, error: "Failed to send invitation email" };
+}
 
 // NOTE: This function uses verify_jwt: false (set in Supabase Dashboard or config.toml)
 //
@@ -85,9 +159,18 @@ Deno.serve(async (req: Request) => {
 
     if (send_invitation) {
       // === INVITATION FLOW ===
-      // Check if user already exists
-      const { data: existingUsers } = await adminClient.auth.admin.listUsers();
-      const existingUser = existingUsers?.users?.find(u => u.email === email);
+
+      // Rate limit check: prevent spam/abuse
+      if (isRateLimited(email)) {
+        return new Response(
+          JSON.stringify({ error: "Please wait before sending another invitation to this email" }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Check if user already exists using O(1) indexed lookup (not O(n) listUsers scan)
+      const { data: existingUser } = await adminClient.auth.admin.getUserByEmail(email);
+      // Note: getUserByEmail returns { data: null, error } when user doesn't exist, which is fine
 
       if (existingUser) {
         if (existingUser.email_confirmed_at) {
@@ -115,13 +198,6 @@ Deno.serve(async (req: Request) => {
           );
         }
 
-        // Fetch courier name for personalized email
-        const { data: courierProfile } = await adminClient
-          .from("profiles")
-          .select("name")
-          .eq("id", user.id)
-          .single();
-
         // Get existing client's name from profile
         const { data: clientProfile } = await adminClient
           .from("profiles")
@@ -130,30 +206,26 @@ Deno.serve(async (req: Request) => {
           .single();
 
         // Send invitation email
-        const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${supabaseServiceKey}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            user_id: existingUser.id,
-            template: "client_invitation",
-            data: {
-              action_link: linkData.properties.action_link,
-              client_name: clientProfile?.name || name,
-              courier_name: courierProfile?.name || "Your courier",
-              app_url: siteUrl
-            }
-          })
+        const emailResult = await sendInvitationEmail({
+          adminClient,
+          supabaseUrl,
+          serviceKey: supabaseServiceKey,
+          recipientUserId: existingUser.id,
+          courierUserId: user.id,
+          actionLink: linkData.properties.action_link,
+          clientName: clientProfile?.name || name,
+          siteUrl,
         });
 
-        if (!emailResponse.ok) {
+        if (!emailResult.success) {
           return new Response(
-            JSON.stringify({ error: "Failed to send invitation email" }),
+            JSON.stringify({ error: emailResult.error }),
             { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
+
+        // Record successful send for rate limiting
+        recordEmailSent(email);
 
         return new Response(
           JSON.stringify({
@@ -190,38 +262,27 @@ Deno.serve(async (req: Request) => {
       authData = { user: linkData.user ? { id: linkData.user.id, email: linkData.user.email } : null };
       invitationSent = true;
 
-      // Fetch courier name for personalized email
-      const { data: courierProfile } = await adminClient
-        .from("profiles")
-        .select("name")
-        .eq("id", user.id)
-        .single();
-
       // Send invitation email
-      const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${supabaseServiceKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          user_id: linkData.user.id,
-          template: "client_invitation",
-          data: {
-            action_link: linkData.properties.action_link,
-            client_name: name,
-            courier_name: courierProfile?.name || "Your courier",
-            app_url: siteUrl
-          }
-        })
+      const emailResult = await sendInvitationEmail({
+        adminClient,
+        supabaseUrl,
+        serviceKey: supabaseServiceKey,
+        recipientUserId: linkData.user.id,
+        courierUserId: user.id,
+        actionLink: linkData.properties.action_link,
+        clientName: name,
+        siteUrl,
       });
 
-      if (!emailResponse.ok) {
+      if (!emailResult.success) {
         return new Response(
-          JSON.stringify({ error: "Failed to send invitation email" }),
+          JSON.stringify({ error: emailResult.error }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
+      // Record successful send for rate limiting
+      recordEmailSent(email);
 
     } else {
       // === PASSWORD FLOW (existing behavior) ===
@@ -302,8 +363,9 @@ Deno.serve(async (req: Request) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'An unknown error occurred';
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

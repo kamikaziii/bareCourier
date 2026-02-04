@@ -1,3 +1,13 @@
+<script lang="ts" module>
+  // Module-level cache for client status checks
+  // This cache persists across component instances within the same session
+  const clientStatusCache = new Map<
+    string,
+    { isConfirmed: boolean; email: string | null; checkedAt: number }
+  >();
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+</script>
+
 <script lang="ts">
   import { enhance } from "$app/forms";
   import { goto, invalidateAll, preloadData } from "$app/navigation";
@@ -73,6 +83,17 @@
   });
 
   async function checkClientStatus() {
+    const clientId = data.client.id;
+
+    // Check cache first
+    const cached = clientStatusCache.get(clientId);
+    if (cached && Date.now() - cached.checkedAt < CACHE_TTL) {
+      clientIsConfirmed = cached.isConfirmed;
+      clientEmail = cached.email;
+      checkingStatus = false;
+      return;
+    }
+
     checkingStatus = true;
     try {
       const { data: sessionData } = await data.supabase.auth.getSession();
@@ -91,7 +112,7 @@
             "Content-Type": "application/json",
             Authorization: `Bearer ${accessToken}`,
           },
-          body: JSON.stringify({ client_id: data.client.id }),
+          body: JSON.stringify({ client_id: clientId }),
         },
       );
 
@@ -99,9 +120,17 @@
         const result = await response.json();
         clientIsConfirmed = result.is_confirmed;
         clientEmail = result.email;
+
+        // Cache the result
+        clientStatusCache.set(clientId, {
+          isConfirmed: result.is_confirmed,
+          email: result.email,
+          checkedAt: Date.now(),
+        });
       }
-    } catch {
-      // Silently fail - just don't show the resend button
+    } catch (err) {
+      // Status check failure is non-critical - button simply won't show
+      console.debug("Failed to check client invitation status:", err);
     }
     checkingStatus = false;
   }
@@ -543,18 +572,24 @@
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                   <Mail class="size-4 text-amber-500" />
-                  <span class="text-sm text-amber-600">{m.invitation_pending()}</span>
+                  <span class="text-sm text-amber-600"
+                    >{m.invitation_pending()}</span
+                  >
                 </div>
               </div>
 
               {#if resendError}
-                <div class="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                <div
+                  class="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                >
                   {resendError}
                 </div>
               {/if}
 
               {#if resendSuccess}
-                <div class="rounded-md bg-green-500/10 px-3 py-2 text-sm text-green-600">
+                <div
+                  class="rounded-md bg-green-500/10 px-3 py-2 text-sm text-green-600"
+                >
                   {m.invitation_sent({ email: clientEmail || "" })}
                 </div>
               {:else}

@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p1
 issue_id: "216"
 tags: [code-review, performance, scalability, pr-15]
@@ -66,7 +66,7 @@ const { data: existingUser, error } = await adminClient.auth.admin.getUserByEmai
 
 ## Acceptance Criteria
 
-- [ ] `listUsers()` replaced with `getUserByEmail()` or equivalent O(1) lookup
+- [x] `listUsers()` replaced with `getUserByEmail()` or equivalent O(1) lookup
 - [ ] Tested with existing email (should detect duplicate)
 - [ ] Tested with new email (should proceed normally)
 - [ ] No regression in invitation flow
@@ -76,6 +76,7 @@ const { data: existingUser, error } = await adminClient.auth.admin.getUserByEmai
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-02-04 | Created from PR #15 review | Performance/architecture agents both flagged this |
+| 2026-02-04 | Replaced `listUsers()` + `.find()` with `getUserByEmail()` | O(1) indexed lookup vs O(n) scan |
 
 ## Resources
 

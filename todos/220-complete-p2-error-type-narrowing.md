@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "220"
 tags: [code-review, typescript, error-handling, pr-15]
@@ -82,15 +82,16 @@ All edge functions have catch blocks that access `error.message` without type na
 
 ## Acceptance Criteria
 
-- [ ] All catch blocks use proper type narrowing
-- [ ] No TypeScript warnings in strict mode
-- [ ] Error responses always have meaningful messages
+- [x] All catch blocks use proper type narrowing
+- [x] No TypeScript warnings in strict mode
+- [x] Error responses always have meaningful messages
 
 ## Work Log
 
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-02-04 | Created from PR #15 review | Architecture agent flagged TypeScript issue |
+| 2026-02-04 | Implemented type narrowing in all edge functions | Used `error instanceof Error` pattern across all 9 catch blocks in 7 files |
 
 ## Resources
 

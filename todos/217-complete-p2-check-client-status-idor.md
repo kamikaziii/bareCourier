@@ -1,9 +1,10 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "217"
 tags: [code-review, security, pr-15]
 dependencies: []
+completed_at: 2026-02-04
 ---
 
 # P2: IDOR Vulnerability in check-client-status Endpoint
@@ -87,15 +88,16 @@ if (!clientProfile || clientProfile.role !== "client") {
 
 ## Acceptance Criteria
 
-- [ ] Endpoint returns 404 for non-client user IDs
-- [ ] Endpoint works normally for client user IDs
-- [ ] UI handles 404 gracefully (doesn't break)
+- [x] Endpoint returns 404 for non-client user IDs
+- [x] Endpoint works normally for client user IDs
+- [x] UI handles 404 gracefully (doesn't break)
 
 ## Work Log
 
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-02-04 | Created from PR #15 review | Security agent flagged IDOR risk |
+| 2026-02-04 | Implemented Option A fix | Added role validation after getUserById call |
 
 ## Resources
 

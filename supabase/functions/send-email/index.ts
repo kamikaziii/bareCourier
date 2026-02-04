@@ -338,16 +338,46 @@ function wrapEmail(options: EmailWrapOptions): string {
 </html>`;
 }
 
+/**
+ * Validates that an action URL is from a trusted domain.
+ * Defense-in-depth: even though action_link comes from Supabase,
+ * we validate to prevent injection attacks if the source is ever compromised.
+ */
+function isValidActionUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    // Allow http for localhost (development), require https for production
+    const isLocalhost = parsed.hostname === 'localhost';
+    const isValidProtocol = isLocalhost
+      ? (parsed.protocol === 'http:' || parsed.protocol === 'https:')
+      : parsed.protocol === 'https:';
+
+    return isValidProtocol &&
+           (parsed.hostname.endsWith('supabase.co') ||
+            parsed.hostname === 'barecourier.vercel.app' ||
+            parsed.hostname.endsWith('.vercel.app') ||
+            isLocalhost);
+  } catch {
+    return false;
+  }
+}
+
 function generateEmailHtml(
   template: EmailTemplate,
   rawData: Record<string, string>,
   locale: SupportedLocale = "pt-PT"
 ): { subject: string; html: string } {
+  // Validate action_link if present (defense-in-depth)
+  if (rawData.action_link && !isValidActionUrl(rawData.action_link)) {
+    throw new Error('Invalid action URL');
+  }
+
   // Escape all user-provided data to prevent XSS
   const data: Record<string, string> = {};
   for (const [key, value] of Object.entries(rawData)) {
-    // app_url and locale are trusted internal values, don't escape them
-    if (key === "app_url" || key === "locale") {
+    // app_url, locale, and action_link are trusted internal values, don't escape them
+    // (action_link is validated above)
+    if (key === "app_url" || key === "locale" || key === "action_link") {
       data[key] = value;
     } else {
       data[key] = escapeHtml(value);
