@@ -76,7 +76,7 @@
             if (result.type === "success") {
               resetNewForm();
               await invalidateAll();
-              toast.success(m.toast_pricing_saved());
+              toast.success(m.toast_service_type_created());
             }
           };
         }}
@@ -161,7 +161,7 @@
                     if (result.type === "success") {
                       editingTypeId = null;
                       await invalidateAll();
-                      toast.success(m.toast_pricing_saved());
+                      toast.success(m.toast_service_type_updated());
                     }
                   };
                 }}
@@ -237,7 +237,7 @@
                           await applyAction(result);
                           if (result.type === "success") {
                             await invalidateAll();
-                            toast.success(m.toast_pricing_saved());
+                            toast.success(m.toast_service_type_updated());
                           }
                         };
                       }}
@@ -317,7 +317,7 @@
             deletingTypeId = null;
             if (result.type === "success") {
               await invalidateAll();
-              toast.success(m.toast_pricing_saved());
+              toast.success(m.toast_service_type_deleted());
             }
           };
         }}

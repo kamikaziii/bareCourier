@@ -184,10 +184,7 @@
     }
 
     if (pricingSaveFailed) {
-      toast.warning(
-        "Client created, but pricing configuration failed to save. You can add it later.",
-        { duration: 6000 },
-      );
+      toast.warning(m.toast_client_pricing_failed(), { duration: 6000 });
     }
 
     loading = false;

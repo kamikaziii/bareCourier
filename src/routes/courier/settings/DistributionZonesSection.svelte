@@ -304,7 +304,7 @@
           await applyAction(result);
           if (result.type === "success") {
             await invalidateAll();
-            toast.success(m.toast_pricing_saved());
+            toast.success(m.toast_zones_saved());
           }
         };
       }}

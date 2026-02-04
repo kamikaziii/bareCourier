@@ -793,5 +793,6 @@
   "toast_service_type_deleted": "Service type deleted",
 
   "toast_zones_saved": "Distribution zones saved",
-  "toast_zone_pricing_saved": "Zone pricing saved"
+  "toast_zone_pricing_saved": "Zone pricing saved",
+  "toast_client_pricing_failed": "Client created, but pricing configuration failed to save. You can add it later."
 }

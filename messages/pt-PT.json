@@ -793,5 +793,6 @@
   "toast_service_type_deleted": "Tipo de serviço eliminado",
 
   "toast_zones_saved": "Zonas de distribuição guardadas",
-  "toast_zone_pricing_saved": "Preços de zona guardados"
+  "toast_zone_pricing_saved": "Preços de zona guardados",
+  "toast_client_pricing_failed": "Cliente criado, mas a configuração de preços falhou ao guardar. Pode adicioná-la mais tarde."
 }
