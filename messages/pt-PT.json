@@ -742,5 +742,54 @@
   "invitation_contact_courier": "Por favor contacte o seu estafeta para um novo convite",
   "verifying_invitation": "A verificar convite...",
   "client_not_confirmed": "Convite pendente",
-  "client_confirmed": "Ativo"
+  "client_confirmed": "Ativo",
+
+  "toast_loading": "A processar...",
+  "toast_success_generic": "Operação concluída com sucesso",
+  "toast_error_generic": "Algo correu mal. Por favor, tente novamente.",
+  "toast_error_network": "Erro de rede. Verifique a ligação.",
+
+  "toast_settings_saved": "Definições guardadas",
+  "toast_profile_updated": "Perfil atualizado",
+
+  "toast_client_created": "Cliente criado com sucesso",
+  "toast_client_updated": "Cliente atualizado",
+  "toast_client_activated": "Cliente ativado",
+  "toast_client_deactivated": "Cliente desativado",
+
+  "toast_service_created": "Serviço criado",
+  "toast_service_updated": "Serviço atualizado",
+  "toast_service_delivered": "Serviço marcado como entregue",
+  "toast_service_deleted": "Serviço eliminado",
+  "toast_service_status_updated": "Estado do serviço atualizado",
+
+  "toast_request_created": "Pedido enviado",
+  "toast_request_accepted": "Pedido aceite",
+  "toast_request_rejected": "Pedido rejeitado",
+  "toast_request_suggested": "Data alternativa sugerida",
+  "toast_request_cancelled": "Pedido cancelado",
+  "toast_suggestion_accepted": "Sugestão aceite",
+  "toast_suggestion_declined": "Sugestão recusada",
+
+  "toast_password_changed": "Password alterada com sucesso",
+  "toast_password_reset_sent": "Email de redefinição enviado",
+  "toast_password_reset_success": "Password redefinida com sucesso",
+
+  "toast_batch_success": "{count} itens atualizados",
+  "toast_batch_partial": "{success} com sucesso, {failed} falharam",
+  "toast_batch_reschedule_success": "{count} serviços reagendados",
+  "toast_batch_accept_success": "{count} pedidos aceites",
+  "toast_batch_delivered_success": "{count} serviços marcados como entregues",
+
+  "toast_pricing_saved": "Configuração de preços guardada",
+  "toast_scheduling_saved": "Definições de agendamento guardadas",
+  "toast_urgency_fee_deleted": "Taxa de urgência eliminada",
+  "toast_urgency_fee_in_use": "Não é possível eliminar: taxa de urgência em uso",
+
+  "toast_service_type_created": "Tipo de serviço criado",
+  "toast_service_type_updated": "Tipo de serviço atualizado",
+  "toast_service_type_deleted": "Tipo de serviço eliminado",
+
+  "toast_zones_saved": "Zonas de distribuição guardadas",
+  "toast_zone_pricing_saved": "Preços de zona guardados"
 }

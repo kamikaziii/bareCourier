@@ -742,5 +742,54 @@
   "invitation_contact_courier": "Please contact your courier for a new invitation",
   "verifying_invitation": "Verifying invitation...",
   "client_not_confirmed": "Pending invitation",
-  "client_confirmed": "Active"
+  "client_confirmed": "Active",
+
+  "toast_loading": "Processing...",
+  "toast_success_generic": "Operation completed successfully",
+  "toast_error_generic": "Something went wrong. Please try again.",
+  "toast_error_network": "Network error. Check your connection.",
+
+  "toast_settings_saved": "Settings saved",
+  "toast_profile_updated": "Profile updated",
+
+  "toast_client_created": "Client created successfully",
+  "toast_client_updated": "Client updated",
+  "toast_client_activated": "Client activated",
+  "toast_client_deactivated": "Client deactivated",
+
+  "toast_service_created": "Service created",
+  "toast_service_updated": "Service updated",
+  "toast_service_delivered": "Service marked as delivered",
+  "toast_service_deleted": "Service deleted",
+  "toast_service_status_updated": "Service status updated",
+
+  "toast_request_created": "Request submitted",
+  "toast_request_accepted": "Request accepted",
+  "toast_request_rejected": "Request rejected",
+  "toast_request_suggested": "Alternative date suggested",
+  "toast_request_cancelled": "Request cancelled",
+  "toast_suggestion_accepted": "Suggestion accepted",
+  "toast_suggestion_declined": "Suggestion declined",
+
+  "toast_password_changed": "Password changed successfully",
+  "toast_password_reset_sent": "Password reset email sent",
+  "toast_password_reset_success": "Password reset successfully",
+
+  "toast_batch_success": "{count} items updated",
+  "toast_batch_partial": "{success} succeeded, {failed} failed",
+  "toast_batch_reschedule_success": "{count} services rescheduled",
+  "toast_batch_accept_success": "{count} requests accepted",
+  "toast_batch_delivered_success": "{count} services marked as delivered",
+
+  "toast_pricing_saved": "Pricing configuration saved",
+  "toast_scheduling_saved": "Scheduling settings saved",
+  "toast_urgency_fee_deleted": "Urgency fee deleted",
+  "toast_urgency_fee_in_use": "Cannot delete: urgency fee is in use",
+
+  "toast_service_type_created": "Service type created",
+  "toast_service_type_updated": "Service type updated",
+  "toast_service_type_deleted": "Service type deleted",
+
+  "toast_zones_saved": "Distribution zones saved",
+  "toast_zone_pricing_saved": "Zone pricing saved"
 }

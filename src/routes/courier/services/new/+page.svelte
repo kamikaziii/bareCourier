@@ -24,6 +24,7 @@
   } from "$lib/services/type-pricing.js";
   import { extractMunicipalityFromAddress } from "$lib/services/municipality.js";
   import * as m from "$lib/paraglide/messages.js";
+  import { toast } from "$lib/utils/toast.js";
   import { formatCurrency } from "$lib/utils.js";
   import { localizeHref } from "$lib/paraglide/runtime.js";
   import { ArrowLeft } from "@lucide/svelte";
@@ -61,8 +62,6 @@
   let recipientPhone = $state("");
   let customerReference = $state("");
   let formLoading = $state(false);
-  let formError = $state("");
-  let formWarning = $state("");
 
   // Coordinates and distance
   let pickupCoords = $state<[number, number] | null>(null);
@@ -149,8 +148,6 @@
 
   function handleFormSubmit() {
     formLoading = true;
-    formError = "";
-    formWarning = "";
     return async ({
       result,
     }: {
@@ -160,13 +157,14 @@
       };
     }) => {
       if (result.type === "failure" && result.data?.error) {
-        formError = result.data.error;
+        toast.error(result.data.error, { duration: Infinity });
         formLoading = false;
       } else if (result.type === "success" && result.data?.success) {
-        const params = result.data.warning
-          ? `?warning=${encodeURIComponent(result.data.warning)}`
-          : "";
-        goto(localizeHref("/courier/services") + params);
+        toast.success(m.toast_service_created());
+        if (result.data.warning) {
+          toast.warning(result.data.warning, { duration: 6000 });
+        }
+        goto(localizeHref("/courier/services"));
       } else {
         formLoading = false;
       }
@@ -333,14 +331,6 @@
           use:enhance={handleFormSubmit}
           class="space-y-4"
         >
-          {#if formError}
-            <div
-              class="rounded-md bg-destructive/10 p-3 text-sm text-destructive"
-            >
-              {formError}
-            </div>
-          {/if}
-
           <div class="space-y-2">
             <Label for="client">{m.form_client()} *</Label>
             <select

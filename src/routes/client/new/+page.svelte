@@ -21,6 +21,7 @@
   import { isInDistributionZone } from "$lib/services/type-pricing.js";
   import { extractMunicipalityFromAddress } from "$lib/services/municipality.js";
   import * as m from "$lib/paraglide/messages.js";
+  import { toast } from "$lib/utils/toast.js";
   import { formatCurrency } from "$lib/utils.js";
   import { localizeHref } from "$lib/paraglide/runtime.js";
   import type { PageData } from "./$types";
@@ -43,7 +44,6 @@
   let recipientPhone = $state("");
   let customerReference = $state("");
   let loading = $state(false);
-  let error = $state("");
 
   // Coordinates for maps - initialize with stored coordinates if available
   let pickupCoords = $state<[number, number] | null>(
@@ -230,7 +230,6 @@
 
   function handleFormSubmit() {
     loading = true;
-    error = "";
     return async ({
       result,
     }: {
@@ -238,13 +237,15 @@
     }) => {
       if (result.type === "failure" && result.data?.error) {
         // Use localized message for specific error codes
-        if (result.data.error === "no_service_type_assigned") {
-          error = m.client_no_service_type_error();
-        } else {
-          error = result.data.error;
-        }
+        const errorMessage =
+          result.data.error === "no_service_type_assigned"
+            ? m.client_no_service_type_error()
+            : result.data.error;
+        toast.error(errorMessage, { duration: Infinity });
         loading = false;
       } else if (result.type === "redirect") {
+        // Show success toast before redirect
+        toast.success(m.toast_request_created());
         // Redirect is handled automatically by SvelteKit
       } else {
         loading = false;
@@ -262,14 +263,6 @@
   <Card.Root>
     <Card.Content class="pt-6">
       <form method="POST" use:enhance={handleFormSubmit} class="space-y-4">
-        {#if error}
-          <div
-            class="rounded-md bg-destructive/10 p-3 text-sm text-destructive"
-          >
-            {error}
-          </div>
-        {/if}
-
         <div class="space-y-2">
           <Label for="pickup">{m.form_pickup_location()}</Label>
           {#if hasMapbox}

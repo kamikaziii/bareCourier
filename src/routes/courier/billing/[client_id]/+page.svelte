@@ -6,9 +6,10 @@
   import { Label } from "$lib/components/ui/label/index.js";
   import { Separator } from "$lib/components/ui/separator/index.js";
   import * as m from "$lib/paraglide/messages.js";
+  import { toast } from "$lib/utils/toast.js";
   import { localizeHref } from "$lib/paraglide/runtime.js";
   import { formatDate, formatCurrency, formatDistance } from "$lib/utils.js";
-  import type { PageData, ActionData } from "./$types";
+  import type { PageData } from "./$types";
   import type { PricingModel, Service } from "$lib/database.types";
   import {
     ArrowLeft,
@@ -22,7 +23,7 @@
   } from "@lucide/svelte";
   import { calculateVat } from "$lib/services/pricing.js";
 
-  let { data, form }: { data: PageData; form: ActionData } = $props();
+  let { data }: { data: PageData } = $props();
 
   type BillingService = Pick<
     Service,
@@ -260,6 +261,42 @@
     }
   }
 
+  function handlePricingSubmit() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return async ({
+      result,
+      update,
+    }: {
+      result: any;
+      update: () => Promise<void>;
+    }) => {
+      await update();
+      if (result.type === "success" && result.data?.success) {
+        toast.success(m.toast_pricing_saved());
+      } else if (result.type === "failure" && result.data?.error) {
+        toast.error(result.data.error, { duration: Infinity });
+      }
+    };
+  }
+
+  function handleZonesFormSubmit() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return async ({
+      result,
+      update,
+    }: {
+      result: any;
+      update: () => Promise<void>;
+    }) => {
+      await update();
+      if (result.type === "success" && result.data?.success) {
+        toast.success(m.toast_pricing_saved());
+      } else if (result.type === "failure" && result.data?.error) {
+        toast.error(result.data.error, { duration: Infinity });
+      }
+    };
+  }
+
   function handleRecalculate() {
     recalculating = true;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -267,6 +304,9 @@
       recalculating = false;
       if (result.type === "success" && result.data?.success) {
         await loadServices();
+        toast.success(m.toast_pricing_saved());
+      } else if (result.type === "failure" && result.data?.error) {
+        toast.error(result.data.error, { duration: Infinity });
       }
     };
   }
@@ -357,18 +397,6 @@
     </div>
   </div>
 
-  {#if form?.error}
-    <div class="rounded-md bg-destructive/10 p-3 text-destructive">
-      {form.error}
-    </div>
-  {/if}
-
-  {#if form?.success}
-    <div class="rounded-md bg-green-500/10 p-3 text-green-600">
-      {m.billing_saved()}
-    </div>
-  {/if}
-
   <div class="grid gap-6 lg:grid-cols-2">
     <!-- Pricing Configuration -->
     <Card.Root>
@@ -380,7 +408,7 @@
         <form
           method="POST"
           action="?/savePricing"
-          use:enhance
+          use:enhance={handlePricingSubmit}
           class="space-y-4"
         >
           <div class="space-y-2">
@@ -457,7 +485,7 @@
           <form
             method="POST"
             action="?/saveZones"
-            use:enhance
+            use:enhance={handleZonesFormSubmit}
             onsubmit={handleZonesSubmit}
             class="space-y-4"
           >

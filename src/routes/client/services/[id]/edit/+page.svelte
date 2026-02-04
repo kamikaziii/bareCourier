@@ -20,6 +20,7 @@
   import { extractMunicipalityFromAddress } from "$lib/services/municipality.js";
   import { formatCurrency } from "$lib/utils.js";
   import * as m from "$lib/paraglide/messages.js";
+  import { toast } from "$lib/utils/toast.js";
   import { localizeHref } from "$lib/paraglide/runtime.js";
   import type { PageData } from "./$types";
   import type { TimeSlot, UrgencyFee } from "$lib/database.types.js";
@@ -40,7 +41,6 @@
   let recipientPhone = $state(service.recipient_phone || "");
   let customerReference = $state(service.customer_reference || "");
   let loading = $state(false);
-  let error = $state("");
 
   // Coordinates for maps - pre-populate from service
   let pickupCoords = $state<[number, number] | null>(
@@ -239,16 +239,16 @@
 
   function handleFormSubmit() {
     loading = true;
-    error = "";
     return async ({
       result,
     }: {
       result: { type: string; data?: { error?: string } };
     }) => {
       if (result.type === "failure" && result.data?.error) {
-        error = result.data.error;
+        toast.error(result.data.error, { duration: Infinity });
         loading = false;
       } else if (result.type === "redirect") {
+        toast.success(m.toast_service_updated());
         // Redirect is handled automatically by SvelteKit
       } else {
         loading = false;
@@ -273,14 +273,6 @@
     <Card.Root>
       <Card.Content class="pt-6">
         <form method="POST" use:enhance={handleFormSubmit} class="space-y-4">
-          {#if error}
-            <div
-              class="rounded-md bg-destructive/10 p-3 text-sm text-destructive"
-            >
-              {error}
-            </div>
-          {/if}
-
           <div class="space-y-2">
             <Label for="pickup">{m.form_pickup_location()}</Label>
             {#if hasMapbox}
