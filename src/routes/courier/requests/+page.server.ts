@@ -561,7 +561,7 @@ export const actions: Actions = {
 
 		const results = await Promise.all(updatePromises);
 		const successful = results.filter((r): r is Extract<typeof r, { success: true }> => r.success);
-		const failed = results.filter((r): r is Extract<typeof r, { success: false }> => !r.success);
+		const failed = results.filter((r) => !r.success);
 
 		// Send notifications in chunks to avoid overwhelming the system
 		if (successful.length > 0) {
@@ -593,10 +593,21 @@ export const actions: Actions = {
 			}
 		}
 
+		// Return honest response for partial failures
+		if (failed.length > 0) {
+			return {
+				success: false,
+				partial: successful.length > 0,
+				accepted: successful.length,
+				failed: failed.length,
+				failedIds: failed.map((r) => r.id),
+				error: `${failed.length} of ${serviceIds.length} operations failed`
+			};
+		}
+
 		return {
 			success: true,
-			accepted: successful.length,
-			failed: failed.length
+			accepted: successful.length
 		};
 	},
 
