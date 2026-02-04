@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p3
 issue_id: "225"
 tags: [observability, code-review, notifications, pr-13]

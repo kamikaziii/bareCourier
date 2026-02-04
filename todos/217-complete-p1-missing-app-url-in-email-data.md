@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p1
 issue_id: "217"
 tags: [bug, code-review, notifications, email, pr-13]

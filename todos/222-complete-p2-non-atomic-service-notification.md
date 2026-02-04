@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "222"
 tags: [data-integrity, code-review, notifications, pr-13]

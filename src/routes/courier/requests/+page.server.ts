@@ -9,6 +9,9 @@ import { notifyClient } from '$lib/services/notifications';
 // Number of days to scan ahead when finding the next compatible day
 const LOOKAHEAD_DAYS = 14;
 
+// Process notifications in chunks to avoid overwhelming the system
+const NOTIFICATION_CHUNK_SIZE = 5;
+
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
 	const { session, user } = await safeGetSession();
 	if (!session || !user) {
@@ -538,27 +541,30 @@ export const actions: Actions = {
 		const successful = results.filter((r): r is Extract<typeof r, { success: true }> => r.success);
 		const failed = results.filter((r): r is Extract<typeof r, { success: false }> => !r.success);
 
-		// Send notifications in parallel for successful updates
+		// Send notifications in chunks to avoid overwhelming the system
 		if (successful.length > 0) {
-			await Promise.all(
-				successful.map(({ id, clientId, pickup_location, delivery_location, scheduled_date }) =>
-					notifyClient({
-						session,
-						clientId,
-						serviceId: id,
-						category: 'schedule_change',
-						title: 'Pedido Aceite',
-						message: 'O seu pedido de serviço foi aceite pelo estafeta. Verifique os detalhes na aplicação.',
-						emailTemplate: 'request_accepted',
-						emailData: {
-							pickup_location,
-							delivery_location,
-							scheduled_date: scheduled_date || '',
-							app_url: PUBLIC_SUPABASE_URL.replace('/functions/v1', '')
-						}
-					})
-				)
-			);
+			for (let i = 0; i < successful.length; i += NOTIFICATION_CHUNK_SIZE) {
+				const chunk = successful.slice(i, i + NOTIFICATION_CHUNK_SIZE);
+				await Promise.all(
+					chunk.map(({ id, clientId, pickup_location, delivery_location, scheduled_date }) =>
+						notifyClient({
+							session,
+							clientId,
+							serviceId: id,
+							category: 'schedule_change',
+							title: 'Pedido Aceite',
+							message: 'O seu pedido de serviço foi aceite pelo estafeta. Verifique os detalhes na aplicação.',
+							emailTemplate: 'request_accepted',
+							emailData: {
+								pickup_location,
+								delivery_location,
+								scheduled_date: scheduled_date || '',
+								app_url: PUBLIC_SUPABASE_URL.replace('/functions/v1', '')
+							}
+						})
+					)
+				);
+			}
 		}
 
 		return {

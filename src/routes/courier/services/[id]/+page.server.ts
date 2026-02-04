@@ -3,6 +3,7 @@ import type { PageServerLoad, Actions } from './$types';
 import type { Service, ServiceStatusHistory, Profile, ServiceType } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 import { notifyClient } from '$lib/services/notifications.js';
+import { formatDatePtPT, formatDateTimePtPT } from '$lib/utils/date-format.js';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
 	const { session } = await safeGetSession();
@@ -90,13 +91,7 @@ export const actions: Actions = {
 		// Notify client when marked as delivered
 		if (newStatus === 'delivered' && serviceData) {
 			const service = serviceData as { client_id: string; pickup_location: string; delivery_location: string };
-			const formattedDeliveredAt = new Date().toLocaleDateString('pt-PT', {
-				day: 'numeric',
-				month: 'long',
-				year: 'numeric',
-				hour: '2-digit',
-				minute: '2-digit'
-			});
+			const formattedDeliveredAt = formatDateTimePtPT(new Date());
 
 			await notifyClient({
 				session,
@@ -274,9 +269,7 @@ export const actions: Actions = {
 			});
 
 			// Notify client
-			const formattedDate = new Date(newDate).toLocaleDateString('pt-PT', {
-				day: 'numeric', month: 'long', year: 'numeric'
-			});
+			const formattedDate = formatDatePtPT(newDate);
 			const reasonText = reason ? ` Motivo: ${reason}` : '';
 			await supabase.from('notifications').insert({
 				user_id: service.client_id,
@@ -289,9 +282,7 @@ export const actions: Actions = {
 			return { success: true, pendingApproval: true };
 		} else {
 			// Immediate reschedule (existing flow)
-			const formattedDate = new Date(newDate).toLocaleDateString('pt-PT', {
-				day: 'numeric', month: 'long', year: 'numeric'
-			});
+			const formattedDate = formatDatePtPT(newDate);
 			const reasonText = reason ? ` Motivo: ${reason}` : '';
 			const notificationMessage = `A sua entrega foi reagendada para ${formattedDate}.${reasonText}`;
 

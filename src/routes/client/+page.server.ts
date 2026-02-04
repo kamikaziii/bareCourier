@@ -1,6 +1,8 @@
 import type { Actions } from './$types';
-import { PUBLIC_SUPABASE_URL } from '$env/static/public';
-import { notifyCourier } from '$lib/services/notifications';
+import { notifyCourier } from '$lib/services/notifications.js';
+import { formatDatePtPT } from '$lib/utils/date-format.js';
+
+const APP_URL = 'https://barecourier.vercel.app';
 
 export const actions: Actions = {
 	acceptSuggestion: async ({ request, locals: { supabase, safeGetSession } }) => {
@@ -41,33 +43,23 @@ export const actions: Actions = {
 			return { success: false, error: 'Unauthorized' };
 		}
 
-		// Accept the suggestion - copy suggested to scheduled and mark as accepted
-		const { error: updateError } = await supabase
-			.from('services')
-			.update({
-				request_status: 'accepted',
-				scheduled_date: service.suggested_date,
-				scheduled_time_slot: service.suggested_time_slot,
-				scheduled_time: service.suggested_time,
-				suggested_date: null,
-				suggested_time_slot: null,
-				suggested_time: null
-			})
-			.eq('id', serviceId);
+		// Use RPC function to accept the suggestion (includes history tracking)
+		const { data: rpcResult, error: rpcError } = await supabase.rpc('client_approve_reschedule', {
+			p_service_id: serviceId
+		});
 
-		if (updateError) {
-			console.error('Failed to accept suggestion:', updateError);
+		if (rpcError) {
+			console.error('Failed to accept suggestion:', rpcError);
 			return { success: false, error: 'Failed to accept suggestion' };
 		}
 
+		const result = rpcResult as { success: boolean; error?: string } | null;
+		if (!result?.success) {
+			return { success: false, error: result?.error || 'Failed to accept suggestion' };
+		}
+
 		// Format the new date for email
-		const formattedNewDate = service.suggested_date
-			? new Date(service.suggested_date).toLocaleDateString('pt-PT', {
-					day: 'numeric',
-					month: 'long',
-					year: 'numeric'
-				})
-			: '';
+		const formattedNewDate = formatDatePtPT(service.suggested_date);
 
 		// Notify courier with email
 		await notifyCourier({
@@ -83,7 +75,8 @@ export const actions: Actions = {
 				pickup_location: service.pickup_location,
 				delivery_location: service.delivery_location,
 				new_date: formattedNewDate,
-				service_id: serviceId
+				service_id: serviceId,
+				app_url: APP_URL
 			}
 		});
 
@@ -126,30 +119,23 @@ export const actions: Actions = {
 			return { success: false, error: 'Unauthorized' };
 		}
 
-		// Decline the suggestion - set back to pending for courier to review
-		const { error: updateError } = await supabase
-			.from('services')
-			.update({
-				request_status: 'pending',
-				suggested_date: null,
-				suggested_time_slot: null,
-				suggested_time: null
-			})
-			.eq('id', serviceId);
+		// Use RPC function to decline the suggestion (includes history tracking)
+		const { data: rpcResult, error: rpcError } = await supabase.rpc('client_deny_reschedule', {
+			p_service_id: serviceId
+		});
 
-		if (updateError) {
-			console.error('Failed to decline suggestion:', updateError);
+		if (rpcError) {
+			console.error('Failed to decline suggestion:', rpcError);
 			return { success: false, error: 'Failed to decline suggestion' };
 		}
 
+		const result = rpcResult as { success: boolean; error?: string } | null;
+		if (!result?.success) {
+			return { success: false, error: result?.error || 'Failed to decline suggestion' };
+		}
+
 		// Format the original date for email
-		const formattedOriginalDate = service.scheduled_date
-			? new Date(service.scheduled_date).toLocaleDateString('pt-PT', {
-					day: 'numeric',
-					month: 'long',
-					year: 'numeric'
-				})
-			: 'Não agendada';
+		const formattedOriginalDate = formatDatePtPT(service.scheduled_date, 'Não agendada');
 
 		// Notify courier with email
 		await notifyCourier({
@@ -166,7 +152,8 @@ export const actions: Actions = {
 				delivery_location: service.delivery_location,
 				original_date: formattedOriginalDate,
 				reason: '',
-				service_id: serviceId
+				service_id: serviceId,
+				app_url: APP_URL
 			}
 		});
 
@@ -253,13 +240,7 @@ export const actions: Actions = {
 		if (failCount > 0) {
 			if (failCount < servicesData.length) {
 				// Partial success — still notify
-				const formattedNewDate = firstService.suggested_date
-					? new Date(firstService.suggested_date).toLocaleDateString('pt-PT', {
-							day: 'numeric',
-							month: 'long',
-							year: 'numeric'
-						})
-					: '';
+				const formattedNewDate = formatDatePtPT(firstService.suggested_date);
 
 				await notifyCourier({
 					supabase,
@@ -274,20 +255,15 @@ export const actions: Actions = {
 						pickup_location: firstService.pickup_location,
 						delivery_location: firstService.delivery_location,
 						new_date: formattedNewDate,
-						service_id: firstService.id
+						service_id: firstService.id,
+						app_url: APP_URL
 					}
 				});
 			}
 			return { success: true, error: `${failCount} of ${serviceIds.length} failed` };
 		}
 
-		const formattedNewDate = firstService.suggested_date
-			? new Date(firstService.suggested_date).toLocaleDateString('pt-PT', {
-					day: 'numeric',
-					month: 'long',
-					year: 'numeric'
-				})
-			: '';
+		const formattedNewDate = formatDatePtPT(firstService.suggested_date);
 
 		await notifyCourier({
 			supabase,
@@ -302,7 +278,8 @@ export const actions: Actions = {
 				pickup_location: firstService.pickup_location,
 				delivery_location: firstService.delivery_location,
 				new_date: formattedNewDate,
-				service_id: firstService.id
+				service_id: firstService.id,
+				app_url: APP_URL
 			}
 		});
 		return { success: true };
@@ -379,13 +356,7 @@ export const actions: Actions = {
 		// Get client name and format date for email
 		const clientName = servicesData[0]?.profiles?.name || 'Cliente';
 		const firstService = servicesData[0];
-		const formattedOriginalDate = firstService.scheduled_date
-			? new Date(firstService.scheduled_date).toLocaleDateString('pt-PT', {
-					day: 'numeric',
-					month: 'long',
-					year: 'numeric'
-				})
-			: 'Não agendada';
+		const formattedOriginalDate = formatDatePtPT(firstService.scheduled_date, 'Não agendada');
 
 		if (failCount > 0) {
 			if (failCount < servicesData.length) {
@@ -403,7 +374,8 @@ export const actions: Actions = {
 						delivery_location: firstService.delivery_location,
 						original_date: formattedOriginalDate,
 						reason: '',
-						service_id: firstService.id
+						service_id: firstService.id,
+						app_url: APP_URL
 					}
 				});
 			}
@@ -424,7 +396,8 @@ export const actions: Actions = {
 				delivery_location: firstService.delivery_location,
 				original_date: formattedOriginalDate,
 				reason: '',
-				service_id: firstService.id
+				service_id: firstService.id,
+				app_url: APP_URL
 			}
 		});
 		return { success: true };
@@ -497,7 +470,7 @@ export const actions: Actions = {
 				client_name: service.profiles.name,
 				pickup_location: service.pickup_location,
 				delivery_location: service.delivery_location,
-				app_url: PUBLIC_SUPABASE_URL.replace('/functions/v1', '')
+				app_url: APP_URL
 			}
 		});
 

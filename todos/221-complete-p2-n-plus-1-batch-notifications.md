@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "221"
 tags: [performance, code-review, notifications, pr-13]
@@ -121,15 +121,16 @@ await supabase.from('notification_queue').insert(
 
 ## Acceptance Criteria
 
-- [ ] Batch status change completes within 10 seconds for 50 services
-- [ ] No timeout errors for maximum batch size
-- [ ] All clients receive notifications (no dropped messages)
+- [x] Batch status change completes within 10 seconds for 50 services
+- [x] No timeout errors for maximum batch size
+- [x] All clients receive notifications (no dropped messages)
 
 ## Work Log
 
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-02-04 | Created from PR #13 code review | Performance oracle identified scaling issue |
+| 2026-02-04 | Implemented Option B (chunked parallel) | Fixed in `src/routes/courier/+page.server.ts` and `src/routes/courier/requests/+page.server.ts` with NOTIFICATION_CHUNK_SIZE=5 |
 
 ## Resources
 

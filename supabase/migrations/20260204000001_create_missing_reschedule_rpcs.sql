@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION reschedule_service(
   p_service_id uuid,
   p_new_date date,
   p_new_time_slot text,
-  p_new_time time DEFAULT NULL,
+  p_new_time text DEFAULT NULL,
   p_reason text DEFAULT NULL,
   p_notification_title text DEFAULT NULL,
   p_notification_message text DEFAULT NULL
@@ -23,7 +23,7 @@ DECLARE
   v_service record;
   v_old_date date;
   v_old_time_slot text;
-  v_old_time time;
+  v_old_time text;
 BEGIN
   -- Get the authenticated user ID
   v_user_id := (SELECT auth.uid());
@@ -104,10 +104,10 @@ BEGIN
     'courier',
     v_old_date,
     v_old_time_slot,
-    v_old_time::text,
+    v_old_time,
     p_new_date,
     p_new_time_slot,
-    p_new_time::text,
+    p_new_time,
     p_reason,
     'auto_approved'
   );
@@ -135,15 +135,16 @@ BEGIN
   );
 
 EXCEPTION WHEN OTHERS THEN
+  RAISE WARNING 'RPC error: %', SQLERRM;
   RETURN jsonb_build_object(
     'success', false,
-    'error', SQLERRM
+    'error', 'An internal error occurred. Please try again.'
   );
 END;
 $$;
 
 -- Grant execute to authenticated users only
-GRANT EXECUTE ON FUNCTION reschedule_service(uuid, date, text, time, text, text, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION reschedule_service(uuid, date, text, text, text, text, text) TO authenticated;
 
 COMMENT ON FUNCTION reschedule_service IS 'Courier reschedules a service directly. Creates notification for client and records history.';
 
@@ -255,9 +256,10 @@ BEGIN
   );
 
 EXCEPTION WHEN OTHERS THEN
+  RAISE WARNING 'RPC error: %', SQLERRM;
   RETURN jsonb_build_object(
     'success', false,
-    'error', SQLERRM
+    'error', 'An internal error occurred. Please try again.'
   );
 END;
 $$;
@@ -366,9 +368,10 @@ BEGIN
   );
 
 EXCEPTION WHEN OTHERS THEN
+  RAISE WARNING 'RPC error: %', SQLERRM;
   RETURN jsonb_build_object(
     'success', false,
-    'error', SQLERRM
+    'error', 'An internal error occurred. Please try again.'
   );
 END;
 $$;

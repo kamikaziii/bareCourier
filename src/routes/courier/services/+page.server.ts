@@ -1,6 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { notifyClient } from '$lib/services/notifications.js';
+import { formatDateTimePtPT } from '$lib/utils/date-format.js';
 
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
 	const { user } = await safeGetSession();
@@ -96,13 +97,7 @@ export const actions: Actions = {
 
 		// Notify clients when marked as delivered
 		if (status === 'delivered' && servicesToNotify.length > 0) {
-			const formattedDeliveredAt = new Date().toLocaleDateString('pt-PT', {
-				day: 'numeric',
-				month: 'long',
-				year: 'numeric',
-				hour: '2-digit',
-				minute: '2-digit'
-			});
+			const formattedDeliveredAt = formatDateTimePtPT(new Date());
 
 			// Send notifications in parallel
 			await Promise.all(

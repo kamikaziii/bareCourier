@@ -13,6 +13,7 @@ import {
 } from '$lib/services/type-pricing.js';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 import { notifyCourier } from '$lib/services/notifications.js';
+import { formatDatePtPT } from '$lib/utils/date-format.js';
 
 export const actions: Actions = {
 	default: async ({ request, locals: { supabase, safeGetSession } }) => {
@@ -240,13 +241,7 @@ export const actions: Actions = {
 		}
 
 		// Notify courier with email
-		const formattedDate = requested_date
-			? new Date(requested_date).toLocaleDateString('pt-PT', {
-					day: 'numeric',
-					month: 'long',
-					year: 'numeric'
-				})
-			: 'Não especificada';
+		const formattedDate = formatDatePtPT(requested_date, 'Não especificada');
 
 		await notifyCourier({
 			supabase,

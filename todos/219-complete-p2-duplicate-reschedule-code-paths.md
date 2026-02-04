@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "219"
 tags: [architecture, code-review, duplication, pr-13]

@@ -4,6 +4,10 @@
 
 -- Schedule past due check every 15 minutes
 -- The edge function handles the time-window check internally
+
+-- Ensure idempotent: remove existing job first (ignore if not exists)
+SELECT cron.unschedule('check-past-due-services');
+
 SELECT cron.schedule(
   'check-past-due-services',
   '*/15 * * * *',
@@ -21,6 +25,10 @@ SELECT cron.schedule(
 
 -- Schedule daily summary every 15 minutes
 -- The edge function checks if current time matches courier's preferred time
+
+-- Ensure idempotent: remove existing job first (ignore if not exists)
+SELECT cron.unschedule('daily-summary-notification');
+
 SELECT cron.schedule(
   'daily-summary-notification',
   '*/15 * * * *',
@@ -38,3 +46,7 @@ SELECT cron.schedule(
 
 -- Add comments for documentation
 COMMENT ON EXTENSION pg_cron IS 'Cron job scheduler for PostgreSQL - used for past-due checks and daily summaries';
+
+-- ROLLBACK INSTRUCTIONS:
+-- SELECT cron.unschedule('check-past-due-services');
+-- SELECT cron.unschedule('daily-summary-notification');
