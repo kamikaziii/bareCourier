@@ -263,6 +263,14 @@ Deno.serve(async (req: Request) => {
       authData = { user: linkData.user ? { id: linkData.user.id, email: linkData.user.email } : null };
       invitationSent = true;
 
+      // Guard against null user from generateLink
+      if (!linkData.user) {
+        return new Response(
+          JSON.stringify({ error: "Failed to create user invitation" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       // Send invitation email
       const emailResult = await sendInvitationEmail({
         adminClient,
