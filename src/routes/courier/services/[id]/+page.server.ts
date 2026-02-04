@@ -298,6 +298,18 @@ export const actions: Actions = {
 			return { success: true, pendingApproval: true };
 		} else {
 			// Immediate reschedule (existing flow)
+			// Fetch service data for email notification
+			const { data: serviceData } = await supabase
+				.from('services')
+				.select('client_id, pickup_location, delivery_location, scheduled_date')
+				.eq('id', params.id)
+				.single();
+
+			if (!serviceData) {
+				return { success: false, error: 'Service not found' };
+			}
+			const service = serviceData as { client_id: string; pickup_location: string; delivery_location: string; scheduled_date: string | null };
+
 			const formattedDate = formatDatePtPT(newDate);
 			const reasonText = reason ? ` Motivo: ${reason}` : '';
 			const notificationMessage = `A sua entrega foi reagendada para ${formattedDate}.${reasonText}`;
@@ -321,6 +333,25 @@ export const actions: Actions = {
 			if (!result.success) {
 				return { success: false, error: result.error || 'Reschedule failed' };
 			}
+
+			// Send email notification (RPC only creates in-app notification)
+			await notifyClient({
+				session,
+				clientId: service.client_id,
+				serviceId: params.id,
+				category: 'schedule_change',
+				title: 'Entrega Reagendada',
+				message: notificationMessage,
+				emailTemplate: 'request_suggested',
+				emailData: {
+					pickup_location: service.pickup_location,
+					delivery_location: service.delivery_location,
+					requested_date: service.scheduled_date || '',
+					suggested_date: newDate,
+					reason: reason || '',
+					app_url: APP_URL
+				}
+			});
 
 			return { success: true };
 		}

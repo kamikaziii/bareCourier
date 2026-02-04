@@ -190,7 +190,7 @@ export const actions: Actions = {
 				category: 'schedule_change',
 				title: 'Pedido de Reagendamento',
 				message: 'O cliente pediu para reagendar uma entrega. Requer a sua aprovação.',
-				emailTemplate: 'reschedule_request',
+				emailTemplate: 'request_suggested',  // Reuse existing template
 				emailData: {
 					client_name: clientName,
 					pickup_location: service.pickup_location,
@@ -252,7 +252,7 @@ export const actions: Actions = {
 				category: 'schedule_change',
 				title: 'Reagendamento Automático',
 				message: 'Um cliente reagendou uma entrega automaticamente.',
-				emailTemplate: 'reschedule_auto_approved',
+				emailTemplate: 'request_suggested',  // Reuse existing template
 				emailData: {
 					client_name: clientName,
 					pickup_location: service.pickup_location,
