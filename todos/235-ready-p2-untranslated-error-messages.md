@@ -1,5 +1,5 @@
 ---
-status: pending
+status: ready
 priority: p2
 issue_id: "235"
 tags: [code-review, i18n, pr-16]

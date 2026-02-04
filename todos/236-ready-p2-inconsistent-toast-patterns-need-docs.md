@@ -1,5 +1,5 @@
 ---
-status: pending
+status: ready
 priority: p2
 issue_id: "236"
 tags: [code-review, architecture, documentation, pr-16]

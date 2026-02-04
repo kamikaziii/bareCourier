@@ -1,5 +1,5 @@
 ---
-status: pending
+status: ready
 priority: p1
 issue_id: "234"
 tags: [code-review, ux, pr-16]
