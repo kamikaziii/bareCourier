@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { requireCourier } from "../_shared/auth.ts";
+import { mapErrorToUserMessage } from "../_shared/errors.ts";
 
 // NOTE: This function uses verify_jwt: false (set in Supabase Dashboard or config.toml)
 // We validate the JWT ourselves using getUser() which uses the modern validation path.
@@ -67,7 +68,7 @@ Deno.serve(async (req: Request) => {
 
     if (updateError) {
       return new Response(
-        JSON.stringify({ error: updateError.message }),
+        JSON.stringify({ error: mapErrorToUserMessage(updateError, 'reset-client-password') }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -77,9 +78,10 @@ Deno.serve(async (req: Request) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'An unknown error occurred';
+    // Log full error server-side for debugging, return generic message to client
+    console.error('[reset-client-password] Unhandled error:', error);
     return new Response(
-      JSON.stringify({ error: message }),
+      JSON.stringify({ error: 'An unexpected error occurred. Please try again.' }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
