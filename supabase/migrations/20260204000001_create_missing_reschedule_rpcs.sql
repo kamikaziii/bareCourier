@@ -47,6 +47,14 @@ BEGIN
     );
   END IF;
 
+  -- Validate time slot
+  IF p_new_time_slot NOT IN ('morning', 'afternoon', 'evening', 'specific') THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'error', 'Invalid time slot. Must be: morning, afternoon, evening, or specific'
+    );
+  END IF;
+
   -- Get current service state
   SELECT id, client_id, scheduled_date, scheduled_time_slot, scheduled_time, status
   INTO v_service
@@ -172,13 +180,14 @@ BEGIN
     );
   END IF;
 
-  -- Get service and verify ownership
+  -- Get service and verify ownership (with lock to prevent race conditions)
   SELECT id, client_id, request_status, suggested_date, suggested_time_slot,
          scheduled_date, scheduled_time_slot
   INTO v_service
   FROM public.services
   WHERE id = p_service_id
-    AND deleted_at IS NULL;
+    AND deleted_at IS NULL
+  FOR UPDATE;
 
   IF v_service.id IS NULL THEN
     RETURN jsonb_build_object(
@@ -294,13 +303,14 @@ BEGIN
     );
   END IF;
 
-  -- Get service and verify ownership
+  -- Get service and verify ownership (with lock to prevent race conditions)
   SELECT id, client_id, request_status, suggested_date, suggested_time_slot,
          scheduled_date, scheduled_time_slot
   INTO v_service
   FROM public.services
   WHERE id = p_service_id
-    AND deleted_at IS NULL;
+    AND deleted_at IS NULL
+  FOR UPDATE;
 
   IF v_service.id IS NULL THEN
     RETURN jsonb_build_object(

@@ -4,14 +4,13 @@ import type { Service, Profile } from '$lib/database.types';
 import { localizeHref, extractLocaleFromRequest } from '$lib/paraglide/runtime.js';
 import { calculateDayWorkload, getWorkloadSettings, type WorkloadEstimate } from '$lib/services/workload.js';
 import { notifyClient } from '$lib/services/notifications';
+import { APP_URL } from '$lib/constants.js';
 
 // Number of days to scan ahead when finding the next compatible day
 const LOOKAHEAD_DAYS = 14;
 
 // Process notifications in chunks to avoid overwhelming the system
 const NOTIFICATION_CHUNK_SIZE = 5;
-
-const APP_URL = 'https://barecourier.vercel.app';
 
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
 	const { session, user } = await safeGetSession();
@@ -155,6 +154,8 @@ export const actions: Actions = {
 			requested_time: string | null;
 		};
 
+		// NOTE: Direct update (not RPC) because this sets the FIRST scheduled date.
+		// No history tracking needed - reschedule operations use RPC functions.
 		const { error: updateError } = await supabase
 			.from('services')
 			.update({
@@ -521,7 +522,11 @@ export const actions: Actions = {
 			return { success: false, error: 'Services not found' };
 		}
 
-		// Parallelize database updates for performance
+		// NOTE: This uses direct updates (not RPC) because accepting a request sets the
+		// FIRST scheduled date - there's no schedule change to track in history.
+		// Reschedule operations (changing an existing schedule) use RPC functions like
+		// client_approve_reschedule, client_deny_reschedule, or reschedule_service.
+		// See: supabase/migrations/20260204000001_create_missing_reschedule_rpcs.sql
 		const updatePromises = (servicesData as Array<{
 			id: string;
 			client_id: string;

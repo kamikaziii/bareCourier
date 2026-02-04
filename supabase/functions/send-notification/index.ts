@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { timingSafeEqual } from "node:crypto";
-import { Buffer } from "node:buffer";
+import { getCorsHeaders } from "../_shared/cors.ts";
+import { isServiceRoleKey } from "../_shared/auth.ts";
 import { dispatchNotification, type NotificationCategory } from "../_shared/notify.ts";
 
 /**
@@ -19,36 +19,6 @@ import { dispatchNotification, type NotificationCategory } from "../_shared/noti
  *   - VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (for push)
  *   - RESEND_API_KEY, RESEND_FROM_EMAIL (for email)
  */
-
-/**
- * Timing-safe comparison for service role key authentication.
- * Prevents timing attacks that could leak key information.
- */
-function isServiceRoleKey(authHeader: string, serviceKey: string): boolean {
-  const bearerToken = authHeader.replace('Bearer ', '');
-  if (bearerToken.length !== serviceKey.length) return false;
-
-  return timingSafeEqual(
-    Buffer.from(bearerToken),
-    Buffer.from(serviceKey)
-  );
-}
-
-// Allowed origins for CORS
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "https://barecourier.vercel.app",
-];
-
-function getCorsHeaders(req: Request) {
-  const origin = req.headers.get("Origin") || "";
-  const allowedOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  };
-}
 
 interface NotificationRequest {
   user_id: string;

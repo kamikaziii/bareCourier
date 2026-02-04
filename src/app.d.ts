@@ -37,6 +37,7 @@ declare module '$env/static/public' {
 	export const PUBLIC_MAPBOX_TOKEN: string;
 	export const PUBLIC_OPENROUTESERVICE_KEY: string;
 	export const PUBLIC_VAPID_PUBLIC_KEY: string;
+	export const PUBLIC_APP_URL: string;
 }
 
 // Workbox types for service worker

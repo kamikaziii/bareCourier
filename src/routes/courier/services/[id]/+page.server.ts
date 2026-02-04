@@ -4,8 +4,7 @@ import type { Service, ServiceStatusHistory, Profile, ServiceType } from '$lib/d
 import { localizeHref } from '$lib/paraglide/runtime.js';
 import { notifyClient } from '$lib/services/notifications.js';
 import { formatDatePtPT, formatDateTimePtPT } from '$lib/utils/date-format.js';
-
-const APP_URL = 'https://barecourier.vercel.app';
+import { APP_URL } from '$lib/constants.js';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
 	const { session } = await safeGetSession();

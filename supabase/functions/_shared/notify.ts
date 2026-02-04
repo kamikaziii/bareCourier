@@ -129,7 +129,19 @@ export async function dispatchNotification(params: DispatchParams): Promise<Disp
 		email: null
 	};
 
+	// Check quiet hours and working days for external channels (needed for email_status decision)
+	const isQuiet =
+		prefs.quietHours.enabled &&
+		isWithinQuietHours(now, prefs.quietHours.start, prefs.quietHours.end, timezone);
+	const isWorking = !prefs.workingDaysOnly || isWorkingDay(now, workingDays, timezone);
+	const canSendExternal = !isQuiet && isWorking;
+
+	// Determine if email will be sent (for setting initial email_status)
+	const willSendEmail =
+		categoryPrefs.email && profile?.email_notifications_enabled && canSendExternal && emailTemplate;
+
 	// 1. Always create in-app notification
+	// Set email_status = 'pending' only if email will be sent (avoids false positives for old/non-email notifications)
 	const { data: notif, error: notifError } = await supabase
 		.from('notifications')
 		.insert({
@@ -137,7 +149,8 @@ export async function dispatchNotification(params: DispatchParams): Promise<Disp
 			type: category,
 			title,
 			message,
-			service_id: serviceId || null
+			service_id: serviceId || null,
+			email_status: willSendEmail ? 'pending' : null
 		})
 		.select('id')
 		.single();
@@ -147,13 +160,6 @@ export async function dispatchNotification(params: DispatchParams): Promise<Disp
 	} else {
 		result.inApp = { success: true, notificationId: notif.id };
 	}
-
-	// Check quiet hours and working days for external channels
-	const isQuiet =
-		prefs.quietHours.enabled &&
-		isWithinQuietHours(now, prefs.quietHours.start, prefs.quietHours.end, timezone);
-	const isWorking = !prefs.workingDaysOnly || isWorkingDay(now, workingDays, timezone);
-	const canSendExternal = !isQuiet && isWorking;
 
 	// 2. Send push if enabled
 	if (categoryPrefs.push && profile?.push_notifications_enabled && canSendExternal) {
@@ -179,8 +185,8 @@ export async function dispatchNotification(params: DispatchParams): Promise<Disp
 		}
 	}
 
-	// 3. Send email if enabled
-	if (categoryPrefs.email && profile?.email_notifications_enabled && canSendExternal && emailTemplate) {
+	// 3. Send email if enabled (uses willSendEmail computed earlier)
+	if (willSendEmail) {
 		try {
 			const locale = getLocale(profile?.locale as string | null | undefined);
 			const emailUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`;

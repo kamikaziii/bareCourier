@@ -2,10 +2,10 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { notifyClient } from '$lib/services/notifications.js';
 import { formatDateTimePtPT } from '$lib/utils/date-format.js';
+import { APP_URL } from '$lib/constants.js';
 
 // Process notifications in chunks to avoid overwhelming the system
 const NOTIFICATION_CHUNK_SIZE = 5;
-const APP_URL = 'https://barecourier.vercel.app';
 
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
 	const { user } = await safeGetSession();

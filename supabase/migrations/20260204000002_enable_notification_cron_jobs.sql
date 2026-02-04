@@ -6,7 +6,12 @@
 -- The edge function handles the time-window check internally
 
 -- Ensure idempotent: remove existing job first (ignore if not exists)
-SELECT cron.unschedule('check-past-due-services');
+DO $$
+BEGIN
+  PERFORM cron.unschedule('check-past-due-services');
+EXCEPTION WHEN undefined_object THEN
+  RAISE NOTICE 'Job check-past-due-services does not exist, skipping unschedule';
+END $$;
 
 SELECT cron.schedule(
   'check-past-due-services',
@@ -27,7 +32,12 @@ SELECT cron.schedule(
 -- The edge function checks if current time matches courier's preferred time
 
 -- Ensure idempotent: remove existing job first (ignore if not exists)
-SELECT cron.unschedule('daily-summary-notification');
+DO $$
+BEGIN
+  PERFORM cron.unschedule('daily-summary-notification');
+EXCEPTION WHEN undefined_object THEN
+  RAISE NOTICE 'Job daily-summary-notification does not exist, skipping unschedule';
+END $$;
 
 SELECT cron.schedule(
   'daily-summary-notification',
