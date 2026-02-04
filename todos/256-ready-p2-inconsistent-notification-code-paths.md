@@ -1,5 +1,5 @@
 ---
-status: pending
+status: ready
 priority: p2
 issue_id: "256"
 tags: [code-review, architecture, notifications, pr-13]

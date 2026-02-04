@@ -1,5 +1,5 @@
 ---
-status: pending
+status: ready
 priority: p1
 issue_id: "252"
 tags: [code-review, race-condition, database, pr-13]
