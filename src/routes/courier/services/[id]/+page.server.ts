@@ -277,12 +277,22 @@ export const actions: Actions = {
 			// Notify client
 			const formattedDate = formatDatePtPT(newDate);
 			const reasonText = reason ? ` Motivo: ${reason}` : '';
-			await supabase.from('notifications').insert({
-				user_id: service.client_id,
-				type: 'schedule_change',
+			await notifyClient({
+				session,
+				clientId: service.client_id,
+				serviceId: params.id,
+				category: 'schedule_change',
 				title: 'Proposta de Reagendamento',
 				message: `O estafeta propõe reagendar para ${formattedDate}.${reasonText}`,
-				service_id: params.id
+				emailTemplate: 'request_suggested',
+				emailData: {
+					pickup_location: service.pickup_location,
+					delivery_location: service.delivery_location,
+					requested_date: service.scheduled_date || '',
+					suggested_date: newDate,
+					reason: reason || '',
+					app_url: APP_URL
+				}
 			});
 
 			return { success: true, pendingApproval: true };

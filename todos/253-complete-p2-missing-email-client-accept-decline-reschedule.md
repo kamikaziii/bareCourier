@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "253"
 tags: [code-review, notifications, email, pr-13]
