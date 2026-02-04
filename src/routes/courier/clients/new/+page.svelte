@@ -8,6 +8,7 @@
   import { Label } from "$lib/components/ui/label/index.js";
   import { Separator } from "$lib/components/ui/separator/index.js";
   import { Badge } from "$lib/components/ui/badge/index.js";
+  import { Switch } from "$lib/components/ui/switch/index.js";
   import AddressInput from "$lib/components/AddressInput.svelte";
   import PricingConfigForm from "$lib/components/PricingConfigForm.svelte";
   import * as m from "$lib/paraglide/messages.js";
@@ -21,6 +22,7 @@
     Euro,
     ChevronDown,
     AlertTriangle,
+    Mail,
   } from "@lucide/svelte";
 
   let { data }: { data: PageData } = $props();
@@ -33,6 +35,7 @@
   let email = $state("");
   let password = $state("");
   let phone = $state("");
+  let sendInvitation = $state(true); // Default to invitation flow
   let defaultPickupLocation = $state("");
   let defaultPickupCoords = $state<[number, number] | null>(null);
   let defaultServiceTypeId = $state("");
@@ -101,7 +104,7 @@
       return;
     }
 
-    // Call edge function to create client (uses admin API, no confirmation email)
+    // Call edge function to create client
     const response = await fetch(
       `${PUBLIC_SUPABASE_URL}/functions/v1/create-client`,
       {
@@ -112,13 +115,14 @@
         },
         body: JSON.stringify({
           email: email.trim(),
-          password,
+          password: sendInvitation ? undefined : password,
           name: name.trim(),
           phone: phone.trim() || null,
           default_pickup_location: defaultPickupLocation.trim() || null,
           default_pickup_lat: defaultPickupCoords?.[1] ?? null,
           default_pickup_lng: defaultPickupCoords?.[0] ?? null,
           default_service_type_id: defaultServiceTypeId || null,
+          send_invitation: sendInvitation,
         }),
       },
     );
@@ -129,6 +133,14 @@
       error = result.error || m.error_create_client_failed();
       loading = false;
       return;
+    }
+
+    // Handle partial success (e.g., client created but email failed)
+    const isPartialSuccess = response.status === 207;
+    if (isPartialSuccess) {
+      warning =
+        result.warning ||
+        "Client created, but there was an issue sending the invitation.";
     }
 
     // If pricing config was set, save it for the new client
@@ -178,20 +190,32 @@
     }
 
     // Success - show message briefly then redirect
-    if (pricingSaveFailed) {
-      success = m.clients_success();
+    // Set success message (207 partial success still shows success for client creation)
+    success = result.invitation_sent
+      ? m.invitation_sent({ email: email.trim() })
+      : m.clients_success();
+
+    // Handle warnings - prioritize 207 warning, then pricing failure
+    if (pricingSaveFailed && !isPartialSuccess) {
       warning =
         "Client created, but pricing configuration failed to save. You can add it later.";
-    } else {
-      success = m.clients_success();
+    } else if (pricingSaveFailed && isPartialSuccess) {
+      // Both issues occurred - combine warnings
+      warning =
+        (warning ? warning + " " : "") +
+        "Additionally, pricing configuration failed to save.";
     }
+    // If only isPartialSuccess, warning was already set above
+
     loading = false;
 
+    // Extend redirect timeout if there are warnings to read
+    const hasWarnings = isPartialSuccess || pricingSaveFailed;
     redirectTimeout = setTimeout(
       () => {
         goto(localizeHref("/courier/clients"));
       },
-      pricingSaveFailed ? 3000 : 1500,
+      hasWarnings ? 3000 : 1500,
     );
   }
 </script>
@@ -232,6 +256,28 @@
           </div>
         {/if}
 
+        <!-- Invitation Toggle -->
+        <div class="flex items-center justify-between rounded-md border p-4">
+          <div class="flex items-center gap-3">
+            <Mail class="size-5 text-muted-foreground" />
+            <div>
+              <Label for="send-invitation" class="text-base font-medium">
+                {m.send_invitation_email()}
+              </Label>
+              <p class="text-sm text-muted-foreground">
+                {sendInvitation
+                  ? m.invitation_mode_desc()
+                  : m.password_mode_desc()}
+              </p>
+            </div>
+          </div>
+          <Switch
+            id="send-invitation"
+            bind:checked={sendInvitation}
+            disabled={loading}
+          />
+        </div>
+
         <div class="grid gap-4 md:grid-cols-2">
           <div class="space-y-2">
             <Label for="email">{m.auth_email()} *</Label>
@@ -243,17 +289,19 @@
               disabled={loading}
             />
           </div>
-          <div class="space-y-2">
-            <Label for="password">{m.auth_password()} *</Label>
-            <Input
-              id="password"
-              type="password"
-              bind:value={password}
-              required
-              disabled={loading}
-              minlength={6}
-            />
-          </div>
+          {#if !sendInvitation}
+            <div class="space-y-2">
+              <Label for="password">{m.auth_password()} *</Label>
+              <Input
+                id="password"
+                type="password"
+                bind:value={password}
+                required
+                disabled={loading}
+                minlength={6}
+              />
+            </div>
+          {/if}
         </div>
 
         <div class="grid gap-4 md:grid-cols-2">
@@ -365,8 +413,7 @@
             disabled={loading ||
               !name.trim() ||
               !email.trim() ||
-              !password ||
-              password.length < 6}
+              (!sendInvitation && (!password || password.length < 6))}
           >
             {loading ? m.clients_creating() : m.clients_create()}
           </Button>

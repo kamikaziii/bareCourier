@@ -87,7 +87,7 @@ function createErrorResponse(
 }
 
 // Email templates
-type EmailTemplate = "new_request" | "delivered" | "request_accepted" | "request_rejected" | "request_suggested" | "request_cancelled" | "daily_summary" | "past_due" | "suggestion_accepted" | "suggestion_declined";
+type EmailTemplate = "new_request" | "delivered" | "request_accepted" | "request_rejected" | "request_suggested" | "request_cancelled" | "daily_summary" | "past_due" | "suggestion_accepted" | "suggestion_declined" | "client_invitation";
 
 // Required fields for each email template - validates templateData before sending
 const TEMPLATE_REQUIRED_FIELDS: Record<EmailTemplate, string[]> = {
@@ -97,6 +97,11 @@ const TEMPLATE_REQUIRED_FIELDS: Record<EmailTemplate, string[]> = {
   request_rejected: ["pickup_location", "delivery_location", "app_url"],
   request_suggested: ["pickup_location", "delivery_location", "requested_date", "suggested_date", "app_url"],
   request_cancelled: ["client_name", "pickup_location", "delivery_location", "app_url"],
+  daily_summary: ["date", "app_url"],
+  past_due: ["client_name", "pickup_location", "delivery_location", "scheduled_date", "days_overdue", "app_url"],
+  suggestion_accepted: ["client_name", "pickup_location", "delivery_location", "confirmed_date", "app_url"],
+  suggestion_declined: ["client_name", "pickup_location", "delivery_location", "original_date", "app_url"],
+  client_invitation: ["client_name", "courier_name", "confirmation_url"],
 };
 
 interface EmailData {
@@ -333,16 +338,46 @@ function wrapEmail(options: EmailWrapOptions): string {
 </html>`;
 }
 
+/**
+ * Validates that an action URL is from a trusted domain.
+ * Defense-in-depth: even though action_link comes from Supabase,
+ * we validate to prevent injection attacks if the source is ever compromised.
+ */
+function isValidActionUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    // Allow http for localhost (development), require https for production
+    const isLocalhost = parsed.hostname === 'localhost';
+    const isValidProtocol = isLocalhost
+      ? (parsed.protocol === 'http:' || parsed.protocol === 'https:')
+      : parsed.protocol === 'https:';
+
+    return isValidProtocol &&
+           (parsed.hostname.endsWith('supabase.co') ||
+            parsed.hostname === 'barecourier.vercel.app' ||
+            (parsed.hostname.endsWith('.vercel.app') && parsed.hostname.includes('barecourier')) ||
+            isLocalhost);
+  } catch {
+    return false;
+  }
+}
+
 function generateEmailHtml(
   template: EmailTemplate,
   rawData: Record<string, string>,
   locale: SupportedLocale = "pt-PT"
 ): { subject: string; html: string } {
+  // Validate action_link if present (defense-in-depth)
+  if (rawData.action_link && !isValidActionUrl(rawData.action_link)) {
+    throw new Error('Invalid action URL');
+  }
+
   // Escape all user-provided data to prevent XSS
   const data: Record<string, string> = {};
   for (const [key, value] of Object.entries(rawData)) {
-    // app_url and locale are trusted internal values, don't escape them
-    if (key === "app_url" || key === "locale") {
+    // app_url, locale, and action_link are trusted internal values, don't escape them
+    // (action_link is validated above)
+    if (key === "app_url" || key === "locale" || key === "action_link") {
       data[key] = value;
     } else {
       data[key] = escapeHtml(value);
@@ -595,6 +630,36 @@ function generateEmailHtml(
           },
           footer: defaultFooter,
         }),
+      };
+
+    case "client_invitation":
+      return {
+        subject: emailT("email_invitation_subject", locale, { courier_name: data.courier_name }),
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>${baseStyles}</head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>${emailT("email_invitation_title", locale)}</h1>
+              </div>
+              <div class="content">
+                <p>${emailT("email_invitation_intro", locale, {
+                  client_name: data.client_name,
+                  courier_name: data.courier_name
+                })}</p>
+                <p>${emailT("email_invitation_instructions", locale)}</p>
+                <a href="${data.action_link}" class="button">${emailT("email_invitation_button", locale)}</a>
+                <p class="small" style="font-size: 12px; color: #6b7280; margin-top: 16px;">${emailT("email_invitation_expiry", locale)}</p>
+              </div>
+              <div class="footer">
+                <p>${emailT("email_invitation_help", locale)}</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
       };
 
     default:

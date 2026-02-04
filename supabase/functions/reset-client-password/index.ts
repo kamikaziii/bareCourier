@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { requireCourier } from "../_shared/auth.ts";
+import { mapErrorToUserMessage } from "../_shared/errors.ts";
 
 // NOTE: This function uses verify_jwt: false (set in Supabase Dashboard or config.toml)
 // We validate the JWT ourselves using getUser() which uses the modern validation path.
@@ -14,46 +15,12 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    // Get the authorization header to verify the caller
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "No authorization header" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // Authenticate caller as courier
+    const auth = await requireCourier(req);
+    if (!auth.success) {
+      return auth.response;
     }
-
-    // Create client with user's JWT to check permissions
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    // Verify the caller using modern JWT validation
-    const { data: { user }, error: userError } = await userClient.auth.getUser();
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Invalid or expired session" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Verify caller is a courier
-    const { data: callerProfile, error: profileError } = await userClient
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profileError || callerProfile?.role !== "courier") {
-      return new Response(
-        JSON.stringify({ error: "Only couriers can reset client passwords" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const { supabaseAdmin: adminClient, supabaseUser: userClient } = auth.context;
 
     // Parse and validate request body
     const { client_id, new_password } = await req.json();
@@ -94,10 +61,6 @@ Deno.serve(async (req: Request) => {
     }
 
     // Reset password using admin API
-    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-
     const { error: updateError } = await adminClient.auth.admin.updateUserById(
       client_id,
       { password: new_password }
@@ -105,7 +68,7 @@ Deno.serve(async (req: Request) => {
 
     if (updateError) {
       return new Response(
-        JSON.stringify({ error: updateError.message }),
+        JSON.stringify({ error: mapErrorToUserMessage(updateError, 'reset-client-password') }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -115,8 +78,10 @@ Deno.serve(async (req: Request) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
+    // Log full error server-side for debugging, return generic message to client
+    console.error('[reset-client-password] Unhandled error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'An unexpected error occurred. Please try again.' }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

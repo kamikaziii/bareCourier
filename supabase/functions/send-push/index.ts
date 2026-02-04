@@ -188,11 +188,12 @@ Deno.serve(async (req: Request) => {
           return { success: true, id: sub.id };
         } catch (error) {
           const statusCode = (error as { statusCode?: number }).statusCode;
+          const message = error instanceof Error ? error.message : 'An unknown error occurred';
           return {
             success: false,
             id: sub.id,
             statusCode,
-            error: (error as Error).message,
+            error: message,
           };
         }
       })
@@ -221,8 +222,9 @@ Deno.serve(async (req: Request) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'An unknown error occurred';
     return new Response(
-      JSON.stringify({ error: (error as Error).message }),
+      JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

@@ -174,7 +174,7 @@ const emailTranslations: Record<string, Record<SupportedLocale, string>> = {
 		en: 'View Dashboard'
 	},
 
-	// daily_summary template (courier receives daily summary)
+// daily_summary template (courier receives daily summary)
 	email_daily_summary_subject: {
 		'pt-PT': 'Resumo Diário - {date}',
 		en: 'Daily Summary - {date}'
@@ -292,6 +292,36 @@ const emailTranslations: Record<string, Record<SupportedLocale, string>> = {
 	email_suggestion_declined_button: {
 		'pt-PT': 'Ver Serviço',
 		en: 'View Service'
+	},
+
+	// client_invitation template (client receives when invited by courier)
+	email_invitation_subject: {
+		'pt-PT': '{courier_name} convidou-o para o bareCourier',
+		en: '{courier_name} invited you to bareCourier'
+	},
+	email_invitation_title: {
+		'pt-PT': 'Bem-vindo ao bareCourier!',
+		en: 'Welcome to bareCourier!'
+	},
+	email_invitation_intro: {
+		'pt-PT': 'Olá {client_name}, foi convidado por <strong>{courier_name}</strong> para criar a sua conta de cliente.',
+		en: 'Hi {client_name}, you\'ve been invited by <strong>{courier_name}</strong> to create your client account.'
+	},
+	email_invitation_instructions: {
+		'pt-PT': 'Clique no botão abaixo para definir a sua palavra-passe e concluir o registo:',
+		en: 'Click the button below to set your password and complete your registration:'
+	},
+	email_invitation_button: {
+		'pt-PT': 'Definir Palavra-passe',
+		en: 'Set Your Password'
+	},
+	email_invitation_expiry: {
+		'pt-PT': 'Este link expira em 24 horas.',
+		en: 'This link expires in 24 hours.'
+	},
+	email_invitation_help: {
+		'pt-PT': 'Precisa de ajuda? Contacte o seu estafeta diretamente.',
+		en: 'Need help? Contact your courier directly.'
 	},
 
 	// Default/fallback template
