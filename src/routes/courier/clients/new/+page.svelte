@@ -1,6 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { onDestroy } from "svelte";
   import { PUBLIC_SUPABASE_URL } from "$env/static/public";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
@@ -12,25 +11,16 @@
   import AddressInput from "$lib/components/AddressInput.svelte";
   import PricingConfigForm from "$lib/components/PricingConfigForm.svelte";
   import * as m from "$lib/paraglide/messages.js";
+  import { toast } from "$lib/utils/toast.js";
   import { formatCurrency } from "$lib/utils.js";
   import { localizeHref } from "$lib/paraglide/runtime.js";
   import type { PageData } from "./$types";
   import type { PricingModel } from "$lib/database.types.js";
-  import {
-    ArrowLeft,
-    Package,
-    Euro,
-    ChevronDown,
-    AlertTriangle,
-    Mail,
-  } from "@lucide/svelte";
+  import { ArrowLeft, Package, Euro, ChevronDown, Mail } from "@lucide/svelte";
 
   let { data }: { data: PageData } = $props();
 
   let loading = $state(false);
-  let error = $state("");
-  let success = $state("");
-  let warning = $state("");
   let name = $state("");
   let email = $state("");
   let password = $state("");
@@ -39,7 +29,6 @@
   let defaultPickupLocation = $state("");
   let defaultPickupCoords = $state<[number, number] | null>(null);
   let defaultServiceTypeId = $state("");
-  let redirectTimeout: ReturnType<typeof setTimeout> | null = null;
 
   // Pricing section
   let showPricingSection = $state(false);
@@ -53,13 +42,6 @@
     max_km: number | null;
     price: number;
   }[] = $state([]);
-
-  // Clean up redirect timeout on unmount
-  onDestroy(() => {
-    if (redirectTimeout) {
-      clearTimeout(redirectTimeout);
-    }
-  });
 
   function handleAddressSelect(
     address: string,
@@ -92,14 +74,13 @@
   async function handleSubmit(e: Event) {
     e.preventDefault();
     loading = true;
-    error = "";
 
     // Get session token for edge function auth
     const { data: sessionData } = await data.supabase.auth.getSession();
     const accessToken = sessionData.session?.access_token;
 
     if (!accessToken) {
-      error = m.session_expired();
+      toast.error(m.session_expired(), { duration: 8000 });
       loading = false;
       return;
     }
@@ -130,18 +111,13 @@
     const result = await response.json();
 
     if (!response.ok) {
-      error = result.error || m.error_create_client_failed();
+      toast.error(m.error_create_client_failed(), { duration: 8000 });
       loading = false;
       return;
     }
 
     // Handle partial success (e.g., client created but email failed)
     const isPartialSuccess = response.status === 207;
-    if (isPartialSuccess) {
-      warning =
-        result.warning ||
-        "Client created, but there was an issue sending the invitation.";
-    }
 
     // If pricing config was set, save it for the new client
     let pricingSaveFailed = false;
@@ -189,34 +165,28 @@
       }
     }
 
-    // Success - show message briefly then redirect
-    // Set success message (207 partial success still shows success for client creation)
-    success = result.invitation_sent
-      ? m.invitation_sent({ email: email.trim() })
-      : m.clients_success();
-
-    // Handle warnings - prioritize 207 warning, then pricing failure
-    if (pricingSaveFailed && !isPartialSuccess) {
-      warning =
-        "Client created, but pricing configuration failed to save. You can add it later.";
-    } else if (pricingSaveFailed && isPartialSuccess) {
-      // Both issues occurred - combine warnings
-      warning =
-        (warning ? warning + " " : "") +
-        "Additionally, pricing configuration failed to save.";
+    // Show appropriate toast messages
+    if (result.invitation_sent) {
+      toast.success(m.invitation_sent({ email: email.trim() }));
+    } else {
+      toast.success(m.toast_client_created());
     }
-    // If only isPartialSuccess, warning was already set above
+
+    // Show warnings for partial failures
+    if (isPartialSuccess) {
+      toast.warning(
+        result.warning ||
+          "Client created, but there was an issue sending the invitation.",
+        { duration: 6000 },
+      );
+    }
+
+    if (pricingSaveFailed) {
+      toast.warning(m.toast_client_pricing_failed(), { duration: 6000 });
+    }
 
     loading = false;
-
-    // Extend redirect timeout if there are warnings to read
-    const hasWarnings = isPartialSuccess || pricingSaveFailed;
-    redirectTimeout = setTimeout(
-      () => {
-        goto(localizeHref("/courier/clients"));
-      },
-      hasWarnings ? 3000 : 1500,
-    );
+    goto(localizeHref("/courier/clients"));
   }
 </script>
 
@@ -235,27 +205,6 @@
     </Card.Header>
     <Card.Content>
       <form onsubmit={handleSubmit} class="space-y-4">
-        {#if error}
-          <div
-            class="rounded-md bg-destructive/10 p-3 text-sm text-destructive"
-          >
-            {error}
-          </div>
-        {/if}
-        {#if success}
-          <div class="rounded-md bg-green-500/10 p-3 text-sm text-green-600">
-            {success}
-          </div>
-        {/if}
-        {#if warning}
-          <div
-            class="rounded-md bg-amber-500/10 p-3 text-sm text-amber-600 flex items-start gap-2"
-          >
-            <AlertTriangle class="size-4 mt-0.5 flex-shrink-0" />
-            <span>{warning}</span>
-          </div>
-        {/if}
-
         <!-- Invitation Toggle -->
         <div class="flex items-center justify-between rounded-md border p-4">
           <div class="flex items-center gap-3">

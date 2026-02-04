@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from "$app/forms";
+  import { invalidateAll } from "$app/navigation";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
@@ -8,13 +9,14 @@
   import { Badge } from "$lib/components/ui/badge/index.js";
   import AddressInput from "$lib/components/AddressInput.svelte";
   import * as m from "$lib/paraglide/messages.js";
+  import { toast } from "$lib/utils/toast.js";
   import { formatCurrency } from "$lib/utils.js";
   import { localizeHref } from "$lib/paraglide/runtime.js";
-  import type { PageData, ActionData } from "./$types";
+  import type { PageData } from "./$types";
   import type { PricingModel } from "$lib/database.types.js";
   import { ArrowLeft, Euro, ChevronDown, Package } from "@lucide/svelte";
 
-  let { data, form }: { data: PageData; form: ActionData } = $props();
+  let { data }: { data: PageData } = $props();
 
   let loading = $state(false);
   // svelte-ignore state_referenced_locally - intentional: capture initial value for form editing
@@ -135,23 +137,30 @@
     <Card.Content>
       <form
         method="POST"
-        use:enhance={() => {
+        use:enhance={async () => {
           loading = true;
-          return async ({ update }) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return async ({
+            result,
+            update,
+          }: {
+            result: any;
+            update: () => Promise<void>;
+          }) => {
             loading = false;
-            await update();
+            if (result.type === "success") {
+              await update();
+              await invalidateAll();
+              toast.success(m.toast_client_updated());
+            } else if (result.type === "failure" && result.data?.error) {
+              toast.error(m.toast_error_generic(), { duration: 8000 });
+            } else {
+              await update();
+            }
           };
         }}
         class="space-y-4"
       >
-        {#if form?.error}
-          <div
-            class="rounded-md bg-destructive/10 p-3 text-sm text-destructive"
-          >
-            {form.error}
-          </div>
-        {/if}
-
         <div class="grid gap-4 md:grid-cols-2">
           <div class="space-y-2">
             <Label for="name">{m.form_name()} *</Label>

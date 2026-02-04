@@ -10,11 +10,12 @@
   import AddressInput from "$lib/components/AddressInput.svelte";
   import PasswordChangeForm from "$lib/components/PasswordChangeForm.svelte";
   import * as m from "$lib/paraglide/messages.js";
-  import type { PageData, ActionData } from "./$types";
+  import { toast } from "$lib/utils/toast.js";
+  import type { PageData } from "./$types";
   import { Settings, User, MapPin } from "@lucide/svelte";
   import NotificationsTab from "$lib/components/NotificationsTab.svelte";
 
-  let { data, form }: { data: PageData; form: ActionData } = $props();
+  let { data }: { data: PageData } = $props();
 
   // Location state for Mapbox address input
   // svelte-ignore state_referenced_locally
@@ -54,6 +55,34 @@
 
   const activeTab = $derived(page.url.searchParams.get("tab") || "profile");
 
+  function handleProfileSubmit() {
+    return async ({
+      result,
+    }: {
+      result: { type: string; data?: { error?: string; success?: boolean } };
+    }) => {
+      if (result.type === "failure" && result.data?.error) {
+        toast.error(m.toast_error_generic(), { duration: 8000 });
+      } else if (result.type === "success" && result.data?.success) {
+        toast.success(m.toast_profile_updated());
+      }
+    };
+  }
+
+  function handleLocationSubmit() {
+    return async ({
+      result,
+    }: {
+      result: { type: string; data?: { error?: string; success?: boolean } };
+    }) => {
+      if (result.type === "failure" && result.data?.error) {
+        toast.error(m.toast_error_generic(), { duration: 8000 });
+      } else if (result.type === "success" && result.data?.success) {
+        toast.success(m.toast_settings_saved());
+      }
+    };
+  }
+
   function setTab(tab: string) {
     const url = new URL(page.url);
     if (tab === "profile") {
@@ -74,18 +103,6 @@
     <Settings class="size-6" />
     <h1 class="text-2xl font-bold">{m.settings_title()}</h1>
   </div>
-
-  {#if form?.error}
-    <div class="rounded-md bg-destructive/10 p-3 text-destructive">
-      {form.error}
-    </div>
-  {/if}
-
-  {#if form?.success}
-    <div class="rounded-md bg-green-500/10 p-3 text-green-600">
-      {m.settings_saved()}
-    </div>
-  {/if}
 
   <!-- Desktop: Tabs -->
   <div class="hidden md:block">
@@ -157,7 +174,7 @@
       <form
         method="POST"
         action="?/updateProfile"
-        use:enhance
+        use:enhance={handleProfileSubmit}
         class="space-y-4"
       >
         <div class="grid gap-4 md:grid-cols-2">
@@ -207,7 +224,7 @@
       <form
         method="POST"
         action="?/updateLocation"
-        use:enhance
+        use:enhance={handleLocationSubmit}
         class="space-y-4"
       >
         <div class="space-y-2">

@@ -6,6 +6,7 @@
   import { Input } from "$lib/components/ui/input/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
   import * as m from "$lib/paraglide/messages.js";
+  import { toast } from "$lib/utils/toast.js";
   import AddressInput from "$lib/components/AddressInput.svelte";
   import PasswordChangeForm from "$lib/components/PasswordChangeForm.svelte";
   import { User, Warehouse, Tag } from "@lucide/svelte";
@@ -73,6 +74,9 @@
           await applyAction(result);
           if (result.type === "success") {
             await invalidateAll();
+            toast.success(m.toast_profile_updated());
+          } else if (result.type === "failure") {
+            toast.error(m.toast_settings_failed(), { duration: 8000 });
           }
         };
       }}
@@ -125,6 +129,9 @@
           await applyAction(result);
           if (result.type === "success") {
             await invalidateAll();
+            toast.success(m.toast_settings_saved());
+          } else if (result.type === "failure") {
+            toast.error(m.toast_settings_failed(), { duration: 8000 });
           }
         };
       }}
@@ -193,6 +200,9 @@
           await applyAction(result);
           if (result.type === "success") {
             await invalidateAll();
+            toast.success(m.toast_settings_saved());
+          } else if (result.type === "failure") {
+            toast.error(m.toast_settings_failed(), { duration: 8000 });
           }
         };
       }}

@@ -4,6 +4,7 @@
   import { Input } from "$lib/components/ui/input/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
   import * as m from "$lib/paraglide/messages.js";
+  import { toast } from "$lib/utils/toast.js";
   import { localizeHref } from "$lib/paraglide/runtime.js";
   import type { PageData } from "./$types";
 
@@ -12,12 +13,10 @@
   let email = $state("");
   let loading = $state(false);
   let submitted = $state(false);
-  let error = $state("");
 
   async function handleSubmit(e: Event) {
     e.preventDefault();
     loading = true;
-    error = "";
 
     try {
       await data.supabase.auth.resetPasswordForEmail(email, {
@@ -25,13 +24,14 @@
       });
     } catch {
       // Only show error for network failures, not for email existence
-      error = m.error_generic();
+      toast.error(m.toast_error_network(), { duration: 8000 });
       loading = false;
       return;
     }
 
     // Always show success message regardless of whether email exists
     // This prevents email enumeration attacks
+    toast.success(m.toast_password_reset_sent());
     submitted = true;
     loading = false;
   }
@@ -62,14 +62,6 @@
         </div>
       {:else}
         <form onsubmit={handleSubmit} class="space-y-4">
-          {#if error}
-            <div
-              class="rounded-md bg-destructive/10 p-3 text-sm text-destructive"
-            >
-              {error}
-            </div>
-          {/if}
-
           <div class="space-y-2">
             <Label for="email">{m.auth_email()}</Label>
             <Input

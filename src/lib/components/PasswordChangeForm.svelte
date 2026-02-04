@@ -5,6 +5,7 @@
   import { Input } from "$lib/components/ui/input/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
   import * as m from "$lib/paraglide/messages.js";
+  import { toast } from "$lib/utils/toast.js";
   import { localizeHref } from "$lib/paraglide/runtime.js";
   import { Lock } from "@lucide/svelte";
   import type { SupabaseClient } from "@supabase/supabase-js";
@@ -21,8 +22,6 @@
   let newPassword = $state("");
   let confirmPassword = $state("");
   let loading = $state(false);
-  let error = $state("");
-  let success = $state(false);
 
   const passwordsMatch = $derived(newPassword === confirmPassword);
   const isValid = $derived(
@@ -43,7 +42,6 @@
   async function handleSubmit(e: Event) {
     e.preventDefault();
     loading = true;
-    error = "";
 
     // Step 1: Verify current password by reauthenticating
     const { error: authError } = await supabase.auth.signInWithPassword({
@@ -52,7 +50,7 @@
     });
 
     if (authError) {
-      error = m.password_current_incorrect();
+      toast.error(m.password_current_incorrect(), { duration: 8000 });
       loading = false;
       return;
     }
@@ -63,16 +61,16 @@
     });
 
     if (updateError) {
-      error = mapAuthError(updateError.message);
+      toast.error(mapAuthError(updateError.message), { duration: 8000 });
       loading = false;
       return;
     }
 
     // Password change invalidates all sessions - redirect to login
-    success = true;
+    toast.success(m.toast_password_changed());
     await supabase.auth.signOut();
 
-    // Wait a moment for the user to see the success message
+    // Wait a moment for the user to see the success toast
     setTimeout(() => {
       goto(localizeHref("/login"));
     }, 2000);
@@ -88,65 +86,51 @@
     <Card.Description>{m.password_change_desc()}</Card.Description>
   </Card.Header>
   <Card.Content>
-    {#if success}
-      <div class="rounded-md bg-green-500/10 p-3 text-green-600">
-        {m.password_change_success()}
+    <form onsubmit={handleSubmit} class="space-y-4">
+      <div class="space-y-2">
+        <Label for="current_password">{m.password_current()}</Label>
+        <Input
+          id="current_password"
+          type="password"
+          bind:value={currentPassword}
+          required
+          disabled={loading}
+          autocomplete="current-password"
+        />
       </div>
-    {:else}
-      <form onsubmit={handleSubmit} class="space-y-4">
-        {#if error}
-          <div
-            class="rounded-md bg-destructive/10 p-3 text-sm text-destructive"
-          >
-            {error}
-          </div>
+
+      <div class="space-y-2">
+        <Label for="new_password">{m.password_new()}</Label>
+        <Input
+          id="new_password"
+          type="password"
+          bind:value={newPassword}
+          required
+          disabled={loading}
+          minlength={6}
+          autocomplete="new-password"
+        />
+        <p class="text-xs text-muted-foreground">{m.password_min_length()}</p>
+      </div>
+
+      <div class="space-y-2">
+        <Label for="confirm_password">{m.password_confirm()}</Label>
+        <Input
+          id="confirm_password"
+          type="password"
+          bind:value={confirmPassword}
+          required
+          disabled={loading}
+          autocomplete="new-password"
+        />
+        {#if confirmPassword && !passwordsMatch}
+          <p class="text-xs text-destructive">{m.password_mismatch()}</p>
         {/if}
+      </div>
 
-        <div class="space-y-2">
-          <Label for="current_password">{m.password_current()}</Label>
-          <Input
-            id="current_password"
-            type="password"
-            bind:value={currentPassword}
-            required
-            disabled={loading}
-            autocomplete="current-password"
-          />
-        </div>
-
-        <div class="space-y-2">
-          <Label for="new_password">{m.password_new()}</Label>
-          <Input
-            id="new_password"
-            type="password"
-            bind:value={newPassword}
-            required
-            disabled={loading}
-            minlength={6}
-            autocomplete="new-password"
-          />
-          <p class="text-xs text-muted-foreground">{m.password_min_length()}</p>
-        </div>
-
-        <div class="space-y-2">
-          <Label for="confirm_password">{m.password_confirm()}</Label>
-          <Input
-            id="confirm_password"
-            type="password"
-            bind:value={confirmPassword}
-            required
-            disabled={loading}
-            autocomplete="new-password"
-          />
-          {#if confirmPassword && !passwordsMatch}
-            <p class="text-xs text-destructive">{m.password_mismatch()}</p>
-          {/if}
-        </div>
-
-        <Button type="submit" disabled={loading || !isValid}>
-          {loading ? m.saving() : m.password_change_button()}
-        </Button>
-      </form>
-    {/if}
+      <Button type="submit" disabled={loading || !isValid}>
+        {loading ? m.saving() : m.password_change_button()}
+      </Button>
+    </form>
   </Card.Content>
 </Card.Root>
