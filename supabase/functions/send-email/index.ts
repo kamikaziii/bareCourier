@@ -5,6 +5,51 @@ import { isServiceRoleKey } from "../_shared/auth.ts";
 import { emailT } from "../_shared/email-translations.ts";
 import { getLocale, type SupportedLocale } from "../_shared/translations.ts";
 
+interface ResendErrorResponse {
+  name?: string;
+  message?: string;
+  statusCode?: number;
+}
+
+interface ResendSuccessResponse {
+  id: string;
+}
+
+/**
+ * Structured error codes for machine-parseable error responses.
+ * Used by automated callers (agents, cron jobs) to handle errors appropriately.
+ */
+type ErrorCode =
+  | "CONFIG_ERROR"
+  | "AUTH_ERROR"
+  | "VALIDATION_ERROR"
+  | "USER_NOT_FOUND"
+  | "FORBIDDEN"
+  | "NOTIFICATIONS_DISABLED"
+  | "RATE_LIMIT"
+  | "QUOTA_EXCEEDED"
+  | "API_ERROR"
+  | "TIMEOUT_ERROR"
+  | "INTERNAL_ERROR";
+
+interface ErrorResponse {
+  success: false;
+  error: {
+    code: ErrorCode;
+    message: string;
+    retryable: boolean;
+    retryAfterMs?: number;
+  };
+}
+
+/** Retry configuration for fetchWithRetry */
+const RETRY_CONFIG = {
+  BASE_DELAY_MS: 500,
+  MAX_JITTER_MS: 300,
+  MAX_RETRY_DELAY_MS: 10000, // Cap retry-after to stay within Edge Function limits
+  FUNCTION_TIMEOUT_MS: 55000, // 5s safety margin before 60s Edge Function limit
+} as const;
+
 /**
  * Send Email Notification Edge Function
  *
@@ -14,8 +59,45 @@ import { getLocale, type SupportedLocale } from "../_shared/translations.ts";
  *   - RESEND_FROM_EMAIL (must be from a verified domain, or use noreply@resend.dev for testing)
  */
 
+/**
+ * Creates a structured error response with machine-parseable error codes.
+ * Enables automated callers to handle errors based on code and retryable flag.
+ */
+function createErrorResponse(
+  code: ErrorCode,
+  message: string,
+  status: number,
+  corsHeaders: Record<string, string>,
+  retryable: boolean = false,
+  retryAfterMs?: number
+): Response {
+  const body: ErrorResponse = {
+    success: false,
+    error: {
+      code,
+      message,
+      retryable,
+      ...(retryAfterMs !== undefined && { retryAfterMs })
+    }
+  };
+  return new Response(
+    JSON.stringify(body),
+    { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
+
 // Email templates
 type EmailTemplate = "new_request" | "delivered" | "request_accepted" | "request_rejected" | "request_suggested" | "request_cancelled" | "daily_summary" | "past_due" | "suggestion_accepted" | "suggestion_declined";
+
+// Required fields for each email template - validates templateData before sending
+const TEMPLATE_REQUIRED_FIELDS: Record<EmailTemplate, string[]> = {
+  new_request: ["client_name", "pickup_location", "delivery_location", "app_url"],
+  delivered: ["pickup_location", "delivery_location", "delivered_at", "app_url"],
+  request_accepted: ["pickup_location", "delivery_location", "app_url"],
+  request_rejected: ["pickup_location", "delivery_location", "app_url"],
+  request_suggested: ["pickup_location", "delivery_location", "requested_date", "suggested_date", "app_url"],
+  request_cancelled: ["client_name", "pickup_location", "delivery_location", "app_url"],
+};
 
 interface EmailData {
   to: string;
@@ -35,6 +117,158 @@ function escapeHtml(str: string | undefined | null): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+/**
+ * Checks if a 429 error is a retryable rate limit vs non-retryable quota error.
+ * Resend returns 429 for: rate_limit_exceeded (retry), daily_quota_exceeded (don't retry),
+ * monthly_quota_exceeded (don't retry - needs plan upgrade).
+ *
+ * @param response - The HTTP response with status 429
+ * @returns Object indicating if retry should be attempted and the error type
+ */
+async function isRetryableRateLimit(response: Response): Promise<{ retryable: boolean; errorName?: string }> {
+  try {
+    // Clone to preserve body for main handler if we return this response
+    const cloned = response.clone();
+    const body = (await cloned.json()) as ResendErrorResponse;
+    const errorName = body?.name ?? "unknown";
+    // Only rate_limit_exceeded is retryable; quota errors are not
+    return { retryable: errorName === "rate_limit_exceeded", errorName };
+  } catch (error) {
+    console.warn(
+      '[send-email] Failed to parse rate limit response:',
+      error instanceof Error ? error.message : String(error)
+    );
+    // Assume retryable on parse error (safer for transient issues)
+    return { retryable: true, errorName: "parse_error" };
+  }
+}
+
+/**
+ * Fetches with automatic retry for rate limits (429) and transient errors (5xx).
+ * Uses exponential backoff with jitter to prevent thundering herd.
+ *
+ * Includes function-level timeout guard to ensure retries don't exceed Edge Function limits.
+ * With functionStartTime provided, retries abort gracefully when approaching 55s.
+ *
+ * Worst-case timing (with 10s request timeout, 3 retries):
+ * - 4 attempts x 10s timeout = 40s (requests)
+ * - 3 retry delays x (10s max + 0.3s jitter) = ~31s (backoff)
+ * - Total: ~71s without guard, but guard aborts at 55s
+ *
+ * Retry behavior:
+ * - 429 rate_limit_exceeded: Retry with backoff
+ * - 429 daily/monthly_quota_exceeded: Fail immediately (not transient)
+ * - 5xx: Retry with backoff
+ * - 4xx (except 429): Fail immediately (permanent error)
+ * - Network/timeout errors: Retry with backoff
+ *
+ * @param url - The URL to fetch
+ * @param options - Standard fetch RequestInit options
+ * @param maxRetries - Maximum retry attempts (default: 3). 0 = one attempt, no retries.
+ * @param timeoutMs - Request timeout in milliseconds (default: 30000)
+ * @param functionStartTime - Start time of the Edge Function (Date.now()). Used to check global timeout.
+ * @returns The Response object (may be error response if all retries exhausted)
+ * @throws Error if all retries fail due to network/timeout errors or function timeout approaching
+ */
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries = 3,
+  timeoutMs = 30000,
+  functionStartTime?: number
+): Promise<Response> {
+  if (maxRetries < 0) {
+    throw new Error("fetchWithRetry: maxRetries must be >= 0");
+  }
+  if (timeoutMs <= 0) {
+    throw new Error("fetchWithRetry: timeoutMs must be > 0");
+  }
+
+  const totalAttempts = maxRetries + 1;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    // Check function timeout before attempting (if functionStartTime provided)
+    if (functionStartTime && Date.now() - functionStartTime > RETRY_CONFIG.FUNCTION_TIMEOUT_MS) {
+      console.log('[send-email] Function timeout approaching, aborting retries');
+      throw new Error('Function timeout limit approaching');
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      // Success - return immediately
+      if (response.ok) {
+        return response;
+      }
+
+      // Permanent 4xx errors (except 429) - fail immediately
+      if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+        return response;
+      }
+
+      // 429 - check if it's retryable rate limit or permanent quota error
+      if (response.status === 429) {
+        const { retryable, errorName } = await isRetryableRateLimit(response);
+        if (!retryable) {
+          console.log(`[send-email] Quota exceeded (${errorName}), not retrying`);
+          return response;
+        }
+        // Fall through to retry logic
+      }
+
+      // Retry on 429 (rate_limit_exceeded) or 5xx
+      if ((response.status === 429 || response.status >= 500) && attempt < maxRetries) {
+        const retryAfterHeader = response.headers.get("retry-after");
+        const parsedRetryAfter = retryAfterHeader ? parseInt(retryAfterHeader, 10) : NaN;
+        // Cap retry-after to stay within Edge Function execution limits
+        const baseDelay = !isNaN(parsedRetryAfter)
+          ? Math.min(parsedRetryAfter * 1000, RETRY_CONFIG.MAX_RETRY_DELAY_MS)
+          : Math.pow(2, attempt) * RETRY_CONFIG.BASE_DELAY_MS;
+
+        const jitter = Math.random() * RETRY_CONFIG.MAX_JITTER_MS;
+        const delay = baseDelay + jitter;
+
+        console.log(
+          `[send-email] Retry after ${response.status} (attempt ${attempt + 1}/${totalAttempts}), waiting ${Math.round(delay)}ms`
+        );
+
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+
+      // Last attempt or non-retryable - return as-is
+      return response;
+    } catch (error) {
+      clearTimeout(timeoutId);
+
+      const errorType = error instanceof Error ? error.name : String(error);
+      if (errorType === "AbortError") {
+        console.log(`[send-email] Request timeout (attempt ${attempt + 1}/${totalAttempts})`);
+      }
+
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt) * RETRY_CONFIG.BASE_DELAY_MS + Math.random() * RETRY_CONFIG.MAX_JITTER_MS;
+        console.log(`[send-email] Retry after ${errorType} (attempt ${attempt + 1}/${totalAttempts}), waiting ${Math.round(delay)}ms`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  // This should be unreachable, but TypeScript needs it
+  throw new Error("[send-email] fetchWithRetry: unexpected code path");
 }
 
 // Email template wrapper configuration
@@ -385,24 +619,21 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // Track function start time for timeout guard
+    const functionStartTime = Date.now();
+
     // Get Resend configuration
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     const resendFromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "noreply@resend.dev";
 
     if (!resendApiKey) {
-      return new Response(
-        JSON.stringify({ error: "RESEND_API_KEY not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return createErrorResponse("CONFIG_ERROR", "Email service not configured", 500, corsHeaders, false);
     }
 
     // Get the authorization header
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "No authorization header" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return createErrorResponse("AUTH_ERROR", "No authorization header", 401, corsHeaders, false);
     }
 
     // Create Supabase clients
@@ -427,10 +658,7 @@ Deno.serve(async (req: Request) => {
 
       const { data, error: claimsError } = await supabase.auth.getClaims(token);
       if (claimsError || !data?.claims?.sub) {
-        return new Response(
-          JSON.stringify({ error: "Invalid or expired session" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return createErrorResponse("AUTH_ERROR", "Invalid or expired session", 401, corsHeaders, false);
       }
 
       userId = data.claims.sub as string;
@@ -440,10 +668,22 @@ Deno.serve(async (req: Request) => {
     const { user_id, template, data: templateData } = await req.json() as EmailData & { user_id: string };
 
     if (!user_id || !template) {
-      return new Response(
-        JSON.stringify({ error: "user_id and template are required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return createErrorResponse("VALIDATION_ERROR", "user_id and template are required", 400, corsHeaders, false);
+    }
+
+    // Validate required template fields
+    const requiredFields = TEMPLATE_REQUIRED_FIELDS[template];
+    if (requiredFields) {
+      const missingFields = requiredFields.filter(f => !templateData?.[f]);
+      if (missingFields.length > 0) {
+        return createErrorResponse(
+          "VALIDATION_ERROR",
+          `Missing required fields for ${template}: ${missingFields.join(", ")}`,
+          400,
+          corsHeaders,
+          false
+        );
+      }
     }
 
     // Get user's email and check if email notifications are enabled
@@ -472,10 +712,7 @@ Deno.serve(async (req: Request) => {
 
       // Allow if: caller is courier, OR notifying self, OR client notifying courier
       if (!isCourier && !isSelfNotification && !isNotifyingCourier) {
-        return new Response(
-          JSON.stringify({ error: "Forbidden: Cannot send emails to other users" }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return createErrorResponse("FORBIDDEN", "Cannot send emails to other users", 403, corsHeaders, false);
       }
     }
 
@@ -491,10 +728,7 @@ Deno.serve(async (req: Request) => {
     const { data: { user: targetUser } } = await adminClient.auth.admin.getUserById(user_id);
 
     if (!targetUser?.email) {
-      return new Response(
-        JSON.stringify({ error: "User email not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return createErrorResponse("USER_NOT_FOUND", "User email not found", 404, corsHeaders, false);
     }
 
     // Determine locale: prefer from templateData (passed by dispatchNotification), fallback to profile
@@ -503,30 +737,55 @@ Deno.serve(async (req: Request) => {
     // Generate email content
     const { subject, html } = generateEmailHtml(template, templateData || {}, locale);
 
-    // Send email via Resend
-    const resendResponse = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${resendApiKey}`,
-        "Content-Type": "application/json",
+    // Send email via Resend (with retry for rate limits and transient errors)
+    // Worst-case without guard: 4 attempts x 10s timeout + 3 retries x 10.3s backoff = ~71s
+    // Function timeout guard aborts at 55s to stay within Edge Function 60s limit
+    const resendResponse = await fetchWithRetry(
+      "https://api.resend.com/emails",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: `bareCourier <${resendFromEmail}>`,
+          to: [targetUser.email],
+          subject,
+          html,
+        }),
       },
-      body: JSON.stringify({
-        from: `bareCourier <${resendFromEmail}>`,
-        to: [targetUser.email],
-        subject,
-        html,
-      }),
-    });
+      3,      // maxRetries
+      10000,  // 10s timeout (Resend typically responds in <2s)
+      functionStartTime
+    );
 
     if (!resendResponse.ok) {
-      const errorData = await resendResponse.json();
-      return new Response(
-        JSON.stringify({ error: `Resend API error: ${JSON.stringify(errorData)}` }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      const errorData = await resendResponse.json() as ResendErrorResponse;
+      console.error('[send-email] Resend API error:', JSON.stringify(errorData));
+
+      // Determine error code based on response status and error name
+      if (resendResponse.status === 429) {
+        const errorName = errorData?.name ?? "unknown";
+        if (errorName === "rate_limit_exceeded") {
+          const retryAfterHeader = resendResponse.headers.get("retry-after");
+          const retryAfterMs = retryAfterHeader ? parseInt(retryAfterHeader, 10) * 1000 : 60000;
+          return createErrorResponse("RATE_LIMIT", "Rate limit exceeded", 429, corsHeaders, true, retryAfterMs);
+        } else {
+          // daily_quota_exceeded or monthly_quota_exceeded - not retryable
+          return createErrorResponse("QUOTA_EXCEEDED", "Email quota exceeded", 429, corsHeaders, false);
+        }
+      }
+
+      // Other API errors (5xx are retryable, 4xx are not)
+      const isRetryable = resendResponse.status >= 500;
+      return createErrorResponse("API_ERROR", "Failed to send email", 500, corsHeaders, isRetryable);
     }
 
-    const resendData = await resendResponse.json();
+    const resendData = await resendResponse.json() as ResendSuccessResponse;
+
+    // Log successful email delivery for observability
+    console.log(`[send-email] Email sent successfully to ${targetUser.email}, id: ${resendData.id}`);
 
     return new Response(
       JSON.stringify({
@@ -537,9 +796,14 @@ Deno.serve(async (req: Request) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: (error as Error).message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    console.error('[send-email] Unexpected error:', error);
+
+    // Check if it's a function timeout error (retryable)
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('Function timeout limit approaching')) {
+      return createErrorResponse("TIMEOUT_ERROR", "Request timeout", 504, getCorsHeaders(req), true);
+    }
+
+    return createErrorResponse("INTERNAL_ERROR", "Internal server error", 500, getCorsHeaders(req), false);
   }
 });
