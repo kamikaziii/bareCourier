@@ -3,7 +3,6 @@ import type { PageServerLoad, Actions } from './$types';
 import type { Service, Profile } from '$lib/database.types';
 import { localizeHref, extractLocaleFromRequest } from '$lib/paraglide/runtime.js';
 import { calculateDayWorkload, getWorkloadSettings, type WorkloadEstimate } from '$lib/services/workload.js';
-import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { notifyClient } from '$lib/services/notifications';
 
 // Number of days to scan ahead when finding the next compatible day
@@ -11,6 +10,8 @@ const LOOKAHEAD_DAYS = 14;
 
 // Process notifications in chunks to avoid overwhelming the system
 const NOTIFICATION_CHUNK_SIZE = 5;
+
+const APP_URL = 'https://barecourier.vercel.app';
 
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
 	const { session, user } = await safeGetSession();
@@ -170,21 +171,25 @@ export const actions: Actions = {
 		}
 
 		// Notify client with email
-		await notifyClient({
-			session,
-			clientId: service.client_id,
-			serviceId,
-			category: 'schedule_change',
-			title: 'Pedido Aceite',
-			message: 'O seu pedido de serviço foi aceite pelo estafeta. Verifique os detalhes na aplicação.',
-			emailTemplate: 'request_accepted',
-			emailData: {
-				pickup_location: service.pickup_location,
-				delivery_location: service.delivery_location,
-				scheduled_date: service.requested_date || '',
-				app_url: PUBLIC_SUPABASE_URL.replace('/functions/v1', '')
-			}
-		});
+		try {
+			await notifyClient({
+				session,
+				clientId: service.client_id,
+				serviceId,
+				category: 'schedule_change',
+				title: 'Pedido Aceite',
+				message: 'O seu pedido de serviço foi aceite pelo estafeta. Verifique os detalhes na aplicação.',
+				emailTemplate: 'request_accepted',
+				emailData: {
+					pickup_location: service.pickup_location,
+					delivery_location: service.delivery_location,
+					scheduled_date: service.requested_date || '',
+					app_url: APP_URL
+				}
+			});
+		} catch (error) {
+			console.error('Notification failed for service', serviceId, error);
+		}
 
 		return { success: true };
 	},
@@ -240,21 +245,25 @@ export const actions: Actions = {
 		// Notify client with email
 		if (service?.client_id) {
 			const reasonText = rejectionReason ? ` Motivo: ${rejectionReason}` : '';
-			await notifyClient({
-				session,
-				clientId: service.client_id,
-				serviceId,
-				category: 'schedule_change',
-				title: 'Pedido Rejeitado',
-				message: `O seu pedido de serviço foi rejeitado.${reasonText}`,
-				emailTemplate: 'request_rejected',
-				emailData: {
-					pickup_location: service.pickup_location,
-					delivery_location: service.delivery_location,
-					reason: rejectionReason || '',
-					app_url: PUBLIC_SUPABASE_URL.replace('/functions/v1', '')
-				}
-			});
+			try {
+				await notifyClient({
+					session,
+					clientId: service.client_id,
+					serviceId,
+					category: 'schedule_change',
+					title: 'Pedido Rejeitado',
+					message: `O seu pedido de serviço foi rejeitado.${reasonText}`,
+					emailTemplate: 'request_rejected',
+					emailData: {
+						pickup_location: service.pickup_location,
+						delivery_location: service.delivery_location,
+						reason: rejectionReason || '',
+						app_url: APP_URL
+					}
+				});
+			} catch (error) {
+				console.error('Notification failed for service', serviceId, error);
+			}
 		}
 
 		return { success: true };
@@ -362,22 +371,26 @@ export const actions: Actions = {
 			};
 			const msg = messages[locale] || messages['pt-PT'];
 
-			await notifyClient({
-				session,
-				clientId: service.client_id,
-				serviceId,
-				category: 'schedule_change',
-				title: msg.subject,
-				message: msg.body,
-				emailTemplate: 'request_suggested',
-				emailData: {
-					pickup_location: service.pickup_location,
-					delivery_location: service.delivery_location,
-					requested_date: service.requested_date || '',
-					suggested_date: suggestedDate,
-					app_url: PUBLIC_SUPABASE_URL.replace('/functions/v1', '')
-				}
-			});
+			try {
+				await notifyClient({
+					session,
+					clientId: service.client_id,
+					serviceId,
+					category: 'schedule_change',
+					title: msg.subject,
+					message: msg.body,
+					emailTemplate: 'request_suggested',
+					emailData: {
+						pickup_location: service.pickup_location,
+						delivery_location: service.delivery_location,
+						requested_date: service.requested_date || '',
+						suggested_date: suggestedDate,
+						app_url: APP_URL
+					}
+				});
+			} catch (error) {
+				console.error('Notification failed for service', serviceId, error);
+			}
 		}
 
 		return { success: true };
@@ -437,21 +450,25 @@ export const actions: Actions = {
 
 			const svcData = serviceData as { pickup_location: string; delivery_location: string; scheduled_date: string | null } | null;
 
-			await notifyClient({
-				session,
-				clientId: result.client_id,
-				serviceId,
-				category: 'schedule_change',
-				title: 'Reagendamento Aprovado',
-				message: 'O seu pedido de reagendamento foi aprovado.',
-				emailTemplate: 'request_accepted',
-				emailData: {
-					pickup_location: svcData?.pickup_location || '',
-					delivery_location: svcData?.delivery_location || '',
-					scheduled_date: svcData?.scheduled_date || '',
-					app_url: PUBLIC_SUPABASE_URL.replace('/functions/v1', '')
-				}
-			});
+			try {
+				await notifyClient({
+					session,
+					clientId: result.client_id,
+					serviceId,
+					category: 'schedule_change',
+					title: 'Reagendamento Aprovado',
+					message: 'O seu pedido de reagendamento foi aprovado.',
+					emailTemplate: 'request_accepted',
+					emailData: {
+						pickup_location: svcData?.pickup_location || '',
+						delivery_location: svcData?.delivery_location || '',
+						scheduled_date: svcData?.scheduled_date || '',
+						app_url: APP_URL
+					}
+				});
+			} catch (error) {
+				console.error('Notification failed for service', serviceId, error);
+			}
 		}
 
 		return { success: true };
@@ -545,25 +562,29 @@ export const actions: Actions = {
 		if (successful.length > 0) {
 			for (let i = 0; i < successful.length; i += NOTIFICATION_CHUNK_SIZE) {
 				const chunk = successful.slice(i, i + NOTIFICATION_CHUNK_SIZE);
-				await Promise.all(
-					chunk.map(({ id, clientId, pickup_location, delivery_location, scheduled_date }) =>
-						notifyClient({
-							session,
-							clientId,
-							serviceId: id,
-							category: 'schedule_change',
-							title: 'Pedido Aceite',
-							message: 'O seu pedido de serviço foi aceite pelo estafeta. Verifique os detalhes na aplicação.',
-							emailTemplate: 'request_accepted',
-							emailData: {
-								pickup_location,
-								delivery_location,
-								scheduled_date: scheduled_date || '',
-								app_url: PUBLIC_SUPABASE_URL.replace('/functions/v1', '')
-							}
-						})
-					)
-				);
+				try {
+					await Promise.all(
+						chunk.map(({ id, clientId, pickup_location, delivery_location, scheduled_date }) =>
+							notifyClient({
+								session,
+								clientId,
+								serviceId: id,
+								category: 'schedule_change',
+								title: 'Pedido Aceite',
+								message: 'O seu pedido de serviço foi aceite pelo estafeta. Verifique os detalhes na aplicação.',
+								emailTemplate: 'request_accepted',
+								emailData: {
+									pickup_location,
+									delivery_location,
+									scheduled_date: scheduled_date || '',
+									app_url: APP_URL
+								}
+							})
+						)
+					);
+				} catch (error) {
+					console.error('Batch notification failed for chunk', i, error);
+				}
 			}
 		}
 
@@ -631,21 +652,25 @@ export const actions: Actions = {
 			const svcData = serviceData as { pickup_location: string; delivery_location: string } | null;
 
 			const reasonText = denialReason ? ` Motivo: ${denialReason}` : '';
-			await notifyClient({
-				session,
-				clientId: result.client_id,
-				serviceId,
-				category: 'schedule_change',
-				title: 'Reagendamento Recusado',
-				message: `O seu pedido de reagendamento foi recusado.${reasonText}`,
-				emailTemplate: 'request_rejected',
-				emailData: {
-					pickup_location: svcData?.pickup_location || '',
-					delivery_location: svcData?.delivery_location || '',
-					reason: denialReason || '',
-					app_url: PUBLIC_SUPABASE_URL.replace('/functions/v1', '')
-				}
-			});
+			try {
+				await notifyClient({
+					session,
+					clientId: result.client_id,
+					serviceId,
+					category: 'schedule_change',
+					title: 'Reagendamento Recusado',
+					message: `O seu pedido de reagendamento foi recusado.${reasonText}`,
+					emailTemplate: 'request_rejected',
+					emailData: {
+						pickup_location: svcData?.pickup_location || '',
+						delivery_location: svcData?.delivery_location || '',
+						reason: denialReason || '',
+						app_url: APP_URL
+					}
+				});
+			} catch (error) {
+				console.error('Notification failed for service', serviceId, error);
+			}
 		}
 
 		return { success: true };

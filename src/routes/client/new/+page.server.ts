@@ -15,6 +15,8 @@ import { localizeHref } from '$lib/paraglide/runtime.js';
 import { notifyCourier } from '$lib/services/notifications.js';
 import { formatDatePtPT } from '$lib/utils/date-format.js';
 
+const APP_URL = 'https://barecourier.vercel.app';
+
 export const actions: Actions = {
 	default: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { session, user } = await safeGetSession();
@@ -257,7 +259,8 @@ export const actions: Actions = {
 					pickup_location,
 					delivery_location,
 					requested_date: formattedDate,
-					notes: notes || ''
+					notes: notes || '',
+					app_url: APP_URL
 				}
 			});
 		} catch (error) {

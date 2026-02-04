@@ -5,6 +5,8 @@ import { localizeHref } from '$lib/paraglide/runtime.js';
 import { notifyClient } from '$lib/services/notifications.js';
 import { formatDatePtPT, formatDateTimePtPT } from '$lib/utils/date-format.js';
 
+const APP_URL = 'https://barecourier.vercel.app';
+
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
 	const { session } = await safeGetSession();
 	if (!session) {
@@ -105,7 +107,8 @@ export const actions: Actions = {
 					emailData: {
 						pickup_location: service.pickup_location,
 						delivery_location: service.delivery_location,
-						delivered_at: formattedDeliveredAt
+						delivered_at: formattedDeliveredAt,
+						app_url: APP_URL
 					}
 				});
 			} catch (error) {
