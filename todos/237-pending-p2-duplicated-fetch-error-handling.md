@@ -1,16 +1,16 @@
 ---
 status: pending
-priority: p2
+priority: p3
 issue_id: "237"
-tags: [code-review, duplication, pr-16]
+tags: [code-review, patterns, pr-16]
 dependencies: []
 ---
 
-# Duplicated Fetch Error Handling Code
+# Similar Fetch Error Handling Patterns
 
 ## Problem Statement
 
-Two files have identical manual fetch patterns with try-catch and identical error handling. This violates DRY and creates maintenance burden.
+Two files have similar (but not identical) manual fetch patterns with try-catch. This is a minor consistency concern, not true duplication.
 
 **Why it matters:** Bug fixes or improvements need to be applied in multiple places.
 
