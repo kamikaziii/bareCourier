@@ -53,10 +53,20 @@
   let resendingInvitation = $state(false);
   let resendError = $state("");
   let resendSuccess = $state(false);
+  let resendSuccessTimeout: ReturnType<typeof setTimeout> | null = null;
 
   // Check client email confirmation status on mount
   $effect(() => {
     checkClientStatus();
+  });
+
+  // Cleanup timeout on unmount
+  $effect(() => {
+    return () => {
+      if (resendSuccessTimeout) {
+        clearTimeout(resendSuccessTimeout);
+      }
+    };
   });
 
   async function checkClientStatus() {
@@ -150,8 +160,9 @@
         // Clear cached status so next check fetches fresh data
         clientStatusCache.delete(client.id);
         resendSuccess = true;
-        // Clear success after 3 seconds
-        setTimeout(() => {
+        // Clear success after 3 seconds (with cleanup on unmount)
+        if (resendSuccessTimeout) clearTimeout(resendSuccessTimeout);
+        resendSuccessTimeout = setTimeout(() => {
           resendSuccess = false;
         }, 3000);
       }
