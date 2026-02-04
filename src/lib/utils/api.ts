@@ -3,14 +3,12 @@ import { toast } from '$lib/utils/toast.js';
 export interface FetchWithToastOptions<T> {
 	/** Success message to display */
 	successMessage: string;
-	/** Error message to display (default: uses response error or generic message) */
-	errorMessage?: string;
+	/** Error message to display - REQUIRED for security (never expose raw server errors) */
+	errorMessage: string;
 	/** Duration for error toasts in ms (default: 8000ms) */
 	errorDuration?: number;
 	/** Custom success check function (default: checks result.data?.success || result.success || result.type === 'success') */
 	isSuccess?: (result: T) => boolean;
-	/** Extract error message from result (default: result.data?.error || result.error) */
-	getError?: (result: T) => string | undefined;
 }
 
 interface ActionResult {
@@ -52,8 +50,7 @@ export async function fetchWithToast<T extends ActionResult = ActionResult>(
 		errorMessage,
 		errorDuration = 8000,
 		isSuccess = (result: T) =>
-			result.data?.success || result.success || result.type === 'success',
-		getError = (result: T) => result.data?.error || result.error
+			result.data?.success || result.success || result.type === 'success'
 	} = toastOptions;
 
 	try {
@@ -64,13 +61,13 @@ export async function fetchWithToast<T extends ActionResult = ActionResult>(
 			toast.success(successMessage);
 			return result;
 		} else {
-			const errorMsg = errorMessage || getError(result) || 'An error occurred';
-			toast.error(errorMsg, { duration: errorDuration });
+			// Always use the provided localized error message - never expose raw server errors
+			toast.error(errorMessage, { duration: errorDuration });
 			return null;
 		}
 	} catch {
-		const errorMsg = errorMessage || 'An error occurred';
-		toast.error(errorMsg, { duration: errorDuration });
+		// Always use the provided localized error message - never expose raw server errors
+		toast.error(errorMessage, { duration: errorDuration });
 		return null;
 	}
 }

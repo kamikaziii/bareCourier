@@ -129,7 +129,7 @@
           toast.success(m.client_reschedule_auto_approved());
         }
       } else {
-        toast.error(result.data?.error || m.toast_error_generic(), {
+        toast.error(m.toast_error_generic(), {
           duration: 8000,
         });
       }
@@ -149,7 +149,7 @@
         toast.success(m.reschedule_approved());
         await invalidateAll();
       } else {
-        toast.error(result.data?.error || m.toast_error_generic(), {
+        toast.error(m.toast_error_generic(), {
           duration: 8000,
         });
       }
@@ -175,7 +175,7 @@
         declineReason = "";
         await invalidateAll();
       } else {
-        toast.error(result.data?.error || m.toast_error_generic(), {
+        toast.error(m.toast_error_generic(), {
           duration: 8000,
         });
       }

@@ -274,7 +274,7 @@
       if (result.type === "success" && result.data?.success) {
         toast.success(m.toast_pricing_saved());
       } else if (result.type === "failure" && result.data?.error) {
-        toast.error(result.data.error, { duration: 8000 });
+        toast.error(m.toast_error_generic(), { duration: 8000 });
       }
     };
   }
@@ -292,7 +292,7 @@
       if (result.type === "success" && result.data?.success) {
         toast.success(m.toast_pricing_saved());
       } else if (result.type === "failure" && result.data?.error) {
-        toast.error(result.data.error, { duration: 8000 });
+        toast.error(m.toast_error_generic(), { duration: 8000 });
       }
     };
   }
@@ -306,7 +306,7 @@
         await loadServices();
         toast.success(m.toast_pricing_saved());
       } else if (result.type === "failure" && result.data?.error) {
-        toast.error(result.data.error, { duration: 8000 });
+        toast.error(m.toast_error_generic(), { duration: 8000 });
       }
     };
   }

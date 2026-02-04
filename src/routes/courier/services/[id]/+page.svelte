@@ -110,7 +110,7 @@
           );
         } else {
           showStatusDialog = false;
-          toast.error(result.data?.error || m.toast_error_generic(), {
+          toast.error(m.toast_error_generic(), {
             duration: 8000,
           });
         }
@@ -149,7 +149,7 @@
           await goto(localizeHref("/courier/services"));
         } else {
           showDeleteDialog = false;
-          toast.error(result.data?.error || m.toast_error_generic(), {
+          toast.error(m.toast_error_generic(), {
             duration: 8000,
           });
         }
@@ -189,7 +189,8 @@
 
     const result = await response.json();
     if (result.type === "failure" || result.data?.success === false) {
-      throw new Error(result.data?.error || "Failed to reschedule");
+      // Never expose raw server errors - use generic message
+      throw new Error("Failed to reschedule");
     }
 
     await invalidateAll();
@@ -209,7 +210,7 @@
     }) => {
       if (result.type === "failure" && result.data?.error) {
         showPriceOverride = false;
-        toast.error(result.data.error, { duration: 8000 });
+        toast.error(m.toast_error_generic(), { duration: 8000 });
       } else if (result.type === "success" && result.data?.success) {
         showPriceOverride = false;
         await invalidateAll();

@@ -233,7 +233,7 @@
           showCancelDialog = false;
           serviceToCancel = null;
         } else {
-          toast.error(result.data?.error || m.toast_error_generic(), {
+          toast.error(m.toast_error_generic(), {
             duration: 8000,
           });
         }
@@ -267,7 +267,7 @@
           await loadServices();
           showSuggestionDialog = false;
         } else {
-          toast.error(result.data?.error || m.toast_error_generic(), {
+          toast.error(m.toast_error_generic(), {
             duration: 8000,
           });
         }
@@ -300,7 +300,7 @@
           await loadServices();
           showSuggestionDialog = false;
         } else {
-          toast.error(result.data?.error || m.toast_error_generic(), {
+          toast.error(m.toast_error_generic(), {
             duration: 8000,
           });
         }
@@ -338,7 +338,7 @@
         suggestionBatch.reset();
         await loadServices();
       } else {
-        toast.error(result.data?.error || m.toast_error_generic(), {
+        toast.error(m.toast_error_generic(), {
           duration: 8000,
         });
       }
@@ -374,7 +374,7 @@
         showBatchDeclineDialog = false;
         await loadServices();
       } else {
-        toast.error(result.data?.error || m.toast_error_generic(), {
+        toast.error(m.toast_error_generic(), {
           duration: 8000,
         });
       }

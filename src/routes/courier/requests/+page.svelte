@@ -161,7 +161,7 @@
           toast.success(m.toast_request_accepted());
         } else {
           showAcceptDialog = false;
-          toast.error(result.data?.error || m.toast_error_generic(), {
+          toast.error(m.toast_error_generic(), {
             duration: 8000,
           });
         }
@@ -198,7 +198,7 @@
           toast.success(m.toast_request_rejected());
         } else {
           showRejectDialog = false;
-          toast.error(result.data?.error || m.toast_error_generic(), {
+          toast.error(m.toast_error_generic(), {
             duration: 8000,
           });
         }
@@ -238,7 +238,7 @@
           toast.success(m.toast_request_suggested());
         } else {
           showSuggestDialog = false;
-          toast.error(result.data?.error || m.toast_error_generic(), {
+          toast.error(m.toast_error_generic(), {
             duration: 8000,
           });
         }
@@ -282,7 +282,7 @@
           await invalidateAll();
           toast.success(m.reschedule_approved());
         } else {
-          toast.error(result.data?.error || m.toast_error_generic(), {
+          toast.error(m.toast_error_generic(), {
             duration: 8000,
           });
         }
@@ -317,7 +317,7 @@
           toast.success(m.reschedule_denied());
         } else {
           showDenyRescheduleDialog = false;
-          toast.error(result.data?.error || m.toast_error_generic(), {
+          toast.error(m.toast_error_generic(), {
             duration: 8000,
           });
         }

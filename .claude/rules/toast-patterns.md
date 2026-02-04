@@ -48,8 +48,9 @@ Use for forms with SvelteKit form actions.
       if (result.type === "success") {
         await invalidateAll();
         toast.success(m.toast_profile_updated());
-      } else if (result.type === "failure" && result.data?.error) {
-        toast.error(result.data.error, { duration: 8000 });
+      } else if (result.type === "failure") {
+        // NEVER expose raw server errors - always use localized messages
+        toast.error(m.toast_error_generic(), { duration: 8000 });
       }
     };
   }}
@@ -83,7 +84,8 @@ Use for client-side async operations (fetch, Supabase direct calls).
         toast.success(m.toast_service_deleted());
         await goto("/courier/services");
       } else {
-        toast.error(result.error || m.toast_error_generic(), { duration: 8000 });
+        // NEVER expose raw server errors - always use localized messages
+        toast.error(m.toast_error_generic(), { duration: 8000 });
       }
     } catch {
       toast.error(m.toast_error_generic(), { duration: 8000 });
@@ -120,7 +122,7 @@ Use a **summary toast** instead of multiple individual toasts.
         // Single summary toast - NOT one per item
         toast.success(m.toast_batch_success({ count: ids.length }));
       } else {
-        toast.error(result.error || m.toast_error_generic(), { duration: 8000 });
+        toast.error(m.toast_error_generic(), { duration: 8000 });
       }
     } catch {
       toast.error(m.toast_error_generic(), { duration: 8000 });
@@ -178,7 +180,7 @@ Raw server errors may expose:
 
 ```typescript
 // CORRECT: Use localized fallback
-toast.error(result.data?.error || m.toast_error_generic(), { duration: 8000 });
+toast.error(m.toast_error_generic(), { duration: 8000 });
 
 // WRONG: Display raw error directly without fallback
 toast.error(error.message, { duration: 8000 });
@@ -228,7 +230,7 @@ if (result.data?.success) {
   await invalidate("app:services");
   toast.success(m.toast_batch_success({ count }));
 } else {
-  toast.error(result.data?.error || m.toast_error_generic(), { duration: 8000 });
+  toast.error(m.toast_error_generic(), { duration: 8000 });
 }
 ```
 
@@ -295,7 +297,7 @@ for (const item of items) {
 
 ```typescript
 // GOOD: Localized with fallback
-toast.error(result.data?.error || m.toast_error_generic(), { duration: 8000 });
+toast.error(m.toast_error_generic(), { duration: 8000 });
 
 // GOOD: Batch summary
 toast.success(m.toast_batch_success({ count: items.length }));

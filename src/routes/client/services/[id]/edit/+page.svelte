@@ -245,7 +245,7 @@
       result: { type: string; data?: { error?: string } };
     }) => {
       if (result.type === "failure" && result.data?.error) {
-        toast.error(result.data.error, { duration: 8000 });
+        toast.error(m.toast_error_generic(), { duration: 8000 });
         loading = false;
       } else if (result.type === "redirect") {
         toast.success(m.toast_service_updated());
