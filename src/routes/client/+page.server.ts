@@ -16,10 +16,10 @@ export const actions: Actions = {
 			return { success: false, error: 'Service ID required' };
 		}
 
-		// Get the service and verify ownership
+		// Get the service and verify ownership (include fields for email)
 		const { data: serviceData } = await supabase
 			.from('services')
-			.select('client_id, suggested_date, suggested_time_slot, suggested_time')
+			.select('client_id, suggested_date, suggested_time_slot, suggested_time, pickup_location, delivery_location, profiles!client_id(name)')
 			.eq('id', serviceId)
 			.single();
 
@@ -32,6 +32,9 @@ export const actions: Actions = {
 			suggested_date: string | null;
 			suggested_time_slot: string | null;
 			suggested_time: string | null;
+			pickup_location: string;
+			delivery_location: string;
+			profiles: { name: string };
 		};
 
 		if (service.client_id !== user.id) {
@@ -57,14 +60,31 @@ export const actions: Actions = {
 			return { success: false, error: 'Failed to accept suggestion' };
 		}
 
-		// Notify courier (no email template needed for this direction)
+		// Format the new date for email
+		const formattedNewDate = service.suggested_date
+			? new Date(service.suggested_date).toLocaleDateString('pt-PT', {
+					day: 'numeric',
+					month: 'long',
+					year: 'numeric'
+				})
+			: '';
+
+		// Notify courier with email
 		await notifyCourier({
 			supabase,
 			session,
 			serviceId,
 			category: 'schedule_change',
 			title: 'Sugestão Aceite',
-			message: 'O cliente aceitou a data sugerida para o serviço.'
+			message: 'O cliente aceitou a data sugerida para o serviço.',
+			emailTemplate: 'suggestion_accepted',
+			emailData: {
+				client_name: service.profiles?.name || 'Cliente',
+				pickup_location: service.pickup_location,
+				delivery_location: service.delivery_location,
+				new_date: formattedNewDate,
+				service_id: serviceId
+			}
 		});
 
 		return { success: true };
@@ -83,10 +103,10 @@ export const actions: Actions = {
 			return { success: false, error: 'Service ID required' };
 		}
 
-		// Get the service and verify ownership
+		// Get the service and verify ownership (include fields for email)
 		const { data: serviceData } = await supabase
 			.from('services')
-			.select('client_id')
+			.select('client_id, scheduled_date, pickup_location, delivery_location, profiles!client_id(name)')
 			.eq('id', serviceId)
 			.single();
 
@@ -94,7 +114,13 @@ export const actions: Actions = {
 			return { success: false, error: 'Service not found' };
 		}
 
-		const service = serviceData as { client_id: string };
+		const service = serviceData as {
+			client_id: string;
+			scheduled_date: string | null;
+			pickup_location: string;
+			delivery_location: string;
+			profiles: { name: string };
+		};
 
 		if (service.client_id !== user.id) {
 			return { success: false, error: 'Unauthorized' };
@@ -116,14 +142,32 @@ export const actions: Actions = {
 			return { success: false, error: 'Failed to decline suggestion' };
 		}
 
-		// Notify courier (no email template needed for this direction)
+		// Format the original date for email
+		const formattedOriginalDate = service.scheduled_date
+			? new Date(service.scheduled_date).toLocaleDateString('pt-PT', {
+					day: 'numeric',
+					month: 'long',
+					year: 'numeric'
+				})
+			: 'Não agendada';
+
+		// Notify courier with email
 		await notifyCourier({
 			supabase,
 			session,
 			serviceId,
 			category: 'schedule_change',
 			title: 'Sugestão Recusada',
-			message: 'O cliente recusou a data sugerida. O pedido está novamente pendente.'
+			message: 'O cliente recusou a data sugerida. O pedido está novamente pendente.',
+			emailTemplate: 'suggestion_declined',
+			emailData: {
+				client_name: service.profiles?.name || 'Cliente',
+				pickup_location: service.pickup_location,
+				delivery_location: service.delivery_location,
+				original_date: formattedOriginalDate,
+				reason: '',
+				service_id: serviceId
+			}
 		});
 
 		return { success: true };
@@ -161,10 +205,10 @@ export const actions: Actions = {
 			};
 		}
 
-		// Get all services and verify ownership
+		// Get all services and verify ownership (include fields for email)
 		const { data: rawServicesData } = await supabase
 			.from('services')
-			.select('id, client_id, suggested_date, suggested_time_slot, suggested_time')
+			.select('id, client_id, suggested_date, suggested_time_slot, suggested_time, pickup_location, delivery_location, profiles!client_id(name)')
 			.in('id', serviceIds)
 			.eq('client_id', user.id);
 
@@ -174,6 +218,9 @@ export const actions: Actions = {
 			suggested_date: string | null;
 			suggested_time_slot: string | null;
 			suggested_time: string | null;
+			pickup_location: string;
+			delivery_location: string;
+			profiles: { name: string };
 		}[] | null;
 
 		if (!servicesData || servicesData.length !== serviceIds.length) {
@@ -199,20 +246,48 @@ export const actions: Actions = {
 		const results = await Promise.all(updatePromises);
 		const failCount = results.filter(r => r.error).length;
 
+		// Get client name for email
+		const clientName = servicesData[0]?.profiles?.name || 'Cliente';
+		const firstService = servicesData[0];
+
 		if (failCount > 0) {
 			if (failCount < servicesData.length) {
 				// Partial success — still notify
+				const formattedNewDate = firstService.suggested_date
+					? new Date(firstService.suggested_date).toLocaleDateString('pt-PT', {
+							day: 'numeric',
+							month: 'long',
+							year: 'numeric'
+						})
+					: '';
+
 				await notifyCourier({
 					supabase,
 					session,
 					serviceId: servicesData[0].id,
 					category: 'schedule_change',
 					title: 'Sugestões Aceites',
-					message: `O cliente aceitou ${servicesData.length - failCount} de ${servicesData.length} sugestão(ões) de data.`
+					message: `O cliente aceitou ${servicesData.length - failCount} de ${servicesData.length} sugestão(ões) de data.`,
+					emailTemplate: 'suggestion_accepted',
+					emailData: {
+						client_name: clientName,
+						pickup_location: firstService.pickup_location,
+						delivery_location: firstService.delivery_location,
+						new_date: formattedNewDate,
+						service_id: firstService.id
+					}
 				});
 			}
 			return { success: true, error: `${failCount} of ${serviceIds.length} failed` };
 		}
+
+		const formattedNewDate = firstService.suggested_date
+			? new Date(firstService.suggested_date).toLocaleDateString('pt-PT', {
+					day: 'numeric',
+					month: 'long',
+					year: 'numeric'
+				})
+			: '';
 
 		await notifyCourier({
 			supabase,
@@ -220,7 +295,15 @@ export const actions: Actions = {
 			serviceId: servicesData[0].id,
 			category: 'schedule_change',
 			title: 'Sugestões Aceites',
-			message: `O cliente aceitou ${servicesData.length} sugestão(ões) de data.`
+			message: `O cliente aceitou ${servicesData.length} sugestão(ões) de data.`,
+			emailTemplate: 'suggestion_accepted',
+			emailData: {
+				client_name: clientName,
+				pickup_location: firstService.pickup_location,
+				delivery_location: firstService.delivery_location,
+				new_date: formattedNewDate,
+				service_id: firstService.id
+			}
 		});
 		return { success: true };
 	},
@@ -257,14 +340,21 @@ export const actions: Actions = {
 			};
 		}
 
-		// Verify ownership
+		// Verify ownership (include fields for email)
 		const { data: rawServicesData } = await supabase
 			.from('services')
-			.select('id, client_id')
+			.select('id, client_id, scheduled_date, pickup_location, delivery_location, profiles!client_id(name)')
 			.in('id', serviceIds)
 			.eq('client_id', user.id);
 
-		const servicesData = rawServicesData as { id: string; client_id: string }[] | null;
+		const servicesData = rawServicesData as {
+			id: string;
+			client_id: string;
+			scheduled_date: string | null;
+			pickup_location: string;
+			delivery_location: string;
+			profiles: { name: string };
+		}[] | null;
 
 		if (!servicesData || servicesData.length !== serviceIds.length) {
 			return { success: false, error: 'Some services not found or unauthorized' };
@@ -286,6 +376,17 @@ export const actions: Actions = {
 		const results = await Promise.all(updatePromises);
 		const failCount = results.filter(r => r.error).length;
 
+		// Get client name and format date for email
+		const clientName = servicesData[0]?.profiles?.name || 'Cliente';
+		const firstService = servicesData[0];
+		const formattedOriginalDate = firstService.scheduled_date
+			? new Date(firstService.scheduled_date).toLocaleDateString('pt-PT', {
+					day: 'numeric',
+					month: 'long',
+					year: 'numeric'
+				})
+			: 'Não agendada';
+
 		if (failCount > 0) {
 			if (failCount < servicesData.length) {
 				await notifyCourier({
@@ -294,7 +395,16 @@ export const actions: Actions = {
 					serviceId: servicesData[0].id,
 					category: 'schedule_change',
 					title: 'Sugestões Recusadas',
-					message: `O cliente recusou ${servicesData.length - failCount} de ${servicesData.length} sugestão(ões). Os pedidos estão novamente pendentes.`
+					message: `O cliente recusou ${servicesData.length - failCount} de ${servicesData.length} sugestão(ões). Os pedidos estão novamente pendentes.`,
+					emailTemplate: 'suggestion_declined',
+					emailData: {
+						client_name: clientName,
+						pickup_location: firstService.pickup_location,
+						delivery_location: firstService.delivery_location,
+						original_date: formattedOriginalDate,
+						reason: '',
+						service_id: firstService.id
+					}
 				});
 			}
 			return { success: true, error: `${failCount} of ${serviceIds.length} failed` };
@@ -306,7 +416,16 @@ export const actions: Actions = {
 			serviceId: servicesData[0].id,
 			category: 'schedule_change',
 			title: 'Sugestões Recusadas',
-			message: `O cliente recusou ${servicesData.length} sugestão(ões). Os pedidos estão novamente pendentes.`
+			message: `O cliente recusou ${servicesData.length} sugestão(ões). Os pedidos estão novamente pendentes.`,
+			emailTemplate: 'suggestion_declined',
+			emailData: {
+				client_name: clientName,
+				pickup_location: firstService.pickup_location,
+				delivery_location: firstService.delivery_location,
+				original_date: formattedOriginalDate,
+				reason: '',
+				service_id: firstService.id
+			}
 		});
 		return { success: true };
 	},

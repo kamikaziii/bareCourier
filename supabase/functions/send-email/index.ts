@@ -45,7 +45,7 @@ function isServiceRoleKey(authHeader: string, serviceKey: string): boolean {
 }
 
 // Email templates
-type EmailTemplate = "new_request" | "delivered" | "request_accepted" | "request_rejected" | "request_suggested" | "request_cancelled";
+type EmailTemplate = "new_request" | "delivered" | "request_accepted" | "request_rejected" | "request_suggested" | "request_cancelled" | "daily_summary" | "past_due" | "suggestion_accepted" | "suggestion_declined";
 
 interface EmailData {
   to: string;
@@ -270,6 +270,135 @@ function generateEmailHtml(
                   <p><span class="label">${emailT("email_delivery_label", locale)}</span> ${data.delivery_location}</p>
                 </div>
                 <a href="${data.app_url}/courier" class="button">${emailT("email_cancelled_button", locale)}</a>
+              </div>
+              <div class="footer">
+                <p>${emailT("email_footer", locale)}</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+      };
+
+    case "daily_summary":
+      return {
+        subject: emailT("email_daily_summary_subject", locale, { date: data.date }),
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>${baseStyles}</head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>${emailT("email_daily_summary_title", locale)}</h1>
+              </div>
+              <div class="content">
+                <p>${emailT("email_daily_summary_intro", locale)}</p>
+                ${data.total === "0" ? `
+                  <p>${emailT("email_daily_summary_no_services", locale)}</p>
+                ` : `
+                  <div class="detail">
+                    <p><span class="label">${emailT("email_daily_summary_total_label", locale)}</span> ${data.total}</p>
+                    <p><span class="label">${emailT("email_daily_summary_pending_label", locale)}</span> ${data.pending}</p>
+                    <p><span class="label">${emailT("email_daily_summary_delivered_label", locale)}</span> ${data.delivered}</p>
+                    ${data.urgent && data.urgent !== "0" ? `<p><span class="label" style="color: #dc2626;">${emailT("email_daily_summary_urgent_label", locale)}</span> ${data.urgent}</p>` : ""}
+                  </div>
+                `}
+                <a href="${data.app_url}/courier" class="button">${emailT("email_daily_summary_button", locale)}</a>
+              </div>
+              <div class="footer">
+                <p>${emailT("email_footer", locale)}</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+      };
+
+    case "past_due":
+      return {
+        subject: emailT("email_past_due_subject", locale),
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>${baseStyles}</head>
+          <body>
+            <div class="container">
+              <div class="header" style="background: #dc2626;">
+                <h1>${emailT("email_past_due_title", locale)}</h1>
+              </div>
+              <div class="content">
+                <p>${emailT("email_past_due_intro", locale)}</p>
+                <div class="detail">
+                  <p><span class="label">${emailT("email_past_due_client_label", locale)}</span> ${data.client_name}</p>
+                  <p><span class="label">${emailT("email_pickup_label", locale)}</span> ${data.pickup_location}</p>
+                  <p><span class="label">${emailT("email_delivery_label", locale)}</span> ${data.delivery_location}</p>
+                  <p><span class="label">${emailT("email_past_due_scheduled_label", locale)}</span> ${data.scheduled_date}</p>
+                  <p><span class="label" style="color: #dc2626;">${emailT("email_past_due_days_overdue_label", locale)}</span> ${data.days_overdue}</p>
+                </div>
+                <a href="${data.app_url}/courier/services/${data.service_id}" class="button" style="background: #dc2626;">${emailT("email_past_due_button", locale)}</a>
+              </div>
+              <div class="footer">
+                <p>${emailT("email_footer", locale)}</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+      };
+
+    case "suggestion_accepted":
+      return {
+        subject: emailT("email_suggestion_accepted_subject", locale),
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>${baseStyles}</head>
+          <body>
+            <div class="container">
+              <div class="header" style="background: #16a34a;">
+                <h1>${emailT("email_suggestion_accepted_title", locale)}</h1>
+              </div>
+              <div class="content">
+                <p>${emailT("email_suggestion_accepted_intro", locale, { client_name: data.client_name })}</p>
+                <div class="detail">
+                  <p><span class="label">${emailT("email_pickup_label", locale)}</span> ${data.pickup_location}</p>
+                  <p><span class="label">${emailT("email_delivery_label", locale)}</span> ${data.delivery_location}</p>
+                  <p><span class="label">${emailT("email_suggestion_accepted_new_date_label", locale)}</span> ${data.new_date}</p>
+                </div>
+                <a href="${data.app_url}/courier/services/${data.service_id}" class="button" style="background: #16a34a;">${emailT("email_suggestion_accepted_button", locale)}</a>
+              </div>
+              <div class="footer">
+                <p>${emailT("email_footer", locale)}</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+      };
+
+    case "suggestion_declined":
+      return {
+        subject: emailT("email_suggestion_declined_subject", locale),
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>${baseStyles}</head>
+          <body>
+            <div class="container">
+              <div class="header" style="background: #f59e0b;">
+                <h1>${emailT("email_suggestion_declined_title", locale)}</h1>
+              </div>
+              <div class="content">
+                <p>${emailT("email_suggestion_declined_intro", locale, { client_name: data.client_name })}</p>
+                <div class="detail">
+                  <p><span class="label">${emailT("email_pickup_label", locale)}</span> ${data.pickup_location}</p>
+                  <p><span class="label">${emailT("email_delivery_label", locale)}</span> ${data.delivery_location}</p>
+                  ${data.reason ? `<p><span class="label">${emailT("email_suggestion_declined_reason_label", locale)}</span> ${data.reason}</p>` : ""}
+                  <p><span class="label">${emailT("email_suggestion_declined_original_date_label", locale)}</span> ${data.original_date}</p>
+                </div>
+                <p>${emailT("email_suggestion_declined_cta", locale)}</p>
+                <a href="${data.app_url}/courier/services/${data.service_id}" class="button" style="background: #f59e0b;">${emailT("email_suggestion_declined_button", locale)}</a>
               </div>
               <div class="footer">
                 <p>${emailT("email_footer", locale)}</p>

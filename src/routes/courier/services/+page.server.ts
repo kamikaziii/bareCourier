@@ -1,5 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
+import { notifyClient } from '$lib/services/notifications.js';
 
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
 	const { user } = await safeGetSession();
@@ -59,12 +60,28 @@ export const actions: Actions = {
 			return fail(400, { error: 'Invalid request' });
 		}
 
+		const deliveredAt = status === 'delivered' ? new Date().toISOString() : null;
 		const updateData: Record<string, unknown> = {
 			status,
 			updated_at: new Date().toISOString()
 		};
 		if (status === 'delivered') {
-			updateData.delivered_at = new Date().toISOString();
+			updateData.delivered_at = deliveredAt;
+		}
+
+		// Get service details for notifications before update (only for delivered status)
+		let servicesToNotify: Array<{
+			id: string;
+			client_id: string;
+			pickup_location: string;
+			delivery_location: string;
+		}> = [];
+		if (status === 'delivered') {
+			const { data: servicesData } = await supabase
+				.from('services')
+				.select('id, client_id, pickup_location, delivery_location')
+				.in('id', serviceIds);
+			servicesToNotify = (servicesData || []) as typeof servicesToNotify;
 		}
 
 		const { error: updateError } = await supabase
@@ -75,6 +92,37 @@ export const actions: Actions = {
 		if (updateError) {
 			console.error('Failed to update batch service status:', updateError);
 			return fail(500, { error: 'Failed to update service status' });
+		}
+
+		// Notify clients when marked as delivered
+		if (status === 'delivered' && servicesToNotify.length > 0) {
+			const formattedDeliveredAt = new Date().toLocaleDateString('pt-PT', {
+				day: 'numeric',
+				month: 'long',
+				year: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit'
+			});
+
+			// Send notifications in parallel
+			await Promise.all(
+				servicesToNotify.map((service) =>
+					notifyClient({
+						session,
+						clientId: service.client_id,
+						serviceId: service.id,
+						category: 'service_status',
+						title: 'Serviço Entregue',
+						message: 'O seu serviço foi marcado como entregue.',
+						emailTemplate: 'delivered',
+						emailData: {
+							pickup_location: service.pickup_location,
+							delivery_location: service.delivery_location,
+							delivered_at: formattedDeliveredAt
+						}
+					})
+				)
+			);
 		}
 
 		return { success: true };
