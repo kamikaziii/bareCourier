@@ -780,6 +780,8 @@
   "toast_batch_reschedule_success": "{count} services rescheduled",
   "toast_batch_accept_success": "{count} requests accepted",
   "toast_batch_delivered_success": "{count} services marked as delivered",
+  "toast_batch_suggestions_accepted": "{count} suggestions accepted",
+  "toast_batch_suggestions_declined": "{count} suggestions declined",
 
   "toast_pricing_saved": "Pricing configuration saved",
   "toast_scheduling_saved": "Scheduling settings saved",

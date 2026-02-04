@@ -331,7 +331,9 @@
       const result = await response.json();
       if (result.data?.success) {
         toast.success(
-          m.toast_batch_success({ count: suggestionBatch.selectedCount }),
+          m.toast_batch_suggestions_accepted({
+            count: suggestionBatch.selectedCount,
+          }),
         );
         suggestionBatch.reset();
         await loadServices();
@@ -364,7 +366,9 @@
       const result = await response.json();
       if (result.data?.success) {
         toast.success(
-          m.toast_batch_success({ count: suggestionBatch.selectedCount }),
+          m.toast_batch_suggestions_declined({
+            count: suggestionBatch.selectedCount,
+          }),
         );
         suggestionBatch.reset();
         showBatchDeclineDialog = false;

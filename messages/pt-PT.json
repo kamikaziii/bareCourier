@@ -780,6 +780,8 @@
   "toast_batch_reschedule_success": "{count} serviços reagendados",
   "toast_batch_accept_success": "{count} pedidos aceites",
   "toast_batch_delivered_success": "{count} serviços marcados como entregues",
+  "toast_batch_suggestions_accepted": "{count} sugestões aceites",
+  "toast_batch_suggestions_declined": "{count} sugestões recusadas",
 
   "toast_pricing_saved": "Configuração de preços guardada",
   "toast_scheduling_saved": "Definições de agendamento guardadas",
