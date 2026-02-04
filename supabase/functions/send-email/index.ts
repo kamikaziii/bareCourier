@@ -37,6 +37,117 @@ function escapeHtml(str: string | undefined | null): string {
     .replace(/'/g, "&#039;");
 }
 
+/**
+ * Checks if a 429 error is a retryable rate limit vs non-retryable quota error.
+ * Resend returns 429 for: rate_limit_exceeded (retry), daily_quota_exceeded (don't retry),
+ * monthly_quota_exceeded (don't retry - needs plan upgrade).
+ */
+async function isRetryableRateLimit(response: Response): Promise<{ retryable: boolean; errorName?: string }> {
+  try {
+    const cloned = response.clone();
+    const body = await cloned.json();
+    const errorName = body?.name || "unknown";
+    // Only rate_limit_exceeded is retryable; quota errors are not
+    return { retryable: errorName === "rate_limit_exceeded", errorName };
+  } catch {
+    // If we can't parse body, assume retryable (safer for transient issues)
+    return { retryable: true, errorName: "parse_error" };
+  }
+}
+
+/**
+ * Fetches with automatic retry for rate limits (429) and transient errors (5xx).
+ * Uses exponential backoff with jitter to prevent thundering herd.
+ *
+ * Retry behavior:
+ * - 429 rate_limit_exceeded: Retry with backoff
+ * - 429 daily/monthly_quota_exceeded: Fail immediately (not transient)
+ * - 5xx: Retry with backoff
+ * - 4xx (except 429): Fail immediately (permanent error)
+ * - Network/timeout errors: Retry with backoff
+ */
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries = 3,
+  timeoutMs = 30000
+): Promise<Response> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      // Success - return immediately
+      if (response.ok) {
+        return response;
+      }
+
+      // Permanent 4xx errors (except 429) - fail immediately
+      if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+        return response;
+      }
+
+      // 429 - check if it's retryable rate limit or permanent quota error
+      if (response.status === 429) {
+        const { retryable, errorName } = await isRetryableRateLimit(response);
+        if (!retryable) {
+          console.log(`[send-email] Quota exceeded (${errorName}), not retrying`);
+          return response;
+        }
+        // Fall through to retry logic
+      }
+
+      // Retry on 429 (rate_limit_exceeded) or 5xx
+      if ((response.status === 429 || response.status >= 500) && attempt < maxRetries) {
+        const retryAfterHeader = response.headers.get("retry-after");
+        const parsedRetryAfter = retryAfterHeader ? parseInt(retryAfterHeader, 10) : NaN;
+        const baseDelay = !isNaN(parsedRetryAfter)
+          ? parsedRetryAfter * 1000
+          : Math.pow(2, attempt) * 500; // 500ms, 1s, 2s
+
+        const jitter = Math.random() * 300;
+        const delay = baseDelay + jitter;
+
+        console.log(
+          `[send-email] Retry ${attempt + 1}/${maxRetries} after ${response.status}, waiting ${Math.round(delay)}ms`
+        );
+
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+
+      // Last attempt or non-retryable - return as-is
+      return response;
+    } catch (error) {
+      clearTimeout(timeoutId);
+
+      const errorName = (error as Error).name;
+      if (errorName === "AbortError") {
+        console.log(`[send-email] Request timeout (attempt ${attempt + 1}/${maxRetries + 1})`);
+      }
+
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt) * 500 + Math.random() * 300;
+        console.log(`[send-email] Retry ${attempt + 1}/${maxRetries} after ${errorName}, waiting ${Math.round(delay)}ms`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  // This should be unreachable, but TypeScript needs it
+  throw new Error("[send-email] fetchWithRetry: unexpected code path");
+}
+
 // Email template wrapper configuration
 interface EmailWrapOptions {
   headerColor: string;
@@ -503,8 +614,8 @@ Deno.serve(async (req: Request) => {
     // Generate email content
     const { subject, html } = generateEmailHtml(template, templateData || {}, locale);
 
-    // Send email via Resend
-    const resendResponse = await fetch("https://api.resend.com/emails", {
+    // Send email via Resend with automatic retry for transient errors
+    const resendResponse = await fetchWithRetry("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${resendApiKey}`,
@@ -527,6 +638,9 @@ Deno.serve(async (req: Request) => {
     }
 
     const resendData = await resendResponse.json();
+
+    // Log successful email delivery for observability
+    console.log(`[send-email] Email sent successfully to ${targetUser.email}, id: ${resendData.id}`);
 
     return new Response(
       JSON.stringify({
