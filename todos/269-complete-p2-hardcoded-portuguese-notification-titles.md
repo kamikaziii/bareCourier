@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "269"
 tags: [code-review, i18n, notifications, pr-13]

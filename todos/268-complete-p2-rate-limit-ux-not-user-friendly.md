@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "268"
 tags: [code-review, ux, frontend, toast, pr-15, pr-16]
