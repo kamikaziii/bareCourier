@@ -1,3 +1,10 @@
+/**
+ * check-past-due - Cron-triggered Edge Function
+ *
+ * This function is invoked by Supabase cron (pg_cron) on a schedule,
+ * not by browser requests. CORS headers are intentionally omitted
+ * since server-to-server calls don't need them.
+ */
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { dispatchNotification } from '../_shared/notify.ts';
@@ -101,16 +108,7 @@ function getCutoffTime(
 	return new Date(cutoffUtc.getTime() + gracePeriod * 60 * 1000);
 }
 
-const corsHeaders = {
-	'Access-Control-Allow-Origin': '*',
-	'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
-};
-
-Deno.serve(async (req: Request) => {
-	if (req.method === 'OPTIONS') {
-		return new Response(null, { headers: corsHeaders });
-	}
-
+Deno.serve(async () => {
 	try {
 		const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 		const now = new Date();
@@ -126,7 +124,7 @@ Deno.serve(async (req: Request) => {
 		if (!courier) {
 			return new Response(JSON.stringify({ error: 'Courier not found' }), {
 				status: 404,
-				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+				headers: { 'Content-Type': 'application/json' }
 			});
 		}
 
@@ -141,7 +139,7 @@ Deno.serve(async (req: Request) => {
 
 		if (!workingDays.includes(todayName)) {
 			return new Response(JSON.stringify({ message: 'Not a working day', notified: 0 }), {
-				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+				headers: { 'Content-Type': 'application/json' }
 			});
 		}
 
@@ -151,7 +149,7 @@ Deno.serve(async (req: Request) => {
 		// If reminders disabled, exit
 		if (reminderInterval === 0) {
 			return new Response(JSON.stringify({ message: 'Reminders disabled', notified: 0 }), {
-				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+				headers: { 'Content-Type': 'application/json' }
 			});
 		}
 
@@ -174,7 +172,7 @@ Deno.serve(async (req: Request) => {
 
 		if (!services || services.length === 0) {
 			return new Response(JSON.stringify({ message: 'No pending services', notified: 0 }), {
-				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+				headers: { 'Content-Type': 'application/json' }
 			});
 		}
 
@@ -305,14 +303,14 @@ Deno.serve(async (req: Request) => {
 				pastDue: pastDueServices.length,
 				notified: notifiedCount
 			}),
-			{ headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+			{ headers: { 'Content-Type': 'application/json' } }
 		);
 	} catch (error) {
 		console.error('Error:', error);
 		const message = error instanceof Error ? error.message : 'An unknown error occurred';
 		return new Response(JSON.stringify({ error: message }), {
 			status: 500,
-			headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+			headers: { 'Content-Type': 'application/json' }
 		});
 	}
 });

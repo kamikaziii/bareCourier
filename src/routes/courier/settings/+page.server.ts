@@ -850,12 +850,6 @@ export const actions: Actions = {
 			.eq('default_service_type_id', id)
 			.eq('role', 'client');
 
-		console.log('🔍 Delete service type check:', {
-			serviceTypeId: id,
-			clientsCount,
-			clientsError: clientsError?.message
-		});
-
 		if (clientsCount && clientsCount > 0) {
 			return fail(409, { error: 'service_type_assigned_to_clients' });
 		}

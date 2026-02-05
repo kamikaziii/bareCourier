@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
+  import { goto, invalidateAll } from "$app/navigation";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
-  import { Badge } from "$lib/components/ui/badge/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
   import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
@@ -13,10 +12,9 @@
   import { formatDate, formatTimeSlot } from "$lib/utils.js";
   import type { PageData } from "./$types";
   import type { Service } from "$lib/database.types.js";
-  import { Search, X, Filter, CalendarClock, Package } from "@lucide/svelte";
+  import { Search, X, Filter, Package } from "@lucide/svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import PullToRefresh from "$lib/components/PullToRefresh.svelte";
-  import SkeletonList from "$lib/components/SkeletonList.svelte";
   import ServiceCard from "$lib/components/ServiceCard.svelte";
   import { useBatchSelection } from "$lib/composables/use-batch-selection.svelte.js";
   import { usePagination } from "$lib/composables/use-pagination.svelte.js";
@@ -24,9 +22,14 @@
 
   let { data }: { data: PageData } = $props();
 
-  let services = $state<Service[]>([]);
-  let loading = $state(true);
+  // Services loaded server-side, use reactive state for client-side filtering
+  let services = $state<Service[]>(data.services as Service[]);
   let actionLoading = $state(false);
+
+  // Sync services when data changes (e.g., after form actions)
+  $effect(() => {
+    services = data.services as Service[];
+  });
 
   // Dialog state for suggestion response
   let showSuggestionDialog = $state(false);
@@ -51,22 +54,6 @@
   let sortBy = $state<
     "newest" | "oldest" | "pending-first" | "delivered-first"
   >("newest");
-
-  async function loadServices() {
-    loading = true;
-    const { data: result } = await data.supabase
-      .from("services")
-      .select("*")
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false });
-
-    services = (result || []) as Service[];
-    loading = false;
-  }
-
-  $effect(() => {
-    loadServices();
-  });
 
   // Filtered services based on all filters
   const filteredServices = $derived.by(() => {
@@ -229,7 +216,7 @@
         const result = await response.json();
         if (result.type === "success" || result.data?.success) {
           toast.success(m.toast_request_cancelled());
-          await loadServices();
+          await invalidateAll();
           showCancelDialog = false;
           serviceToCancel = null;
         } else {
@@ -264,7 +251,7 @@
         const result = await response.json();
         if (result.type === "success" || result.data?.success) {
           toast.success(m.toast_suggestion_accepted());
-          await loadServices();
+          await invalidateAll();
           showSuggestionDialog = false;
         } else {
           toast.error(m.toast_error_generic(), {
@@ -297,7 +284,7 @@
         const result = await response.json();
         if (result.type === "success" || result.data?.success) {
           toast.success(m.toast_suggestion_declined());
-          await loadServices();
+          await invalidateAll();
           showSuggestionDialog = false;
         } else {
           toast.error(m.toast_error_generic(), {
@@ -336,7 +323,7 @@
           }),
         );
         suggestionBatch.reset();
-        await loadServices();
+        await invalidateAll();
       } else {
         toast.error(m.toast_error_generic(), {
           duration: 8000,
@@ -372,7 +359,7 @@
         );
         suggestionBatch.reset();
         showBatchDeclineDialog = false;
-        await loadServices();
+        await invalidateAll();
       } else {
         toast.error(m.toast_error_generic(), {
           duration: 8000,
@@ -632,7 +619,7 @@
       {/if}
 
       <!-- Result count -->
-      {#if hasActiveFilters && !loading}
+      {#if hasActiveFilters}
         <p class="text-sm text-muted-foreground">
           {m.filter_showing({
             count: filteredServices.length,
@@ -644,9 +631,7 @@
 
     <!-- Services List -->
     <div class="space-y-3">
-      {#if loading}
-        <SkeletonList variant="service" count={5} />
-      {:else if sortedServices.length === 0}
+      {#if sortedServices.length === 0}
         {#if hasActiveFilters}
           <EmptyState
             icon={Package}

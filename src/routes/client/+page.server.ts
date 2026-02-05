@@ -1,8 +1,28 @@
-import type { Actions, RequestEvent } from './$types';
+import type { Actions, PageServerLoad, RequestEvent } from './$types';
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { notifyCourier } from '$lib/services/notifications.js';
 import { formatDatePtPT } from '$lib/utils/date-format.js';
 import { APP_URL } from '$lib/constants.js';
+
+// ============================================================================
+// Server-side data loading
+// ============================================================================
+
+export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
+	const { session } = await safeGetSession();
+
+	if (!session) {
+		return { services: [] };
+	}
+
+	const { data: services } = await supabase
+		.from('services')
+		.select('*')
+		.is('deleted_at', null)
+		.order('created_at', { ascending: false });
+
+	return { services: services || [] };
+};
 
 // ============================================================================
 // Types for batch operation factory

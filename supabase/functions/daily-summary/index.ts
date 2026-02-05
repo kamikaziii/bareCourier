@@ -1,3 +1,10 @@
+/**
+ * daily-summary - Cron-triggered Edge Function
+ *
+ * This function is invoked by Supabase cron (pg_cron) on a schedule,
+ * not by browser requests. CORS headers are intentionally omitted
+ * since server-to-server calls don't need them.
+ */
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { dispatchNotification } from '../_shared/notify.ts';
@@ -28,16 +35,7 @@ interface Service {
 	scheduled_time: string | null;
 }
 
-const corsHeaders = {
-	'Access-Control-Allow-Origin': '*',
-	'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
-};
-
-Deno.serve(async (req: Request) => {
-	if (req.method === 'OPTIONS') {
-		return new Response(null, { headers: corsHeaders });
-	}
-
+Deno.serve(async () => {
 	try {
 		const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 		const now = new Date();
@@ -53,7 +51,7 @@ Deno.serve(async (req: Request) => {
 		if (!courier) {
 			return new Response(JSON.stringify({ error: 'Courier not found' }), {
 				status: 404,
-				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+				headers: { 'Content-Type': 'application/json' }
 			});
 		}
 
@@ -64,7 +62,7 @@ Deno.serve(async (req: Request) => {
 		// Check if daily summary is enabled
 		if (settings.dailySummaryEnabled === false) {
 			return new Response(JSON.stringify({ message: 'Daily summary disabled', sent: false }), {
-				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+				headers: { 'Content-Type': 'application/json' }
 			});
 		}
 
@@ -89,7 +87,7 @@ Deno.serve(async (req: Request) => {
 		// and allow for 15-minute cron interval
 		if (Math.abs(localTotalMin - prefTotalMin) > 14) {
 			return new Response(JSON.stringify({ message: 'Not the right time', sent: false }), {
-				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+				headers: { 'Content-Type': 'application/json' }
 			});
 		}
 
@@ -101,12 +99,29 @@ Deno.serve(async (req: Request) => {
 
 		if (!workingDays.includes(todayName)) {
 			return new Response(JSON.stringify({ message: 'Not a working day', sent: false }), {
-				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+				headers: { 'Content-Type': 'application/json' }
 			});
 		}
 
 		// Get today's date in courier's timezone for querying services
 		const todayStr = localDate.toISOString().split('T')[0];
+
+		// Deduplication: Check if daily summary already sent today (in courier's timezone)
+		const todayStart = new Date(todayStr + 'T00:00:00Z');
+		const { data: existingSummary } = await supabase
+			.from('notifications')
+			.select('id')
+			.eq('user_id', courier.id)
+			.eq('category', 'daily_summary')
+			.gte('created_at', todayStart.toISOString())
+			.limit(1);
+
+		if (existingSummary && existingSummary.length > 0) {
+			return new Response(
+				JSON.stringify({ message: 'Daily summary already sent today', sent: false }),
+				{ status: 200, headers: { 'Content-Type': 'application/json' } }
+			);
+		}
 
 		// Get today's services
 		const { data: services } = await supabase
@@ -117,7 +132,7 @@ Deno.serve(async (req: Request) => {
 
 		if (!services) {
 			return new Response(JSON.stringify({ message: 'No services found' }), {
-				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+				headers: { 'Content-Type': 'application/json' }
 			});
 		}
 
@@ -199,14 +214,14 @@ Deno.serve(async (req: Request) => {
 				message: 'Daily summary sent',
 				stats: { total, pending, delivered, urgent }
 			}),
-			{ headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+			{ headers: { 'Content-Type': 'application/json' } }
 		);
 	} catch (error) {
 		console.error('Error:', error);
 		const message = error instanceof Error ? error.message : 'An unknown error occurred';
 		return new Response(JSON.stringify({ error: message }), {
 			status: 500,
-			headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+			headers: { 'Content-Type': 'application/json' }
 		});
 	}
 });

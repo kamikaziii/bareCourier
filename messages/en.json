@@ -743,6 +743,9 @@
   "verifying_invitation": "Verifying invitation...",
   "client_not_confirmed": "Pending invitation",
   "client_confirmed": "Active",
+  "password_link_expired": "This password link has expired. Please request a new one.",
+  "password_too_weak": "Password is too weak. Please choose a stronger password.",
+  "error_setting_password": "Unable to set password. Please try again or contact support.",
 
   "toast_loading": "Processing...",
   "toast_success_generic": "Operation completed successfully",

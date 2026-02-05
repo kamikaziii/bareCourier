@@ -129,9 +129,26 @@ Deno.serve(async (req: Request) => {
 
       // Rate limit check: prevent spam/abuse
       if (isRateLimited(email)) {
+        const lastSent = rateLimitMap.get(email.toLowerCase()) || 0;
+        const retryAfterMs = RATE_LIMIT_WINDOW_MS - (Date.now() - lastSent);
+
         return new Response(
-          JSON.stringify({ error: "Please wait before sending another invitation to this email" }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({
+            error: {
+              code: "RATE_LIMIT",
+              message: "Please wait before sending another invitation to this email",
+              retryable: true,
+              retryAfterMs: Math.max(0, retryAfterMs)
+            }
+          }),
+          {
+            status: 429,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+              "Retry-After": String(Math.ceil(Math.max(0, retryAfterMs) / 1000))
+            }
+          }
         );
       }
 

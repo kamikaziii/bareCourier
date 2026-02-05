@@ -743,6 +743,9 @@
   "verifying_invitation": "A verificar convite...",
   "client_not_confirmed": "Convite pendente",
   "client_confirmed": "Ativo",
+  "password_link_expired": "Este link de palavra-passe expirou. Por favor solicite um novo.",
+  "password_too_weak": "A palavra-passe é muito fraca. Por favor escolha uma palavra-passe mais forte.",
+  "error_setting_password": "Não foi possível definir a palavra-passe. Por favor tente novamente ou contacte o suporte.",
 
   "toast_loading": "A processar...",
   "toast_success_generic": "Operação concluída com sucesso",

@@ -77,10 +77,3 @@ export function getCorsHeaders(req: Request): {
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   };
 }
-
-/**
- * Creates a CORS preflight response for OPTIONS requests.
- */
-export function handleCorsPreflightRequest(req: Request): Response {
-  return new Response("ok", { headers: getCorsHeaders(req) });
-}

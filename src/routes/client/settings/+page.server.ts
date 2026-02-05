@@ -95,7 +95,8 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return fail(500, { error: error.message });
+			console.error('Failed to update profile:', error);
+			return fail(500, { error: 'Failed to update profile. Please try again.' });
 		}
 
 		return { success: true };
@@ -122,7 +123,8 @@ export const actions: Actions = {
 			.eq('id', user.id);
 
 		if (error) {
-			return fail(500, { error: error.message });
+			console.error('Failed to update location:', error);
+			return fail(500, { error: 'Failed to update location. Please try again.' });
 		}
 
 		return { success: true };
