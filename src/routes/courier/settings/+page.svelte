@@ -48,12 +48,6 @@
     </div>
   {/if}
 
-  {#if form?.success}
-    <div class="rounded-md bg-green-500/10 p-3 text-green-600">
-      {m.settings_saved()}
-    </div>
-  {/if}
-
   <!-- Desktop: Tabs -->
   <div class="hidden md:block">
     <Tabs.Root value={activeTab} onValueChange={setTab} class="w-full">

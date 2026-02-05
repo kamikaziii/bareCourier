@@ -12,12 +12,19 @@ export const CLIENT = {
 
 async function login(page: Page, email: string, password: string) {
 	await page.goto('/en/login');
-	await page.waitForLoadState('networkidle');
+	await page.waitForLoadState('domcontentloaded');
 
-	// Dismiss PWA update prompt if present
-	const closeBtn = page.getByRole('button', { name: 'Close' });
-	if (await closeBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-		await closeBtn.click();
+	// Dismiss PWA update prompt if present (non-blocking)
+	// Try multiple times as the prompt might appear with a delay
+	for (let i = 0; i < 3; i++) {
+		try {
+			const closeBtn = page.getByRole('button', { name: 'Close' });
+			await closeBtn.click({ timeout: 500 });
+			break; // Successfully clicked, exit loop
+		} catch {
+			// PWA prompt not present yet, continue
+			if (i < 2) await page.waitForTimeout(200);
+		}
 	}
 
 	const emailInput = page.getByLabel('Email');
@@ -27,19 +34,25 @@ async function login(page: Page, email: string, password: string) {
 	const passwordInput = page.getByLabel('Password');
 	await passwordInput.fill(password);
 
-	await page.getByRole('button', { name: 'Sign in' }).click();
+	const signInButton = page.getByRole('button', { name: 'Sign in' });
+
+	// Wait for navigation after clicking sign in
+	// The app does: /login -> goto('/') -> server redirect to /courier or /client
+	await Promise.all([
+		page.waitForURL(/\/en\/(courier|client)/, { timeout: 15000 }),
+		signInButton.click()
+	]);
+
+	// Wait for page to be fully loaded after navigation
+	await page.waitForLoadState('domcontentloaded');
 }
 
 export async function loginAsCourier(page: Page) {
 	await login(page, COURIER.email, COURIER.password);
-	await page.waitForURL(/\/en\/courier/, { timeout: 15000 });
-	await page.waitForLoadState('networkidle');
 }
 
 export async function loginAsClient(page: Page) {
 	await login(page, CLIENT.email, CLIENT.password);
-	await page.waitForURL(/\/en\/client/, { timeout: 15000 });
-	await page.waitForLoadState('networkidle');
 }
 
 export const test = base;

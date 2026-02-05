@@ -1,6 +1,8 @@
 <script lang="ts">
-  import { enhance } from "$app/forms";
+  import { enhance, applyAction } from "$app/forms";
+  import { invalidateAll } from "$app/navigation";
   import { tick } from "svelte";
+  import { toast } from "$lib/utils/toast.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
@@ -257,7 +259,17 @@
       bind:this={emailFormRef}
       method="POST"
       action="?/updateNotificationPreferences"
-      use:enhance
+      use:enhance={() => {
+        return async ({ result }) => {
+          await applyAction(result);
+          if (result.type === "success") {
+            await invalidateAll();
+            toast.success(m.toast_settings_saved());
+          } else if (result.type === "failure") {
+            toast.error(m.toast_settings_failed(), { duration: 8000 });
+          }
+        };
+      }}
       class="flex items-center justify-between"
     >
       <div class="space-y-0.5">
@@ -287,7 +299,17 @@
 <form
   method="POST"
   action="?/updateNotificationPreferences"
-  use:enhance
+  use:enhance={() => {
+    return async ({ result }) => {
+      await applyAction(result);
+      if (result.type === "success") {
+        await invalidateAll();
+        toast.success(m.toast_settings_saved());
+      } else if (result.type === "failure") {
+        toast.error(m.toast_settings_failed(), { duration: 8000 });
+      }
+    };
+  }}
   class="space-y-6"
 >
   <input
@@ -461,7 +483,17 @@
       <form
         method="POST"
         action="?/updateNotificationSettings"
-        use:enhance
+        use:enhance={() => {
+          return async ({ result }) => {
+            await applyAction(result);
+            if (result.type === "success") {
+              await invalidateAll();
+              toast.success(m.toast_settings_saved());
+            } else if (result.type === "failure") {
+              toast.error(m.toast_settings_failed(), { duration: 8000 });
+            }
+          };
+        }}
         class="space-y-6"
       >
         <!-- Past Due Reminder Interval -->
@@ -546,7 +578,22 @@
     <Card.Description>{m.settings_timezone_desc()}</Card.Description>
   </Card.Header>
   <Card.Content>
-    <form method="POST" action="?/updateTimezone" use:enhance class="space-y-4">
+    <form
+      method="POST"
+      action="?/updateTimezone"
+      use:enhance={() => {
+        return async ({ result }) => {
+          await applyAction(result);
+          if (result.type === "success") {
+            await invalidateAll();
+            toast.success(m.toast_settings_saved());
+          } else if (result.type === "failure") {
+            toast.error(m.toast_settings_failed(), { duration: 8000 });
+          }
+        };
+      }}
+      class="space-y-4"
+    >
       <select
         name="timezone"
         class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"

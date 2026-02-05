@@ -26,6 +26,7 @@
 		"@types/mapbox-gl": "^3.4.1",
 		"@vite-pwa/assets-generator": "^1.0.2",
 		"@vite-pwa/sveltekit": "^1.1.0",
+		"dotenv": "^17.2.4",
 		"prettier": "^3.8.1",
 		"prettier-plugin-svelte": "^3.4.1",
 		"sharp": "^0.34.5",

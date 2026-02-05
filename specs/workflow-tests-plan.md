@@ -4,6 +4,15 @@
 
 These tests simulate real-world usage of bareCourier starting from a **fresh account with zero data**. The courier uses **type-based pricing** as the primary pricing model.
 
+### Toast Notification Patterns
+
+All success/error feedback uses `svelte-sonner` toasts (bottom-right position):
+- **Success toasts**: Auto-dismiss in 4 seconds
+- **Error toasts**: Persist until manually dismissed (click X)
+- **Batch operations**: Show summary toast ("5 updated") not individual toasts
+
+When verifying toast notifications in tests, use Playwright's `page.locator('[data-sonner-toast]')` or similar selectors.
+
 ## Test Execution Order
 
 Tests must run sequentially - each depends on data created by previous tests.
@@ -30,8 +39,8 @@ Tests must run sequentially - each depends on data created by previous tests.
 6. Save changes
 
 **Expected Results:**
-- Success toast displayed
-- Profile updated
+- Success toast appears (bottom-right, auto-dismisses)
+- Profile updated in database
 
 ### 1.2 Select Type-Based Pricing Model
 **Steps:**
@@ -40,6 +49,7 @@ Tests must run sequentially - each depends on data created by previous tests.
 3. Save changes
 
 **Expected Results:**
+- Success toast appears
 - Pricing mode saved
 - Service Types section becomes available
 
@@ -52,6 +62,7 @@ Tests must run sequentially - each depends on data created by previous tests.
 5. Create "Same Day" with price €15.00
 
 **Expected Results:**
+- Success toast appears for each creation
 - Three service types appear in list
 - Each shows name and price
 
@@ -65,6 +76,7 @@ Tests must run sequentially - each depends on data created by previous tests.
 6. Add municipalities
 
 **Expected Results:**
+- Success toast appears for each zone creation
 - Two zones created
 - Municipalities assigned to each
 
@@ -77,6 +89,7 @@ Tests must run sequentially - each depends on data created by previous tests.
 5. Save
 
 **Expected Results:**
+- Success toast appears
 - VAT enabled
 - Rate saved
 
@@ -90,6 +103,7 @@ Tests must run sequentially - each depends on data created by previous tests.
 6. Save
 
 **Expected Results:**
+- Success toast appears
 - Time slots configured
 - Working days saved
 
@@ -100,6 +114,7 @@ Tests must run sequentially - each depends on data created by previous tests.
 3. Save preferences
 
 **Expected Results:**
+- Success toast appears
 - Notification preferences saved
 
 ---
@@ -119,19 +134,24 @@ Tests must run sequentially - each depends on data created by previous tests.
 - Clients page loads
 - "Create Client" button visible
 
-### 2.2 Create First Client
+### 2.2 Create First Client (Password Flow)
 **Steps:**
 1. Click "Create Client" / "New Client" button
 2. Fill in client name: "Test Business"
-3. Fill in phone: "+351 912 345 678"
-4. Fill in default pickup location (use address input)
-5. Select default service type: "Standard Delivery"
-6. Submit form
+3. Fill in email: "test@example.com"
+4. Toggle OFF "Send invitation email"
+5. Password field becomes visible
+6. Fill in password: "6Ee281414"
+7. Fill in phone: "+351 912 345 678"
+8. Fill in default pickup location (use address input)
+9. Select default service type: "Standard Delivery"
+10. Submit form
 
 **Expected Results:**
-- Client created successfully
+- Success toast appears
 - Redirected to clients list
 - New client appears with name, phone, and type
+- Client can log in immediately
 
 ### 2.3 Verify Client Details
 **Steps:**
@@ -143,6 +163,54 @@ Tests must run sequentially - each depends on data created by previous tests.
 - Phone displayed
 - Default pickup location displayed
 - Service type displayed
+
+### 2.4 Verify Client Can Login
+**Steps:**
+1. Logout as courier
+2. Login as client with test@example.com / 6Ee281414
+
+**Expected Results:**
+- Client dashboard loads
+- Client sees empty state or welcome message
+
+---
+
+### Manual Testing: Invitation Flow
+
+> **Note:** The following tests require real email access and should be performed manually, not in automated E2E tests.
+
+#### M2.1 Create Client with Invitation (Manual)
+**Steps:**
+1. Click "Create Client" button
+2. Fill in client name and real email address
+3. Verify "Send invitation email" toggle is ON (default)
+4. Password field should NOT be visible
+5. Fill in phone, pickup location, service type
+6. Submit form
+
+**Expected Results:**
+- Success toast: "Invitation sent"
+- Client appears in list (may show "Pending" indicator)
+
+#### M2.2 Client Accepts Invitation (Manual)
+**Steps:**
+1. Check email inbox for invitation
+2. Click invitation link → /accept-invite?token=...
+3. Set password
+4. Submit
+
+**Expected Results:**
+- Redirected to /client dashboard
+- Client can now log in
+
+#### M2.3 Resend Invitation (Manual)
+**Steps:**
+1. Go to client detail page for unconfirmed client
+2. Click "Resend Invitation" button
+
+**Expected Results:**
+- Success toast: "Invitation resent"
+- New email received
 
 ---
 
@@ -185,7 +253,7 @@ Tests must run sequentially - each depends on data created by previous tests.
 2. Wait for redirect
 
 **Expected Results:**
-- Service created
+- Success toast appears
 - Redirected to dashboard or services list
 - New service appears with "pending" status (blue)
 - Service shows correct price
@@ -223,6 +291,7 @@ Tests must run sequentially - each depends on data created by previous tests.
 **Expected Results:**
 - Form validates
 - Price estimate displayed (if show_price_to_client enabled)
+- Success toast appears
 - Request submitted successfully
 
 ### 4.3 Verify Request in Dashboard
@@ -259,6 +328,7 @@ Tests must run sequentially - each depends on data created by previous tests.
 2. Confirm in dialog (if any)
 
 **Expected Results:**
+- Success toast appears
 - Request status changes to "accepted"
 - Service becomes scheduled
 - Workload updates
@@ -291,6 +361,7 @@ Tests must run sequentially - each depends on data created by previous tests.
 7. Submit suggestion
 
 **Expected Results:**
+- Success toast appears
 - Request status changes to "suggested"
 - Suggested date/time saved
 
@@ -303,10 +374,12 @@ Tests must run sequentially - each depends on data created by previous tests.
 5. Accept OR Decline suggestion
 
 **Expected Results (Accept):**
+- Success toast appears
 - Service becomes scheduled with suggested date
 - Status changes to "accepted"
 
 **Expected Results (Decline):**
+- Toast confirms decline
 - Service returns to "pending"
 - Courier sees it needs re-handling
 
@@ -325,9 +398,9 @@ Tests must run sequentially - each depends on data created by previous tests.
 3. Click status toggle or "Mark Delivered"
 
 **Expected Results:**
+- Success toast appears (or optimistic UI update)
 - Status changes to "delivered" (green)
 - delivered_at timestamp set
-- Optimistic UI update
 
 ### 7.2 Verify Client Sees Delivery
 **Steps:**
@@ -355,6 +428,7 @@ Tests must run sequentially - each depends on data created by previous tests.
 6. Submit request
 
 **Expected Results:**
+- Success toast appears
 - Reschedule request submitted
 - pending_reschedule_date set
 - Service shows "reschedule pending" indicator
@@ -368,6 +442,7 @@ Tests must run sequentially - each depends on data created by previous tests.
 5. Click "Approve"
 
 **Expected Results:**
+- Success toast appears
 - scheduled_date updated to new date
 - pending_reschedule cleared
 - History recorded
@@ -532,6 +607,7 @@ Tests must run sequentially - each depends on data created by previous tests.
 5. Click "Accept Selected"
 
 **Expected Results:**
+- Summary toast appears (e.g., "3 requests accepted")
 - All selected requests accepted
 - Services become scheduled
 - Selection cleared
@@ -546,6 +622,7 @@ Tests must run sequentially - each depends on data created by previous tests.
 6. Confirm
 
 **Expected Results:**
+- Summary toast appears (e.g., "3 services rescheduled")
 - All selected services rescheduled
 - New dates applied
 
@@ -558,6 +635,7 @@ Tests must run sequentially - each depends on data created by previous tests.
 5. Click "Accept All"
 
 **Expected Results:**
+- Summary toast appears (e.g., "3 suggestions accepted")
 - All suggestions accepted
 - Services scheduled with suggested dates
 
@@ -568,6 +646,7 @@ Tests must run sequentially - each depends on data created by previous tests.
 3. Click "Decline Selected"
 
 **Expected Results:**
+- Summary toast appears (e.g., "2 suggestions declined")
 - Suggestions declined
 - Services return to pending status
 
@@ -710,6 +789,7 @@ Tests must run sequentially - each depends on data created by previous tests.
 5. Save
 
 **Expected Results:**
+- Success toast appears
 - Service updated
 - Changes reflected in detail view
 
@@ -720,6 +800,7 @@ Tests must run sequentially - each depends on data created by previous tests.
 3. Confirm deletion
 
 **Expected Results:**
+- Success toast appears
 - Service soft-deleted (deleted_at set)
 - Removed from lists
 - Not shown in dashboard
@@ -732,6 +813,7 @@ Tests must run sequentially - each depends on data created by previous tests.
 4. Confirm
 
 **Expected Results:**
+- Success toast appears
 - Request cancelled/deleted
 - Removed from client dashboard
 - Removed from courier requests
@@ -758,8 +840,10 @@ Tests must run sequentially - each depends on data created by previous tests.
 1. Go to /courier/clients/new
 2. Create "Second Business" with different service type
 3. Set different default pickup location
+4. Use either invitation flow or password flow
 
 **Expected Results:**
+- Success toast appears
 - Second client created
 - Different service type assigned
 
@@ -886,6 +970,7 @@ Tests must run sequentially - each depends on data created by previous tests.
 6. Confirm
 
 **Expected Results:**
+- Toast confirms rejection
 - Request marked as rejected
 - Rejection reason saved
 
@@ -906,6 +991,7 @@ Tests must run sequentially - each depends on data created by previous tests.
 3. Resubmit
 
 **Expected Results:**
+- Success toast appears
 - Request resubmitted as new pending request
 - Courier sees updated request
 
@@ -923,6 +1009,11 @@ Tests must run sequentially - each depends on data created by previous tests.
 | Out-of-Zone Address | (to be determined based on zone config) |
 | Service Types | Standard (€5), Express (€10), Same Day (€15) |
 
+### Client Creation in Tests
+- **Automated tests**: Use password flow (toggle OFF "Send invitation email")
+- **Manual testing**: Verify invitation flow separately with real email addresses
+- See Phase 2 for both automated and manual test cases
+
 ---
 
 ## Notes
@@ -932,3 +1023,8 @@ Tests must run sequentially - each depends on data created by previous tests.
 - Use `{ exact: true }` for button selectors to avoid ambiguity
 - Handle PWA update prompts if they appear
 - Some tests require switching between courier and client accounts
+- **Toast notifications**: Use `[data-sonner-toast]` selector for toast assertions
+  - Success toasts auto-dismiss in 4 seconds
+  - Error toasts persist until dismissed
+  - Batch operations show summary toasts (not individual)
+- **Client creation**: Automated tests use password flow; invitation flow tested manually
