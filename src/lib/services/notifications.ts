@@ -22,6 +22,47 @@ async function getCourierId(supabase: SupabaseClient): Promise<string | null> {
 }
 
 /**
+ * Supported locales for the app
+ */
+export type AppLocale = 'en' | 'pt-PT';
+
+/**
+ * Get a user's preferred locale from their profile
+ * Falls back to 'pt-PT' if not set (app default)
+ */
+export async function getUserLocale(supabase: SupabaseClient, userId: string): Promise<AppLocale> {
+	const { data } = await supabase
+		.from('profiles')
+		.select('locale')
+		.eq('id', userId)
+		.single();
+
+	const locale = data?.locale;
+	if (locale === 'en' || locale === 'pt-PT') {
+		return locale;
+	}
+	return 'pt-PT'; // Default locale
+}
+
+/**
+ * Get courier's preferred locale
+ * Falls back to 'pt-PT' if not set
+ */
+export async function getCourierLocale(supabase: SupabaseClient): Promise<AppLocale> {
+	const { data } = await supabase
+		.from('profiles')
+		.select('locale')
+		.eq('role', 'courier')
+		.single();
+
+	const locale = data?.locale;
+	if (locale === 'en' || locale === 'pt-PT') {
+		return locale;
+	}
+	return 'pt-PT'; // Default locale
+}
+
+/**
  * Send notification to a client
  */
 export async function notifyClient(params: {

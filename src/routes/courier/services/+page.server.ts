@@ -1,8 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { extractLocaleFromRequest } from '$lib/paraglide/runtime.js';
 import * as m from '$lib/paraglide/messages.js';
-import { notifyClient } from '$lib/services/notifications.js';
+import { notifyClient, getUserLocale } from '$lib/services/notifications.js';
 import { formatDateTimePtPT } from '$lib/utils/date-format.js';
 import { APP_URL } from '$lib/constants.js';
 
@@ -104,22 +103,22 @@ export const actions: Actions = {
 		// Notify clients when marked as delivered
 		if (status === 'delivered' && servicesToNotify.length > 0) {
 			const formattedDeliveredAt = formatDateTimePtPT(new Date());
-			const locale = extractLocaleFromRequest(request);
-			const notificationTitle = m.notification_service_delivered({}, { locale });
 
 			// Send notifications in chunks to avoid overwhelming the system
 			for (let i = 0; i < servicesToNotify.length; i += NOTIFICATION_CHUNK_SIZE) {
 				const chunk = servicesToNotify.slice(i, i + NOTIFICATION_CHUNK_SIZE);
 				try {
 					await Promise.all(
-						chunk.map((service) =>
-							notifyClient({
+						chunk.map(async (service) => {
+							const locale = await getUserLocale(supabase, service.client_id);
+							const notificationTitle = m.notification_service_delivered({}, { locale });
+							return notifyClient({
 								session,
 								clientId: service.client_id,
 								serviceId: service.id,
 								category: 'service_status',
 								title: notificationTitle,
-								message: 'O seu serviço foi marcado como entregue.',
+								message: m.notification_service_delivered_message({}, { locale }),
 								emailTemplate: 'delivered',
 								emailData: {
 									pickup_location: service.pickup_location,
@@ -127,8 +126,8 @@ export const actions: Actions = {
 									delivered_at: formattedDeliveredAt,
 									app_url: APP_URL
 								}
-							})
-						)
+							});
+						})
 					);
 				} catch (error) {
 					console.error('Batch notification failed for chunk', i, error);

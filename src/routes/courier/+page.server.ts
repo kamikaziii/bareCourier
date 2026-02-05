@@ -1,5 +1,6 @@
 import type { Actions, PageServerLoad } from './$types';
-import { notifyClient } from '$lib/services/notifications.js';
+import * as m from '$lib/paraglide/messages.js';
+import { notifyClient, getUserLocale } from '$lib/services/notifications.js';
 import { formatDatePtPT } from '$lib/utils/date-format.js';
 import { APP_URL } from '$lib/constants.js';
 
@@ -138,36 +139,37 @@ export const actions: Actions = {
 		);
 
 		// Process notifications in chunks to avoid overwhelming the system
-		const notificationsToSend = Array.from(clientNotifications).map(([clientId, serviceIdList]) => {
-			const count = serviceIdList.length;
-			const message =
-				count === 1
-					? `A sua entrega foi reagendada para ${formattedDate}.`
-					: `${count} entregas foram reagendadas para ${formattedDate}.`;
+		for (let i = 0; i < Array.from(clientNotifications).length; i += NOTIFICATION_CHUNK_SIZE) {
+			const chunk = Array.from(clientNotifications).slice(i, i + NOTIFICATION_CHUNK_SIZE);
+			await Promise.all(
+				chunk.map(async ([clientId, serviceIdList]) => {
+					const count = serviceIdList.length;
+					const locale = await getUserLocale(supabase, clientId);
+					const message =
+						count === 1
+							? m.notification_delivery_rescheduled_single_message({ date: formattedDate }, { locale })
+							: m.notification_deliveries_rescheduled_message({ count, date: formattedDate }, { locale });
 
-			// Get first service for email template data
-			const firstService = servicesMap.get(serviceIdList[0]);
+					// Get first service for email template data
+					const firstService = servicesMap.get(serviceIdList[0]);
 
-			return {
-				session,
-				clientId,
-				serviceId: serviceIdList[0], // Link to first service
-				category: 'schedule_change' as const,
-				title: 'Entregas Reagendadas',
-				message,
-				emailTemplate: 'request_accepted' as const,
-				emailData: {
-					pickup_location: firstService?.pickup_location || '',
-					delivery_location: firstService?.delivery_location || '',
-					scheduled_date: newDate,
-					app_url: APP_URL
-				}
-			};
-		});
-
-		for (let i = 0; i < notificationsToSend.length; i += NOTIFICATION_CHUNK_SIZE) {
-			const chunk = notificationsToSend.slice(i, i + NOTIFICATION_CHUNK_SIZE);
-			await Promise.all(chunk.map((notification) => notifyClient(notification)));
+					return notifyClient({
+						session,
+						clientId,
+						serviceId: serviceIdList[0], // Link to first service
+						category: 'schedule_change' as const,
+						title: m.notification_deliveries_rescheduled_title({}, { locale }),
+						message,
+						emailTemplate: 'request_accepted' as const,
+						emailData: {
+							pickup_location: firstService?.pickup_location || '',
+							delivery_location: firstService?.delivery_location || '',
+							scheduled_date: newDate,
+							app_url: APP_URL
+						}
+					});
+				})
+			);
 		}
 
 		return { success: true, results };

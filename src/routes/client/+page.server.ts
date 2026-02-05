@@ -1,8 +1,7 @@
 import type { Actions, PageServerLoad, RequestEvent } from './$types';
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
-import { extractLocaleFromRequest } from '$lib/paraglide/runtime.js';
 import * as m from '$lib/paraglide/messages.js';
-import { notifyCourier } from '$lib/services/notifications.js';
+import { notifyCourier, getCourierLocale, type AppLocale } from '$lib/services/notifications.js';
 import { formatDatePtPT } from '$lib/utils/date-format.js';
 import { APP_URL } from '$lib/constants.js';
 
@@ -36,10 +35,10 @@ type BatchSuggestionConfig = {
 	/** Fields to select from services table (beyond common fields) */
 	extraSelectFields: string;
 	notification: {
-		title: string;
+		title: (locale: AppLocale) => string;
 		template: 'suggestion_accepted' | 'suggestion_declined';
-		message: (count: number) => string;
-		partialMessage: (succeeded: number, total: number) => string;
+		message: (count: number, locale: AppLocale) => string;
+		partialMessage: (succeeded: number, total: number, locale: AppLocale) => string;
 	};
 	/** Build email data from service data */
 	buildEmailData: (service: BatchServiceData) => Record<string, string>;
@@ -130,6 +129,7 @@ function createBatchSuggestionHandler(config: BatchSuggestionConfig) {
 		const clientName = servicesData[0]?.profiles?.name || 'Cliente';
 		const firstService = servicesData[0];
 		const emailData = config.buildEmailData(firstService);
+		const courierLocale = await getCourierLocale(supabase);
 
 		// 7. Handle results and send notification
 		if (failedResults.length > 0) {
@@ -139,8 +139,8 @@ function createBatchSuggestionHandler(config: BatchSuggestionConfig) {
 					supabase,
 					session,
 					serviceId: firstService.id,
-					title: config.notification.title,
-					message: config.notification.partialMessage(successCount, servicesData.length),
+					title: config.notification.title(courierLocale),
+					message: config.notification.partialMessage(successCount, servicesData.length, courierLocale),
 					emailTemplate: config.notification.template,
 					emailData: { ...emailData, client_name: clientName, app_url: APP_URL }
 				});
@@ -160,8 +160,8 @@ function createBatchSuggestionHandler(config: BatchSuggestionConfig) {
 			supabase,
 			session,
 			serviceId: firstService.id,
-			title: config.notification.title,
-			message: config.notification.message(servicesData.length),
+			title: config.notification.title(courierLocale),
+			message: config.notification.message(servicesData.length, courierLocale),
 			emailTemplate: config.notification.template,
 			emailData: { ...emailData, client_name: clientName, app_url: APP_URL }
 		});
@@ -204,11 +204,11 @@ const batchAcceptConfig: BatchSuggestionConfig = {
 	rpcFunction: 'client_approve_reschedule',
 	extraSelectFields: 'suggested_date',
 	notification: {
-		title: 'Sugestões Aceites',
+		title: (locale) => m.notification_batch_suggestions_accepted_title({}, { locale }),
 		template: 'suggestion_accepted',
-		message: (n) => `O cliente aceitou ${n} sugestão(ões) de data.`,
-		partialMessage: (succeeded, total) =>
-			`O cliente aceitou ${succeeded} de ${total} sugestão(ões) de data.`
+		message: (count, locale) => m.notification_batch_accepted_message({ count }, { locale }),
+		partialMessage: (succeeded, total, locale) =>
+			m.notification_batch_partial_accepted_message({ succeeded, total }, { locale })
 	},
 	buildEmailData: (service) => ({
 		pickup_location: service.pickup_location,
@@ -223,11 +223,11 @@ const batchDeclineConfig: BatchSuggestionConfig = {
 	rpcFunction: 'client_deny_reschedule',
 	extraSelectFields: 'scheduled_date',
 	notification: {
-		title: 'Sugestões Recusadas',
+		title: (locale) => m.notification_batch_suggestions_declined_title({}, { locale }),
 		template: 'suggestion_declined',
-		message: (n) => `O cliente recusou ${n} sugestão(ões). Os pedidos estão novamente pendentes.`,
-		partialMessage: (succeeded, total) =>
-			`O cliente recusou ${succeeded} de ${total} sugestão(ões). Os pedidos estão novamente pendentes.`
+		message: (count, locale) => m.notification_batch_declined_message({ count }, { locale }),
+		partialMessage: (succeeded, total, locale) =>
+			m.notification_batch_partial_declined_message({ succeeded, total }, { locale })
 	},
 	buildEmailData: (service) => ({
 		pickup_location: service.pickup_location,
@@ -298,7 +298,7 @@ export const actions: Actions = {
 
 		// Format the new date for email
 		const formattedNewDate = formatDatePtPT(service.suggested_date);
-		const locale = extractLocaleFromRequest(request);
+		const locale = await getCourierLocale(supabase);
 
 		// Notify courier with email
 		try {
@@ -308,7 +308,7 @@ export const actions: Actions = {
 				serviceId,
 				category: 'schedule_change',
 				title: m.notification_suggestion_accepted({}, { locale }),
-				message: 'O cliente aceitou a data sugerida para o serviço.',
+				message: m.notification_suggestion_accepted_message({}, { locale }),
 				emailTemplate: 'suggestion_accepted',
 				emailData: {
 					client_name: service.profiles?.name || 'Cliente',
@@ -379,7 +379,7 @@ export const actions: Actions = {
 
 		// Format the original date for email
 		const formattedOriginalDate = formatDatePtPT(service.scheduled_date, 'Não agendada');
-		const locale = extractLocaleFromRequest(request);
+		const locale = await getCourierLocale(supabase);
 
 		// Notify courier with email
 		try {
@@ -389,7 +389,7 @@ export const actions: Actions = {
 				serviceId,
 				category: 'schedule_change',
 				title: m.notification_suggestion_declined({}, { locale }),
-				message: 'O cliente recusou a data sugerida. O pedido está novamente pendente.',
+				message: m.notification_suggestion_declined_message({}, { locale }),
 				emailTemplate: 'suggestion_declined',
 				emailData: {
 					client_name: service.profiles?.name || 'Cliente',
@@ -467,7 +467,7 @@ export const actions: Actions = {
 		}
 
 		// Notify courier with email
-		const locale = extractLocaleFromRequest(request);
+		const locale = await getCourierLocale(supabase);
 		try {
 			await notifyCourier({
 				supabase,
@@ -475,7 +475,7 @@ export const actions: Actions = {
 				serviceId,
 				category: 'new_request',
 				title: m.notification_request_cancelled({}, { locale }),
-				message: 'O cliente cancelou um pedido de serviço pendente.',
+				message: m.notification_request_cancelled_message({}, { locale }),
 				emailTemplate: 'request_cancelled',
 				emailData: {
 					client_name: service.profiles.name,

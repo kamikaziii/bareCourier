@@ -1,10 +1,10 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import type { Service, Profile } from '$lib/database.types';
-import { localizeHref, extractLocaleFromRequest } from '$lib/paraglide/runtime.js';
+import { localizeHref } from '$lib/paraglide/runtime.js';
 import * as m from '$lib/paraglide/messages.js';
 import { calculateDayWorkload, getWorkloadSettings, type WorkloadEstimate } from '$lib/services/workload.js';
-import { notifyClient } from '$lib/services/notifications';
+import { notifyClient, getUserLocale } from '$lib/services/notifications';
 import { APP_URL } from '$lib/constants.js';
 
 // Number of days to scan ahead when finding the next compatible day
@@ -173,7 +173,7 @@ export const actions: Actions = {
 		}
 
 		// Notify client with email
-		const locale = extractLocaleFromRequest(request);
+		const locale = await getUserLocale(supabase, service.client_id);
 		try {
 			await notifyClient({
 				session,
@@ -181,7 +181,7 @@ export const actions: Actions = {
 				serviceId,
 				category: 'schedule_change',
 				title: m.notification_request_accepted({}, { locale }),
-				message: 'O seu pedido de serviço foi aceite pelo estafeta. Verifique os detalhes na aplicação.',
+				message: m.notification_request_accepted_message({}, { locale }),
 				emailTemplate: 'request_accepted',
 				emailData: {
 					pickup_location: service.pickup_location,
@@ -247,8 +247,8 @@ export const actions: Actions = {
 
 		// Notify client with email
 		if (service?.client_id) {
-			const reasonText = rejectionReason ? ` Motivo: ${rejectionReason}` : '';
-			const locale = extractLocaleFromRequest(request);
+			const locale = await getUserLocale(supabase, service.client_id);
+			const reasonText = rejectionReason ? m.notification_reason_prefix({ reason: rejectionReason }, { locale }) : '';
 			try {
 				await notifyClient({
 					session,
@@ -256,7 +256,7 @@ export const actions: Actions = {
 					serviceId,
 					category: 'schedule_change',
 					title: m.notification_request_rejected({}, { locale }),
-					message: `O seu pedido de serviço foi rejeitado.${reasonText}`,
+					message: m.notification_request_rejected_message({ reason: reasonText }, { locale }),
 					emailTemplate: 'request_rejected',
 					emailData: {
 						pickup_location: service.pickup_location,
@@ -340,8 +340,7 @@ export const actions: Actions = {
 
 		// Notify client with email
 		if (service?.client_id) {
-			// Use the current request's locale for formatting the notification
-			const locale = extractLocaleFromRequest(request);
+			const locale = await getUserLocale(supabase, service.client_id);
 			const dateFormatted = new Date(suggestedDate).toLocaleDateString(locale);
 			const slotLabels: Record<string, Record<string, string>> = {
 				'pt-PT': {
@@ -362,27 +361,14 @@ export const actions: Actions = {
 				? suggestedTime
 				: (labels[suggestedTimeSlot] || suggestedTimeSlot);
 
-			// Notification messages by locale
-			const messages: Record<string, { subject: string; body: string }> = {
-				'pt-PT': {
-					subject: 'Nova Data Sugerida',
-					body: `O estafeta sugeriu uma nova data para o seu serviço: ${dateFormatted} (${slotText}). Aceda à aplicação para aceitar ou recusar.`
-				},
-				en: {
-					subject: 'New Date Suggested',
-					body: `The courier suggested a new date for your service: ${dateFormatted} (${slotText}). Check the app to accept or decline.`
-				}
-			};
-			const msg = messages[locale] || messages['pt-PT'];
-
 			try {
 				await notifyClient({
 					session,
 					clientId: service.client_id,
 					serviceId,
 					category: 'schedule_change',
-					title: msg.subject,
-					message: msg.body,
+					title: m.notification_reschedule_proposal({}, { locale }),
+					message: m.notification_reschedule_proposal_message({ date: dateFormatted, slot: slotText }, { locale }),
 					emailTemplate: 'request_suggested',
 					emailData: {
 						pickup_location: service.pickup_location,
@@ -453,7 +439,7 @@ export const actions: Actions = {
 				.single();
 
 			const svcData = serviceData as { pickup_location: string; delivery_location: string; scheduled_date: string | null } | null;
-			const locale = extractLocaleFromRequest(request);
+			const locale = await getUserLocale(supabase, result.client_id);
 
 			try {
 				await notifyClient({
@@ -462,7 +448,7 @@ export const actions: Actions = {
 					serviceId,
 					category: 'schedule_change',
 					title: m.notification_reschedule_approved({}, { locale }),
-					message: 'O seu pedido de reagendamento foi aprovado.',
+					message: m.notification_reschedule_approved_message({}, { locale }),
 					emailTemplate: 'request_accepted',
 					emailData: {
 						pickup_location: svcData?.pickup_location || '',
@@ -569,20 +555,19 @@ export const actions: Actions = {
 
 		// Send notifications in chunks to avoid overwhelming the system
 		if (successful.length > 0) {
-			const locale = extractLocaleFromRequest(request);
-			const notificationTitle = m.notification_request_accepted({}, { locale });
 			for (let i = 0; i < successful.length; i += NOTIFICATION_CHUNK_SIZE) {
 				const chunk = successful.slice(i, i + NOTIFICATION_CHUNK_SIZE);
 				try {
 					await Promise.all(
-						chunk.map(({ id, clientId, pickup_location, delivery_location, scheduled_date }) =>
-							notifyClient({
+						chunk.map(async ({ id, clientId, pickup_location, delivery_location, scheduled_date }) => {
+							const locale = await getUserLocale(supabase, clientId);
+							return notifyClient({
 								session,
 								clientId,
 								serviceId: id,
 								category: 'schedule_change',
-								title: notificationTitle,
-								message: 'O seu pedido de serviço foi aceite pelo estafeta. Verifique os detalhes na aplicação.',
+								title: m.notification_request_accepted({}, { locale }),
+								message: m.notification_request_accepted_message({}, { locale }),
 								emailTemplate: 'request_accepted',
 								emailData: {
 									pickup_location,
@@ -590,8 +575,8 @@ export const actions: Actions = {
 									scheduled_date: scheduled_date || '',
 									app_url: APP_URL
 								}
-							})
-						)
+							});
+						})
 					);
 				} catch (error) {
 					console.error('Batch notification failed for chunk', i, error);
@@ -672,9 +657,9 @@ export const actions: Actions = {
 				.single();
 
 			const svcData = serviceData as { pickup_location: string; delivery_location: string } | null;
-			const locale = extractLocaleFromRequest(request);
+			const locale = await getUserLocale(supabase, result.client_id);
+			const reasonText = denialReason ? m.notification_reason_prefix({ reason: denialReason }, { locale }) : '';
 
-			const reasonText = denialReason ? ` Motivo: ${denialReason}` : '';
 			try {
 				await notifyClient({
 					session,
@@ -682,7 +667,7 @@ export const actions: Actions = {
 					serviceId,
 					category: 'schedule_change',
 					title: m.notification_reschedule_denied({}, { locale }),
-					message: `O seu pedido de reagendamento foi recusado.${reasonText}`,
+					message: m.notification_reschedule_denied_message({ reason: reasonText }, { locale }),
 					emailTemplate: 'request_rejected',
 					emailData: {
 						pickup_location: svcData?.pickup_location || '',
