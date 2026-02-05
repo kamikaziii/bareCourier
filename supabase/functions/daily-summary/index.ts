@@ -107,7 +107,17 @@ Deno.serve(async () => {
 		const todayStr = localDate.toISOString().split('T')[0];
 
 		// Deduplication: Check if daily summary already sent today (in courier's timezone)
-		const todayStart = new Date(todayStr + 'T00:00:00Z');
+		// Convert midnight in courier's timezone to UTC for the database query
+		const midnightLocalStr = `${todayStr}T00:00:00`;
+		const midnightLocal = new Date(midnightLocalStr); // Parsed in server TZ (UTC for Deno Deploy)
+		// Calculate timezone offset by comparing UTC and local representations
+		const utcStr = midnightLocal.toLocaleString('en-US', { timeZone: 'UTC' });
+		const tzStr = midnightLocal.toLocaleString('en-US', { timeZone: courierTimezone });
+		const utcDate = new Date(utcStr);
+		const tzDate = new Date(tzStr);
+		const offsetMs = utcDate.getTime() - tzDate.getTime();
+		// Apply offset to get midnight local time expressed in UTC
+		const todayStart = new Date(midnightLocal.getTime() + offsetMs);
 		const { data: existingSummary } = await supabase
 			.from('notifications')
 			.select('id')
