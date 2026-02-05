@@ -139,6 +139,27 @@ PUBLIC_SUPABASE_URL=https://[project].supabase.co
 PUBLIC_SUPABASE_ANON_KEY=[anon-key]
 ```
 
+## Request Status Flow
+
+```
+Client creates → pending → Courier accepts/rejects/suggests
+                              ↓ (if suggested)
+                         Client accepts/declines
+```
+
+## Testing Checklist
+
+1. Auth: Login as courier, login as client, verify redirects
+2. Services: Create → pending (blue) → delivered (green)
+3. Data isolation: Client A cannot see Client B's services
+4. PWA: Test "Add to Home Screen" on mobile
+
+## Reference Docs
+
+Detailed guides in `docs/reference/` (read when needed, not auto-loaded):
+- `deployment-domain-checklist.md` - Domain change checklist
+- `svelte-state-guide.md` - Comprehensive Svelte 5 state patterns
+
 ## Todo Tracking
 
 File-based system in `todos/` directory:

@@ -1,3 +1,9 @@
+---
+paths:
+  - "src/routes/**/*"
+  - "src/hooks.server.ts"
+---
+
 # Architecture Rules
 
 ## Component Architecture

@@ -1,3 +1,11 @@
+---
+paths:
+  - "supabase/**/*.sql"
+  - "src/lib/database.types.ts"
+  - "src/**/+page.server.ts"
+  - "src/**/+layout.server.ts"
+---
+
 # Database Rules
 
 ## Schema Overview
