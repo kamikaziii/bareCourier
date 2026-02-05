@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "261"
 tags: [code-review, data-integrity, database, pr-13]

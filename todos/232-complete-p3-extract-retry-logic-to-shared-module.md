@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p3
 issue_id: "232"
 tags: [code-review, pr-14, architecture, refactor]

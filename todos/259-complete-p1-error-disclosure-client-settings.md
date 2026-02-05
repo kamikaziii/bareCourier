@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p1
 issue_id: "259"
 tags: [code-review, security, error-handling]

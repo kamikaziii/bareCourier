@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p3
 issue_id: "233"
 tags: [code-review, pr-14, observability, agent-native]

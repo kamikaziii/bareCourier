@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p3
 issue_id: "264"
 tags: [code-review, cleanup, architecture]

@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "262"
 tags: [code-review, performance, architecture, pr-16]
