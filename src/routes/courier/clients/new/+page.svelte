@@ -111,7 +111,14 @@
     const result = await response.json();
 
     if (!response.ok) {
-      toast.error(m.error_create_client_failed(), { duration: 8000 });
+      if (response.status === 429 && result.error?.code === "RATE_LIMIT") {
+        const minutes = Math.ceil(
+          (result.error.retryAfterMs || 3600000) / 60000,
+        );
+        toast.error(m.rate_limit_wait({ minutes }), { duration: 8000 });
+      } else {
+        toast.error(m.error_create_client_failed(), { duration: 8000 });
+      }
       loading = false;
       return;
     }
@@ -167,7 +174,11 @@
 
     // Show appropriate toast messages
     if (result.invitation_sent) {
-      toast.success(m.invitation_sent({ email: email.trim() }));
+      if (result.resend) {
+        toast.success(m.invitation_resent({ email: email.trim() }));
+      } else {
+        toast.success(m.invitation_sent({ email: email.trim() }));
+      }
     } else {
       toast.success(m.toast_client_created());
     }

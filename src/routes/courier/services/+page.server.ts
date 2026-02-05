@@ -1,5 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
+import { extractLocaleFromRequest } from '$lib/paraglide/runtime.js';
+import * as m from '$lib/paraglide/messages.js';
 import { notifyClient } from '$lib/services/notifications.js';
 import { formatDateTimePtPT } from '$lib/utils/date-format.js';
 import { APP_URL } from '$lib/constants.js';
@@ -102,6 +104,8 @@ export const actions: Actions = {
 		// Notify clients when marked as delivered
 		if (status === 'delivered' && servicesToNotify.length > 0) {
 			const formattedDeliveredAt = formatDateTimePtPT(new Date());
+			const locale = extractLocaleFromRequest(request);
+			const notificationTitle = m.notification_service_delivered({}, { locale });
 
 			// Send notifications in chunks to avoid overwhelming the system
 			for (let i = 0; i < servicesToNotify.length; i += NOTIFICATION_CHUNK_SIZE) {
@@ -114,7 +118,7 @@ export const actions: Actions = {
 								clientId: service.client_id,
 								serviceId: service.id,
 								category: 'service_status',
-								title: 'Serviço Entregue',
+								title: notificationTitle,
 								message: 'O seu serviço foi marcado como entregue.',
 								emailTemplate: 'delivered',
 								emailData: {

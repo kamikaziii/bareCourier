@@ -19,12 +19,21 @@ interface PastDueSettings {
 	thresholdUrgent?: number;
 }
 
+interface NotificationPreferences {
+	quietHoursStart?: string;
+	quietHoursEnd?: string;
+	[key: string]: unknown;
+}
+
 interface CourierProfile {
 	id: string;
 	locale: string | null;
 	past_due_settings: PastDueSettings | null;
 	working_days: string[] | null;
 	timezone: string | null;
+	notification_preferences: NotificationPreferences | null;
+	push_notifications_enabled: boolean | null;
+	email_notifications_enabled: boolean | null;
 }
 
 interface Service {
@@ -40,10 +49,10 @@ Deno.serve(async () => {
 		const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 		const now = new Date();
 
-		// Get courier profile with settings and locale
+		// Get courier profile with settings, locale, and notification preferences
 		const { data: courierData } = await supabase
 			.from('profiles')
-			.select('id, locale, past_due_settings, working_days, timezone')
+			.select('id, locale, past_due_settings, working_days, timezone, notification_preferences, push_notifications_enabled, email_notifications_enabled')
 			.eq('role', 'courier')
 			.single();
 
@@ -185,15 +194,6 @@ Deno.serve(async () => {
 					: t('daily_summary_pending_plural', locale, { total, pending });
 		}
 
-		// Pre-fetch courier profile for dispatchNotification (avoids N+1 query)
-		const { data: courierProfile } = await supabase
-			.from('profiles')
-			.select(
-				'notification_preferences, timezone, working_days, push_notifications_enabled, email_notifications_enabled, locale'
-			)
-			.eq('id', courier.id)
-			.single();
-
 		// Format today's date for email
 		const formattedDate = localDate.toLocaleDateString(locale === 'en' ? 'en-GB' : 'pt-PT', {
 			day: 'numeric',
@@ -207,7 +207,7 @@ Deno.serve(async () => {
 			category: 'daily_summary',
 			title: t('daily_summary_title', locale),
 			message,
-			profile: courierProfile,
+			profile: courier,
 			emailTemplate: 'daily_summary',
 			emailData: {
 				date: formattedDate,

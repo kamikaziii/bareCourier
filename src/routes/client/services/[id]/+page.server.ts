@@ -1,7 +1,8 @@
 import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import type { Service, ServiceStatusHistory, Profile, PastDueSettings, ServiceType } from '$lib/database.types';
-import { localizeHref } from '$lib/paraglide/runtime.js';
+import { localizeHref, extractLocaleFromRequest } from '$lib/paraglide/runtime.js';
+import * as m from '$lib/paraglide/messages.js';
 import { notifyCourier } from '$lib/services/notifications.js';
 import { formatDatePtPT } from '$lib/utils/date-format.js';
 import { APP_URL } from '$lib/constants.js';
@@ -181,6 +182,7 @@ export const actions: Actions = {
 				.eq('id', user.id)
 				.single();
 			const clientName = (clientProfile as { name: string } | null)?.name || 'Cliente';
+			const locale = extractLocaleFromRequest(request);
 
 			// Notify courier with email
 			await notifyCourier({
@@ -188,7 +190,7 @@ export const actions: Actions = {
 				session,
 				serviceId: params.id,
 				category: 'schedule_change',
-				title: 'Pedido de Reagendamento',
+				title: m.notification_reschedule_request({}, { locale }),
 				message: 'O cliente pediu para reagendar uma entrega. Requer a sua aprovação.',
 				emailTemplate: 'request_suggested',
 				emailData: {
@@ -267,7 +269,7 @@ export const actions: Actions = {
 		}
 	},
 
-	acceptReschedule: async ({ params, locals: { supabase, safeGetSession } }) => {
+	acceptReschedule: async ({ params, request, locals: { supabase, safeGetSession } }) => {
 		const { session, user } = await safeGetSession();
 		if (!session || !user) {
 			return { success: false, error: 'Not authenticated' };
@@ -303,13 +305,14 @@ export const actions: Actions = {
 		}
 
 		// Notify courier with email
+		const locale = extractLocaleFromRequest(request);
 		try {
 			await notifyCourier({
 				supabase,
 				session,
 				serviceId: params.id,
 				category: 'schedule_change',
-				title: 'Reagendamento Aceite',
+				title: m.notification_reschedule_accepted({}, { locale }),
 				message: 'O cliente aceitou a proposta de reagendamento.',
 				emailTemplate: 'suggestion_accepted',
 				emailData: {
@@ -369,13 +372,14 @@ export const actions: Actions = {
 
 		// Notify courier with email
 		const reasonText = reason ? ` Motivo: ${reason}` : '';
+		const locale = extractLocaleFromRequest(request);
 		try {
 			await notifyCourier({
 				supabase,
 				session,
 				serviceId: params.id,
 				category: 'schedule_change',
-				title: 'Reagendamento Recusado',
+				title: m.notification_reschedule_denied_client({}, { locale }),
 				message: `O cliente recusou a proposta de reagendamento.${reasonText}`,
 				emailTemplate: 'suggestion_declined',
 				emailData: {

@@ -11,7 +11,8 @@ import {
 	calculateTypedPrice,
 	type TypePricingInput
 } from '$lib/services/type-pricing.js';
-import { localizeHref } from '$lib/paraglide/runtime.js';
+import { localizeHref, extractLocaleFromRequest } from '$lib/paraglide/runtime.js';
+import * as m from '$lib/paraglide/messages.js';
 import { notifyCourier } from '$lib/services/notifications.js';
 import { formatDatePtPT } from '$lib/utils/date-format.js';
 import { APP_URL } from '$lib/constants.js';
@@ -243,6 +244,7 @@ export const actions: Actions = {
 
 		// Notify courier with email
 		const formattedDate = formatDatePtPT(requested_date, 'Não especificada');
+		const locale = extractLocaleFromRequest(request);
 
 		try {
 			await notifyCourier({
@@ -250,7 +252,7 @@ export const actions: Actions = {
 				session,
 				serviceId: insertedService.id,
 				category: 'new_request',
-				title: 'Novo Pedido de Serviço',
+				title: m.notification_new_service_request({}, { locale }),
 				message: `${userProfile?.name || 'Cliente'} criou um novo pedido de serviço.`,
 				emailTemplate: 'new_request',
 				emailData: {

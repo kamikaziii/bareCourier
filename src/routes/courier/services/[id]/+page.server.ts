@@ -1,7 +1,8 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import type { Service, ServiceStatusHistory, Profile, ServiceType } from '$lib/database.types';
-import { localizeHref } from '$lib/paraglide/runtime.js';
+import { localizeHref, extractLocaleFromRequest } from '$lib/paraglide/runtime.js';
+import * as m from '$lib/paraglide/messages.js';
 import { notifyClient } from '$lib/services/notifications.js';
 import { formatDatePtPT, formatDateTimePtPT } from '$lib/utils/date-format.js';
 import { APP_URL } from '$lib/constants.js';
@@ -93,6 +94,7 @@ export const actions: Actions = {
 		if (newStatus === 'delivered' && serviceData) {
 			const service = serviceData as { client_id: string; pickup_location: string; delivery_location: string };
 			const formattedDeliveredAt = formatDateTimePtPT(new Date());
+			const locale = extractLocaleFromRequest(request);
 
 			try {
 				await notifyClient({
@@ -100,7 +102,7 @@ export const actions: Actions = {
 					clientId: service.client_id,
 					serviceId: params.id,
 					category: 'service_status',
-					title: 'Serviço Entregue',
+					title: m.notification_service_delivered({}, { locale }),
 					message: 'O seu serviço foi marcado como entregue.',
 					emailTemplate: 'delivered',
 					emailData: {
@@ -277,12 +279,13 @@ export const actions: Actions = {
 			// Notify client
 			const formattedDate = formatDatePtPT(newDate);
 			const reasonText = reason ? ` Motivo: ${reason}` : '';
+			const locale = extractLocaleFromRequest(request);
 			await notifyClient({
 				session,
 				clientId: service.client_id,
 				serviceId: params.id,
 				category: 'schedule_change',
-				title: 'Proposta de Reagendamento',
+				title: m.notification_reschedule_proposal({}, { locale }),
 				message: `O estafeta propõe reagendar para ${formattedDate}.${reasonText}`,
 				emailTemplate: 'request_suggested',
 				emailData: {
@@ -313,6 +316,8 @@ export const actions: Actions = {
 			const formattedDate = formatDatePtPT(newDate);
 			const reasonText = reason ? ` Motivo: ${reason}` : '';
 			const notificationMessage = `A sua entrega foi reagendada para ${formattedDate}.${reasonText}`;
+			const locale = extractLocaleFromRequest(request);
+			const translatedTitle = m.notification_delivery_rescheduled({}, { locale });
 
 			const { data, error: rpcError } = await supabase.rpc('reschedule_service', {
 				p_service_id: params.id,
@@ -320,7 +325,7 @@ export const actions: Actions = {
 				p_new_time_slot: newTimeSlot,
 				p_new_time: newTime || undefined,
 				p_reason: reason || undefined,
-				p_notification_title: 'Entrega Reagendada',
+				p_notification_title: translatedTitle,
 				p_notification_message: notificationMessage
 			});
 
@@ -340,7 +345,7 @@ export const actions: Actions = {
 				clientId: service.client_id,
 				serviceId: params.id,
 				category: 'schedule_change',
-				title: 'Entrega Reagendada',
+				title: translatedTitle,
 				message: notificationMessage,
 				emailTemplate: 'request_suggested',
 				emailData: {

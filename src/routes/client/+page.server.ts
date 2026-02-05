@@ -1,5 +1,7 @@
 import type { Actions, PageServerLoad, RequestEvent } from './$types';
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
+import { extractLocaleFromRequest } from '$lib/paraglide/runtime.js';
+import * as m from '$lib/paraglide/messages.js';
 import { notifyCourier } from '$lib/services/notifications.js';
 import { formatDatePtPT } from '$lib/utils/date-format.js';
 import { APP_URL } from '$lib/constants.js';
@@ -296,6 +298,7 @@ export const actions: Actions = {
 
 		// Format the new date for email
 		const formattedNewDate = formatDatePtPT(service.suggested_date);
+		const locale = extractLocaleFromRequest(request);
 
 		// Notify courier with email
 		try {
@@ -304,7 +307,7 @@ export const actions: Actions = {
 				session,
 				serviceId,
 				category: 'schedule_change',
-				title: 'Sugestão Aceite',
+				title: m.notification_suggestion_accepted({}, { locale }),
 				message: 'O cliente aceitou a data sugerida para o serviço.',
 				emailTemplate: 'suggestion_accepted',
 				emailData: {
@@ -376,6 +379,7 @@ export const actions: Actions = {
 
 		// Format the original date for email
 		const formattedOriginalDate = formatDatePtPT(service.scheduled_date, 'Não agendada');
+		const locale = extractLocaleFromRequest(request);
 
 		// Notify courier with email
 		try {
@@ -384,7 +388,7 @@ export const actions: Actions = {
 				session,
 				serviceId,
 				category: 'schedule_change',
-				title: 'Sugestão Recusada',
+				title: m.notification_suggestion_declined({}, { locale }),
 				message: 'O cliente recusou a data sugerida. O pedido está novamente pendente.',
 				emailTemplate: 'suggestion_declined',
 				emailData: {
@@ -463,13 +467,14 @@ export const actions: Actions = {
 		}
 
 		// Notify courier with email
+		const locale = extractLocaleFromRequest(request);
 		try {
 			await notifyCourier({
 				supabase,
 				session,
 				serviceId,
 				category: 'new_request',
-				title: 'Pedido Cancelado',
+				title: m.notification_request_cancelled({}, { locale }),
 				message: 'O cliente cancelou um pedido de serviço pendente.',
 				emailTemplate: 'request_cancelled',
 				emailData: {

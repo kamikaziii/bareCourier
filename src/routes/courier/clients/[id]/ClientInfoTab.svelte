@@ -155,7 +155,18 @@
       const result = await response.json();
 
       if (!response.ok) {
-        resendError = result.error || m.error_generic();
+        if (response.status === 429 && result.error?.code === "RATE_LIMIT") {
+          const minutes = Math.ceil(
+            (result.error.retryAfterMs || 3600000) / 60000,
+          );
+          resendError = m.rate_limit_wait({ minutes });
+        } else if (typeof result.error === "string") {
+          resendError = result.error;
+        } else if (result.error?.message) {
+          resendError = result.error.message;
+        } else {
+          resendError = m.error_generic();
+        }
       } else if (result.invitation_sent) {
         // Clear cached status so next check fetches fresh data
         clientStatusCache.delete(client.id);

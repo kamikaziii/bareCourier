@@ -2,6 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import type { Service, Profile } from '$lib/database.types';
 import { localizeHref, extractLocaleFromRequest } from '$lib/paraglide/runtime.js';
+import * as m from '$lib/paraglide/messages.js';
 import { calculateDayWorkload, getWorkloadSettings, type WorkloadEstimate } from '$lib/services/workload.js';
 import { notifyClient } from '$lib/services/notifications';
 import { APP_URL } from '$lib/constants.js';
@@ -172,13 +173,14 @@ export const actions: Actions = {
 		}
 
 		// Notify client with email
+		const locale = extractLocaleFromRequest(request);
 		try {
 			await notifyClient({
 				session,
 				clientId: service.client_id,
 				serviceId,
 				category: 'schedule_change',
-				title: 'Pedido Aceite',
+				title: m.notification_request_accepted({}, { locale }),
 				message: 'O seu pedido de serviço foi aceite pelo estafeta. Verifique os detalhes na aplicação.',
 				emailTemplate: 'request_accepted',
 				emailData: {
@@ -246,13 +248,14 @@ export const actions: Actions = {
 		// Notify client with email
 		if (service?.client_id) {
 			const reasonText = rejectionReason ? ` Motivo: ${rejectionReason}` : '';
+			const locale = extractLocaleFromRequest(request);
 			try {
 				await notifyClient({
 					session,
 					clientId: service.client_id,
 					serviceId,
 					category: 'schedule_change',
-					title: 'Pedido Rejeitado',
+					title: m.notification_request_rejected({}, { locale }),
 					message: `O seu pedido de serviço foi rejeitado.${reasonText}`,
 					emailTemplate: 'request_rejected',
 					emailData: {
@@ -450,6 +453,7 @@ export const actions: Actions = {
 				.single();
 
 			const svcData = serviceData as { pickup_location: string; delivery_location: string; scheduled_date: string | null } | null;
+			const locale = extractLocaleFromRequest(request);
 
 			try {
 				await notifyClient({
@@ -457,7 +461,7 @@ export const actions: Actions = {
 					clientId: result.client_id,
 					serviceId,
 					category: 'schedule_change',
-					title: 'Reagendamento Aprovado',
+					title: m.notification_reschedule_approved({}, { locale }),
 					message: 'O seu pedido de reagendamento foi aprovado.',
 					emailTemplate: 'request_accepted',
 					emailData: {
@@ -565,6 +569,8 @@ export const actions: Actions = {
 
 		// Send notifications in chunks to avoid overwhelming the system
 		if (successful.length > 0) {
+			const locale = extractLocaleFromRequest(request);
+			const notificationTitle = m.notification_request_accepted({}, { locale });
 			for (let i = 0; i < successful.length; i += NOTIFICATION_CHUNK_SIZE) {
 				const chunk = successful.slice(i, i + NOTIFICATION_CHUNK_SIZE);
 				try {
@@ -575,7 +581,7 @@ export const actions: Actions = {
 								clientId,
 								serviceId: id,
 								category: 'schedule_change',
-								title: 'Pedido Aceite',
+								title: notificationTitle,
 								message: 'O seu pedido de serviço foi aceite pelo estafeta. Verifique os detalhes na aplicação.',
 								emailTemplate: 'request_accepted',
 								emailData: {
@@ -666,6 +672,7 @@ export const actions: Actions = {
 				.single();
 
 			const svcData = serviceData as { pickup_location: string; delivery_location: string } | null;
+			const locale = extractLocaleFromRequest(request);
 
 			const reasonText = denialReason ? ` Motivo: ${denialReason}` : '';
 			try {
@@ -674,7 +681,7 @@ export const actions: Actions = {
 					clientId: result.client_id,
 					serviceId,
 					category: 'schedule_change',
-					title: 'Reagendamento Recusado',
+					title: m.notification_reschedule_denied({}, { locale }),
 					message: `O seu pedido de reagendamento foi recusado.${reasonText}`,
 					emailTemplate: 'request_rejected',
 					emailData: {

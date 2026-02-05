@@ -89,6 +89,7 @@
   "form_name": "Name",
   "form_phone": "Phone",
   "error_create_client_failed": "Failed to create client",
+  "rate_limit_wait": "Please wait {minutes} minutes before trying again",
   "action_edit": "Edit",
   "action_delete": "Delete",
   "action_cancel": "Cancel",
@@ -729,6 +730,7 @@
   "invitation_mode_desc": "Client will receive an email to set their own password",
   "password_mode_desc": "Set the password manually (for testing or urgent cases)",
   "invitation_sent": "Invitation sent to {email}",
+  "invitation_resent": "Invitation resent to {email}",
   "resend_invitation": "Resend Invitation",
   "invitation_pending": "Invitation pending",
   "set_your_password": "Set Your Password",
@@ -798,5 +800,20 @@
 
   "toast_zones_saved": "Distribution zones saved",
   "toast_zone_pricing_saved": "Zone pricing saved",
-  "toast_client_pricing_failed": "Client created, but pricing configuration failed to save. You can add it later."
+  "toast_client_pricing_failed": "Client created, but pricing configuration failed to save. You can add it later.",
+
+  "notification_service_delivered": "Service Delivered",
+  "notification_reschedule_proposal": "Reschedule Proposal",
+  "notification_delivery_rescheduled": "Delivery Rescheduled",
+  "notification_request_accepted": "Request Accepted",
+  "notification_request_rejected": "Request Rejected",
+  "notification_reschedule_approved": "Reschedule Approved",
+  "notification_reschedule_denied": "Reschedule Denied",
+  "notification_suggestion_accepted": "Suggestion Accepted",
+  "notification_suggestion_declined": "Suggestion Declined",
+  "notification_request_cancelled": "Request Cancelled",
+  "notification_reschedule_request": "Reschedule Request",
+  "notification_reschedule_accepted": "Reschedule Accepted",
+  "notification_reschedule_denied_client": "Reschedule Denied",
+  "notification_new_service_request": "New Service Request"
 }

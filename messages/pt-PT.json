@@ -89,6 +89,7 @@
   "form_name": "Nome",
   "form_phone": "Telefone",
   "error_create_client_failed": "Falha ao criar cliente",
+  "rate_limit_wait": "Por favor aguarde {minutes} minutos antes de tentar novamente",
   "action_edit": "Editar",
   "action_delete": "Eliminar",
   "action_cancel": "Cancelar",
@@ -729,6 +730,7 @@
   "invitation_mode_desc": "O cliente receberá um email para definir a sua própria palavra-passe",
   "password_mode_desc": "Definir a palavra-passe manualmente (para testes ou casos urgentes)",
   "invitation_sent": "Convite enviado para {email}",
+  "invitation_resent": "Convite reenviado para {email}",
   "resend_invitation": "Reenviar Convite",
   "invitation_pending": "Convite pendente",
   "set_your_password": "Defina a Sua Palavra-passe",
@@ -798,5 +800,20 @@
 
   "toast_zones_saved": "Zonas de distribuição guardadas",
   "toast_zone_pricing_saved": "Preços de zona guardados",
-  "toast_client_pricing_failed": "Cliente criado, mas a configuração de preços falhou ao guardar. Pode adicioná-la mais tarde."
+  "toast_client_pricing_failed": "Cliente criado, mas a configuração de preços falhou ao guardar. Pode adicioná-la mais tarde.",
+
+  "notification_service_delivered": "Serviço Entregue",
+  "notification_reschedule_proposal": "Proposta de Reagendamento",
+  "notification_delivery_rescheduled": "Entrega Reagendada",
+  "notification_request_accepted": "Pedido Aceite",
+  "notification_request_rejected": "Pedido Rejeitado",
+  "notification_reschedule_approved": "Reagendamento Aprovado",
+  "notification_reschedule_denied": "Reagendamento Recusado",
+  "notification_suggestion_accepted": "Sugestão Aceite",
+  "notification_suggestion_declined": "Sugestão Recusada",
+  "notification_request_cancelled": "Pedido Cancelado",
+  "notification_reschedule_request": "Pedido de Reagendamento",
+  "notification_reschedule_accepted": "Reagendamento Aceite",
+  "notification_reschedule_denied_client": "Reagendamento Recusado",
+  "notification_new_service_request": "Novo Pedido de Serviço"
 }
