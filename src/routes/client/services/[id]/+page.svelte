@@ -119,15 +119,10 @@
       });
 
       const result = await response.json();
-      if (result.data?.success) {
+      if (result.type === "success") {
         await invalidateAll();
         showRescheduleDialog = false;
-        // Show success feedback via toast
-        if (result.data.needsApproval) {
-          toast.success(m.client_reschedule_success());
-        } else {
-          toast.success(m.client_reschedule_auto_approved());
-        }
+        toast.success(m.client_reschedule_success());
       } else {
         toast.error(m.toast_error_generic(), {
           duration: 8000,
@@ -145,7 +140,7 @@
     try {
       const response = await fetch("?/acceptReschedule", { method: "POST" });
       const result = await response.json();
-      if (result.data?.success) {
+      if (result.type === "success") {
         toast.success(m.reschedule_approved());
         await invalidateAll();
       } else {
@@ -169,7 +164,7 @@
         body: formData,
       });
       const result = await response.json();
-      if (result.data?.success) {
+      if (result.type === "success") {
         toast.success(m.reschedule_denied());
         showDeclineDialog = false;
         declineReason = "";

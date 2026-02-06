@@ -130,16 +130,10 @@ export const actions: Actions = {
 			return { success: false, error: 'max_reschedules_reached', code: 'MAX_REACHED' };
 		}
 
-		// Check minimum notice (only if service has a scheduled date)
-		let needsApproval = false;
-		if (service.scheduled_date) {
-			const scheduledDateTime = new Date(service.scheduled_date + 'T00:00:00');
-			const hoursUntilScheduled = (scheduledDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
-
-			if (hoursUntilScheduled < clientMinNoticeHours) {
-				needsApproval = true;
-			}
-		}
+		// Client reschedule requests always need courier approval.
+		// The DB trigger (check_client_service_update_fields) prevents clients from directly
+		// modifying scheduled_date/scheduled_time_slot, so auto-approve is not possible.
+		const needsApproval = true;
 
 		if (needsApproval) {
 			// Create pending reschedule request
@@ -204,69 +198,6 @@ export const actions: Actions = {
 			});
 
 			return { success: true, needsApproval: true };
-		} else {
-			// Auto-approve: update service directly
-			const { error: updateError } = await supabase
-				.from('services')
-				.update({
-					scheduled_date: newDate,
-					scheduled_time_slot: newTimeSlot,
-					scheduled_time: newTime || null,
-					reschedule_count: (service.reschedule_count || 0) + 1,
-					last_rescheduled_at: new Date().toISOString(),
-					last_rescheduled_by: user.id
-				})
-				.eq('id', params.id);
-
-			if (updateError) {
-				console.error('Failed to auto-approve reschedule:', updateError);
-				return { success: false, error: 'Failed to reschedule service' };
-			}
-
-			// Create history record
-			await supabase.from('service_reschedule_history').insert({
-				service_id: params.id,
-				initiated_by: user.id,
-				initiated_by_role: 'client',
-				old_date: service.scheduled_date,
-				old_time_slot: service.scheduled_time_slot,
-				old_time: service.scheduled_time,
-				new_date: newDate,
-				new_time_slot: newTimeSlot,
-				new_time: newTime || null,
-				reason: reason || null,
-				approval_status: 'auto_approved'
-			});
-
-			// Get client name for email and courier locale
-			const { data: clientProfile } = await supabase
-				.from('profiles')
-				.select('name')
-				.eq('id', user.id)
-				.single();
-			const clientName = (clientProfile as { name: string } | null)?.name || 'Cliente';
-			const locale = await getCourierLocale(supabase);
-
-			// Notify courier of auto-approved reschedule with email
-			await notifyCourier({
-				supabase,
-				session,
-				serviceId: params.id,
-				category: 'schedule_change',
-				title: m.notification_auto_reschedule_title({}, { locale }),
-				message: m.notification_auto_reschedule_message({}, { locale }),
-				emailTemplate: 'request_suggested',
-				emailData: {
-					client_name: clientName,
-					pickup_location: service.pickup_location,
-					delivery_location: service.delivery_location,
-					requested_date: formatDatePtPT(service.scheduled_date),  // Original date
-					suggested_date: formatDatePtPT(newDate),  // New date
-					app_url: APP_URL
-				}
-			});
-
-			return { success: true, needsApproval: false };
 		}
 	},
 

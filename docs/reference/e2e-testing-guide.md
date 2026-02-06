@@ -158,6 +158,28 @@ await expect(page.locator('text=Total').locator('..').getByText('€5.00')).toBe
 
 5. **Toast timing** — Sonner toasts auto-dismiss after 4s (success) or 8s (error). When creating multiple items sequentially, add `waitForTimeout(4500)` between creations so toasts don't overlap.
 
+6. **Popover inside Dialog z-index** — bits-ui Popover components (e.g., SchedulePicker calendar) inside Dialog components have z-index conflicts. Both Dialog overlay and Popover.Content use `z-50`, so DOM order determines stacking. Popover renders after Dialog but behind its overlay. Fix by forcing popover z-index higher in tests:
+
+```typescript
+// Open the popover
+await page.getByRole('button', { name: /select date/i }).click();
+
+// Wait for popover to attach
+await page.locator('[data-bits-popover-content]').waitFor({ state: 'attached', timeout: 2000 });
+
+// Force z-index higher than dialog
+await page.evaluate(() => {
+  const popover = document.querySelector('[data-bits-popover-content]');
+  if (popover instanceof HTMLElement) {
+    popover.style.zIndex = '100';
+  }
+});
+await page.waitForTimeout(200);
+
+// Now interact with popover content
+await page.locator('[role="grid"]').waitFor({ state: 'visible' });
+```
+
 ## Adding New Test Phases
 
 1. Follow the naming convention: `e2e/NN-description.spec.ts`
