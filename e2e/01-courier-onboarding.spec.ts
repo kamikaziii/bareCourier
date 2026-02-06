@@ -83,12 +83,12 @@ test.describe('Phase 1: Courier Onboarding', () => {
 	});
 
 	test('1.2 Select Type-Based Pricing Model', async ({ page }) => {
-		await page.goto('/en/courier/settings');
+		// Navigate directly to Pricing tab via URL parameter
+		await page.goto('/en/courier/settings?tab=pricing');
 		await dismissPwaPrompt(page);
 
-		// Click Pricing tab
-		await page.getByRole('tab', { name: 'Pricing' }).click();
-		await dismissPwaPrompt(page);
+		// Wait for Pricing content to be visible (first section is Distance Calculation Mode)
+		await expect(page.getByText('Distance Calculation Mode').first()).toBeVisible({ timeout: 5000 });
 
 		// Check if Type-based pricing is already selected
 		const typeBasedRadio = page.getByRole('radio', { name: /Type-based pricing/i });
@@ -196,15 +196,13 @@ test.describe('Phase 1: Courier Onboarding', () => {
 	});
 
 	test('1.6 Configure Time Slots', async ({ page }) => {
-		await page.goto('/en/courier/settings');
-		await dismissPwaPrompt(page);
-
-		// Click Scheduling tab
-		await page.getByRole('tab', { name: 'Scheduling' }).click();
+		// Navigate directly to Scheduling tab via URL parameter
+		await page.goto('/en/courier/settings?tab=scheduling');
 		await dismissPwaPrompt(page);
 
 		// Scope all selectors to the Scheduling tabpanel to avoid desktop/mobile duplicates
 		const schedulingPanel = page.getByRole('tabpanel', { name: 'Scheduling' });
+		await expect(schedulingPanel).toBeVisible({ timeout: 5000 });
 
 		// Set morning slot (08:00-12:00)
 		await schedulingPanel.locator('input[name="morning_start"]').fill('08:00');
@@ -245,15 +243,12 @@ test.describe('Phase 1: Courier Onboarding', () => {
 	});
 
 	test('1.7 Configure Notifications', async ({ page }) => {
-		await page.goto('/en/courier/settings');
-		await dismissPwaPrompt(page);
-
-		// Click Notifications tab
-		await page.getByRole('tab', { name: 'Notifications' }).click();
+		// Navigate directly to Notifications tab via URL parameter
+		await page.goto('/en/courier/settings?tab=notifications');
 		await dismissPwaPrompt(page);
 
 		// Verify notification preferences section is visible (use first match)
-		await expect(page.getByText('Notification Preferences').first()).toBeVisible();
+		await expect(page.getByText('Notification Preferences').first()).toBeVisible({ timeout: 5000 });
 
 		// Note: In-app notifications are always enabled
 		// This test verifies the page loads and can be saved
