@@ -2,7 +2,7 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import * as m from '$lib/paraglide/messages.js';
 import { notifyClient, getUserLocale } from '$lib/services/notifications.js';
-import { formatDateTimePtPT } from '$lib/utils/date-format.js';
+import { formatDateTime } from '$lib/utils/date-format.js';
 import { APP_URL } from '$lib/constants.js';
 
 // Process notifications in chunks to avoid overwhelming the system
@@ -102,7 +102,7 @@ export const actions: Actions = {
 
 		// Notify clients when marked as delivered
 		if (status === 'delivered' && servicesToNotify.length > 0) {
-			const formattedDeliveredAt = formatDateTimePtPT(new Date());
+			const deliveredAt = new Date();
 
 			// Send notifications in chunks to avoid overwhelming the system
 			for (let i = 0; i < servicesToNotify.length; i += NOTIFICATION_CHUNK_SIZE) {
@@ -111,6 +111,7 @@ export const actions: Actions = {
 					await Promise.all(
 						chunk.map(async (service) => {
 							const locale = await getUserLocale(supabase, service.client_id);
+							const formattedDeliveredAt = formatDateTime(deliveredAt, locale);
 							const notificationTitle = m.notification_service_delivered({}, { locale });
 							return notifyClient({
 								session,

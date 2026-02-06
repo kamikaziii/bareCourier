@@ -6,6 +6,7 @@
   import * as m from "$lib/paraglide/messages.js";
   import { PUBLIC_SUPABASE_URL } from "$env/static/public";
   import type { SupabaseClient } from "@supabase/supabase-js";
+  import { toast } from "$lib/utils/toast.js";
 
   let {
     open = $bindable(false),
@@ -18,35 +19,30 @@
   } = $props();
 
   let loading = $state(false);
-  let error = $state("");
-  let success = $state(false);
   let newPassword = $state("");
 
   // Reset state when dialog opens
   $effect(() => {
     if (open) {
       newPassword = "";
-      error = "";
-      success = false;
       loading = false;
     }
   });
 
   async function handleResetPassword() {
     if (newPassword.length < 6) {
-      error = m.password_min_length();
+      toast.error(m.password_min_length(), { duration: 8000 });
       return;
     }
 
     loading = true;
-    error = "";
 
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
 
       if (!accessToken) {
-        error = m.session_expired();
+        toast.error(m.session_expired(), { duration: 8000 });
         loading = false;
         return;
       }
@@ -69,25 +65,22 @@
       const result = await response.json();
 
       if (!response.ok) {
-        error = result.error || m.password_reset_error();
+        toast.error(result.error || m.password_reset_error(), {
+          duration: 8000,
+        });
       } else {
-        success = true;
         newPassword = "";
-        // Auto-close after showing success
-        setTimeout(() => {
-          open = false;
-          success = false;
-        }, 2000);
+        open = false;
+        toast.success(m.password_reset_success());
       }
     } catch {
-      error = m.password_reset_error();
+      toast.error(m.password_reset_error(), { duration: 8000 });
     }
 
     loading = false;
   }
 
   function handleCancel() {
-    error = "";
     newPassword = "";
   }
 </script>
@@ -101,47 +94,31 @@
       </AlertDialog.Description>
     </AlertDialog.Header>
 
-    {#if success}
-      <div class="rounded-md bg-green-500/10 p-3 text-green-600">
-        {m.password_reset_success()}
+    <div class="space-y-4">
+      <div class="space-y-2">
+        <Label for="new_client_password">{m.password_new_for_client()}</Label>
+        <Input
+          id="new_client_password"
+          type="password"
+          bind:value={newPassword}
+          disabled={loading}
+          minlength={6}
+          autocomplete="new-password"
+        />
+        <p class="text-xs text-muted-foreground">{m.password_min_length()}</p>
       </div>
-    {:else}
-      <div class="space-y-4">
-        {#if error}
-          <div
-            class="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          >
-            {error}
-          </div>
-        {/if}
-
-        <div class="space-y-2">
-          <Label for="new_client_password">{m.password_new_for_client()}</Label>
-          <Input
-            id="new_client_password"
-            type="password"
-            bind:value={newPassword}
-            disabled={loading}
-            minlength={6}
-            autocomplete="new-password"
-          />
-          <p class="text-xs text-muted-foreground">{m.password_min_length()}</p>
-        </div>
-      </div>
-    {/if}
+    </div>
 
     <AlertDialog.Footer>
       <AlertDialog.Cancel disabled={loading} onclick={handleCancel}>
         {m.action_cancel()}
       </AlertDialog.Cancel>
-      {#if !success}
-        <Button
-          onclick={handleResetPassword}
-          disabled={loading || newPassword.length < 6}
-        >
-          {loading ? m.saving() : m.action_confirm()}
-        </Button>
-      {/if}
+      <Button
+        onclick={handleResetPassword}
+        disabled={loading || newPassword.length < 6}
+      >
+        {loading ? m.saving() : m.action_confirm()}
+      </Button>
     </AlertDialog.Footer>
   </AlertDialog.Content>
 </AlertDialog.Root>

@@ -25,6 +25,22 @@
 
   let { data, form }: { data: PageData; form: ActionData } = $props();
 
+  /** Map server error codes to localized messages */
+  const editErrorMap: Record<string, () => string> = {
+    "Not authenticated": m.error_not_authenticated,
+    Unauthorized: m.error_unauthorized,
+    "Required fields missing": m.error_required_fields_missing,
+    "Failed to update service": m.error_failed_update_service,
+  };
+
+  function localizedError(error: string): string {
+    const mapped = editErrorMap[error];
+    if (mapped) return mapped();
+    if (error.includes("specific") && error.includes("time"))
+      return m.error_specific_time_required();
+    return m.error_generic();
+  }
+
   // All form state captures initial values - safe because {#key data.service.id} forces re-creation on navigation
   // svelte-ignore state_referenced_locally
   let loading = $state(false);
@@ -277,7 +293,7 @@
             <div
               class="rounded-md bg-destructive/10 p-3 text-sm text-destructive"
             >
-              {form.error}
+              {localizedError(form.error)}
             </div>
           {/if}
 

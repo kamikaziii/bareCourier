@@ -212,6 +212,33 @@ Deno.serve(async (req: Request) => {
         // Record successful send for rate limiting
         recordEmailSent(email);
 
+        // Update profile with form data (phone, location, service type, name).
+        // On resend, the profile already exists so no retry loop is needed.
+        const { error: resendUpdateError } = await adminClient
+          .from("profiles")
+          .update({
+            name: name || clientProfile?.name || undefined,
+            phone: phone || null,
+            default_pickup_location: default_pickup_location || null,
+            default_pickup_lat: default_pickup_lat ?? null,
+            default_pickup_lng: default_pickup_lng ?? null,
+            default_service_type_id: default_service_type_id || null,
+          })
+          .eq("id", existingUser.id);
+
+        if (resendUpdateError) {
+          console.error("Profile update error on resend:", resendUpdateError);
+          return new Response(
+            JSON.stringify({
+              error: "Invitation resent but profile update failed. Please edit the client to add missing details.",
+              user: { id: existingUser.id, email },
+              invitation_sent: true,
+              resend: true
+            }),
+            { status: 207, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
         return new Response(
           JSON.stringify({
             success: true,

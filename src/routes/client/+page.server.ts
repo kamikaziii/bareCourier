@@ -2,7 +2,7 @@ import type { Actions, PageServerLoad, RequestEvent } from './$types';
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import * as m from '$lib/paraglide/messages.js';
 import { notifyCourier, getCourierLocale, type AppLocale } from '$lib/services/notifications.js';
-import { formatDatePtPT } from '$lib/utils/date-format.js';
+import { formatDate, dateFallback } from '$lib/utils/date-format.js';
 import { APP_URL } from '$lib/constants.js';
 
 // ============================================================================
@@ -40,8 +40,8 @@ type BatchSuggestionConfig = {
 		message: (count: number, locale: AppLocale) => string;
 		partialMessage: (succeeded: number, total: number, locale: AppLocale) => string;
 	};
-	/** Build email data from service data */
-	buildEmailData: (service: BatchServiceData) => Record<string, string>;
+	/** Build email data from service data (locale for date formatting) */
+	buildEmailData: (service: BatchServiceData, locale: AppLocale) => Record<string, string>;
 };
 
 type BatchServiceData = {
@@ -128,8 +128,8 @@ function createBatchSuggestionHandler(config: BatchSuggestionConfig) {
 		// 6. Prepare notification data
 		const clientName = servicesData[0]?.profiles?.name || 'Cliente';
 		const firstService = servicesData[0];
-		const emailData = config.buildEmailData(firstService);
 		const courierLocale = await getCourierLocale(supabase);
+		const emailData = config.buildEmailData(firstService, courierLocale);
 
 		// 7. Handle results and send notification
 		if (failedResults.length > 0) {
@@ -210,10 +210,10 @@ const batchAcceptConfig: BatchSuggestionConfig = {
 		partialMessage: (succeeded, total, locale) =>
 			m.notification_batch_partial_accepted_message({ succeeded, total }, { locale })
 	},
-	buildEmailData: (service) => ({
+	buildEmailData: (service, locale) => ({
 		pickup_location: service.pickup_location,
 		delivery_location: service.delivery_location,
-		new_date: formatDatePtPT(service.suggested_date ?? null),
+		new_date: formatDate(service.suggested_date ?? null, locale),
 		service_id: service.id
 	})
 };
@@ -229,10 +229,10 @@ const batchDeclineConfig: BatchSuggestionConfig = {
 		partialMessage: (succeeded, total, locale) =>
 			m.notification_batch_partial_declined_message({ succeeded, total }, { locale })
 	},
-	buildEmailData: (service) => ({
+	buildEmailData: (service, locale) => ({
 		pickup_location: service.pickup_location,
 		delivery_location: service.delivery_location,
-		original_date: formatDatePtPT(service.scheduled_date ?? null, 'Não agendada'),
+		original_date: formatDate(service.scheduled_date ?? null, locale, dateFallback('not_scheduled', locale)),
 		reason: '',
 		service_id: service.id
 	})
@@ -296,9 +296,9 @@ export const actions: Actions = {
 			return { success: false, error: result?.error || 'Failed to accept suggestion' };
 		}
 
-		// Format the new date for email
-		const formattedNewDate = formatDatePtPT(service.suggested_date);
+		// Format the new date for email (in courier's preferred locale)
 		const locale = await getCourierLocale(supabase);
+		const formattedNewDate = formatDate(service.suggested_date, locale);
 
 		// Notify courier with email
 		try {
@@ -377,9 +377,9 @@ export const actions: Actions = {
 			return { success: false, error: result?.error || 'Failed to decline suggestion' };
 		}
 
-		// Format the original date for email
-		const formattedOriginalDate = formatDatePtPT(service.scheduled_date, 'Não agendada');
+		// Format the original date for email (in courier's preferred locale)
 		const locale = await getCourierLocale(supabase);
+		const formattedOriginalDate = formatDate(service.scheduled_date, locale, dateFallback('not_scheduled', locale));
 
 		// Notify courier with email
 		try {

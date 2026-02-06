@@ -17,6 +17,35 @@
 
   const activeTab = $derived(page.url.searchParams.get("tab") || "account");
 
+  /** Map server error codes to localized messages */
+  const errorMessageMap: Record<string, () => string> = {
+    urgency_in_use: m.settings_urgency_in_use,
+    service_type_in_use: m.service_type_in_use,
+    service_type_assigned_to_clients: m.service_type_assigned_to_clients,
+    "Not authenticated": m.error_not_authenticated,
+    "Invalid notification preferences": m.error_invalid_notification_prefs,
+    "No data to update": m.error_no_data_to_update,
+    "Invalid pricing mode": m.error_invalid_pricing_mode,
+    "VAT rate must be between 0 and 100": m.error_invalid_vat_rate,
+    "Name is required": m.error_name_required,
+    "Invalid ID format": m.error_invalid_id,
+    "Invalid timezone": m.error_invalid_timezone,
+    "Invalid zones data": m.error_invalid_zones_data,
+  };
+
+  function localizedError(error: string): string {
+    const mapped = errorMessageMap[error];
+    if (mapped) return mapped();
+    // Catch known patterns
+    if (error.startsWith("Invalid time range"))
+      return m.error_invalid_time_range();
+    if (error.startsWith("Invalid working days"))
+      return m.error_invalid_working_days();
+    if (error.startsWith("Failed to")) return m.error_save_failed();
+    // Fallback
+    return m.error_generic();
+  }
+
   function setTab(tab: string) {
     const url = new URL(page.url);
     if (tab === "account") {
@@ -40,11 +69,7 @@
 
   {#if form?.error}
     <div class="rounded-md bg-destructive/10 p-3 text-destructive">
-      {#if form.error === "urgency_in_use"}
-        {m.settings_urgency_in_use()}
-      {:else}
-        {form.error}
-      {/if}
+      {localizedError(form.error)}
     </div>
   {/if}
 

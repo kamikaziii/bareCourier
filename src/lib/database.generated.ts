@@ -241,6 +241,9 @@ export type Database = {
         Row: {
           created_at: string | null
           dismissed_at: string | null
+          email_id: string | null
+          email_sent_at: string | null
+          email_status: string | null
           id: string
           message: string
           read: boolean | null
@@ -252,6 +255,9 @@ export type Database = {
         Insert: {
           created_at?: string | null
           dismissed_at?: string | null
+          email_id?: string | null
+          email_sent_at?: string | null
+          email_status?: string | null
           id?: string
           message: string
           read?: boolean | null
@@ -263,6 +269,9 @@ export type Database = {
         Update: {
           created_at?: string | null
           dismissed_at?: string | null
+          email_id?: string | null
+          email_sent_at?: string | null
+          email_status?: string | null
           id?: string
           message?: string
           read?: boolean | null
@@ -920,10 +929,7 @@ export type Database = {
         Returns: Json
       }
       bulk_recalculate_type_based_prices: {
-        Args: {
-          p_client_id: string
-          p_service_ids: string[]
-        }
+        Args: { p_client_id: string; p_service_ids: string[] }
         Returns: Json
       }
       bulk_reschedule_services: {
@@ -977,18 +983,31 @@ export type Database = {
         Args: { p_client_id: string; p_zones: Json }
         Returns: Json
       }
-      reschedule_service: {
-        Args: {
-          p_new_date: string
-          p_new_time?: string
-          p_new_time_slot: string
-          p_notification_message?: string
-          p_notification_title?: string
-          p_reason?: string
-          p_service_id: string
-        }
-        Returns: Json
-      }
+      reschedule_service:
+        | {
+            Args: {
+              p_new_date: string
+              p_new_time?: string
+              p_new_time_slot: string
+              p_notification_message?: string
+              p_notification_title?: string
+              p_reason?: string
+              p_service_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_new_date: string
+              p_new_time?: string
+              p_new_time_slot: string
+              p_notification_message?: string
+              p_notification_title?: string
+              p_reason?: string
+              p_service_id: string
+            }
+            Returns: Json
+          }
     }
     Enums: {
       [_ in never]: never

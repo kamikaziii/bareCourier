@@ -14,7 +14,7 @@ import {
 import { localizeHref } from '$lib/paraglide/runtime.js';
 import * as m from '$lib/paraglide/messages.js';
 import { notifyCourier, getCourierLocale } from '$lib/services/notifications.js';
-import { formatDatePtPT } from '$lib/utils/date-format.js';
+import { formatDate, dateFallback } from '$lib/utils/date-format.js';
 import { APP_URL } from '$lib/constants.js';
 
 export const actions: Actions = {
@@ -242,9 +242,9 @@ export const actions: Actions = {
 			return fail(500, { error: 'Failed to create service request' });
 		}
 
-		// Notify courier with email
-		const formattedDate = formatDatePtPT(requested_date, 'Não especificada');
+		// Notify courier with email (in courier's preferred locale)
 		const locale = await getCourierLocale(supabase);
+		const formattedDate = formatDate(requested_date, locale, dateFallback('not_specified', locale));
 
 		try {
 			await notifyCourier({
