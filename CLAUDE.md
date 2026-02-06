@@ -19,6 +19,13 @@ pnpm run generate-pwa-assets  # Regenerate PWA icons/splash screens
 ```
 
 ```bash
+# E2E tests (Playwright, sequential, single worker)
+pnpm exec playwright test e2e/         # Run all E2E tests
+pnpm exec playwright test e2e/01-courier-onboarding.spec.ts  # Run one phase
+pnpm exec playwright test e2e/ -g "3.2" # Run single test by name
+```
+
+```bash
 # Add shadcn-svelte component
 pnpm dlx shadcn-svelte@latest add [component] --yes
 ```
@@ -147,12 +154,33 @@ Client creates → pending → Courier accepts/rejects/suggests
                          Client accepts/declines
 ```
 
-## Testing Checklist
+## E2E Tests (Playwright)
 
-1. Auth: Login as courier, login as client, verify redirects
-2. Services: Create → pending (blue) → delivered (green)
-3. Data isolation: Client A cannot see Client B's services
-4. PWA: Test "Add to Home Screen" on mobile
+Sequential workflow tests in `e2e/`, spec: `specs/workflow-tests-plan.md`.
+
+| File | Phase | Tests |
+|------|-------|-------|
+| `00-reset.spec.ts` | Reset | Cleans DB (services, clients, auth users, settings) |
+| `01-courier-onboarding.spec.ts` | 1 | Account, pricing, service types, zones, VAT, scheduling, notifications |
+| `02-first-client-creation.spec.ts` | 2 | Navigate, create client (password flow), verify details, client login |
+| `03-courier-creates-service.spec.ts` | 3 | Navigate, fill form, submit, verify list, verify dashboard |
+
+**Config**: `fullyParallel: false`, `workers: 1` — tests depend on previous phases.
+
+**Key files**:
+- `e2e/fixtures.ts` — `loginAsCourier()`, `loginAsClient()`, test credentials
+- `e2e/seed.spec.ts` — Supabase admin client setup (uses service role key from `.env`)
+
+### Gotchas When Writing E2E Tests
+
+- **PWA disabled in dev**: `vite.config.ts` has `devOptions.enabled: false` — no service worker alert in dev/test
+- **Svelte hydration**: After `page.goto()`, use `waitForLoadState('networkidle')` before clicking interactive elements (tabs, buttons with Svelte handlers). SSR renders HTML before hydration attaches event handlers
+- **Settings tabs**: Use the `goToSettingsTab(page, 'Pricing')` pattern — navigates + waits for hydration + clicks tab
+- **Mapbox autocomplete**: Address suggestions appear as `role="button"` elements. Use `.getByRole('button', { name: /address pattern/i }).first()` and wait with `toBeVisible({ timeout: 8000 })`
+- **Native `<select>`**: Use `.selectOption({ label: 'Option Text' })` not click-based selection
+- **Sonner toasts**: Select via `page.locator('[data-sonner-toast]')`, filter errors with `.filter({ hasText: /failed|error/i })`
+- **Idempotent tests**: Check if data exists before creating (e.g., check for client name before running creation flow)
+- **Session switching**: Clear cookies with `page.context().clearCookies()` + `localStorage.clear()` before logging in as a different role
 
 ## Reference Docs
 
