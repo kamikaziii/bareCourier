@@ -108,7 +108,36 @@ test.describe('Database Reset', () => {
 		if (zonesError) console.log('   Distribution zones deletion:', zonesError.message);
 		else console.log('   ✓ Deleted all distribution zones');
 
-		// 6. Delete all client profiles (keep courier)
+		// 6. Delete all client auth users and profiles
+		// First get all client user IDs
+		const { data: clientProfiles } = await supabase
+			.from('profiles')
+			.select('id')
+			.eq('role', 'client');
+
+		if (clientProfiles && clientProfiles.length > 0) {
+			// Delete auth users for each client
+			for (const profile of clientProfiles) {
+				const { error: authError } = await supabase.auth.admin.deleteUser(profile.id);
+				if (authError) console.log(`   Auth user ${profile.id} deletion:`, authError.message);
+			}
+			console.log(`   ✓ Deleted ${clientProfiles.length} client auth users`);
+		}
+
+		// Also clean up any orphaned auth users (test emails without profiles)
+		const TEST_EMAILS = ['test@example.com'];
+		const { data: authUsers } = await supabase.auth.admin.listUsers();
+		if (authUsers?.users) {
+			for (const user of authUsers.users) {
+				if (user.email && TEST_EMAILS.includes(user.email)) {
+					const { error: authError } = await supabase.auth.admin.deleteUser(user.id);
+					if (authError) console.log(`   Orphaned auth user ${user.email} deletion:`, authError.message);
+					else console.log(`   ✓ Deleted orphaned auth user: ${user.email}`);
+				}
+			}
+		}
+
+		// Then delete profiles (this should cascade but let's be explicit)
 		const { error: clientsError } = await supabase.from('profiles').delete().eq('role', 'client');
 		if (clientsError) console.log('   Client profiles deletion:', clientsError.message);
 		else console.log('   ✓ Deleted all client profiles');
