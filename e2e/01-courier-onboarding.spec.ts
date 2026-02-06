@@ -4,12 +4,15 @@
 import { test, expect, type Page } from '@playwright/test';
 import { loginAsCourier } from './fixtures';
 
-// Helper to dismiss PWA prompt if present
-async function dismissPwaPrompt(page: Page) {
-	const closeBtn = page.getByRole('button', { name: 'Close' });
-	if (await closeBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
-		await closeBtn.click();
-		await page.waitForTimeout(300);
+// Helper to navigate to a settings tab reliably
+// Waits for full hydration before clicking tabs
+async function goToSettingsTab(page: Page, tabName: string) {
+	await page.goto('/en/courier/settings');
+	// Wait for network idle to ensure Svelte hydration is complete
+	await page.waitForLoadState('networkidle');
+	// Now click the target tab
+	if (tabName !== 'Account') {
+		await page.getByRole('tab', { name: tabName }).click();
 	}
 }
 
@@ -62,8 +65,7 @@ test.describe('Phase 1: Courier Onboarding', () => {
 	});
 
 	test('1.1 Account Setup', async ({ page }) => {
-		await page.goto('/en/courier/settings');
-		await dismissPwaPrompt(page);
+		await goToSettingsTab(page, 'Account');
 
 		// Verify Account tab is active
 		const accountTab = page.getByRole('tab', { name: 'Account' });
@@ -83,12 +85,10 @@ test.describe('Phase 1: Courier Onboarding', () => {
 	});
 
 	test('1.2 Select Type-Based Pricing Model', async ({ page }) => {
-		// Navigate directly to Pricing tab via URL parameter
-		await page.goto('/en/courier/settings?tab=pricing');
-		await dismissPwaPrompt(page);
+		await goToSettingsTab(page, 'Pricing');
 
-		// Wait for Pricing content to be visible (first section is Distance Calculation Mode)
-		await expect(page.getByText('Distance Calculation Mode').first()).toBeVisible({ timeout: 5000 });
+		const pricingContent = page.getByText('Distance Calculation Mode').first();
+		await expect(pricingContent).toBeVisible({ timeout: 5000 });
 
 		// Check if Type-based pricing is already selected
 		const typeBasedRadio = page.getByRole('radio', { name: /Type-based pricing/i });
@@ -110,8 +110,7 @@ test.describe('Phase 1: Courier Onboarding', () => {
 	});
 
 	test('1.3 Create Service Types', async ({ page }) => {
-		await page.goto('/en/courier/settings?tab=pricing');
-		await dismissPwaPrompt(page);
+		await goToSettingsTab(page, 'Pricing');
 
 		// Wait for Pricing tab content (use first match - desktop/mobile duplicate)
 		await expect(page.getByText('Service Types').first()).toBeVisible();
@@ -141,8 +140,7 @@ test.describe('Phase 1: Courier Onboarding', () => {
 	});
 
 	test('1.4 Create Distribution Zones', async ({ page }) => {
-		await page.goto('/en/courier/settings?tab=pricing');
-		await dismissPwaPrompt(page);
+		await goToSettingsTab(page, 'Pricing');
 
 		// Verify Distribution Zones section is visible (use first match - desktop/mobile duplicate)
 		await expect(page.getByText('Distribution Zones').first()).toBeVisible();
@@ -158,8 +156,7 @@ test.describe('Phase 1: Courier Onboarding', () => {
 	});
 
 	test('1.5 Configure VAT', async ({ page }) => {
-		await page.goto('/en/courier/settings?tab=pricing');
-		await dismissPwaPrompt(page);
+		await goToSettingsTab(page, 'Pricing');
 
 		// Wait for VAT section to be visible
 		await expect(page.getByText('I charge VAT').first()).toBeVisible();
@@ -196,11 +193,8 @@ test.describe('Phase 1: Courier Onboarding', () => {
 	});
 
 	test('1.6 Configure Time Slots', async ({ page }) => {
-		// Navigate directly to Scheduling tab via URL parameter
-		await page.goto('/en/courier/settings?tab=scheduling');
-		await dismissPwaPrompt(page);
+		await goToSettingsTab(page, 'Scheduling');
 
-		// Scope all selectors to the Scheduling tabpanel to avoid desktop/mobile duplicates
 		const schedulingPanel = page.getByRole('tabpanel', { name: 'Scheduling' });
 		await expect(schedulingPanel).toBeVisible({ timeout: 5000 });
 
@@ -243,12 +237,11 @@ test.describe('Phase 1: Courier Onboarding', () => {
 	});
 
 	test('1.7 Configure Notifications', async ({ page }) => {
-		// Navigate directly to Notifications tab via URL parameter
-		await page.goto('/en/courier/settings?tab=notifications');
-		await dismissPwaPrompt(page);
+		await goToSettingsTab(page, 'Notifications');
 
-		// Verify notification preferences section is visible (use first match)
-		await expect(page.getByText('Notification Preferences').first()).toBeVisible({ timeout: 5000 });
+		// Wait for Notifications tab content
+		const notifContent = page.getByText('Notification Preferences').first();
+		await expect(notifContent).toBeVisible({ timeout: 5000 });
 
 		// Note: In-app notifications are always enabled
 		// This test verifies the page loads and can be saved

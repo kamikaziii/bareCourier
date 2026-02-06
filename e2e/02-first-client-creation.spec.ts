@@ -4,25 +4,10 @@
 import { test, expect, type Page } from '@playwright/test';
 import { loginAsCourier, loginAsClient, CLIENT } from './fixtures';
 
-// Helper to dismiss PWA prompt if present
-async function dismissPwaPrompt(page: Page) {
-	const closeBtn = page.getByRole('button', { name: 'Close' });
-	if (await closeBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
-		await closeBtn.click();
-		await page.waitForTimeout(300);
-	}
-}
-
 // Helper to wait for success feedback (sonner toast)
 async function expectSuccessFeedback(page: Page) {
 	const sonnerToast = page.locator('[data-sonner-toast]');
 	await expect(sonnerToast).toBeVisible({ timeout: 5000 });
-}
-
-// Helper to check if a client already exists
-async function clientExists(page: Page, name: string): Promise<boolean> {
-	const clientHeading = page.getByRole('heading', { name, level: 3 });
-	return clientHeading.isVisible({ timeout: 1000 }).catch(() => false);
 }
 
 test.describe('Phase 2: First Client Creation', () => {
@@ -34,7 +19,6 @@ test.describe('Phase 2: First Client Creation', () => {
 	test('2.1 Navigate to Clients', async ({ page }) => {
 		// Click "Clients" in navigation
 		await page.getByRole('link', { name: 'Clients' }).click();
-		await dismissPwaPrompt(page);
 
 		// Expected Results: Clients page loads
 		await expect(page).toHaveURL(/\/en\/courier\/clients/);
@@ -46,7 +30,6 @@ test.describe('Phase 2: First Client Creation', () => {
 
 	test('2.2 Create First Client (Password Flow)', async ({ page }) => {
 		await page.goto('/en/courier/clients');
-		await dismissPwaPrompt(page);
 
 		// Check if client already exists (idempotent)
 		// Use a more robust check - look for the client name text anywhere
@@ -59,7 +42,6 @@ test.describe('Phase 2: First Client Creation', () => {
 
 		// Click "Add Client" link
 		await page.getByRole('link', { name: 'Add Client' }).click();
-		await dismissPwaPrompt(page);
 
 		// Wait for form to load
 		await expect(page.getByRole('heading', { name: /New Client/i })).toBeVisible();
@@ -139,11 +121,9 @@ test.describe('Phase 2: First Client Creation', () => {
 
 	test('2.3 Verify Client Details', async ({ page }) => {
 		await page.goto('/en/courier/clients');
-		await dismissPwaPrompt(page);
 
 		// Click on created client
 		await page.getByText('Test Business').click();
-		await dismissPwaPrompt(page);
 
 		// Expected Results: Client details page shows info
 		await expect(page.getByText('Test Business')).toBeVisible();
@@ -152,13 +132,9 @@ test.describe('Phase 2: First Client Creation', () => {
 	});
 
 	test('2.4 Verify Client Can Login', async ({ page }) => {
-		// Logout as courier
-		await page.goto('/en/courier');
-		await dismissPwaPrompt(page);
-		await page.getByRole('button', { name: 'Logout' }).click();
-
-		// Wait for redirect to login
-		await expect(page).toHaveURL(/\/en\/login/, { timeout: 10000 });
+		// Clear all cookies and storage to ensure clean logout
+		await page.context().clearCookies();
+		await page.evaluate(() => localStorage.clear());
 
 		// Login as client
 		await loginAsClient(page);

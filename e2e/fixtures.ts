@@ -12,20 +12,7 @@ export const CLIENT = {
 
 async function login(page: Page, email: string, password: string) {
 	await page.goto('/en/login');
-	await page.waitForLoadState('domcontentloaded');
-
-	// Dismiss PWA update prompt if present (non-blocking)
-	// Try multiple times as the prompt might appear with a delay
-	for (let i = 0; i < 3; i++) {
-		try {
-			const closeBtn = page.getByRole('button', { name: 'Close' });
-			await closeBtn.click({ timeout: 500 });
-			break; // Successfully clicked, exit loop
-		} catch {
-			// PWA prompt not present yet, continue
-			if (i < 2) await page.waitForTimeout(200);
-		}
-	}
+	await page.waitForLoadState('networkidle');
 
 	const emailInput = page.getByLabel('Email');
 	await emailInput.waitFor({ state: 'visible' });

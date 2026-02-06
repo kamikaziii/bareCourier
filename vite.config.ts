@@ -33,7 +33,7 @@ export default defineConfig({
 				globIgnores: ['**/apple-splash-*.png']
 			},
 			devOptions: {
-				enabled: true,
+				enabled: false,
 				type: 'module'
 			}
 		})
