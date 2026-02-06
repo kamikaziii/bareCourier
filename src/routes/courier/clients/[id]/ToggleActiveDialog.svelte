@@ -26,10 +26,11 @@
       if (response.ok) {
         const result = await response.json();
         if (result.type === "success" || result.data?.success) {
+          const wasActive = clientActive;
           await invalidateAll();
           open = false;
           toast.success(
-            clientActive
+            wasActive
               ? m.toast_client_deactivated()
               : m.toast_client_activated(),
           );

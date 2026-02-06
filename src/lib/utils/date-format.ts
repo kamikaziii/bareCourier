@@ -21,6 +21,7 @@ export function formatDate(
 ): string {
 	if (!date) return fallback;
 	const d = typeof date === 'string' ? new Date(date) : date;
+	if (isNaN(d.getTime())) return fallback;
 	return d.toLocaleDateString(toIntlLocale(locale), {
 		day: 'numeric',
 		month: 'long',
@@ -41,6 +42,7 @@ export function formatDateTime(
 ): string {
 	if (!date) return fallback;
 	const d = typeof date === 'string' ? new Date(date) : date;
+	if (isNaN(d.getTime())) return fallback;
 	return d.toLocaleDateString(toIntlLocale(locale), {
 		day: 'numeric',
 		month: 'long',

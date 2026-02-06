@@ -983,31 +983,18 @@ export type Database = {
         Args: { p_client_id: string; p_zones: Json }
         Returns: Json
       }
-      reschedule_service:
-        | {
-            Args: {
-              p_new_date: string
-              p_new_time?: string
-              p_new_time_slot: string
-              p_notification_message?: string
-              p_notification_title?: string
-              p_reason?: string
-              p_service_id: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_new_date: string
-              p_new_time?: string
-              p_new_time_slot: string
-              p_notification_message?: string
-              p_notification_title?: string
-              p_reason?: string
-              p_service_id: string
-            }
-            Returns: Json
-          }
+      reschedule_service: {
+        Args: {
+          p_new_date: string
+          p_new_time?: string
+          p_new_time_slot: string
+          p_notification_message?: string
+          p_notification_title?: string
+          p_reason?: string
+          p_service_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

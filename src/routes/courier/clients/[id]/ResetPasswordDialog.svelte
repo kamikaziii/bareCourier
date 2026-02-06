@@ -65,9 +65,7 @@
       const result = await response.json();
 
       if (!response.ok) {
-        toast.error(result.error || m.password_reset_error(), {
-          duration: 8000,
-        });
+        toast.error(m.password_reset_error(), { duration: 8000 });
       } else {
         newPassword = "";
         open = false;
