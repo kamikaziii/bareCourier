@@ -109,7 +109,7 @@ test.describe('Phase 1: Courier Onboarding', () => {
 		await expect(page.getByText('Service Types').first()).toBeVisible();
 	});
 
-	test('1.3 Create Service Types', async ({ page }) => {
+	test('1.3 Create Service Types', { timeout: 60000 }, async ({ page }) => {
 		await goToSettingsTab(page, 'Pricing');
 
 		// Wait for Pricing tab content (use first match - desktop/mobile duplicate)

@@ -123,10 +123,10 @@ test.describe('Phase 2: First Client Creation', () => {
 		await page.goto('/en/courier/clients');
 
 		// Click on created client
-		await page.getByText('Test Business').click();
+		await page.getByText('Test Business').first().click();
 
 		// Expected Results: Client details page shows info
-		await expect(page.getByText('Test Business')).toBeVisible();
+		await expect(page.getByRole('heading', { name: 'Test Business' })).toBeVisible();
 		// Phone should be displayed somewhere
 		await expect(page.getByText(/912.*345.*678|351/)).toBeVisible();
 	});
