@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { enhance } from "$app/forms";
-  import { goto } from "$app/navigation";
+  import { enhance, applyAction } from "$app/forms";
+  import type { ActionResult } from "@sveltejs/kit";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
@@ -230,13 +230,8 @@
 
   function handleFormSubmit() {
     loading = true;
-    return async ({
-      result,
-    }: {
-      result: { type: string; data?: { error?: string } };
-    }) => {
+    return async ({ result }: { result: ActionResult }) => {
       if (result.type === "failure" && result.data?.error) {
-        // Use localized message for specific error codes
         const errorMessage =
           result.data.error === "no_service_type_assigned"
             ? m.client_no_service_type_error()
@@ -244,9 +239,8 @@
         toast.error(errorMessage, { duration: 8000 });
         loading = false;
       } else if (result.type === "redirect") {
-        // Show success toast before redirect
         toast.success(m.toast_request_created());
-        // Redirect is handled automatically by SvelteKit
+        await applyAction(result);
       } else {
         loading = false;
       }

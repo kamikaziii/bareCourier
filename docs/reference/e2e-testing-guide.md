@@ -9,8 +9,8 @@ Sequential workflow tests that simulate the full courier-client lifecycle agains
 ## Commands
 
 ```bash
-# Run all phases (reset → onboarding → client → service)
-pnpm exec playwright test e2e/00-reset.spec.ts e2e/01-courier-onboarding.spec.ts e2e/02-first-client-creation.spec.ts e2e/03-courier-creates-service.spec.ts
+# Run all phases (reset → onboarding → client → service → request → accept → deliver)
+pnpm exec playwright test e2e/00-reset.spec.ts e2e/01-courier-onboarding.spec.ts e2e/02-first-client-creation.spec.ts e2e/03-courier-creates-service.spec.ts e2e/04-client-first-request.spec.ts e2e/05-request-acceptance.spec.ts e2e/07-service-delivery.spec.ts
 
 # Run a single phase
 pnpm exec playwright test e2e/01-courier-onboarding.spec.ts
@@ -35,6 +35,9 @@ pnpm exec playwright show-trace test-results/*/trace.zip
 | `01-courier-onboarding.spec.ts` | 1: Onboarding | Account setup, pricing model, service types, distribution zones, VAT, scheduling, notifications |
 | `02-first-client-creation.spec.ts` | 2: Client | Navigate to clients, create client (password flow), verify details, client login |
 | `03-courier-creates-service.spec.ts` | 3: Service | Navigate to form, fill form with addresses, submit, verify in list and dashboard |
+| `04-client-first-request.spec.ts` | 4: Client Request | Client dashboard state, create service request, verify in dashboard |
+| `05-request-acceptance.spec.ts` | 5: Acceptance | View pending requests as courier, accept request, client sees acceptance |
+| `07-service-delivery.spec.ts` | 7: Delivery | Mark service delivered (optimistic UI), client sees delivered status |
 
 Tests are **ordered and dependent** — Phase 2 needs Phase 1 data, Phase 3 needs Phase 2 data.
 
@@ -62,8 +65,10 @@ import { loginAsCourier, loginAsClient } from './fixtures';
 await loginAsCourier(page);
 await expect(page).toHaveURL(/\/en\/courier/);
 
-// Switching users — clear session first
+// Switching users — must navigate before clearing localStorage
 await page.context().clearCookies();
+await page.goto('/en/login');
+await page.waitForLoadState('domcontentloaded');
 await page.evaluate(() => localStorage.clear());
 await loginAsClient(page);
 ```

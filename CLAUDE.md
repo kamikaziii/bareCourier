@@ -21,7 +21,7 @@ pnpm run generate-pwa-assets  # Regenerate PWA icons/splash screens
 ```bash
 # E2E tests (Playwright, sequential, single worker)
 # IMPORTANT: Always specify files explicitly — e2e/archive/ has broken imports
-pnpm exec playwright test e2e/00-reset.spec.ts e2e/01-courier-onboarding.spec.ts e2e/02-first-client-creation.spec.ts e2e/03-courier-creates-service.spec.ts
+pnpm exec playwright test e2e/00-reset.spec.ts e2e/01-courier-onboarding.spec.ts e2e/02-first-client-creation.spec.ts e2e/03-courier-creates-service.spec.ts e2e/04-client-first-request.spec.ts e2e/05-request-acceptance.spec.ts e2e/07-service-delivery.spec.ts
 pnpm exec playwright test e2e/01-courier-onboarding.spec.ts  # Run one phase
 pnpm exec playwright test e2e/01-courier-onboarding.spec.ts -g "1.3"  # Single test by name
 ```
