@@ -45,20 +45,13 @@
     </Card.Header>
     <Card.Content>
       {#if submitted}
-        <div class="space-y-4">
-          <div
-            class="rounded-md bg-green-500/10 p-4 text-center text-green-600"
+        <div class="text-center">
+          <a
+            href={localizeHref("/login")}
+            class="text-sm text-muted-foreground hover:text-foreground underline"
           >
-            {m.forgot_password_success()}
-          </div>
-          <div class="text-center">
-            <a
-              href={localizeHref("/login")}
-              class="text-sm text-muted-foreground hover:text-foreground underline"
-            >
-              {m.forgot_password_back()}
-            </a>
-          </div>
+            {m.forgot_password_back()}
+          </a>
         </div>
       {:else}
         <form onsubmit={handleSubmit} class="space-y-4">

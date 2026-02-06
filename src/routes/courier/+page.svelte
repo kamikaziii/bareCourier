@@ -37,6 +37,7 @@
     settingsToConfig,
     type PastDueConfig,
   } from "$lib/utils/past-due.js";
+  import { toast } from "$lib/utils/toast.js";
   import WorkloadCard from "$lib/components/WorkloadCard.svelte";
   import {
     calculateDayWorkload,
@@ -84,8 +85,6 @@
   let batchRescheduleTime = $state<string | null>(null);
   let batchRescheduleReason = $state("");
   let batchRescheduleLoading = $state(false);
-  let batchRescheduleSuccess = $state<string | null>(null);
-  let batchRescheduleError = $state<string | null>(null);
 
   function openBatchRescheduleDialog() {
     batchRescheduleDate = null;
@@ -101,8 +100,6 @@
     if (batchRescheduleTimeSlot === "specific" && !batchRescheduleTime) return;
 
     batchRescheduleLoading = true;
-    batchRescheduleError = null;
-    batchRescheduleSuccess = null;
 
     const formData = new FormData();
     formData.set("service_ids", JSON.stringify(Array.from(batch.selectedIds)));
@@ -119,22 +116,18 @@
 
       const result = await response.json();
       if (result.data?.success) {
-        batchRescheduleSuccess = m.reschedule_success();
         // Reload from server
         await invalidate("app:services");
         showBatchRescheduleDialog = false;
+        toast.success(m.reschedule_success());
         batch.reset();
-        // Clear success message after 3 seconds
-        setTimeout(() => {
-          batchRescheduleSuccess = null;
-        }, 3000);
       } else {
         // Never expose raw server errors - use generic message
-        batchRescheduleError = m.reschedule_error();
+        toast.error(m.reschedule_error(), { duration: 8000 });
       }
-    } catch (error) {
-      console.error("Batch reschedule error:", error);
-      batchRescheduleError = m.reschedule_error();
+    } catch (err) {
+      console.error("Batch reschedule error:", err);
+      toast.error(m.reschedule_error(), { duration: 8000 });
     }
 
     batchRescheduleLoading = false;
@@ -425,18 +418,6 @@
           continue.
         </div>
       {/if}
-    {/if}
-
-    <!-- Batch operation feedback messages -->
-    {#if batchRescheduleSuccess}
-      <div class="rounded-md bg-green-500/10 p-3 text-green-600">
-        {batchRescheduleSuccess}
-      </div>
-    {/if}
-    {#if batchRescheduleError}
-      <div class="rounded-md bg-destructive/10 p-3 text-destructive">
-        {batchRescheduleError}
-      </div>
     {/if}
 
     <!-- Services List -->

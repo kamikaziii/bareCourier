@@ -4,7 +4,7 @@ import type { Service, ServiceStatusHistory, Profile, PastDueSettings, ServiceTy
 import { localizeHref } from '$lib/paraglide/runtime.js';
 import * as m from '$lib/paraglide/messages.js';
 import { notifyCourier, getCourierLocale } from '$lib/services/notifications.js';
-import { formatDatePtPT } from '$lib/utils/date-format.js';
+import { formatDate, dateFallback } from '$lib/utils/date-format.js';
 import { APP_URL } from '$lib/constants.js';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
@@ -191,8 +191,8 @@ export const actions: Actions = {
 					client_name: clientName,
 					pickup_location: service.pickup_location,
 					delivery_location: service.delivery_location,
-					requested_date: formatDatePtPT(service.scheduled_date),  // Original date
-					suggested_date: formatDatePtPT(newDate),  // New requested date
+					requested_date: formatDate(service.scheduled_date, locale),  // Original date
+					suggested_date: formatDate(newDate, locale),  // New requested date
 					app_url: APP_URL
 				}
 			});
@@ -251,7 +251,7 @@ export const actions: Actions = {
 					client_name: service?.profiles?.name || 'Cliente',
 					pickup_location: service?.pickup_location || 'N/A',
 					delivery_location: service?.delivery_location || 'N/A',
-					new_date: formatDatePtPT(service?.suggested_date ?? null),
+					new_date: formatDate(service?.suggested_date ?? null, locale),
 					service_id: params.id,
 					app_url: APP_URL
 				}
@@ -318,8 +318,8 @@ export const actions: Actions = {
 					client_name: service?.profiles?.name || 'Cliente',
 					pickup_location: service?.pickup_location || 'N/A',
 					delivery_location: service?.delivery_location || 'N/A',
-					original_date: formatDatePtPT(service?.scheduled_date ?? null, 'Não agendada'),
-					reason: reason || 'Não especificado',
+					original_date: formatDate(service?.scheduled_date ?? null, locale, dateFallback('not_scheduled', locale)),
+					reason: reason || dateFallback('not_provided', locale),
 					service_id: params.id,
 					app_url: APP_URL
 				}

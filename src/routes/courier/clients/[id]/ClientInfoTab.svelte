@@ -37,6 +37,7 @@
   import { User, MapPin, Phone, Mail, Send } from "@lucide/svelte";
   import type { Profile } from "$lib/database.types";
   import type { SupabaseClient } from "@supabase/supabase-js";
+  import { toast } from "$lib/utils/toast.js";
 
   let {
     client,
@@ -51,22 +52,10 @@
   let clientEmail = $state<string | null>(null);
   let checkingStatus = $state(true);
   let resendingInvitation = $state(false);
-  let resendError = $state("");
-  let resendSuccess = $state(false);
-  let resendSuccessTimeout: ReturnType<typeof setTimeout> | null = null;
 
   // Check client email confirmation status on mount
   $effect(() => {
     checkClientStatus();
-  });
-
-  // Cleanup timeout on unmount
-  $effect(() => {
-    return () => {
-      if (resendSuccessTimeout) {
-        clearTimeout(resendSuccessTimeout);
-      }
-    };
   });
 
   async function checkClientStatus() {
@@ -123,15 +112,13 @@
 
   async function handleResendInvitation() {
     resendingInvitation = true;
-    resendError = "";
-    resendSuccess = false;
 
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
 
       if (!accessToken) {
-        resendError = m.session_expired();
+        toast.error(m.session_expired(), { duration: 8000 });
         resendingInvitation = false;
         return;
       }
@@ -159,26 +146,17 @@
           const minutes = Math.ceil(
             (result.error.retryAfterMs || 3600000) / 60000,
           );
-          resendError = m.rate_limit_wait({ minutes });
-        } else if (typeof result.error === "string") {
-          resendError = result.error;
-        } else if (result.error?.message) {
-          resendError = result.error.message;
+          toast.error(m.rate_limit_wait({ minutes }), { duration: 8000 });
         } else {
-          resendError = m.error_generic();
+          toast.error(m.error_generic(), { duration: 8000 });
         }
       } else if (result.invitation_sent) {
         // Clear cached status so next check fetches fresh data
         clientStatusCache.delete(client.id);
-        resendSuccess = true;
-        // Clear success after 3 seconds (with cleanup on unmount)
-        if (resendSuccessTimeout) clearTimeout(resendSuccessTimeout);
-        resendSuccessTimeout = setTimeout(() => {
-          resendSuccess = false;
-        }, 3000);
+        toast.success(m.invitation_sent({ email: clientEmail || "" }));
       }
     } catch {
-      resendError = m.error_generic();
+      toast.error(m.error_generic(), { duration: 8000 });
     }
 
     resendingInvitation = false;
@@ -262,32 +240,16 @@
             </div>
           </div>
 
-          {#if resendError}
-            <div
-              class="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
-            >
-              {resendError}
-            </div>
-          {/if}
-
-          {#if resendSuccess}
-            <div
-              class="rounded-md bg-green-500/10 px-3 py-2 text-sm text-green-600"
-            >
-              {m.invitation_sent({ email: clientEmail || "" })}
-            </div>
-          {:else}
-            <Button
-              variant="outline"
-              size="sm"
-              class="w-full"
-              onclick={handleResendInvitation}
-              disabled={resendingInvitation}
-            >
-              <Send class="size-4 mr-2" />
-              {resendingInvitation ? m.loading() : m.resend_invitation()}
-            </Button>
-          {/if}
+          <Button
+            variant="outline"
+            size="sm"
+            class="w-full"
+            onclick={handleResendInvitation}
+            disabled={resendingInvitation}
+          >
+            <Send class="size-4 mr-2" />
+            {resendingInvitation ? m.loading() : m.resend_invitation()}
+          </Button>
         </div>
       {/if}
     </Card.Content>

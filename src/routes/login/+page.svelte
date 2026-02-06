@@ -16,35 +16,34 @@
   let error = $state("");
 
   /**
-   * Maps Supabase auth error messages to user-friendly Portuguese messages.
+   * Maps Supabase auth error messages to user-friendly localized messages.
    * Prevents exposing internal auth implementation details.
    */
   function mapAuthError(errorMessage: string): string {
-    const errorMap: Record<string, string> = {
-      "Invalid login credentials": "Email ou password incorretos",
-      "Email not confirmed": "Por favor, confirme o seu email antes de entrar",
-      "User not found": "Email ou password incorretos",
-      "Invalid email or password": "Email ou password incorretos",
-      "Too many requests": "Demasiadas tentativas. Aguarde alguns minutos",
-      "Email rate limit exceeded":
-        "Demasiadas tentativas. Aguarde alguns minutos",
-      "User already registered": "Este email já está registado",
+    const errorMap: Record<string, () => string> = {
+      "Invalid login credentials": () => m.auth_error_invalid_credentials(),
+      "Email not confirmed": () => m.auth_error_email_not_confirmed(),
+      "User not found": () => m.auth_error_invalid_credentials(),
+      "Invalid email or password": () => m.auth_error_invalid_credentials(),
+      "Too many requests": () => m.auth_error_too_many_requests(),
+      "Email rate limit exceeded": () => m.auth_error_too_many_requests(),
+      "User already registered": () => m.auth_error_already_registered(),
     };
 
     // Check for exact match first
     if (errorMap[errorMessage]) {
-      return errorMap[errorMessage];
+      return errorMap[errorMessage]();
     }
 
     // Check for partial matches (some errors include dynamic content)
-    for (const [key, value] of Object.entries(errorMap)) {
+    for (const [key, valueFn] of Object.entries(errorMap)) {
       if (errorMessage.toLowerCase().includes(key.toLowerCase())) {
-        return value;
+        return valueFn();
       }
     }
 
     // Generic fallback - don't expose raw error
-    return "Ocorreu um erro ao iniciar sessão. Tente novamente";
+    return m.auth_error_generic();
   }
 
   async function handleLogin(e: Event) {

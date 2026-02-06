@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "279"
 tags: [bug, invitation, client-creation]
@@ -34,14 +34,17 @@ Add profile update with incoming phone/location/service-type data in the resend 
 - **Database Changes**: No
 
 ## Acceptance Criteria
-- [ ] Resend invitation preserves updated profile data
-- [ ] New invitation flow still works
-- [ ] Profile reflects latest data entered by courier
+- [x] Resend invitation preserves updated profile data
+- [x] New invitation flow still works (unchanged)
+- [x] Profile reflects latest data entered by courier
 
 ## Work Log
 
 ### 2026-02-06 - Approved for Work
 **By:** Claude Triage System
+
+### 2026-02-06 - Completed
+Added profile update (name, phone, default_pickup_location, default_pickup_lat, default_pickup_lng, default_service_type_id) in the resend path of `create-client/index.ts`, between the email send and the return statement. Uses a single `.update()` call (no retry loop needed since the profile already exists for resend cases). On update failure, returns HTTP 207 with the invitation-sent flag so the courier knows the email went out but profile data needs manual correction.
 
 ## Notes
 Source: Comprehensive audit session on 2026-02-06

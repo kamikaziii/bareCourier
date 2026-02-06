@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p1
 issue_id: "275"
 tags: [security, database, rls, push-notifications]
@@ -37,14 +37,22 @@ Create a migration that ensures RLS is enabled and adds proper user-scoped polic
 - **Database Changes**: Yes — RLS policies on `push_subscriptions`
 
 ## Acceptance Criteria
-- [ ] Migration adds RLS policies for push_subscriptions
-- [ ] Users can only read/write their own subscriptions
-- [ ] Push notification flow still works end-to-end
+- [x] Migration adds RLS policies for push_subscriptions
+- [x] Users can only read/write their own subscriptions
+- [ ] Push notification flow still works end-to-end (manual verification needed after deploy)
 
 ## Work Log
 
 ### 2026-02-06 - Approved for Work
 **By:** Claude Triage System
+
+### 2026-02-06 - Implemented
+**By:** Claude Code
+- Created `supabase/migrations/20260206000002_add_push_subscriptions_rls.sql`
+- Enables RLS on push_subscriptions (idempotent)
+- Adds 4 user-scoped policies: SELECT, INSERT, UPDATE, DELETE (all scoped to `user_id = auth.uid()`)
+- Uses `DROP POLICY IF EXISTS` + `CREATE POLICY` pattern for idempotency
+- service_role bypasses RLS by default, so edge functions (send-push) continue working
 
 ## Notes
 Source: Comprehensive audit session on 2026-02-06

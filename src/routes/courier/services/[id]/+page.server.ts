@@ -4,7 +4,7 @@ import type { Service, ServiceStatusHistory, Profile, ServiceType } from '$lib/d
 import { localizeHref } from '$lib/paraglide/runtime.js';
 import * as m from '$lib/paraglide/messages.js';
 import { notifyClient, getUserLocale } from '$lib/services/notifications.js';
-import { formatDatePtPT, formatDateTimePtPT } from '$lib/utils/date-format.js';
+import { formatDate, formatDateTime } from '$lib/utils/date-format.js';
 import { APP_URL } from '$lib/constants.js';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
@@ -93,8 +93,8 @@ export const actions: Actions = {
 		// Notify client when marked as delivered
 		if (newStatus === 'delivered' && serviceData) {
 			const service = serviceData as { client_id: string; pickup_location: string; delivery_location: string };
-			const formattedDeliveredAt = formatDateTimePtPT(new Date());
 			const locale = await getUserLocale(supabase, service.client_id);
+			const formattedDeliveredAt = formatDateTime(new Date(), locale);
 
 			try {
 				await notifyClient({
@@ -276,9 +276,9 @@ export const actions: Actions = {
 				approval_status: 'pending'
 			});
 
-			// Notify client
-			const formattedDate = formatDatePtPT(newDate);
+			// Notify client (in client's preferred locale)
 			const locale = await getUserLocale(supabase, service.client_id);
+			const formattedDate = formatDate(newDate, locale);
 			const reasonText = reason ? m.notification_reason_prefix({ reason }, { locale }) : '';
 			await notifyClient({
 				session,
@@ -313,8 +313,8 @@ export const actions: Actions = {
 			}
 			const service = serviceData as { client_id: string; pickup_location: string; delivery_location: string; scheduled_date: string | null };
 
-			const formattedDate = formatDatePtPT(newDate);
 			const locale = await getUserLocale(supabase, service.client_id);
+			const formattedDate = formatDate(newDate, locale);
 			const reasonText = reason ? m.notification_reason_prefix({ reason }, { locale }) : '';
 			const notificationMessage = m.notification_delivery_rescheduled_message({ date: formattedDate, reason: reasonText }, { locale });
 			const translatedTitle = m.notification_delivery_rescheduled({}, { locale });
@@ -324,9 +324,7 @@ export const actions: Actions = {
 				p_new_date: newDate,
 				p_new_time_slot: newTimeSlot,
 				p_new_time: newTime || undefined,
-				p_reason: reason || undefined,
-				p_notification_title: translatedTitle,
-				p_notification_message: notificationMessage
+				p_reason: reason || undefined
 			});
 
 			if (rpcError) {
@@ -339,7 +337,7 @@ export const actions: Actions = {
 				return { success: false, error: result.error || 'Reschedule failed' };
 			}
 
-			// Send email notification (RPC only creates in-app notification)
+			// Notify client (in-app + email); RPC notification params omitted to avoid duplicates
 			await notifyClient({
 				session,
 				clientId: service.client_id,

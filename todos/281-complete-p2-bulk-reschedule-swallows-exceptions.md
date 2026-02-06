@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "281"
 tags: [bug, database, rpc, error-handling]
@@ -42,6 +42,10 @@ Apply the same exception handling pattern used in the other reschedule RPCs.
 
 ### 2026-02-06 - Approved for Work
 **By:** Claude Triage System
+
+### 2026-02-06 - Fixed
+**Migration:** `supabase/migrations/20260206000001_fix_reschedule_rpc_type_and_exceptions.sql`
+**Changes:** Replaced `EXCEPTION WHEN OTHERS` handler that returned JSON with `SQLERRM` with `RAISE WARNING` + `RAISE` pattern matching the other reschedule RPCs. Combined with #277 fix in same migration.
 
 ## Notes
 Source: Comprehensive audit session on 2026-02-06

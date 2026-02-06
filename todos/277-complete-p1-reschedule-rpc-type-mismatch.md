@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p1
 issue_id: "277"
 tags: [bug, database, rpc, type-mismatch]
@@ -45,6 +45,10 @@ Add `::time` cast in both RPC functions.
 
 ### 2026-02-06 - Approved for Work
 **By:** Claude Triage System
+
+### 2026-02-06 - Fixed
+**Migration:** `supabase/migrations/20260206000001_fix_reschedule_rpc_type_and_exceptions.sql`
+**Changes:** Added explicit `::time` cast to `p_new_time` in both `reschedule_service` (line 95) and `bulk_reschedule_services` (line 244). Combined with #281 fix in same migration.
 
 ## Notes
 Source: Comprehensive audit session on 2026-02-06, DB lint output

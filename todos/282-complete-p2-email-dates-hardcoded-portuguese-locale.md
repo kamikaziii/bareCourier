@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "282"
 tags: [i18n, email, date-formatting]
@@ -36,14 +36,28 @@ Add locale parameter and update all call sites to pass recipient locale.
 - **Database Changes**: No
 
 ## Acceptance Criteria
-- [ ] English-locale recipients see English dates in emails
-- [ ] Portuguese-locale recipients still see Portuguese dates
-- [ ] Fallback strings are localized
+- [x] English-locale recipients see English dates in emails
+- [x] Portuguese-locale recipients still see Portuguese dates
+- [x] Fallback strings are localized
 
 ## Work Log
 
 ### 2026-02-06 - Approved for Work
 **By:** Claude Triage System
+
+### 2026-02-06 - Completed
+**By:** Claude Code
+
+**Changes:**
+- Refactored `date-format.ts`: added locale-aware `formatDate()` and `formatDateTime()` with `AppLocale` parameter (defaults to `'pt-PT'` for backward compatibility)
+- Added `dateFallback()` function for locale-aware fallback strings (`'Not scheduled'` / `'Não agendada'`, etc.)
+- Kept `formatDatePtPT` and `formatDateTimePtPT` as deprecated aliases
+- Updated all 13 call sites across 5 route files to pass the recipient's locale:
+  - Client routes use `getCourierLocale()` (dates are for courier's emails)
+  - Courier routes use `getUserLocale()` (dates are for client's emails)
+- Reordered locale fetch before date formatting where needed
+- Updated `BatchSuggestionConfig.buildEmailData` to accept locale parameter
+- Moved per-client date formatting inside notification loops for batch operations
 
 ## Notes
 Source: Comprehensive audit session on 2026-02-06

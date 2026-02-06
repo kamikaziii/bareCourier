@@ -1,7 +1,7 @@
 import type { Actions, PageServerLoad } from './$types';
 import * as m from '$lib/paraglide/messages.js';
 import { notifyClient, getUserLocale } from '$lib/services/notifications.js';
-import { formatDatePtPT } from '$lib/utils/date-format.js';
+import { formatDate } from '$lib/utils/date-format.js';
 import { APP_URL } from '$lib/constants.js';
 
 // Process notifications in chunks to avoid overwhelming the system
@@ -126,8 +126,6 @@ export const actions: Actions = {
 		}
 
 		// Send grouped notifications to clients
-		const formattedDate = formatDatePtPT(newDate);
-
 		// Fetch service data for email templates
 		const { data: servicesData } = await supabase
 			.from('services')
@@ -145,6 +143,7 @@ export const actions: Actions = {
 				chunk.map(async ([clientId, serviceIdList]) => {
 					const count = serviceIdList.length;
 					const locale = await getUserLocale(supabase, clientId);
+					const formattedDate = formatDate(newDate, locale);
 					const message =
 						count === 1
 							? m.notification_delivery_rescheduled_single_message({ date: formattedDate }, { locale })

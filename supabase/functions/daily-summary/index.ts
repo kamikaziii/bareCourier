@@ -131,7 +131,7 @@ Deno.serve(async () => {
 			.from('notifications')
 			.select('id')
 			.eq('user_id', courier.id)
-			.eq('category', 'daily_summary')
+			.eq('type', 'daily_summary')
 			.gte('created_at', todayStart.toISOString())
 			.limit(1);
 

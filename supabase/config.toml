@@ -3,12 +3,16 @@
 site_url = "https://barecourier.vercel.app"
 additional_redirect_urls = [
   "https://barecourier.vercel.app/reset-password",
+  "https://barecourier.vercel.app/en/reset-password",
   "https://barecourier.vercel.app/pt-PT/reset-password",
   "http://localhost:5173/reset-password",
+  "http://localhost:5173/en/reset-password",
   "http://localhost:5173/pt-PT/reset-password",
   "https://barecourier.vercel.app/accept-invite",
+  "https://barecourier.vercel.app/en/accept-invite",
   "https://barecourier.vercel.app/pt-PT/accept-invite",
   "http://localhost:5173/accept-invite",
+  "http://localhost:5173/en/accept-invite",
   "http://localhost:5173/pt-PT/accept-invite"
 ]
 

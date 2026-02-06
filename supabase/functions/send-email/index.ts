@@ -95,7 +95,7 @@ const TEMPLATE_REQUIRED_FIELDS: Record<EmailTemplate, string[]> = {
   past_due: ["client_name", "pickup_location", "delivery_location", "scheduled_date", "days_overdue", "app_url"],
   suggestion_accepted: ["client_name", "pickup_location", "delivery_location", "confirmed_date", "app_url"],
   suggestion_declined: ["client_name", "pickup_location", "delivery_location", "original_date", "app_url"],
-  client_invitation: ["client_name", "courier_name", "confirmation_url"],
+  client_invitation: ["client_name", "courier_name", "action_link"],
 };
 
 interface EmailData {

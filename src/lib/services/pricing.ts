@@ -285,12 +285,16 @@ export async function calculateServicePrice(
 			const result = await calculateTypedPrice(supabase, typedInput);
 
 			if (result.success && result.breakdown) {
+				// Apply minimum charge (same as distance-based branch)
+				const minimumCharge = input.minimumCharge || 0;
+				const adjustedPrice = Math.max(result.price ?? 0, minimumCharge);
+
 				// Map type-based breakdown to standard PriceBreakdown format
 				const breakdown: PriceBreakdown = {
 					base: result.breakdown.base,
 					distance: result.breakdown.distance,
 					urgency: 0, // Type-based pricing doesn't use urgency fees
-					total: result.breakdown.total,
+					total: adjustedPrice,
 					model: 'type',
 					distance_km: input.distanceKm ?? 0,
 					// Include distance breakdown if provided
@@ -305,7 +309,7 @@ export async function calculateServicePrice(
 
 				return {
 					success: true,
-					price: result.price,
+					price: Math.round(adjustedPrice * 100) / 100,
 					breakdown
 				};
 			}

@@ -2,6 +2,7 @@
   import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
   import * as m from "$lib/paraglide/messages.js";
   import { invalidateAll } from "$app/navigation";
+  import { toast } from "$lib/utils/toast.js";
 
   let {
     open = $bindable(false),
@@ -15,11 +16,9 @@
   const clientActive = $derived(isActive ?? true);
 
   let loading = $state(false);
-  let error = $state("");
 
   async function handleToggleActive() {
     loading = true;
-    error = "";
 
     try {
       const response = await fetch(`?/toggleActive`, { method: "POST" });
@@ -29,20 +28,21 @@
         if (result.type === "success" || result.data?.success) {
           await invalidateAll();
           open = false;
+          toast.success(
+            clientActive
+              ? m.toast_client_deactivated()
+              : m.toast_client_activated(),
+          );
         } else {
-          error = result.data?.error || "Failed to update client status";
+          toast.error(m.toast_error_generic(), { duration: 8000 });
         }
       } else {
-        error = "An unexpected error occurred";
+        toast.error(m.toast_error_generic(), { duration: 8000 });
       }
     } catch {
-      error = "An unexpected error occurred";
+      toast.error(m.toast_error_generic(), { duration: 8000 });
     }
     loading = false;
-  }
-
-  function handleCancel() {
-    error = "";
   }
 </script>
 
@@ -60,15 +60,8 @@
           : m.confirm_reactivate_client_desc()}
       </AlertDialog.Description>
     </AlertDialog.Header>
-    {#if error}
-      <div
-        class="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
-      >
-        {error}
-      </div>
-    {/if}
     <AlertDialog.Footer>
-      <AlertDialog.Cancel disabled={loading} onclick={handleCancel}>
+      <AlertDialog.Cancel disabled={loading}>
         {m.action_cancel()}
       </AlertDialog.Cancel>
       <AlertDialog.Action onclick={handleToggleActive} disabled={loading}>
