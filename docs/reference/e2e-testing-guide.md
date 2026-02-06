@@ -9,14 +9,17 @@ Sequential workflow tests that simulate the full courier-client lifecycle agains
 ## Commands
 
 ```bash
-# Run all phases (reset → onboarding → client → service → request → accept → deliver)
-pnpm exec playwright test e2e/00-reset.spec.ts e2e/01-courier-onboarding.spec.ts e2e/02-first-client-creation.spec.ts e2e/03-courier-creates-service.spec.ts e2e/04-client-first-request.spec.ts e2e/05-request-acceptance.spec.ts e2e/07-service-delivery.spec.ts
+# Run all phases (Tier 1 + Tier 2)
+pnpm exec playwright test e2e/00-reset.spec.ts e2e/01-courier-onboarding.spec.ts e2e/02-first-client-creation.spec.ts e2e/03-courier-creates-service.spec.ts e2e/04-client-first-request.spec.ts e2e/05-request-acceptance.spec.ts e2e/06-request-negotiation.spec.ts e2e/07-service-delivery.spec.ts e2e/08-reschedule-flow.spec.ts e2e/20-rejection-resubmit-flow.spec.ts
 
 # Run a single phase
 pnpm exec playwright test e2e/01-courier-onboarding.spec.ts
 
 # Run a single test by name
-pnpm exec playwright test e2e/ -g "3.2"
+pnpm exec playwright test e2e/01-courier-onboarding.spec.ts -g "1.3"
+
+# Run headed (visible browser) with slow motion
+HEADED=1 SLOWMO=800 pnpm exec playwright test e2e/00-reset.spec.ts e2e/01-courier-onboarding.spec.ts ...
 
 # See console.log output (Playwright suppresses it by default)
 pnpm exec playwright test e2e/ --reporter=null
@@ -37,9 +40,12 @@ pnpm exec playwright show-trace test-results/*/trace.zip
 | `03-courier-creates-service.spec.ts` | 3: Service | Navigate to form, fill form with addresses, submit, verify in list and dashboard |
 | `04-client-first-request.spec.ts` | 4: Client Request | Client dashboard state, create service request, verify in dashboard |
 | `05-request-acceptance.spec.ts` | 5: Acceptance | View pending requests as courier, accept request, client sees acceptance |
+| `06-request-negotiation.spec.ts` | 6: Negotiation | Client creates request, courier suggests alternative, client accepts suggestion |
 | `07-service-delivery.spec.ts` | 7: Delivery | Mark service delivered (optimistic UI), client sees delivered status |
+| `08-reschedule-flow.spec.ts` | 8: Reschedule | Client requests reschedule (calendar + time slot), courier approves |
+| `20-rejection-resubmit-flow.spec.ts` | 20: Reject/Resubmit | Client creates request, courier rejects, client sees rejection, client resubmits |
 
-Tests are **ordered and dependent** — Phase 2 needs Phase 1 data, Phase 3 needs Phase 2 data.
+Tests are **ordered and dependent** — Phase 2 needs Phase 1 data, Phase 3 needs Phase 2 data. Phases 6, 8, 20 create their own request data but depend on the courier/client setup from Phases 1-2.
 
 ## Key Files
 
@@ -158,26 +164,24 @@ await expect(page.locator('text=Total').locator('..').getByText('€5.00')).toBe
 
 5. **Toast timing** — Sonner toasts auto-dismiss after 4s (success) or 8s (error). When creating multiple items sequentially, add `waitForTimeout(4500)` between creations so toasts don't overlap.
 
-6. **Popover inside Dialog z-index** — bits-ui Popover components (e.g., SchedulePicker calendar) inside Dialog components have z-index conflicts. Both Dialog overlay and Popover.Content use `z-50`, so DOM order determines stacking. Popover renders after Dialog but behind its overlay. Fix by forcing popover z-index higher in tests:
+6. **Calendar inside Dialog** — bits-ui calendar renders as a portaled `[role="application"]` element. Standard Playwright clicks work on calendar elements (no z-index hacks needed). Navigate months with the "Next"/"Previous" buttons inside `navigation`, and select days via `[role="gridcell"] [role="button"]`. When selecting dates in the future, navigate to the next month first to avoid "minimum notice" validation errors:
 
 ```typescript
-// Open the popover
-await page.getByRole('button', { name: /select date/i }).click();
+// Open calendar popover
+await page.getByText('Select date').click();
 
-// Wait for popover to attach
-await page.locator('[data-bits-popover-content]').waitFor({ state: 'attached', timeout: 2000 });
+// Wait for calendar (portaled as [role="application"])
+const calendarApp = page.locator('[role="application"]');
+await expect(calendarApp).toBeVisible({ timeout: 5000 });
 
-// Force z-index higher than dialog
-await page.evaluate(() => {
-  const popover = document.querySelector('[data-bits-popover-content]');
-  if (popover instanceof HTMLElement) {
-    popover.style.zIndex = '100';
-  }
-});
-await page.waitForTimeout(200);
+// Navigate to next month (avoids "too late to reschedule" errors)
+await calendarApp.getByRole('button', { name: 'Next' }).click();
+await page.waitForTimeout(300);
 
-// Now interact with popover content
-await page.locator('[role="grid"]').waitFor({ state: 'visible' });
+// Select a mid-month day
+const dayCells = calendarApp.locator('[role="gridcell"]:not([data-disabled]) [role="button"]');
+const cellCount = await dayCells.count();
+await dayCells.nth(Math.min(14, cellCount - 1)).click();
 ```
 
 ## Adding New Test Phases
