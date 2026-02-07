@@ -2,11 +2,12 @@
 
 ## Before Marking a Task Complete
 
-### 1. Type Check
+### 1. Type Check & Lint
 ```bash
 pnpm run check
+pnpm run lint
 ```
-Must pass with no errors.
+Both must pass with no errors (lint warnings are acceptable).
 
 ### 2. Code Style Verification
 - [ ] Using Svelte 5 runes (not legacy syntax)

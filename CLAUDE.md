@@ -14,6 +14,8 @@ bareCourier is a PWA for a solo courier to manage pickups/deliveries. Two user r
 pnpm run dev              # Dev server at localhost:5173
 pnpm run build            # Production build
 pnpm run check            # TypeScript + Svelte check
+pnpm run lint             # ESLint (unused vars, bad patterns, Svelte rules)
+pnpm run lint:fix         # ESLint with auto-fix
 pnpm run preview          # Preview production build
 pnpm run generate-pwa-assets  # Regenerate PWA icons/splash screens
 ```

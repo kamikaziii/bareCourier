@@ -7,10 +7,12 @@ pnpm run build            # Production build
 pnpm run preview          # Preview production build
 ```
 
-## Type Checking
+## Type Checking & Linting
 ```bash
 pnpm run check            # TypeScript + Svelte check (run before commits)
 pnpm run check:watch      # Watch mode for development
+pnpm run lint             # ESLint (unused vars, bad patterns, Svelte rules)
+pnpm run lint:fix         # ESLint with auto-fix
 ```
 
 ## Testing

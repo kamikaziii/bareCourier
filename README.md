@@ -68,6 +68,9 @@ pnpm run dev
 # Type checking
 pnpm run check
 
+# Lint (ESLint + Svelte + TypeScript rules)
+pnpm run lint
+
 # Build for production
 pnpm run build
 
