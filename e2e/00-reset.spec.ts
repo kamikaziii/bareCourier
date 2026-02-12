@@ -125,7 +125,7 @@ test.describe('Database Reset', () => {
 		}
 
 		// Also clean up any orphaned auth users (test emails without profiles)
-		const TEST_EMAILS = ['test@example.com'];
+		const TEST_EMAILS = ['test@example.com', 'test@example.pt'];
 		const { data: authUsers } = await supabase.auth.admin.listUsers();
 		if (authUsers?.users) {
 			for (const user of authUsers.users) {

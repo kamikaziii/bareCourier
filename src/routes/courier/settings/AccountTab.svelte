@@ -37,21 +37,34 @@
   // svelte-ignore state_referenced_locally
   let labelTagline = $state(profile.label_tagline || "");
 
-  // Sync local state when profile updates (after form submission + invalidateAll)
-  $effect(() => {
-    warehouseAddress = profile.default_pickup_location || "";
-    warehouseCoords =
-      profile.warehouse_lat && profile.warehouse_lng
-        ? [profile.warehouse_lng, profile.warehouse_lat]
-        : null;
-    labelBusinessName = profile.label_business_name || "";
-    labelTagline = profile.label_tagline || "";
-  });
+  // Sync local state when profile data changes from server (after form submission + invalidateAll).
+  // Uses $derived snapshots to detect actual server-side changes without circular overwrites.
+  let prevPickup = $state(profile.default_pickup_location);
+  let prevLat = $state(profile.warehouse_lat);
+  let prevLng = $state(profile.warehouse_lng);
+  let prevBizName = $state(profile.label_business_name);
+  let prevTagline = $state(profile.label_tagline);
 
-  // Clear coordinates when address is emptied (handles case where user clears the field)
   $effect(() => {
-    if (!warehouseAddress) {
-      warehouseCoords = null;
+    if (
+      profile.default_pickup_location !== prevPickup ||
+      profile.warehouse_lat !== prevLat ||
+      profile.warehouse_lng !== prevLng ||
+      profile.label_business_name !== prevBizName ||
+      profile.label_tagline !== prevTagline
+    ) {
+      warehouseAddress = profile.default_pickup_location || "";
+      warehouseCoords =
+        profile.warehouse_lat && profile.warehouse_lng
+          ? [profile.warehouse_lng, profile.warehouse_lat]
+          : null;
+      labelBusinessName = profile.label_business_name || "";
+      labelTagline = profile.label_tagline || "";
+      prevPickup = profile.default_pickup_location;
+      prevLat = profile.warehouse_lat;
+      prevLng = profile.warehouse_lng;
+      prevBizName = profile.label_business_name;
+      prevTagline = profile.label_tagline;
     }
   });
 </script>
