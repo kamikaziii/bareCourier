@@ -16,6 +16,36 @@ additional_redirect_urls = [
   "http://localhost:5173/pt-PT/accept-invite"
 ]
 
+# SMTP via Resend — all auth emails sent from AS Estafetagem
+[auth.email.smtp]
+host = "smtp.resend.com"
+port = 465
+user = "resend"
+pass = "env(RESEND_API_KEY)"
+admin_email = "geral@asestafetagem.pt"
+sender_name = "AS Estafetagem"
+
+# Auth email templates (Portuguese)
+[auth.email.template.confirmation]
+subject = "Confirme o seu email - AS Estafetagem"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.invite]
+subject = "Convite - AS Estafetagem"
+content_path = "./supabase/templates/invite.html"
+
+[auth.email.template.recovery]
+subject = "Repor palavra-passe - AS Estafetagem"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.magic_link]
+subject = "O seu link de acesso - AS Estafetagem"
+content_path = "./supabase/templates/magic_link.html"
+
+[auth.email.template.email_change]
+subject = "Confirmar alteração de email - AS Estafetagem"
+content_path = "./supabase/templates/email_change.html"
+
 # Supabase Edge Functions Configuration
 # https://supabase.com/docs/guides/functions/function-configuration
 #
