@@ -55,7 +55,9 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
 			show_price_to_client: profile.show_price_to_client,
 			workload_settings: profile.workload_settings,
 			label_business_name: profile.label_business_name,
-			label_tagline: profile.label_tagline
+			label_tagline: profile.label_tagline,
+			warehouse_lat: profile.warehouse_lat,
+			warehouse_lng: profile.warehouse_lng
 		} satisfies CourierLayoutProfile,
 		navCounts: {
 			pendingRequests: Promise.all([pendingRequestsPromise, pendingReschedulesPromise])

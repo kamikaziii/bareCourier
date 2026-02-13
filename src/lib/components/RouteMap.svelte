@@ -14,6 +14,7 @@
     height?: string;
     hideFooter?: boolean;
     hideDirections?: boolean;
+    defaultCenter?: [number, number] | null; // [lng, lat] fallback when no route coords
   }
 
   let {
@@ -25,15 +26,25 @@
     height = "300px",
     hideFooter = false,
     hideDirections = false,
+    defaultCenter = null,
   }: Props = $props();
 
   let mapContainer: HTMLDivElement;
   let map: mapboxgl.Map | null = $state(null);
   let mapLoaded = $state(false);
 
-  // Default center (Lisbon)
-  const DEFAULT_CENTER: [number, number] = [-9.1393, 38.7223];
+  const LISBON_CENTER: [number, number] = [-9.1393, 38.7223];
   const DEFAULT_ZOOM = 12;
+
+  function getInitialCenter(): [number, number] {
+    if (pickupCoords && deliveryCoords) {
+      return [
+        (pickupCoords[0] + deliveryCoords[0]) / 2,
+        (pickupCoords[1] + deliveryCoords[1]) / 2,
+      ];
+    }
+    return pickupCoords ?? deliveryCoords ?? defaultCenter ?? LISBON_CENTER;
+  }
 
   onMount(() => {
     if (!PUBLIC_MAPBOX_TOKEN) {
@@ -50,7 +61,7 @@
       map = new mapboxgl.default.Map({
         container: mapContainer,
         style: "mapbox://styles/mapbox/streets-v12",
-        center: DEFAULT_CENTER,
+        center: getInitialCenter(),
         zoom: DEFAULT_ZOOM,
       });
 

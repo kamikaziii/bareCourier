@@ -420,6 +420,10 @@
                 {distanceKm}
                 {durationMinutes}
                 height="200px"
+                defaultCenter={data.profile.warehouse_lat &&
+                data.profile.warehouse_lng
+                  ? [data.profile.warehouse_lng, data.profile.warehouse_lat]
+                  : null}
               />
               {#if calculatingDistance}
                 <p class="text-sm text-muted-foreground">

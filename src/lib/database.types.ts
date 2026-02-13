@@ -294,6 +294,8 @@ export type CourierLayoutProfile = {
 	workload_settings: WorkloadSettings | null;
 	label_business_name: string | null;
 	label_tagline: string | null;
+	warehouse_lat: number | null;
+	warehouse_lng: number | null;
 };
 
 /** Profile shape returned by client +layout.server.ts */
