@@ -81,6 +81,11 @@
         toast.success(
           editingAddress ? m.toast_address_updated() : m.toast_address_saved(),
         );
+      } else if (
+        result.type === "failure" &&
+        result.data?.error?.includes("label already exists")
+      ) {
+        toast.error(m.toast_address_duplicate_label(), { duration: 8000 });
       } else {
         toast.error(m.toast_error_generic(), { duration: 8000 });
       }
