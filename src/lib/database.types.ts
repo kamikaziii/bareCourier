@@ -237,6 +237,7 @@ export type Database = {
 			pricing_zones: GeneratedDatabase['public']['Tables']['pricing_zones'];
 			urgency_fees: GeneratedDatabase['public']['Tables']['urgency_fees'];
 			service_reschedule_history: GeneratedDatabase['public']['Tables']['service_reschedule_history'];
+			client_addresses: GeneratedDatabase['public']['Tables']['client_addresses'];
 		};
 		Views: GeneratedDatabase['public']['Views'];
 		Functions: GeneratedDatabase['public']['Functions'];
@@ -273,6 +274,10 @@ export type NewServiceType = Database['public']['Tables']['service_types']['Inse
 // Distribution zone for geographic pricing
 export type DistributionZone = Database['public']['Tables']['distribution_zones']['Row'];
 export type NewDistributionZone = Database['public']['Tables']['distribution_zones']['Insert'];
+
+// Client address book
+export type ClientAddress = Database['public']['Tables']['client_addresses']['Row'];
+export type NewClientAddress = Database['public']['Tables']['client_addresses']['Insert'];
 
 // ─── Layout profile types (discriminated union) ─────────────────────────────
 

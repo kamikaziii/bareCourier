@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       break_logs: {
@@ -120,6 +95,44 @@ export type Database = {
             referencedRelation: "courier_public_profile"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "client_addresses_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_addresses: {
+        Row: {
+          address: string
+          client_id: string
+          created_at: string | null
+          id: string
+          label: string
+          lat: number | null
+          lng: number | null
+        }
+        Insert: {
+          address: string
+          client_id: string
+          created_at?: string | null
+          id?: string
+          label: string
+          lat?: number | null
+          lng?: number | null
+        }
+        Update: {
+          address?: string
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          label?: string
+          lat?: number | null
+          lng?: number | null
+        }
+        Relationships: [
           {
             foreignKeyName: "client_addresses_client_id_fkey"
             columns: ["client_id"]
@@ -1314,9 +1327,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },
