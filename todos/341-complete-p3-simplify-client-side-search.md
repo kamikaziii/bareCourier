@@ -1,9 +1,9 @@
 ---
 status: pending
 priority: p3
-issue_id: 323
+issue_id: 341
 tags: [code-review, simplicity, pr-20]
-dependencies: [322]
+dependencies: [340]
 ---
 
 # Simplify: Use Client-Side Search Instead of Server-Side
@@ -16,9 +16,9 @@ The address book page does server-side search via URL params with 300ms debounce
 
 **Flagged by:** Code Simplicity Reviewer (high impact)
 
-**Note:** This naturally pairs with removing pagination (todo 322). Without pagination, all addresses are already loaded client-side, so server-side search becomes pointless.
+**Note:** This naturally pairs with removing pagination (todo 340). Without pagination, all addresses are already loaded client-side, so server-side search becomes pointless.
 
-Also **resolves todo 316** (PostgREST filter injection) since the `.or()` interpolation is removed entirely.
+Also **resolves todo 334** (PostgREST filter injection) since the `.or()` interpolation is removed entirely.
 
 ## Proposed Solution
 

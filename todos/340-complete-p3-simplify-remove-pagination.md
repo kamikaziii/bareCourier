@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p3
-issue_id: 322
+issue_id: 340
 tags: [code-review, simplicity, pr-20]
 dependencies: []
 ---
