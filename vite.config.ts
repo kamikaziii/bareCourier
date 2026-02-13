@@ -28,6 +28,8 @@ export default defineConfig({
 			strategies: 'injectManifest',
 			srcDir: 'src',
 			filename: 'service-worker.ts',
+			scope: '/',
+			buildBase: '/',
 			injectManifest: {
 				globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
 				globIgnores: ['**/apple-splash-*.png']
