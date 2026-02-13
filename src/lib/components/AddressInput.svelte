@@ -6,7 +6,8 @@
     type GeocodingResult,
   } from "$lib/services/geocoding.js";
   import * as m from "$lib/paraglide/messages.js";
-  import { MapPin, Check, AlertTriangle } from "@lucide/svelte";
+  import { MapPin, Check, AlertTriangle, Home } from "@lucide/svelte";
+  import type { AddressSuggestion } from "$lib/types/address-suggestion.js";
 
   type AddressState = "idle" | "typing" | "verified" | "custom";
 
@@ -17,6 +18,7 @@
     disabled?: boolean;
     id?: string;
     showHint?: boolean;
+    suggestions?: AddressSuggestion[];
   }
 
   let {
@@ -26,6 +28,7 @@
     disabled = false,
     id,
     showHint = true,
+    suggestions: addressSuggestions = [],
   }: Props = $props();
 
   let suggestions = $state<GeocodingResult[]>([]);
@@ -34,8 +37,10 @@
   let addressState = $state<AddressState>("idle");
   let showVerifiedAnimation = $state(false);
   let debounceTimer: ReturnType<typeof setTimeout>;
+  let selectedChipIndex = $state<number | null>(null);
 
   function handleInput() {
+    selectedChipIndex = null;
     addressState = value.length > 0 ? "typing" : "idle";
 
     // Debounce search
@@ -93,6 +98,16 @@
       onSelect(value, null);
       showSuggestions = false;
     }
+  }
+
+  function handleChipSelect(suggestion: AddressSuggestion, index: number) {
+    value = suggestion.address;
+    selectedChipIndex = index;
+    onSelect(suggestion.address, suggestion.coords);
+    // Close any open Mapbox suggestions
+    showSuggestions = false;
+    suggestions = [];
+    addressState = suggestion.coords ? "verified" : "custom";
   }
 
   const hintText = $derived(() => {
@@ -170,6 +185,27 @@
       </div>
     {/if}
   </div>
+
+  {#if addressSuggestions.length > 0}
+    <div class="flex flex-wrap gap-1.5">
+      {#each addressSuggestions as suggestion, i}
+        <button
+          type="button"
+          class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors
+            {selectedChipIndex === i
+            ? 'bg-primary text-primary-foreground border-transparent'
+            : 'bg-background text-foreground border-border hover:bg-accent hover:text-accent-foreground'}"
+          onclick={() => handleChipSelect(suggestion, i)}
+          {disabled}
+        >
+          {#if suggestion.isDefault}
+            <Home class="size-3" />
+          {/if}
+          {suggestion.label}
+        </button>
+      {/each}
+    </div>
+  {/if}
 
   {#if showHint}
     <p
