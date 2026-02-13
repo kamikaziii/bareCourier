@@ -423,6 +423,7 @@
                 {distanceKm}
                 {durationMinutes}
                 height="200px"
+                hideDirections
               />
               {#if calculatingDistance}
                 <p class="text-sm text-muted-foreground">
