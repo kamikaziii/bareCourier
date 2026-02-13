@@ -820,6 +820,16 @@
   "toast_service_type_updated": "Tipo de serviço atualizado",
   "toast_service_type_deleted": "Tipo de serviço eliminado",
 
+  "toast_bulk_assign_success": "{count} clientes atribuídos ao tipo de serviço",
+  "toast_bulk_assign_failed": "Falha ao atribuir tipo de serviço aos clientes",
+  "toast_no_service_types": "Crie pelo menos um tipo de serviço antes de mudar para preços por tipo",
+
+  "pricing_switch_warning_title": "Clientes sem tipo de serviço",
+  "pricing_switch_warning_desc": "{count} clientes não têm tipo de serviço atribuído. Não poderão criar serviços no modo por tipo.",
+  "pricing_switch_assign_label": "Atribuir tipo de serviço",
+  "pricing_switch_assign_and_switch": "Atribuir e Mudar",
+  "pricing_switch_without_assigning": "Mudar sem atribuir",
+
   "toast_zones_saved": "Zonas de distribuição guardadas",
   "toast_zone_pricing_saved": "Preços de zona guardados",
   "toast_client_pricing_failed": "Cliente criado, mas a configuração de preços falhou ao guardar. Pode adicioná-la mais tarde.",

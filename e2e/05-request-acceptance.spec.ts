@@ -19,8 +19,8 @@ test.describe('Phase 5: Request Acceptance', () => {
 		await page.goto('/en/courier/requests');
 		await page.waitForLoadState('networkidle');
 
-		// Page should load with "Requests" heading
-		await expect(page.getByRole('heading', { name: 'Requests' })).toBeVisible();
+		// Page should load with "Pending Requests" heading
+		await expect(page.getByRole('heading', { name: 'Pending Requests', exact: true })).toBeVisible();
 
 		// Should see at least one pending request (from Phase 4)
 		// Look for client name or action buttons

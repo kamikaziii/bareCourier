@@ -28,7 +28,11 @@
   let sendInvitation = $state(true); // Default to invitation flow
   let defaultPickupLocation = $state("");
   let defaultPickupCoords = $state<[number, number] | null>(null);
-  let defaultServiceTypeId = $state("");
+  let defaultServiceTypeId = $state(
+    data.pricingMode === "type" && data.serviceTypes.length > 0
+      ? data.serviceTypes[0].id
+      : "",
+  );
 
   // Pricing section
   let showPricingSection = $state(false);
@@ -312,7 +316,9 @@
               class="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
               disabled={loading}
             >
-              <option value="">{m.none()}</option>
+              {#if data.pricingMode !== "type"}
+                <option value="">{m.none()}</option>
+              {/if}
               {#each data.serviceTypes as type (type.id)}
                 <option value={type.id}
                   >{type.name} - {formatCurrency(Number(type.price))}</option

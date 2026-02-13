@@ -18,8 +18,7 @@
     getCourierPricingSettings,
     type CourierPricingSettings,
   } from "$lib/services/pricing.js";
-  import { isInDistributionZone } from "$lib/services/type-pricing.js";
-  import { extractMunicipalityFromAddress } from "$lib/services/municipality.js";
+  import { detectZone } from "$lib/services/zone-detection.js";
   import * as m from "$lib/paraglide/messages.js";
   import { toast } from "$lib/utils/toast.js";
   import { formatCurrency } from "$lib/utils.js";
@@ -83,6 +82,8 @@
   let pickupIsOutOfZone = $state<boolean | null>(null);
   let pickupDetectedMunicipality = $state<string | null>(null);
   let checkingPickupZone = $state(false);
+  let pickupZoneGeneration = 0;
+  let deliveryZoneGeneration = 0;
   let pickupAddressSelected = $state(false); // Track if address was selected from autocomplete
 
   // Combined: if EITHER pickup OR delivery is out of zone
@@ -114,7 +115,7 @@
     ) {
       hasDetectedInitialPickupZone = true;
       pickupAddressSelected = true; // Show zone indicator
-      detectPickupZone(defaultPickup);
+      detectPickupZone(defaultPickup, defaultPickupCoordsFromProfile);
     }
   });
 
@@ -144,7 +145,7 @@
 
     // If type-based pricing, detect municipality and check zone for pickup
     if (isTypePricingMode && address) {
-      await detectPickupZone(address);
+      await detectPickupZone(address, coords);
     }
   }
 
@@ -159,7 +160,7 @@
 
     // If type-based pricing, detect municipality and check zone for delivery
     if (isTypePricingMode && address) {
-      await detectDeliveryZone(address);
+      await detectDeliveryZone(address, coords);
     }
   }
 
@@ -175,41 +176,29 @@
     }
   });
 
-  /**
-   * Extract municipality (concelho) from Mapbox address and check if pickup is in zone
-   */
-  async function detectPickupZone(address: string) {
+  async function detectPickupZone(
+    address: string,
+    coords: [number, number] | null = null,
+  ) {
+    const gen = ++pickupZoneGeneration;
     checkingPickupZone = true;
-
-    const municipality = extractMunicipalityFromAddress(address);
-    pickupDetectedMunicipality = municipality;
-
-    if (municipality) {
-      const inZone = await isInDistributionZone(data.supabase, municipality);
-      pickupIsOutOfZone = !inZone;
-    } else {
-      pickupIsOutOfZone = null;
-    }
-
+    const result = await detectZone(data.supabase, address, coords);
+    if (gen !== pickupZoneGeneration) return;
+    pickupDetectedMunicipality = result.municipality;
+    pickupIsOutOfZone = result.isOutOfZone;
     checkingPickupZone = false;
   }
 
-  /**
-   * Extract municipality (concelho) from Mapbox address and check if delivery is in zone
-   */
-  async function detectDeliveryZone(address: string) {
+  async function detectDeliveryZone(
+    address: string,
+    coords: [number, number] | null = null,
+  ) {
+    const gen = ++deliveryZoneGeneration;
     checkingDeliveryZone = true;
-
-    const municipality = extractMunicipalityFromAddress(address);
-    deliveryDetectedMunicipality = municipality;
-
-    if (municipality) {
-      const inZone = await isInDistributionZone(data.supabase, municipality);
-      deliveryIsOutOfZone = !inZone;
-    } else {
-      deliveryIsOutOfZone = null;
-    }
-
+    const result = await detectZone(data.supabase, address, coords);
+    if (gen !== deliveryZoneGeneration) return;
+    deliveryDetectedMunicipality = result.municipality;
+    deliveryIsOutOfZone = result.isOutOfZone;
     checkingDeliveryZone = false;
   }
 
@@ -511,6 +500,7 @@
               basePrice={data.clientServiceType?.price ?? 0}
               timePreferencePrice={data.typePricingSettings.timeSpecificPrice}
               isOutOfZone={isOutOfZone === true}
+              zoneCheckInProgress={checkingPickupZone || checkingDeliveryZone}
             />
           {:else}
             <!-- Use traditional SchedulePicker -->

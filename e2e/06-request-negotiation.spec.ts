@@ -41,22 +41,23 @@ test.describe('Phase 6: Request Negotiation', () => {
 		const pickupInput = page.locator('#pickup');
 		const pickupValue = await pickupInput.inputValue();
 		if (!pickupValue) {
-			await pickupInput.fill('Rua Augusta 100, Lisboa');
-			await page.waitForTimeout(1000);
-			const pickupSuggestion = page.getByRole('button', { name: /Rua Augusta/i }).first();
+			await pickupInput.click();
+			await pickupInput.pressSequentially('Rua Augusta 100, Lisboa', { delay: 50 });
+			await page.waitForTimeout(500); // Wait for debounce + API
+			const pickupSuggestion = page.getByRole('button', { name: /Rua Augusta|Augusta/i }).first();
 			if (await pickupSuggestion.isVisible().catch(() => false)) {
 				await pickupSuggestion.click();
 				await page.waitForTimeout(300);
 			}
 		}
 
-		// Fill delivery
+		// Fill delivery address
 		const deliveryInput = page.locator('#delivery');
-		await deliveryInput.fill('Praça do Comércio, Lisboa');
+		await deliveryInput.fill('Avenida da Liberdade 200, Lisboa');
 		const deliverySuggestion = page
-			.getByRole('button', { name: /Praça do Comércio/i })
+			.getByRole('button', { name: /Avenida da Liberdade/i })
 			.first();
-		await expect(deliverySuggestion).toBeVisible({ timeout: 8000 });
+		await expect(deliverySuggestion).toBeVisible({ timeout: 10000 });
 		await deliverySuggestion.click();
 		await page.waitForTimeout(500);
 

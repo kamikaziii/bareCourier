@@ -100,18 +100,20 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 	}
 
 	// Load remaining data in parallel
-	const [{ data: urgencyFees }, { data: serviceTypes }, { data: distributionZones }] =
+	const [{ data: urgencyFees }, { data: serviceTypes }, { data: distributionZones }, { count: clientsWithoutServiceType }] =
 		await Promise.all([
 			supabase.from('urgency_fees').select('*').order('sort_order'),
 			supabase.from('service_types').select('*').order('sort_order'),
-			supabase.from('distribution_zones').select('*').order('distrito, concelho')
+			supabase.from('distribution_zones').select('*').order('distrito, concelho'),
+			supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'client').is('default_service_type_id', null)
 		]);
 
 	return {
 		profile: profile as Profile,
 		urgencyFees: (urgencyFees || []) as UrgencyFee[],
 		serviceTypes: (serviceTypes || []) as ServiceType[],
-		distributionZones: (distributionZones || []) as DistributionZone[]
+		distributionZones: (distributionZones || []) as DistributionZone[],
+		clientsWithoutServiceType: clientsWithoutServiceType ?? 0
 	};
 };
 
@@ -889,6 +891,46 @@ export const actions: Actions = {
 		}
 
 		return { success: true, message: 'service_type_toggled' };
+	},
+
+	bulkAssignServiceType: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+		if (!session || !user) {
+			return fail(401, { error: 'Not authenticated' });
+		}
+
+		await requireCourier(supabase, user.id);
+
+		const formData = await request.formData();
+		const serviceTypeId = formData.get('service_type_id') as string;
+
+		if (!isValidUUID(serviceTypeId)) {
+			return fail(400, { error: 'Invalid service type ID' });
+		}
+
+		// Verify the service type exists
+		const { data: serviceType } = await supabase
+			.from('service_types')
+			.select('id')
+			.eq('id', serviceTypeId)
+			.single();
+
+		if (!serviceType) {
+			return fail(404, { error: 'Service type not found' });
+		}
+
+		// Bulk update all clients without a service type
+		const { error, count } = await supabase
+			.from('profiles')
+			.update({ default_service_type_id: serviceTypeId }, { count: 'exact' })
+			.eq('role', 'client')
+			.is('default_service_type_id', null);
+
+		if (error) {
+			return fail(500, { error: 'Failed to bulk assign service type' });
+		}
+
+		return { success: true, message: 'bulk_assign_complete', count: count ?? 0 };
 	},
 
 	saveDistributionZones: async ({ request, locals: { supabase, safeGetSession } }) => {

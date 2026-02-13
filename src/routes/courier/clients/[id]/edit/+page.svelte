@@ -32,7 +32,12 @@
       : null,
   );
   // svelte-ignore state_referenced_locally
-  let defaultServiceTypeId = $state(data.client.default_service_type_id || "");
+  let defaultServiceTypeId = $state(
+    data.client.default_service_type_id ||
+      (data.pricingMode === "type" && data.serviceTypes.length > 0
+        ? data.serviceTypes[0].id
+        : ""),
+  );
 
   // Pricing state - svelte-ignore state_referenced_locally for all: intentional initial value capture
   // svelte-ignore state_referenced_locally
@@ -70,7 +75,11 @@
       data.client.default_pickup_lng && data.client.default_pickup_lat
         ? [data.client.default_pickup_lng, data.client.default_pickup_lat]
         : null;
-    defaultServiceTypeId = data.client.default_service_type_id || "";
+    defaultServiceTypeId =
+      data.client.default_service_type_id ||
+      (data.pricingMode === "type" && data.serviceTypes.length > 0
+        ? data.serviceTypes[0].id
+        : "");
     showPricingSection = !!data.pricing;
     pricingModel = (data.pricing?.pricing_model as PricingModel) || "per_km";
     baseFee = data.pricing?.base_fee?.toString() || "0";
@@ -227,7 +236,9 @@
               class="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
               disabled={loading}
             >
-              <option value="">{m.none()}</option>
+              {#if data.pricingMode !== "type"}
+                <option value="">{m.none()}</option>
+              {/if}
               {#each data.serviceTypes as type (type.id)}
                 <option value={type.id}
                   >{type.name} - {formatCurrency(Number(type.price))}</option
