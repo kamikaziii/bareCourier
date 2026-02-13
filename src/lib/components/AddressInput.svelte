@@ -151,8 +151,10 @@
     {/if}
 
     {#if showSuggestions && suggestions.length > 0}
+      <!-- Prevent mousedown from blurring the input, so slow clicks still reach handleSelect -->
       <div
         class="absolute z-50 mt-1 w-full rounded-md border bg-popover p-1 shadow-md"
+        onmousedown={(e) => e.preventDefault()}
       >
         {#each suggestions as result (result.id)}
           <Button
