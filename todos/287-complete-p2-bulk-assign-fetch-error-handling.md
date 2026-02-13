@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: 287
 tags: [code-review, pr-18, correctness, sveltekit]
@@ -85,6 +85,7 @@ Option A -- matches the 14 existing `fetch("?/...")` patterns in the codebase.
 | Date | Action | Notes |
 |------|--------|-------|
 | 2026-02-13 | Created from PR #18 code review | All 5 agents flagged |
+| 2026-02-13 | Fixed: JSON parse + result.type check + try/catch + invalidateAll | `PricingTab.svelte:101-138` |
 
 ## Resources
 

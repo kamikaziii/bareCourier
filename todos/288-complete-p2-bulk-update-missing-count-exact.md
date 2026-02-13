@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: 288
 tags: [code-review, pr-18, correctness, supabase]
@@ -56,6 +56,7 @@ Option A.
 | Date | Action | Notes |
 |------|--------|-------|
 | 2026-02-13 | Created from PR #18 code review | 3 agents flagged |
+| 2026-02-13 | Fixed: added `{ count: 'exact' }` to .update() | `+page.server.ts:925` |
 
 ## Resources
 

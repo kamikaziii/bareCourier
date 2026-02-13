@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p3
 issue_id: 294
 tags: [code-review, pr-18, consistency, sveltekit]
@@ -46,3 +46,4 @@ use:enhance={async ({ cancel }) => {
 | Date | Action | Notes |
 |------|--------|-------|
 | 2026-02-13 | Created from PR #18 code review | Pattern agent, style only |
+| 2026-02-13 | Fixed: moved validation into use:enhance with cancel() + skipPricingValidation flag | Also fixed pre-existing bug: handleSwitchWithoutAssigning infinite dialog loop |

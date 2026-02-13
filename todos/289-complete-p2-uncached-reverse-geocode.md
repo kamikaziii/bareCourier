@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: 289
 tags: [code-review, pr-18, performance, geocoding]
@@ -65,6 +65,7 @@ Option A.
 | Date | Action | Notes |
 |------|--------|-------|
 | 2026-02-13 | Created from PR #18 code review | Performance agent |
+| 2026-02-13 | Fixed: module-level Map cache with toFixed(6) key | `geocoding.ts:105,117,150` |
 
 ## Resources
 

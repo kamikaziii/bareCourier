@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: 290
 tags: [code-review, pr-18, correctness, race-condition]
@@ -67,6 +67,7 @@ Option A.
 | Date | Action | Notes |
 |------|--------|-------|
 | 2026-02-13 | Created from PR #18 code review | Performance agent |
+| 2026-02-13 | Fixed: generation counters in 8 functions across 4 pages | Plain `let` (non-reactive), stale results discarded |
 
 ## Resources
 

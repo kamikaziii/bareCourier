@@ -97,6 +97,7 @@
   let bulkAssignTypeId = $state("");
   let bulkAssigning = $state(false);
   let pricingModeFormEl = $state<HTMLFormElement | null>(null);
+  let skipPricingValidation = false;
 
   async function handleAssignAndSwitch() {
     if (!bulkAssignTypeId) return;
@@ -139,7 +140,7 @@
 
   function handleSwitchWithoutAssigning() {
     switchDialogOpen = false;
-    // Submit the pricing mode form directly
+    skipPricingValidation = true;
     pricingModeFormEl?.requestSubmit();
   }
 
@@ -165,7 +166,11 @@
       action="?/updatePricingMode"
       use:enhance={async ({ cancel }) => {
         // Only intercept when switching TO type mode (not already in type)
-        if (pricingMode === "type" && profile.pricing_mode !== "type") {
+        if (
+          !skipPricingValidation &&
+          pricingMode === "type" &&
+          profile.pricing_mode !== "type"
+        ) {
           if (serviceTypes.length === 0) {
             cancel();
             toast.error(m.toast_no_service_types(), { duration: 8000 });
@@ -178,6 +183,7 @@
             return;
           }
         }
+        skipPricingValidation = false;
         return async ({ result }) => {
           await applyAction(result);
           if (result.type === "success") {

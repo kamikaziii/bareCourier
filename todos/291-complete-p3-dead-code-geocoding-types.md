@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p3
 issue_id: 291
 tags: [code-review, pr-18, dead-code, cleanup]
@@ -53,3 +53,4 @@ Strip unused exports, interfaces, and fields. Type only what the code actually r
 | Date | Action | Notes |
 |------|--------|-------|
 | 2026-02-13 | Created from PR #18 code review | Simplicity + pattern agents |
+| 2026-02-13 | Fixed: removed GeocodingResponse, relevance, district, fullAddress, unused MapboxV6Properties fields | Updated reverseGeocode() returns + mapper |
