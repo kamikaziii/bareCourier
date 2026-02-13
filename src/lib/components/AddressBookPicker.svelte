@@ -15,6 +15,7 @@
     currentAddress?: string;
     currentCoords?: [number, number] | null;
     supabase: SupabaseClient;
+    userId: string;
     disabled?: boolean;
     onAddressesSaved?: () => void;
   }
@@ -25,6 +26,7 @@
     currentAddress = "",
     currentCoords = null,
     supabase,
+    userId,
     disabled = false,
     onAddressesSaved,
   }: Props = $props();
@@ -56,9 +58,17 @@
 
   async function handleSave() {
     if (!saveLabel.trim() || !currentAddress?.trim()) return;
+    if (saveLabel.trim().length > 100) {
+      toast.error(m.toast_error_generic(), { duration: 8000 });
+      return;
+    }
+    if (currentAddress.length > 500) {
+      toast.error(m.toast_error_generic(), { duration: 8000 });
+      return;
+    }
     saving = true;
     const { error } = await supabase.from("client_addresses").insert({
-      client_id: (await supabase.auth.getUser()).data.user?.id,
+      client_id: userId,
       label: saveLabel.trim(),
       address: currentAddress,
       lat: currentCoords?.[1] ?? null,
@@ -67,7 +77,11 @@
     saving = false;
 
     if (error) {
-      toast.error(m.toast_error_generic(), { duration: 8000 });
+      if (error.code === "23505") {
+        toast.error(m.toast_address_duplicate_label(), { duration: 8000 });
+      } else {
+        toast.error(m.toast_error_generic(), { duration: 8000 });
+      }
       return;
     }
 

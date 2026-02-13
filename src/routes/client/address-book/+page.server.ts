@@ -2,35 +2,20 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 
-const PAGE_SIZE = 20;
-
-export const load: PageServerLoad = async ({ url, locals: { supabase, safeGetSession } }) => {
+export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
 	const { session, user } = await safeGetSession();
 	if (!session || !user) {
 		redirect(303, localizeHref('/login'));
 	}
 
-	const search = url.searchParams.get('search') || '';
-	const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
-	const offset = (page - 1) * PAGE_SIZE;
-
-	let query = supabase
+	const { data: addresses } = await supabase
 		.from('client_addresses')
-		.select('*', { count: 'exact' })
+		.select('*')
 		.eq('client_id', user.id)
 		.order('label', { ascending: true });
 
-	if (search) {
-		query = query.or(`label.ilike.%${search}%,address.ilike.%${search}%`);
-	}
-
-	const { data: addresses, count } = await query.range(offset, offset + PAGE_SIZE - 1);
-
 	return {
-		addresses: addresses ?? [],
-		totalCount: count ?? 0,
-		page,
-		search
+		addresses: addresses ?? []
 	};
 };
 
@@ -50,8 +35,14 @@ export const actions: Actions = {
 		if (!label) {
 			return fail(400, { error: 'Label is required' });
 		}
+		if (label.length > 100) {
+			return fail(400, { error: 'Label too long (max 100 characters)' });
+		}
 		if (!address) {
 			return fail(400, { error: 'Address is required' });
+		}
+		if (address.length > 500) {
+			return fail(400, { error: 'Address too long (max 500 characters)' });
 		}
 
 		const { error } = await supabase.from('client_addresses').insert({
@@ -63,6 +54,9 @@ export const actions: Actions = {
 		});
 
 		if (error) {
+			if (error.code === '23505') {
+				return fail(400, { error: 'A saved address with this label already exists' });
+			}
 			console.error('Failed to create address:', error);
 			return fail(500, { error: 'Failed to save address' });
 		}
@@ -89,8 +83,14 @@ export const actions: Actions = {
 		if (!label) {
 			return fail(400, { error: 'Label is required' });
 		}
+		if (label.length > 100) {
+			return fail(400, { error: 'Label too long (max 100 characters)' });
+		}
 		if (!address) {
 			return fail(400, { error: 'Address is required' });
+		}
+		if (address.length > 500) {
+			return fail(400, { error: 'Address too long (max 500 characters)' });
 		}
 
 		const { error } = await supabase
@@ -105,6 +105,9 @@ export const actions: Actions = {
 			.eq('client_id', user.id);
 
 		if (error) {
+			if (error.code === '23505') {
+				return fail(400, { error: 'A saved address with this label already exists' });
+			}
 			console.error('Failed to update address:', error);
 			return fail(500, { error: 'Failed to update address' });
 		}

@@ -854,6 +854,7 @@
   "toast_address_saved": "Address saved",
   "toast_address_updated": "Address updated",
   "toast_address_deleted": "Address deleted",
+  "toast_address_duplicate_label": "An address with this label already exists",
 
   "notification_service_delivered": "Service Delivered",
   "notification_reschedule_proposal": "Reschedule Proposal",

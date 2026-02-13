@@ -84,6 +84,7 @@ export const load: PageLoad = async ({ parent }) => {
 			? supabase
 					.from('client_addresses')
 					.select('*')
+					.eq('client_id', profile.id)
 					.order('label')
 			: Promise.resolve(null)
 	]);

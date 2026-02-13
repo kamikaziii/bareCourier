@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { goto, invalidateAll } from "$app/navigation";
-  import { page } from "$app/state";
+  import { invalidateAll } from "$app/navigation";
   import { enhance } from "$app/forms";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
@@ -17,8 +16,6 @@
 
   let { data }: { data: PageData } = $props();
 
-  const PAGE_SIZE = 20;
-
   // Dialog states
   let dialogOpen = $state(false);
   let deleteDialogOpen = $state(false);
@@ -30,13 +27,16 @@
   let formAddress = $state("");
   let formCoords = $state<[number, number] | null>(null);
 
-  // Search
-  let searchTerm = $state(data.search || "");
-  let searchTimeout: ReturnType<typeof setTimeout>;
-
-  // Pagination
-  const totalPages = $derived(
-    Math.max(1, Math.ceil(data.totalCount / PAGE_SIZE)),
+  // Client-side search
+  let searchTerm = $state("");
+  const filtered = $derived(
+    searchTerm
+      ? data.addresses.filter(
+          (a) =>
+            a.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            a.address.toLowerCase().includes(searchTerm.toLowerCase()),
+        )
+      : data.addresses,
   );
 
   function openCreateDialog() {
@@ -67,32 +67,6 @@
   ) {
     formAddress = address;
     formCoords = coords;
-  }
-
-  function handleSearchInput(e: Event) {
-    const value = (e.target as HTMLInputElement).value;
-    searchTerm = value;
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-      const url = new URL(page.url);
-      if (value) {
-        url.searchParams.set("search", value);
-      } else {
-        url.searchParams.delete("search");
-      }
-      url.searchParams.delete("page");
-      goto(url.toString(), { replaceState: true, keepFocus: true });
-    }, 300);
-  }
-
-  function goToPage(p: number) {
-    const url = new URL(page.url);
-    if (p <= 1) {
-      url.searchParams.delete("page");
-    } else {
-      url.searchParams.set("page", String(p));
-    }
-    goto(url.toString(), { replaceState: true });
   }
 
   function handleFormSubmit() {
@@ -154,19 +128,18 @@
     />
     <Input
       placeholder={m.address_book_search_placeholder()}
-      value={searchTerm}
-      oninput={handleSearchInput}
+      bind:value={searchTerm}
       class="pl-9"
     />
   </div>
 
   <!-- Address List -->
-  {#if data.addresses.length === 0}
+  {#if filtered.length === 0}
     <div
       class="flex flex-col items-center justify-center gap-2 py-12 text-center"
     >
       <BookUser class="size-12 text-muted-foreground/50" />
-      {#if data.search}
+      {#if searchTerm}
         <p class="text-muted-foreground">{m.address_book_no_results()}</p>
       {:else}
         <p class="font-medium">{m.address_book_empty()}</p>
@@ -177,7 +150,7 @@
     </div>
   {:else}
     <div class="space-y-2">
-      {#each data.addresses as addr (addr.id)}
+      {#each filtered as addr (addr.id)}
         <Card.Root class="flex items-center justify-between p-3">
           <div class="min-w-0 flex-1">
             <p class="text-sm font-medium">{addr.label}</p>
@@ -204,31 +177,6 @@
         </Card.Root>
       {/each}
     </div>
-
-    <!-- Pagination -->
-    {#if totalPages > 1}
-      <div class="flex items-center justify-center gap-2 pt-2">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={data.page <= 1}
-          onclick={() => goToPage(data.page - 1)}
-        >
-          {m.pagination_previous()}
-        </Button>
-        <span class="text-sm text-muted-foreground">
-          {data.page} / {totalPages}
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={data.page >= totalPages}
-          onclick={() => goToPage(data.page + 1)}
-        >
-          {m.pagination_next()}
-        </Button>
-      </div>
-    {/if}
   {/if}
 </div>
 

@@ -854,6 +854,7 @@
   "toast_address_saved": "Morada guardada",
   "toast_address_updated": "Morada atualizada",
   "toast_address_deleted": "Morada apagada",
+  "toast_address_duplicate_label": "J\u00e1 existe uma morada com este nome",
 
   "notification_service_delivered": "Serviço Entregue",
   "notification_reschedule_proposal": "Proposta de Reagendamento",

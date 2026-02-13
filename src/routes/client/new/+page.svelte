@@ -53,6 +53,7 @@
     const { data: fresh } = await data.supabase
       .from("client_addresses")
       .select("*")
+      .eq("client_id", data.profile.id)
       .order("label");
     if (fresh) savedAddresses = fresh as ClientAddress[];
   }
@@ -252,6 +253,7 @@
               currentAddress={pickupLocation}
               currentCoords={pickupCoords}
               supabase={data.supabase}
+              userId={data.profile.id}
               disabled={loading}
               onAddressesSaved={refreshSavedAddresses}
             />
@@ -340,6 +342,7 @@
               currentAddress={deliveryLocation}
               currentCoords={deliveryCoords}
               supabase={data.supabase}
+              userId={data.profile.id}
               disabled={loading}
               onAddressesSaved={refreshSavedAddresses}
             />
