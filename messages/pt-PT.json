@@ -343,6 +343,7 @@
   "address_hint_idle": "Comece a escrever para sugestões de morada",
   "address_hint_verified": "Morada verificada - distância e mapa disponíveis",
   "address_hint_custom": "Morada manual - cálculo de distância indisponível",
+  "address_chip_default": "Predefinido",
   "nav_insights": "Estatísticas",
   "nav_more": "Mais",
   "insights_title": "Estatísticas",
