@@ -3,7 +3,7 @@ status: ready
 priority: p3
 issue_id: 294
 tags: [code-review, pr-18, consistency, sveltekit]
-dependencies: []
+dependencies: [287]
 ---
 
 # Unconventional onsubmit + use:enhance pattern in PricingTab
@@ -17,6 +17,7 @@ The `handlePricingModeSubmit` function uses `onsubmit` + `e.preventDefault()` on
 - Pattern agent flagged as style concern, not correctness
 - Could be moved into the enhance callback using `cancel()` for consistency
 - Current approach works correctly
+- **Dependency on #287:** After `handleAssignAndSwitch` calls `pricingModeFormEl?.requestSubmit()`, the validation re-fires. Without #287's `invalidateAll()`, `clientsWithoutServiceType` is stale and the dialog re-opens. Fix #287 first or alongside this.
 
 **Location:** `src/routes/courier/settings/PricingTab.svelte:101`
 

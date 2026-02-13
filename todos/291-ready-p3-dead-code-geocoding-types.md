@@ -33,7 +33,7 @@ The Mapbox v5 to v6 migration left behind several dead types and fields that are
 Strip unused exports, interfaces, and fields. Type only what the code actually reads.
 
 - **Effort:** Small
-- **Risk:** None (confirmed zero references for all items)
+- **Risk:** Low — must also update `reverseGeocode()` return statements (currently returns `{ municipality, district, fullAddress }`, should return only `{ municipality }`) and verify `searchAddress` no longer references the removed `GeocodingResponse` type internally
 
 ## Technical Details
 
@@ -45,6 +45,8 @@ Strip unused exports, interfaces, and fields. Type only what the code actually r
 - [ ] `relevance` removed from `GeocodingResult` and mapper
 - [ ] `district`/`fullAddress` removed from `ReverseGeocodeResult`
 - [ ] Unused fields removed from `MapboxV6Properties`
+- [ ] `reverseGeocode()` return statements updated to only return `{ municipality }`
+- [ ] `searchAddress` internal typing updated if it references `GeocodingResponse`
 
 ## Work Log
 
