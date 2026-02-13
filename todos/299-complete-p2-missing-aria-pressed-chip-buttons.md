@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "299"
 tags: [code-review, accessibility, svelte, pr-19]

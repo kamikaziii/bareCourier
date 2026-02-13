@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p3
 issue_id: "303"
 tags: [code-review, css, conventions, pr-19]

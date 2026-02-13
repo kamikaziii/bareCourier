@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "298"
 tags: [code-review, i18n, dead-code, pr-19]

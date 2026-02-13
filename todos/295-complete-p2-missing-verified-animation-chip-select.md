@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "295"
 tags: [code-review, svelte, ux, pr-19]

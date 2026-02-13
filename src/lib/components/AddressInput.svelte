@@ -28,19 +28,20 @@
     disabled = false,
     id,
     showHint = true,
-    suggestions: addressSuggestions = [],
+    suggestions = [],
   }: Props = $props();
 
-  let suggestions = $state<GeocodingResult[]>([]);
+  let geocodingResults = $state<GeocodingResult[]>([]);
   let searching = $state(false);
   let showSuggestions = $state(false);
   let addressState = $state<AddressState>("idle");
   let showVerifiedAnimation = $state(false);
   let debounceTimer: ReturnType<typeof setTimeout>;
-  let selectedChipIndex = $state<number | null>(null);
+  const selectedChipIndex = $derived(
+    suggestions.findIndex((s) => s.address === value),
+  );
 
   function handleInput() {
-    selectedChipIndex = null;
     addressState = value.length > 0 ? "typing" : "idle";
 
     // Debounce search
@@ -48,12 +49,12 @@
     if (value.length >= 3) {
       searching = true;
       debounceTimer = setTimeout(async () => {
-        suggestions = await searchAddress(value);
+        geocodingResults = await searchAddress(value);
         searching = false;
-        showSuggestions = suggestions.length > 0;
+        showSuggestions = geocodingResults.length > 0;
       }, 300);
     } else {
-      suggestions = [];
+      geocodingResults = [];
       showSuggestions = false;
       searching = false;
     }
@@ -63,7 +64,7 @@
     value = result.place_name;
     onSelect(result.place_name, result.center);
     showSuggestions = false;
-    suggestions = [];
+    geocodingResults = [];
     addressState = "verified";
 
     // Trigger green highlight animation
@@ -74,7 +75,7 @@
   }
 
   function handleFocus() {
-    if (suggestions.length > 0) {
+    if (geocodingResults.length > 0) {
       showSuggestions = true;
     }
   }
@@ -100,14 +101,19 @@
     }
   }
 
-  function handleChipSelect(suggestion: AddressSuggestion, index: number) {
+  function handleChipSelect(suggestion: AddressSuggestion) {
     value = suggestion.address;
-    selectedChipIndex = index;
     onSelect(suggestion.address, suggestion.coords);
     // Close any open Mapbox suggestions
     showSuggestions = false;
-    suggestions = [];
+    geocodingResults = [];
     addressState = suggestion.coords ? "verified" : "custom";
+    if (suggestion.coords) {
+      showVerifiedAnimation = true;
+      setTimeout(() => {
+        showVerifiedAnimation = false;
+      }, 600);
+    }
   }
 
   const hintText = $derived(() => {
@@ -165,13 +171,13 @@
       </div>
     {/if}
 
-    {#if showSuggestions && suggestions.length > 0}
+    {#if showSuggestions && geocodingResults.length > 0}
       <!-- Prevent mousedown from blurring the input, so slow clicks still reach handleSelect -->
       <div
         class="absolute z-50 mt-1 w-full rounded-md border bg-popover p-1 shadow-md"
         onmousedown={(e) => e.preventDefault()}
       >
-        {#each suggestions as result (result.id)}
+        {#each geocodingResults as result (result.id)}
           <Button
             variant="ghost"
             size="sm"
@@ -186,22 +192,26 @@
     {/if}
   </div>
 
-  {#if addressSuggestions.length > 0}
+  {#if suggestions.length > 0}
     <div class="flex flex-wrap gap-1.5">
-      {#each addressSuggestions as suggestion, i}
+      {#each suggestions as suggestion, i}
         <button
           type="button"
+          aria-pressed={selectedChipIndex === i}
+          aria-label={suggestion.isDefault
+            ? `${m.address_chip_default()}: ${suggestion.address}`
+            : suggestion.address}
           class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors
             {selectedChipIndex === i
             ? 'bg-primary text-primary-foreground border-transparent'
             : 'bg-background text-foreground border-border hover:bg-accent hover:text-accent-foreground'}"
-          onclick={() => handleChipSelect(suggestion, i)}
+          onclick={() => handleChipSelect(suggestion)}
           {disabled}
         >
           {#if suggestion.isDefault}
             <Home class="size-3" />
           {/if}
-          {suggestion.label}
+          <span class="max-w-[14rem] truncate">{suggestion.address}</span>
         </button>
       {/each}
     </div>

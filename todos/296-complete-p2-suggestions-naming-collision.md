@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "296"
 tags: [code-review, svelte, naming, pr-19]
