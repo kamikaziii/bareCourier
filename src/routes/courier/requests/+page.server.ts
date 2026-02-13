@@ -294,15 +294,15 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const serviceId = formData.get('service_id') as string;
 		const suggestedDate = formData.get('suggested_date') as string;
-		const suggestedTimeSlot = formData.get('suggested_time_slot') as string;
+		const suggestedTimeSlot = (formData.get('suggested_time_slot') as string) || null;
 		const suggestedTime = (formData.get('suggested_time') as string) || null;
 
 		if (!serviceId) {
 			return { success: false, error: 'Service ID required' };
 		}
 
-		if (!suggestedDate || !suggestedTimeSlot) {
-			return { success: false, error: 'Suggested date and time slot required' };
+		if (!suggestedDate) {
+			return { success: false, error: 'Suggested date is required' };
 		}
 
 		if (suggestedTimeSlot === 'specific' && !suggestedTime) {
@@ -357,9 +357,11 @@ export const actions: Actions = {
 				}
 			};
 			const labels = slotLabels[locale] || slotLabels['pt-PT'];
-			const slotText = suggestedTimeSlot === 'specific' && suggestedTime
-				? suggestedTime
-				: (labels[suggestedTimeSlot] || suggestedTimeSlot);
+			const slotText = !suggestedTimeSlot
+				? ''
+				: suggestedTimeSlot === 'specific' && suggestedTime
+					? suggestedTime
+					: (labels[suggestedTimeSlot] || suggestedTimeSlot);
 
 			try {
 				await notifyClient({
