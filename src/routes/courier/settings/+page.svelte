@@ -96,7 +96,12 @@
       </Tabs.Content>
 
       <Tabs.Content value="pricing" class="mt-6 space-y-6">
-        <PricingTab profile={data.profile} urgencyFees={data.urgencyFees} />
+        <PricingTab
+          profile={data.profile}
+          urgencyFees={data.urgencyFees}
+          serviceTypes={data.serviceTypes}
+          clientsWithoutServiceType={data.clientsWithoutServiceType}
+        />
         {#if data.profile.pricing_mode === "type"}
           <ServiceTypesSection serviceTypes={data.serviceTypes} />
           <DistributionZonesSection
@@ -139,7 +144,12 @@
         supabase={data.supabase}
       />
     {:else if activeTab === "pricing"}
-      <PricingTab profile={data.profile} urgencyFees={data.urgencyFees} />
+      <PricingTab
+        profile={data.profile}
+        urgencyFees={data.urgencyFees}
+        serviceTypes={data.serviceTypes}
+        clientsWithoutServiceType={data.clientsWithoutServiceType}
+      />
       {#if data.profile.pricing_mode === "type"}
         <ServiceTypesSection serviceTypes={data.serviceTypes} />
         <DistributionZonesSection distributionZones={data.distributionZones} />

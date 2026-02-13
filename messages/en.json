@@ -820,6 +820,16 @@
   "toast_service_type_updated": "Service type updated",
   "toast_service_type_deleted": "Service type deleted",
 
+  "toast_bulk_assign_success": "{count} clients assigned to service type",
+  "toast_bulk_assign_failed": "Failed to assign service type to clients",
+  "toast_no_service_types": "Create at least one service type before switching to type-based pricing",
+
+  "pricing_switch_warning_title": "Clients without service type",
+  "pricing_switch_warning_desc": "{count} clients have no service type assigned. They won't be able to create services in type-based mode.",
+  "pricing_switch_assign_label": "Assign service type",
+  "pricing_switch_assign_and_switch": "Assign & Switch",
+  "pricing_switch_without_assigning": "Switch without assigning",
+
   "toast_zones_saved": "Distribution zones saved",
   "toast_zone_pricing_saved": "Zone pricing saved",
   "toast_client_pricing_failed": "Client created, but pricing configuration failed to save. You can add it later.",

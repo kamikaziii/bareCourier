@@ -23,7 +23,11 @@
     Receipt,
     Package,
   } from "@lucide/svelte";
-  import type { Profile, UrgencyFee } from "$lib/database.types.js";
+  import type {
+    Profile,
+    UrgencyFee,
+    ServiceType,
+  } from "$lib/database.types.js";
 
   /** Portuguese standard VAT rate (%) */
   const DEFAULT_VAT_RATE = 23;
@@ -31,9 +35,12 @@
   interface Props {
     profile: Profile;
     urgencyFees: UrgencyFee[];
+    serviceTypes: ServiceType[];
+    clientsWithoutServiceType: number;
   }
 
-  let { profile, urgencyFees }: Props = $props();
+  let { profile, urgencyFees, serviceTypes, clientsWithoutServiceType }: Props =
+    $props();
 
   // State for urgency fees
   let showNewUrgencyForm = $state(false);
@@ -85,6 +92,71 @@
     outOfZonePerKm = profile.out_of_zone_per_km ?? 0.5;
   });
 
+  // Pricing mode switch safeguard state
+  let switchDialogOpen = $state(false);
+  let bulkAssignTypeId = $state("");
+  let bulkAssigning = $state(false);
+  let pricingModeFormEl = $state<HTMLFormElement | null>(null);
+
+  function handlePricingModeSubmit(e: Event) {
+    // Only intercept when switching TO type mode (not already in type)
+    if (pricingMode !== "type" || profile.pricing_mode === "type") return;
+
+    // No service types? Block entirely
+    if (serviceTypes.length === 0) {
+      e.preventDefault();
+      toast.error(m.toast_no_service_types(), { duration: 8000 });
+      return;
+    }
+
+    // Clients without service type? Show warning dialog
+    if (clientsWithoutServiceType > 0) {
+      e.preventDefault();
+      bulkAssignTypeId = serviceTypes[0]?.id || "";
+      switchDialogOpen = true;
+      return;
+    }
+
+    // All clients have types — let form submit normally
+  }
+
+  async function handleAssignAndSwitch() {
+    if (!bulkAssignTypeId) return;
+    bulkAssigning = true;
+
+    // Submit bulk assign via fetch
+    const formData = new FormData();
+    formData.set("service_type_id", bulkAssignTypeId);
+
+    const response = await fetch("?/bulkAssignServiceType", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      toast.error(m.toast_bulk_assign_failed(), { duration: 8000 });
+      bulkAssigning = false;
+      return;
+    }
+
+    toast.success(
+      m.toast_bulk_assign_success({
+        count: clientsWithoutServiceType.toString(),
+      }),
+    );
+    bulkAssigning = false;
+    switchDialogOpen = false;
+
+    // Now submit the pricing mode form
+    pricingModeFormEl?.requestSubmit();
+  }
+
+  function handleSwitchWithoutAssigning() {
+    switchDialogOpen = false;
+    // Submit the pricing mode form directly
+    pricingModeFormEl?.requestSubmit();
+  }
+
   function openDeleteDialog(feeId: string) {
     deletingFeeId = feeId;
     deleteDialogOpen = true;
@@ -102,8 +174,10 @@
   </Card.Header>
   <Card.Content>
     <form
+      bind:this={pricingModeFormEl}
       method="POST"
       action="?/updatePricingMode"
+      onsubmit={handlePricingModeSubmit}
       use:enhance={async () => {
         return async ({ result }) => {
           await applyAction(result);
@@ -803,3 +877,55 @@
     </AlertDialog.Content>
   </AlertDialog.Root>
 {/if}
+
+<!-- Pricing Mode Switch Warning Dialog -->
+<AlertDialog.Root bind:open={switchDialogOpen}>
+  <AlertDialog.Content>
+    <AlertDialog.Header>
+      <AlertDialog.Title>{m.pricing_switch_warning_title()}</AlertDialog.Title>
+      <AlertDialog.Description>
+        {m.pricing_switch_warning_desc({
+          count: clientsWithoutServiceType.toString(),
+        })}
+      </AlertDialog.Description>
+    </AlertDialog.Header>
+
+    <div class="space-y-2 py-2">
+      <Label for="bulk_assign_type">{m.pricing_switch_assign_label()}</Label>
+      <select
+        id="bulk_assign_type"
+        bind:value={bulkAssignTypeId}
+        class="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+        disabled={bulkAssigning}
+      >
+        {#each serviceTypes as type (type.id)}
+          <option value={type.id}
+            >{type.name} - {formatCurrency(Number(type.price))}</option
+          >
+        {/each}
+      </select>
+    </div>
+
+    <AlertDialog.Footer>
+      <AlertDialog.Cancel
+        onclick={() => (switchDialogOpen = false)}
+        disabled={bulkAssigning}
+      >
+        {m.action_cancel()}
+      </AlertDialog.Cancel>
+      <Button
+        variant="outline"
+        onclick={handleSwitchWithoutAssigning}
+        disabled={bulkAssigning}
+      >
+        {m.pricing_switch_without_assigning()}
+      </Button>
+      <Button
+        onclick={handleAssignAndSwitch}
+        disabled={bulkAssigning || !bulkAssignTypeId}
+      >
+        {bulkAssigning ? m.loading() : m.pricing_switch_assign_and_switch()}
+      </Button>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+</AlertDialog.Root>
