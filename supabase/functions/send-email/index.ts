@@ -92,9 +92,9 @@ const TEMPLATE_REQUIRED_FIELDS: Record<EmailTemplate, string[]> = {
   request_suggested: ["pickup_location", "delivery_location", "requested_date", "suggested_date", "app_url"],
   request_cancelled: ["client_name", "pickup_location", "delivery_location", "app_url"],
   daily_summary: ["date", "app_url"],
-  past_due: ["client_name", "pickup_location", "delivery_location", "scheduled_date", "days_overdue", "app_url"],
-  suggestion_accepted: ["client_name", "pickup_location", "delivery_location", "confirmed_date", "app_url"],
-  suggestion_declined: ["client_name", "pickup_location", "delivery_location", "original_date", "app_url"],
+  past_due: ["client_name", "pickup_location", "delivery_location", "scheduled_date", "days_overdue", "service_id", "app_url"],
+  suggestion_accepted: ["client_name", "pickup_location", "delivery_location", "new_date", "service_id", "app_url"],
+  suggestion_declined: ["client_name", "pickup_location", "delivery_location", "original_date", "service_id", "app_url"],
   client_invitation: ["client_name", "courier_name", "action_link"],
 };
 
@@ -157,6 +157,7 @@ interface EmailWrapOptions {
   content: string;
   button?: { text: string; href: string; color?: string };
   footer?: string;
+  logoUrl?: string;
 }
 
 // Base styles for all emails - single source of truth
@@ -166,6 +167,8 @@ const baseStyles = `
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
     .header { background: #2563eb; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
     .content { background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; }
+    .logo { text-align: center; padding: 24px 20px 8px; }
+    .logo img { width: 120px; height: auto; }
     .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }
     .button { display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0; }
     .detail { background: white; padding: 12px; border-radius: 6px; margin: 12px 0; border: 1px solid #e5e7eb; }
@@ -187,9 +190,12 @@ const colors = {
  * Single source of truth for email structure and styling.
  */
 function wrapEmail(options: EmailWrapOptions): string {
-  const { headerColor, title, content, button, footer } = options;
+  const { headerColor, title, content, button, footer, logoUrl } = options;
   const buttonHtml = button
     ? `<a href="${button.href}" class="button" style="background: ${button.color || headerColor};">${button.text}</a>`
+    : "";
+  const logoHtml = logoUrl
+    ? `<div class="logo"><img src="${logoUrl}" alt="AS Estafetagem" /></div>`
     : "";
 
   return `<!DOCTYPE html>
@@ -197,6 +203,7 @@ function wrapEmail(options: EmailWrapOptions): string {
 <head>${baseStyles}</head>
 <body>
   <div class="container">
+    ${logoHtml}
     <div class="header" style="background: ${headerColor};">
       <h1>${title}</h1>
     </div>
@@ -271,11 +278,15 @@ function generateEmailHtml(
   // Common footer
   const defaultFooter = emailT("email_footer", locale);
 
+  // Logo URL (available when app_url is provided)
+  const logoUrl = data.app_url ? `${data.app_url}/images/pwa-192x192.png` : undefined;
+
   switch (template) {
     case "new_request":
       return {
         subject: emailT("email_new_request_subject", locale, { client_name: data.client_name }),
         html: wrapEmail({
+          logoUrl,
           headerColor: colors.primary,
           title: emailT("email_new_request_title", locale),
           content: `
@@ -298,6 +309,7 @@ function generateEmailHtml(
       return {
         subject: emailT("email_delivered_subject", locale),
         html: wrapEmail({
+          logoUrl,
           headerColor: colors.success,
           title: emailT("email_delivered_title", locale),
           content: `
@@ -320,6 +332,7 @@ function generateEmailHtml(
       return {
         subject: emailT("email_accepted_subject", locale),
         html: wrapEmail({
+          logoUrl,
           headerColor: colors.success,
           title: emailT("email_accepted_title", locale),
           content: `
@@ -342,6 +355,7 @@ function generateEmailHtml(
       return {
         subject: emailT("email_rejected_subject", locale),
         html: wrapEmail({
+          logoUrl,
           headerColor: colors.danger,
           title: emailT("email_rejected_title", locale),
           content: `
@@ -364,6 +378,7 @@ function generateEmailHtml(
       return {
         subject: emailT("email_suggested_subject", locale),
         html: wrapEmail({
+          logoUrl,
           headerColor: colors.warning,
           title: emailT("email_suggested_title", locale),
           content: `
@@ -388,6 +403,7 @@ function generateEmailHtml(
       return {
         subject: emailT("email_cancelled_subject", locale),
         html: wrapEmail({
+          logoUrl,
           headerColor: colors.muted,
           title: emailT("email_cancelled_title", locale),
           content: `
@@ -421,6 +437,7 @@ function generateEmailHtml(
       return {
         subject: emailT("email_daily_summary_subject", locale, { date: data.date }),
         html: wrapEmail({
+          logoUrl,
           headerColor: colors.primary,
           title: emailT("email_daily_summary_title", locale),
           content: `
@@ -440,6 +457,7 @@ function generateEmailHtml(
       return {
         subject: emailT("email_past_due_subject", locale),
         html: wrapEmail({
+          logoUrl,
           headerColor: colors.danger,
           title: emailT("email_past_due_title", locale),
           content: `
@@ -464,6 +482,7 @@ function generateEmailHtml(
       return {
         subject: emailT("email_suggestion_accepted_subject", locale),
         html: wrapEmail({
+          logoUrl,
           headerColor: colors.success,
           title: emailT("email_suggestion_accepted_title", locale),
           content: `
@@ -486,6 +505,7 @@ function generateEmailHtml(
       return {
         subject: emailT("email_suggestion_declined_subject", locale),
         html: wrapEmail({
+          logoUrl,
           headerColor: colors.warning,
           title: emailT("email_suggestion_declined_title", locale),
           content: `
@@ -515,6 +535,7 @@ function generateEmailHtml(
           <head>${baseStyles}</head>
           <body>
             <div class="container">
+              ${logoUrl ? `<div class="logo"><img src="${logoUrl}" alt="AS Estafetagem" /></div>` : ""}
               <div class="header">
                 <h1>${emailT("email_invitation_title", locale)}</h1>
               </div>
@@ -540,6 +561,7 @@ function generateEmailHtml(
       return {
         subject: emailT("email_default_subject", locale),
         html: wrapEmail({
+          logoUrl,
           headerColor: colors.primary,
           title: emailT("email_default_title", locale),
           content: `<p>${data.message || emailT("email_default_message", locale)}</p>`,
