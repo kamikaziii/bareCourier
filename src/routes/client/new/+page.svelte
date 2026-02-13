@@ -29,14 +29,7 @@
 
   let { data }: { data: PageData } = $props();
 
-  // svelte-ignore state_referenced_locally - intentional: prefill form with user's default location
-  const defaultPickup = data.profile?.default_pickup_location || "";
-  // svelte-ignore state_referenced_locally
-  const defaultPickupCoordsFromProfile: [number, number] | null =
-    data.profile?.default_pickup_lng && data.profile?.default_pickup_lat
-      ? [data.profile.default_pickup_lng, data.profile.default_pickup_lat]
-      : null;
-  let pickupLocation = $state(defaultPickup);
+  let pickupLocation = $state("");
   let deliveryLocation = $state("");
   let notes = $state("");
   let recipientName = $state("");
@@ -45,9 +38,7 @@
   let loading = $state(false);
 
   // Coordinates for maps - initialize with stored coordinates if available
-  let pickupCoords = $state<[number, number] | null>(
-    defaultPickupCoordsFromProfile,
-  );
+  let pickupCoords = $state<[number, number] | null>(null);
   let deliveryCoords = $state<[number, number] | null>(null);
   let distanceKm = $state<number | null>(null);
   let durationMinutes = $state<number | null>(null);
@@ -101,21 +92,6 @@
   onMount(() => {
     if (!settingsLoaded) {
       loadSettings();
-    }
-  });
-
-  // Detect pickup zone for pre-filled default address on mount
-  let hasDetectedInitialPickupZone = false;
-  $effect(() => {
-    if (
-      !hasDetectedInitialPickupZone &&
-      isTypePricingMode &&
-      defaultPickup &&
-      defaultPickupCoordsFromProfile
-    ) {
-      hasDetectedInitialPickupZone = true;
-      pickupAddressSelected = true; // Show zone indicator
-      detectPickupZone(defaultPickup, defaultPickupCoordsFromProfile);
     }
   });
 
@@ -255,6 +231,7 @@
               onSelect={handlePickupSelect}
               placeholder={m.form_pickup_placeholder()}
               disabled={loading}
+              suggestions={data.pickupSuggestions}
             />
           {:else}
             <Input
@@ -330,6 +307,7 @@
               onSelect={handleDeliverySelect}
               placeholder={m.form_delivery_placeholder()}
               disabled={loading}
+              suggestions={data.deliverySuggestions}
             />
           {:else}
             <Input

@@ -6,7 +6,8 @@
     type GeocodingResult,
   } from "$lib/services/geocoding.js";
   import * as m from "$lib/paraglide/messages.js";
-  import { MapPin, Check, AlertTriangle } from "@lucide/svelte";
+  import { MapPin, Check, AlertTriangle, Home } from "@lucide/svelte";
+  import type { AddressSuggestion } from "$lib/types/address-suggestion.js";
 
   type AddressState = "idle" | "typing" | "verified" | "custom";
 
@@ -17,6 +18,7 @@
     disabled?: boolean;
     id?: string;
     showHint?: boolean;
+    suggestions?: AddressSuggestion[];
   }
 
   let {
@@ -26,14 +28,18 @@
     disabled = false,
     id,
     showHint = true,
+    suggestions = [],
   }: Props = $props();
 
-  let suggestions = $state<GeocodingResult[]>([]);
+  let geocodingResults = $state<GeocodingResult[]>([]);
   let searching = $state(false);
   let showSuggestions = $state(false);
   let addressState = $state<AddressState>("idle");
   let showVerifiedAnimation = $state(false);
   let debounceTimer: ReturnType<typeof setTimeout>;
+  const selectedChipIndex = $derived(
+    suggestions.findIndex((s) => s.address === value),
+  );
 
   function handleInput() {
     addressState = value.length > 0 ? "typing" : "idle";
@@ -43,12 +49,12 @@
     if (value.length >= 3) {
       searching = true;
       debounceTimer = setTimeout(async () => {
-        suggestions = await searchAddress(value);
+        geocodingResults = await searchAddress(value);
         searching = false;
-        showSuggestions = suggestions.length > 0;
+        showSuggestions = geocodingResults.length > 0;
       }, 300);
     } else {
-      suggestions = [];
+      geocodingResults = [];
       showSuggestions = false;
       searching = false;
     }
@@ -58,7 +64,7 @@
     value = result.place_name;
     onSelect(result.place_name, result.center);
     showSuggestions = false;
-    suggestions = [];
+    geocodingResults = [];
     addressState = "verified";
 
     // Trigger green highlight animation
@@ -69,7 +75,7 @@
   }
 
   function handleFocus() {
-    if (suggestions.length > 0) {
+    if (geocodingResults.length > 0) {
       showSuggestions = true;
     }
   }
@@ -92,6 +98,21 @@
       addressState = "custom";
       onSelect(value, null);
       showSuggestions = false;
+    }
+  }
+
+  function handleChipSelect(suggestion: AddressSuggestion) {
+    value = suggestion.address;
+    onSelect(suggestion.address, suggestion.coords);
+    // Close any open Mapbox suggestions
+    showSuggestions = false;
+    geocodingResults = [];
+    addressState = suggestion.coords ? "verified" : "custom";
+    if (suggestion.coords) {
+      showVerifiedAnimation = true;
+      setTimeout(() => {
+        showVerifiedAnimation = false;
+      }, 600);
     }
   }
 
@@ -150,13 +171,13 @@
       </div>
     {/if}
 
-    {#if showSuggestions && suggestions.length > 0}
+    {#if showSuggestions && geocodingResults.length > 0}
       <!-- Prevent mousedown from blurring the input, so slow clicks still reach handleSelect -->
       <div
         class="absolute z-50 mt-1 w-full rounded-md border bg-popover p-1 shadow-md"
         onmousedown={(e) => e.preventDefault()}
       >
-        {#each suggestions as result (result.id)}
+        {#each geocodingResults as result (result.id)}
           <Button
             variant="ghost"
             size="sm"
@@ -170,6 +191,31 @@
       </div>
     {/if}
   </div>
+
+  {#if suggestions.length > 0}
+    <div class="flex flex-wrap gap-1.5">
+      {#each suggestions as suggestion, i}
+        <button
+          type="button"
+          aria-pressed={selectedChipIndex === i}
+          aria-label={suggestion.isDefault
+            ? `${m.address_chip_default()}: ${suggestion.address}`
+            : suggestion.address}
+          class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors
+            {selectedChipIndex === i
+            ? 'bg-primary text-primary-foreground border-transparent'
+            : 'bg-background text-foreground border-border hover:bg-accent hover:text-accent-foreground'}"
+          onclick={() => handleChipSelect(suggestion)}
+          {disabled}
+        >
+          {#if suggestion.isDefault}
+            <Home class="size-3" />
+          {/if}
+          <span class="max-w-[14rem] truncate">{suggestion.address}</span>
+        </button>
+      {/each}
+    </div>
+  {/if}
 
   {#if showHint}
     <p

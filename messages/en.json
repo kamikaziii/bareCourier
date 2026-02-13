@@ -343,6 +343,7 @@
   "address_hint_idle": "Start typing for address suggestions",
   "address_hint_verified": "Address verified - distance and map available",
   "address_hint_custom": "Manual address - distance calculation unavailable",
+  "address_chip_default": "Default",
   "nav_insights": "Insights",
   "nav_more": "More",
   "insights_title": "Insights",
