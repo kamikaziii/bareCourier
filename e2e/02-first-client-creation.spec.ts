@@ -30,6 +30,7 @@ test.describe('Phase 2: First Client Creation', () => {
 
 	test('2.2 Create First Client (Password Flow)', async ({ page }) => {
 		await page.goto('/en/courier/clients');
+		await page.waitForLoadState('domcontentloaded');
 
 		// Check if client already exists (idempotent)
 		// Use a more robust check - look for the client name text anywhere
@@ -43,24 +44,33 @@ test.describe('Phase 2: First Client Creation', () => {
 		// Click "Add Client" link
 		await page.getByRole('link', { name: 'Add Client' }).click();
 
-		// Wait for form to load
+		// Wait for form to load and hydrate
+		await page.waitForLoadState('networkidle');
 		await expect(page.getByRole('heading', { name: /New Client/i })).toBeVisible();
 
 		// Fill in email first
 		await page.getByRole('textbox', { name: /Email/i }).fill(CLIENT.email);
 
-		// Toggle OFF "Send invitation email" if it's checked (to show password field)
-		const invitationToggle = page.getByRole('switch', { name: /invitation/i });
-		if (await invitationToggle.isVisible().catch(() => false)) {
-			const isChecked = await invitationToggle.getAttribute('aria-checked');
-			if (isChecked === 'true') {
-				await invitationToggle.click();
-				await page.waitForTimeout(300); // Wait for password field to appear
-			}
-		}
+		// Wait a bit for any JS to settle after filling email
+		await page.waitForTimeout(300);
 
-		// Password field should be visible - fill it
-		const passwordField = page.getByRole('textbox', { name: /Password/i });
+		// Toggle OFF "Send invitation email" to show password field
+		// The switch defaults to ON (checked=true)
+		const invitationToggle = page.getByRole('switch', { name: /Send invitation email/i });
+		await expect(invitationToggle).toBeVisible();
+		await expect(invitationToggle).toBeEnabled();
+
+		// Verify it starts as checked
+		await expect(invitationToggle).toHaveAttribute('aria-checked', 'true');
+
+		// Click to uncheck it
+		await invitationToggle.click();
+
+		// Wait for the switch to update and password field to appear
+		await expect(invitationToggle).toHaveAttribute('aria-checked', 'false', { timeout: 2000 });
+
+		// Password field should now be visible - fill it
+		const passwordField = page.getByLabel(/^Password/i);
 		await expect(passwordField).toBeVisible({ timeout: 3000 });
 		await passwordField.fill(CLIENT.password);
 
@@ -121,12 +131,14 @@ test.describe('Phase 2: First Client Creation', () => {
 
 	test('2.3 Verify Client Details', async ({ page }) => {
 		await page.goto('/en/courier/clients');
+		await page.waitForLoadState('networkidle');
 
 		// Click on created client
 		await page.getByText('Test Business').first().click();
+		await page.waitForLoadState('networkidle');
 
 		// Expected Results: Client details page shows info
-		await expect(page.getByRole('heading', { name: 'Test Business' })).toBeVisible();
+		await expect(page.getByRole('heading', { name: 'Test Business' })).toBeVisible({ timeout: 10000 });
 		// Phone should be displayed somewhere
 		await expect(page.getByText(/912.*345.*678|351/)).toBeVisible();
 	});
