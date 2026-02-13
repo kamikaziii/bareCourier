@@ -50,7 +50,7 @@
   // Notification preferences state
   let pushEnabled = $state(false);
   // svelte-ignore state_referenced_locally - intentional: capture initial value for form
-  let emailEnabled = $state(profile.email_notifications_enabled ?? true);
+  let emailEnabled = $state(profile.email_notifications_enabled ?? false);
   let pushLoading = $state(false);
   let pushError = $state("");
   let pushSupported = $state(false);
@@ -107,7 +107,7 @@
 
   // Sync form state when profile updates (after form submission + invalidateAll)
   $effect(() => {
-    emailEnabled = profile.email_notifications_enabled ?? true;
+    emailEnabled = profile.email_notifications_enabled ?? false;
     pastDueSettings = {
       ...defaultPastDueSettings,
       ...(profile.past_due_settings ?? {}),
