@@ -145,7 +145,7 @@ self.addEventListener('push', (event) => {
 	if (!event.data) {
 		console.warn('[SW] Push event has no data');
 		event.waitUntil(
-			self.registration.showNotification('bareCourier', {
+			self.registration.showNotification('AS Estafetagem', {
 				body: 'Notification received (no data)',
 				icon: '/pwa-192x192.png',
 				badge: '/pwa-64x64.png'
@@ -162,7 +162,7 @@ self.addEventListener('push', (event) => {
 		console.error('[SW] Failed to parse push notification:', error);
 		// Show notification anyway for debugging
 		event.waitUntil(
-			self.registration.showNotification('bareCourier', {
+			self.registration.showNotification('AS Estafetagem', {
 				body: event.data.text() || 'Notification received (parse error)',
 				icon: '/pwa-192x192.png',
 				badge: '/pwa-64x64.png'
@@ -187,7 +187,7 @@ self.addEventListener('push', (event) => {
 
 	console.log('[SW] Showing notification with options:', JSON.stringify(options));
 	event.waitUntil(
-		self.registration.showNotification(data.title || 'bareCourier', options)
+		self.registration.showNotification(data.title || 'AS Estafetagem', options)
 			.then(() => console.log('[SW] Notification shown successfully'))
 			.catch((err) => console.error('[SW] Failed to show notification:', err))
 	);

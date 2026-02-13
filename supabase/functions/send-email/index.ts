@@ -688,7 +688,7 @@ Deno.serve(async (req: Request) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: `bareCourier <${resendFromEmail}>`,
+          from: `AS Estafetagem <${resendFromEmail}>`,
           to: [targetUser.email],
           subject,
           html,

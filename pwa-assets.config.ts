@@ -4,7 +4,7 @@ import {
 	minimal2023Preset,
 } from '@vite-pwa/assets-generator/config'
 
-const darkBackground = '#1a1a1a'
+const iconBackground = '#ffffff'
 
 export default defineConfig({
 	headLinkOptions: {
@@ -21,31 +21,31 @@ export default defineConfig({
 				fit: 'contain',
 			},
 		},
-		// Override maskable icon to use dark background
+		// Override maskable icon to use white background (logo is black)
 		// Padding 0.22 (22%) ensures icon fits within 40% radius safe zone
 		// (40% radius circle = 80% diameter, square inscribed needs ~22% padding)
 		maskable: {
 			sizes: [512],
 			padding: 0.22,
 			resizeOptions: {
-				background: darkBackground,
+				background: iconBackground,
 				fit: 'contain',
 			},
 		},
-		// Override apple touch icon to use dark background
+		// Override apple touch icon to use white background (logo is black)
 		// Padding 0.22 (22%) = ~40px margin on 180px icon (matches maskable icon spacing)
 		apple: {
 			sizes: [180],
 			padding: 0.22,
 			resizeOptions: {
-				background: darkBackground,
+				background: iconBackground,
 				fit: 'contain',
 			},
 		},
 		appleSplashScreens: createAppleSplashScreens({
 			padding: 0.3,
 			resizeOptions: {
-				background: darkBackground,
+				background: iconBackground,
 				fit: 'contain',
 			},
 			linkMediaOptions: {

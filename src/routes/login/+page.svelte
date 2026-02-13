@@ -70,6 +70,7 @@
 <div class="flex min-h-screen items-center justify-center bg-background p-4">
   <Card.Root class="w-full max-w-md">
     <Card.Header class="text-center">
+      <img src="/favicon.svg" alt="" class="mx-auto mb-2 h-10 w-auto" />
       <Card.Title class="text-2xl">{m.app_name()}</Card.Title>
       <Card.Description>{m.auth_sign_in_subtitle()}</Card.Description>
     </Card.Header>
