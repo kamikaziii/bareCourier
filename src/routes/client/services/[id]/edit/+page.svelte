@@ -98,6 +98,8 @@
     service.pickup_detected_municipality ?? null,
   );
   let checkingPickupZone = $state(false);
+  let pickupZoneGeneration = 0;
+  let deliveryZoneGeneration = 0;
   // svelte-ignore state_referenced_locally - intentional: captures if pickup address was pre-populated
   let pickupAddressSelected = $state(!!pickupLocation);
 
@@ -187,8 +189,10 @@
     address: string,
     coords: [number, number] | null = null,
   ) {
+    const gen = ++pickupZoneGeneration;
     checkingPickupZone = true;
     const result = await detectZone(data.supabase, address, coords);
+    if (gen !== pickupZoneGeneration) return;
     pickupDetectedMunicipality = result.municipality;
     pickupIsOutOfZone = result.isOutOfZone;
     checkingPickupZone = false;
@@ -198,8 +202,10 @@
     address: string,
     coords: [number, number] | null = null,
   ) {
+    const gen = ++deliveryZoneGeneration;
     checkingDeliveryZone = true;
     const result = await detectZone(data.supabase, address, coords);
+    if (gen !== deliveryZoneGeneration) return;
     deliveryDetectedMunicipality = result.municipality;
     deliveryIsOutOfZone = result.isOutOfZone;
     checkingDeliveryZone = false;

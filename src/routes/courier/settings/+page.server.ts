@@ -922,7 +922,7 @@ export const actions: Actions = {
 		// Bulk update all clients without a service type
 		const { error, count } = await supabase
 			.from('profiles')
-			.update({ default_service_type_id: serviceTypeId })
+			.update({ default_service_type_id: serviceTypeId }, { count: 'exact' })
 			.eq('role', 'client')
 			.is('default_service_type_id', null);
 

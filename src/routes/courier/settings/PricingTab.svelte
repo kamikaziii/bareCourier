@@ -98,52 +98,38 @@
   let bulkAssigning = $state(false);
   let pricingModeFormEl = $state<HTMLFormElement | null>(null);
 
-  function handlePricingModeSubmit(e: Event) {
-    // Only intercept when switching TO type mode (not already in type)
-    if (pricingMode !== "type" || profile.pricing_mode === "type") return;
-
-    // No service types? Block entirely
-    if (serviceTypes.length === 0) {
-      e.preventDefault();
-      toast.error(m.toast_no_service_types(), { duration: 8000 });
-      return;
-    }
-
-    // Clients without service type? Show warning dialog
-    if (clientsWithoutServiceType > 0) {
-      e.preventDefault();
-      bulkAssignTypeId = serviceTypes[0]?.id || "";
-      switchDialogOpen = true;
-      return;
-    }
-
-    // All clients have types — let form submit normally
-  }
-
   async function handleAssignAndSwitch() {
     if (!bulkAssignTypeId) return;
     bulkAssigning = true;
 
-    // Submit bulk assign via fetch
-    const formData = new FormData();
-    formData.set("service_type_id", bulkAssignTypeId);
+    try {
+      const formData = new FormData();
+      formData.set("service_type_id", bulkAssignTypeId);
 
-    const response = await fetch("?/bulkAssignServiceType", {
-      method: "POST",
-      body: formData,
-    });
+      const response = await fetch("?/bulkAssignServiceType", {
+        method: "POST",
+        body: formData,
+      });
 
-    if (!response.ok) {
+      const result = await response.json();
+      if (result.type === "success" || result.data?.success) {
+        toast.success(
+          m.toast_bulk_assign_success({
+            count: clientsWithoutServiceType.toString(),
+          }),
+        );
+        await invalidateAll();
+      } else {
+        toast.error(m.toast_bulk_assign_failed(), { duration: 8000 });
+        bulkAssigning = false;
+        return;
+      }
+    } catch {
       toast.error(m.toast_bulk_assign_failed(), { duration: 8000 });
       bulkAssigning = false;
       return;
     }
 
-    toast.success(
-      m.toast_bulk_assign_success({
-        count: clientsWithoutServiceType.toString(),
-      }),
-    );
     bulkAssigning = false;
     switchDialogOpen = false;
 
@@ -177,8 +163,21 @@
       bind:this={pricingModeFormEl}
       method="POST"
       action="?/updatePricingMode"
-      onsubmit={handlePricingModeSubmit}
-      use:enhance={async () => {
+      use:enhance={async ({ cancel }) => {
+        // Only intercept when switching TO type mode (not already in type)
+        if (pricingMode === "type" && profile.pricing_mode !== "type") {
+          if (serviceTypes.length === 0) {
+            cancel();
+            toast.error(m.toast_no_service_types(), { duration: 8000 });
+            return;
+          }
+          if (clientsWithoutServiceType > 0) {
+            cancel();
+            bulkAssignTypeId = serviceTypes[0]?.id || "";
+            switchDialogOpen = true;
+            return;
+          }
+        }
         return async ({ result }) => {
           await applyAction(result);
           if (result.type === "success") {

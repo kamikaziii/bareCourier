@@ -82,6 +82,8 @@
   let pickupIsOutOfZone = $state<boolean | null>(null);
   let pickupDetectedMunicipality = $state<string | null>(null);
   let checkingPickupZone = $state(false);
+  let pickupZoneGeneration = 0;
+  let deliveryZoneGeneration = 0;
   let pickupAddressSelected = $state(false); // Track if address was selected from autocomplete
 
   // Combined: if EITHER pickup OR delivery is out of zone
@@ -178,8 +180,10 @@
     address: string,
     coords: [number, number] | null = null,
   ) {
+    const gen = ++pickupZoneGeneration;
     checkingPickupZone = true;
     const result = await detectZone(data.supabase, address, coords);
+    if (gen !== pickupZoneGeneration) return;
     pickupDetectedMunicipality = result.municipality;
     pickupIsOutOfZone = result.isOutOfZone;
     checkingPickupZone = false;
@@ -189,8 +193,10 @@
     address: string,
     coords: [number, number] | null = null,
   ) {
+    const gen = ++deliveryZoneGeneration;
     checkingDeliveryZone = true;
     const result = await detectZone(data.supabase, address, coords);
+    if (gen !== deliveryZoneGeneration) return;
     deliveryDetectedMunicipality = result.municipality;
     deliveryIsOutOfZone = result.isOutOfZone;
     checkingDeliveryZone = false;

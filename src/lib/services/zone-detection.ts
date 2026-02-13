@@ -31,8 +31,8 @@ export async function detectZone(
 		try {
 			const result = await reverseGeocode(coords[0], coords[1]);
 			municipality = result.municipality;
-		} catch {
-			// Fall through to string-parsing fallback
+		} catch (err) {
+			console.warn('Reverse geocode failed, falling back to string parsing:', err);
 		}
 	}
 
