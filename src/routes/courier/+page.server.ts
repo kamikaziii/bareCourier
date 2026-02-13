@@ -14,10 +14,11 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 		return { services: [] };
 	}
 
-	// Load all services (filtering happens client-side for better UX)
+	// Load accepted services only (pending/suggested stay on Requests page)
 	const { data: services } = await supabase
 		.from('services')
 		.select('*, profiles!client_id(name)')
+		.eq('request_status', 'accepted')
 		.is('deleted_at', null)
 		.order('scheduled_date', { ascending: true, nullsFirst: false })
 		.order('created_at', { ascending: false });
