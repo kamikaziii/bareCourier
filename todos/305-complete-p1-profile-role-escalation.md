@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p1
 issue_id: "305"
 tags: [security, critical, rls, supabase, profiles]

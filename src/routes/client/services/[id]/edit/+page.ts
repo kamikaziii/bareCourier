@@ -17,10 +17,8 @@ export const load: PageLoad = async ({ params, parent }) => {
 
 	// Get courier's pricing mode, type-based settings, and price visibility
 	const { data: courierProfile } = await supabase
-		.from('profiles')
+		.from('courier_public_profile')
 		.select('pricing_mode, time_specific_price, out_of_zone_base, out_of_zone_per_km, show_price_to_client')
-		.eq('role', 'courier')
-		.limit(1)
 		.single();
 
 	const pricingMode = (courierProfile?.pricing_mode as 'warehouse' | 'zone' | 'type') || 'warehouse';

@@ -113,12 +113,10 @@ export async function getCourierPricingSettings(
 	supabase: SupabaseClient
 ): Promise<CourierPricingSettings> {
 	const { data: profile } = await supabase
-		.from('profiles')
+		.from('courier_public_profile')
 		.select(
 			'pricing_mode, warehouse_lat, warehouse_lng, show_price_to_courier, show_price_to_client, default_urgency_fee_id, minimum_charge, round_distance, vat_enabled, vat_rate, prices_include_vat'
 		)
-		.eq('role', 'courier')
-		.limit(1)
 		.single();
 
 	return {
@@ -256,10 +254,8 @@ export async function calculateServicePrice(
 	try {
 		// Get courier's pricing mode
 		const { data: courier } = await supabase
-			.from('profiles')
+			.from('courier_public_profile')
 			.select('pricing_mode')
-			.eq('role', 'courier')
-			.limit(1)
 			.single();
 
 		// If type-based pricing mode, delegate to type pricing service

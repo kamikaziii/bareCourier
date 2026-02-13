@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "308"
 tags: [security, rls, supabase, profiles, information-leak]

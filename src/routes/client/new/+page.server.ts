@@ -115,10 +115,8 @@ export const actions: Actions = {
 
 		// Get courier's pricing mode
 		const { data: courierModeResult } = await supabase
-			.from('profiles')
+			.from('courier_public_profile')
 			.select('pricing_mode')
-			.eq('role', 'courier')
-			.limit(1)
 			.single();
 
 		const pricingMode = (courierModeResult?.pricing_mode as 'warehouse' | 'zone' | 'type') || 'warehouse';

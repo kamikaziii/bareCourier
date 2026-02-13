@@ -913,11 +913,40 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      courier_public_profile: {
+        Row: {
+          id: string
+          name: string | null
+          phone: string | null
+          pricing_mode: string | null
+          show_price_to_client: boolean
+          show_price_to_courier: boolean
+          time_slots: Json | null
+          time_specific_price: number | null
+          working_days: Json | null
+          timezone: string
+          round_distance: boolean
+          minimum_charge: number | null
+          vat_enabled: boolean
+          vat_rate: number
+          prices_include_vat: boolean
+          label_business_name: string | null
+          label_tagline: string | null
+          past_due_settings: Json | null
+          out_of_zone_base: number | null
+          out_of_zone_per_km: number | null
+          warehouse_lat: number | null
+          warehouse_lng: number | null
+          default_urgency_fee_id: string | null
+          default_service_type_id: string | null
+          locale: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       approve_reschedule: {
-        Args: { p_approved_by: string; p_service_id: string }
+        Args: { p_service_id: string }
         Returns: Json
       }
       bulk_recalculate_service_prices: {
@@ -965,7 +994,6 @@ export type Database = {
       deny_reschedule: {
         Args: {
           p_denial_reason?: string
-          p_denied_by: string
           p_service_id: string
         }
         Returns: Json

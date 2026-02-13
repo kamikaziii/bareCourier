@@ -416,8 +416,7 @@ export const actions: Actions = {
 		// Use RPC function to atomically approve reschedule
 		// This updates both services and service_reschedule_history in a single transaction
 		const { data: rpcResult, error: rpcError } = await supabase.rpc('approve_reschedule', {
-			p_service_id: serviceId,
-			p_approved_by: user.id
+			p_service_id: serviceId
 		});
 
 		if (rpcError) {
@@ -634,7 +633,6 @@ export const actions: Actions = {
 		// This updates both services and service_reschedule_history in a single transaction
 		const { data: rpcResult, error: rpcError } = await supabase.rpc('deny_reschedule', {
 			p_service_id: serviceId,
-			p_denied_by: user.id,
 			p_denial_reason: denialReason || undefined
 		});
 

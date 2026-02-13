@@ -68,10 +68,8 @@ export const load: PageLoad = async ({ parent }) => {
 	// Fire independent queries in parallel
 	const [courierProfileResult, pastServicesResult] = await Promise.all([
 		supabase
-			.from('profiles')
+			.from('courier_public_profile')
 			.select('pricing_mode, time_specific_price, out_of_zone_base, out_of_zone_per_km, show_price_to_client')
-			.eq('role', 'courier')
-			.limit(1)
 			.single(),
 		profile?.id
 			? supabase

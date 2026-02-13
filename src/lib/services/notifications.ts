@@ -13,9 +13,8 @@ export type NotificationResult =
  */
 async function getCourierId(supabase: SupabaseClient): Promise<string | null> {
 	const { data } = await supabase
-		.from('profiles')
+		.from('courier_public_profile')
 		.select('id')
-		.eq('role', 'courier')
 		.single();
 
 	return data?.id ?? null;
@@ -50,9 +49,8 @@ export async function getUserLocale(supabase: SupabaseClient, userId: string): P
  */
 export async function getCourierLocale(supabase: SupabaseClient): Promise<AppLocale> {
 	const { data } = await supabase
-		.from('profiles')
+		.from('courier_public_profile')
 		.select('locale')
-		.eq('role', 'courier')
 		.single();
 
 	const locale = data?.locale;

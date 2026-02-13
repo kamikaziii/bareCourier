@@ -38,9 +38,8 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 
 	// Load courier's reschedule settings, price visibility, and label branding
 	const { data: courierSettingsData } = await supabase
-		.from('profiles')
+		.from('courier_public_profile')
 		.select('name, phone, past_due_settings, show_price_to_client, label_business_name, label_tagline')
-		.eq('role', 'courier')
 		.single();
 
 	const courierSettings = courierSettingsData as Pick<Profile, 'name' | 'phone' | 'past_due_settings' | 'show_price_to_client' | 'label_business_name' | 'label_tagline'> | null;
@@ -109,9 +108,8 @@ export const actions: Actions = {
 
 		// Get courier's reschedule settings
 		const { data: courierProfileData } = await supabase
-			.from('profiles')
+			.from('courier_public_profile')
 			.select('id, past_due_settings')
-			.eq('role', 'courier')
 			.single();
 
 		const courierProfile = courierProfileData as Pick<Profile, 'id' | 'past_due_settings'> | null;

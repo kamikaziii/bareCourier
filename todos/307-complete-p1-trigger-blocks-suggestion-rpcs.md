@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p1
 issue_id: "307"
 tags: [bug, critical, rls, supabase, services, trigger, regression]

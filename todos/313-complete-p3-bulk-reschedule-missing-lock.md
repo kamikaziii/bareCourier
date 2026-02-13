@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p3
 issue_id: "313"
 tags: [data-integrity, supabase, race-condition]
