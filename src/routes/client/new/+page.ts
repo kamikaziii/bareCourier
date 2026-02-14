@@ -1,5 +1,5 @@
 import type { PageLoad } from './$types';
-import type { ServiceType } from '$lib/database.types.js';
+import type { ServiceType, ClientAddress } from '$lib/database.types.js';
 import type { AddressSuggestion } from '$lib/types/address-suggestion.js';
 
 /** Maximum number of address suggestion chips shown (includes the default address chip) */
@@ -66,7 +66,7 @@ export const load: PageLoad = async ({ parent }) => {
 	const { supabase, profile } = await parent();
 
 	// Fire independent queries in parallel
-	const [courierProfileResult, pastServicesResult] = await Promise.all([
+	const [courierProfileResult, pastServicesResult, savedAddressesResult] = await Promise.all([
 		supabase
 			.from('courier_public_profile')
 			.select('pricing_mode, time_specific_price, out_of_zone_base, out_of_zone_per_km, show_price_to_client')
@@ -79,11 +79,19 @@ export const load: PageLoad = async ({ parent }) => {
 					.is('deleted_at', null)
 					.order('created_at', { ascending: false })
 					.limit(ADDRESS_HISTORY_SAMPLE_SIZE)
+			: Promise.resolve(null),
+		profile?.id
+			? supabase
+					.from('client_addresses')
+					.select('*')
+					.eq('client_id', profile.id)
+					.order('label')
 			: Promise.resolve(null)
 	]);
 
 	const courierProfile = courierProfileResult.data;
 	const pastServices = pastServicesResult?.data ?? null;
+	const savedAddresses = (savedAddressesResult?.data ?? []) as ClientAddress[];
 
 	const pricingMode = (courierProfile?.pricing_mode as 'warehouse' | 'zone' | 'type') || 'warehouse';
 	const showPriceToClient = courierProfile?.show_price_to_client ?? true;
@@ -155,6 +163,7 @@ export const load: PageLoad = async ({ parent }) => {
 		showPriceToClient,
 		clientServiceType,
 		pickupSuggestions,
-		deliverySuggestions
+		deliverySuggestions,
+		savedAddresses
 	};
 };

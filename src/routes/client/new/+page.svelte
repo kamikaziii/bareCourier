@@ -11,6 +11,7 @@
   import TimePreferencePicker from "$lib/components/TimePreferencePicker.svelte";
   import UrgencyFeeSelect from "$lib/components/UrgencyFeeSelect.svelte";
   import AddressInput from "$lib/components/AddressInput.svelte";
+  import AddressBookPicker from "$lib/components/AddressBookPicker.svelte";
   import RouteMap from "$lib/components/RouteMap.svelte";
   import { type ServiceDistanceResult } from "$lib/services/distance.js";
   import { calculateRouteIfReady as calculateRouteShared } from "$lib/services/route.js";
@@ -24,7 +25,11 @@
   import { formatCurrency } from "$lib/utils.js";
   import { localizeHref } from "$lib/paraglide/runtime.js";
   import type { PageData } from "./$types";
-  import type { TimeSlot, UrgencyFee } from "$lib/database.types.js";
+  import type {
+    TimeSlot,
+    UrgencyFee,
+    ClientAddress,
+  } from "$lib/database.types.js";
   import { PUBLIC_MAPBOX_TOKEN } from "$env/static/public";
 
   let { data }: { data: PageData } = $props();
@@ -36,6 +41,22 @@
   let recipientPhone = $state("");
   let customerReference = $state("");
   let loading = $state(false);
+
+  // Saved addresses for picker (mutable so we can refresh after inline save)
+  // svelte-ignore state_referenced_locally
+  let savedAddresses = $state<ClientAddress[]>(data.savedAddresses ?? []);
+  $effect(() => {
+    savedAddresses = data.savedAddresses ?? [];
+  });
+
+  async function refreshSavedAddresses() {
+    const { data: fresh } = await data.supabase
+      .from("client_addresses")
+      .select("*")
+      .eq("client_id", data.profile.id)
+      .order("label");
+    if (fresh) savedAddresses = fresh as ClientAddress[];
+  }
 
   // Coordinates for maps - initialize with stored coordinates if available
   let pickupCoords = $state<[number, number] | null>(null);
@@ -223,7 +244,20 @@
     <Card.Content class="pt-6">
       <form method="POST" use:enhance={handleFormSubmit} class="space-y-4">
         <div class="space-y-2">
-          <Label for="pickup">{m.form_pickup_location()}</Label>
+          <div class="flex items-center justify-between">
+            <Label for="pickup">{m.form_pickup_location()}</Label>
+            <AddressBookPicker
+              addresses={savedAddresses}
+              onSelect={(address, coords) =>
+                handlePickupSelect(address, coords)}
+              currentAddress={pickupLocation}
+              currentCoords={pickupCoords}
+              supabase={data.supabase}
+              userId={data.profile.id}
+              disabled={loading}
+              onAddressesSaved={refreshSavedAddresses}
+            />
+          </div>
           {#if hasMapbox}
             <AddressInput
               id="pickup"
@@ -299,7 +333,20 @@
         </div>
 
         <div class="space-y-2">
-          <Label for="delivery">{m.form_delivery_location()}</Label>
+          <div class="flex items-center justify-between">
+            <Label for="delivery">{m.form_delivery_location()}</Label>
+            <AddressBookPicker
+              addresses={savedAddresses}
+              onSelect={(address, coords) =>
+                handleDeliverySelect(address, coords)}
+              currentAddress={deliveryLocation}
+              currentCoords={deliveryCoords}
+              supabase={data.supabase}
+              userId={data.profile.id}
+              disabled={loading}
+              onAddressesSaved={refreshSavedAddresses}
+            />
+          </div>
           {#if hasMapbox}
             <AddressInput
               id="delivery"
