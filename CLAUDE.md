@@ -152,6 +152,12 @@ PUBLIC_SUPABASE_URL=https://[project].supabase.co
 PUBLIC_SUPABASE_ANON_KEY=[anon-key]
 ```
 
+## ⚠ Critical: No Environment Separation
+
+**E2E tests currently run against the production database.** The reset script (`e2e/00-reset.spec.ts`) deletes all data using the service role key. This WILL destroy real user data once the app launches.
+
+**Before launch**, set up local development with `supabase start` (Docker) so tests run against a local DB. See `docs/plans/local-dev-environment.md` for the full plan.
+
 ## Request Status Flow
 
 ```
