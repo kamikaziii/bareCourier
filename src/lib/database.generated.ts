@@ -935,8 +935,6 @@ export type Database = {
           past_due_settings: Json | null
           out_of_zone_base: number | null
           out_of_zone_per_km: number | null
-          warehouse_lat: number | null
-          warehouse_lng: number | null
           default_urgency_fee_id: string | null
           default_service_type_id: string | null
           locale: string | null
@@ -997,6 +995,13 @@ export type Database = {
           p_service_id: string
         }
         Returns: Json
+      }
+      get_courier_warehouse_coords: {
+        Args: Record<string, never>
+        Returns: {
+          warehouse_lat: number
+          warehouse_lng: number
+        }[]
       }
       get_notification_text: {
         Args: { key: string; locale: string; params?: Json }

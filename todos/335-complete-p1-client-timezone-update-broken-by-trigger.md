@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p1
 issue_id: "335"
 tags: [bug, database, triggers, ui, code-review]

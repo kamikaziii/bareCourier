@@ -3,7 +3,7 @@ import type { PageServerLoad, Actions } from './$types';
 import type { Service, ServiceStatusHistory, Profile, ServiceType } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 import * as m from '$lib/paraglide/messages.js';
-import { notifyClient, getUserLocale } from '$lib/services/notifications.js';
+import { notifyClient, getUserLocale, backgroundNotify } from '$lib/services/notifications.js';
 import { formatDate, formatDateTime } from '$lib/utils/date-format.js';
 import { APP_URL } from '$lib/constants.js';
 
@@ -96,25 +96,21 @@ export const actions: Actions = {
 			const locale = await getUserLocale(supabase, service.client_id);
 			const formattedDeliveredAt = formatDateTime(new Date(), locale);
 
-			try {
-				await notifyClient({
-					session,
-					clientId: service.client_id,
-					serviceId: params.id,
-					category: 'service_status',
-					title: m.notification_service_delivered({}, { locale }),
-					message: m.notification_service_delivered_message({}, { locale }),
-					emailTemplate: 'delivered',
-					emailData: {
-						pickup_location: service.pickup_location,
-						delivery_location: service.delivery_location,
-						delivered_at: formattedDeliveredAt,
-						app_url: APP_URL
-					}
-				});
-			} catch (error) {
-				console.error('Notification failed for service', params.id, error);
-			}
+			backgroundNotify(notifyClient({
+				session,
+				clientId: service.client_id,
+				serviceId: params.id,
+				category: 'service_status',
+				title: m.notification_service_delivered({}, { locale }),
+				message: m.notification_service_delivered_message({}, { locale }),
+				emailTemplate: 'delivered',
+				emailData: {
+					pickup_location: service.pickup_location,
+					delivery_location: service.delivery_location,
+					delivered_at: formattedDeliveredAt,
+					app_url: APP_URL
+				}
+			}));
 		}
 
 		return { success: true };
@@ -280,7 +276,7 @@ export const actions: Actions = {
 			const locale = await getUserLocale(supabase, service.client_id);
 			const formattedDate = formatDate(newDate, locale);
 			const reasonText = reason ? m.notification_reason_prefix({ reason }, { locale }) : '';
-			await notifyClient({
+			backgroundNotify(notifyClient({
 				session,
 				clientId: service.client_id,
 				serviceId: params.id,
@@ -296,7 +292,7 @@ export const actions: Actions = {
 					reason: reason || '',
 					app_url: APP_URL
 				}
-			});
+			}));
 
 			return { success: true, pendingApproval: true };
 		} else {
@@ -338,7 +334,7 @@ export const actions: Actions = {
 			}
 
 			// Notify client (in-app + email); RPC notification params omitted to avoid duplicates
-			await notifyClient({
+			backgroundNotify(notifyClient({
 				session,
 				clientId: service.client_id,
 				serviceId: params.id,
@@ -354,7 +350,7 @@ export const actions: Actions = {
 					reason: reason || '',
 					app_url: APP_URL
 				}
-			});
+			}));
 
 			return { success: true };
 		}

@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p3
 issue_id: "330"
 tags: [database, naming, code-review]
@@ -21,6 +21,10 @@ Some migrations qualify table names with `public.` prefix (e.g., `public.profile
 
 ### 2026-02-13 - Created from PR #21 Review
 **By:** Claude Code Review
+
+### 2026-02-13 - Closed after verification
+**By:** Claude Code (verification pass)
+**Reason:** The `public.` prefix in newer migrations is INTENTIONAL — they use `SET search_path = ''` for SECURITY DEFINER functions, which REQUIRES explicit schema qualification. Older migrations without this security hardening use unqualified names. This is correct security practice, not inconsistency.
 
 ## Resources
 - PR: https://github.com/kamikaziii/bareCourier/pull/21

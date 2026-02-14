@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "322"
 tags: [architecture, duplication, code-review]
@@ -50,6 +50,10 @@ Note the duplication and ensure both are updated together.
 **By:** Claude Code Review
 **Actions:**
 - Identified by architecture-strategist agent
+
+### 2026-02-13 - Closed after verification
+**By:** Claude Code (verification pass)
+**Reason:** Verified 8 CSS classes are 100% identical, but sharing is architecturally unfeasible — auth templates use Supabase GoTemplate engine, app emails use Deno Edge Function. No shared runtime or import system exists between them. Accepted duplication.
 
 ## Resources
 - PR: https://github.com/kamikaziii/bareCourier/pull/21

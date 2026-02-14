@@ -112,18 +112,26 @@ export interface CalculatePriceResult {
 export async function getCourierPricingSettings(
 	supabase: SupabaseClient
 ): Promise<CourierPricingSettings> {
-	const { data: profile } = await supabase
-		.from('courier_public_profile')
-		.select(
-			'pricing_mode, warehouse_lat, warehouse_lng, show_price_to_courier, show_price_to_client, default_urgency_fee_id, minimum_charge, round_distance, vat_enabled, vat_rate, prices_include_vat'
-		)
-		.single();
+	// Fetch non-sensitive settings from the public view and warehouse coords
+	// from a SECURITY DEFINER RPC (warehouse coords are excluded from the view
+	// for privacy — they may reveal the courier's home address).
+	const [{ data: profile }, { data: warehouseRows }] = await Promise.all([
+		supabase
+			.from('courier_public_profile')
+			.select(
+				'pricing_mode, show_price_to_courier, show_price_to_client, default_urgency_fee_id, minimum_charge, round_distance, vat_enabled, vat_rate, prices_include_vat'
+			)
+			.single(),
+		supabase.rpc('get_courier_warehouse_coords')
+	]);
+
+	const wh = warehouseRows?.[0] ?? null;
 
 	return {
 		pricingMode: (profile?.pricing_mode as 'warehouse' | 'zone' | 'type') || 'zone',
 		warehouseCoords:
-			profile?.warehouse_lat && profile?.warehouse_lng
-				? [profile.warehouse_lng, profile.warehouse_lat]
+			wh?.warehouse_lat && wh?.warehouse_lng
+				? [wh.warehouse_lng, wh.warehouse_lat]
 				: null,
 		showPriceToCourier: profile?.show_price_to_courier ?? true,
 		showPriceToClient: profile?.show_price_to_client ?? true,

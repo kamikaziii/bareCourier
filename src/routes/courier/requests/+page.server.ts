@@ -4,7 +4,7 @@ import type { Service, Profile } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 import * as m from '$lib/paraglide/messages.js';
 import { calculateDayWorkload, getWorkloadSettings, type WorkloadEstimate } from '$lib/services/workload.js';
-import { notifyClient, getUserLocale } from '$lib/services/notifications';
+import { notifyClient, getUserLocale, backgroundNotify } from '$lib/services/notifications';
 import { APP_URL } from '$lib/constants.js';
 
 // Number of days to scan ahead when finding the next compatible day
@@ -174,25 +174,21 @@ export const actions: Actions = {
 
 		// Notify client with email
 		const locale = await getUserLocale(supabase, service.client_id);
-		try {
-			await notifyClient({
-				session,
-				clientId: service.client_id,
-				serviceId,
-				category: 'schedule_change',
-				title: m.notification_request_accepted({}, { locale }),
-				message: m.notification_request_accepted_message({}, { locale }),
-				emailTemplate: 'request_accepted',
-				emailData: {
-					pickup_location: service.pickup_location,
-					delivery_location: service.delivery_location,
-					scheduled_date: service.requested_date || '',
-					app_url: APP_URL
-				}
-			});
-		} catch (error) {
-			console.error('Notification failed for service', serviceId, error);
-		}
+		backgroundNotify(notifyClient({
+			session,
+			clientId: service.client_id,
+			serviceId,
+			category: 'schedule_change',
+			title: m.notification_request_accepted({}, { locale }),
+			message: m.notification_request_accepted_message({}, { locale }),
+			emailTemplate: 'request_accepted',
+			emailData: {
+				pickup_location: service.pickup_location,
+				delivery_location: service.delivery_location,
+				scheduled_date: service.requested_date || '',
+				app_url: APP_URL
+			}
+		}));
 
 		return { success: true };
 	},
@@ -249,25 +245,21 @@ export const actions: Actions = {
 		if (service?.client_id) {
 			const locale = await getUserLocale(supabase, service.client_id);
 			const reasonText = rejectionReason ? m.notification_reason_prefix({ reason: rejectionReason }, { locale }) : '';
-			try {
-				await notifyClient({
-					session,
-					clientId: service.client_id,
-					serviceId,
-					category: 'schedule_change',
-					title: m.notification_request_rejected({}, { locale }),
-					message: m.notification_request_rejected_message({ reason: reasonText }, { locale }),
-					emailTemplate: 'request_rejected',
-					emailData: {
-						pickup_location: service.pickup_location,
-						delivery_location: service.delivery_location,
-						reason: rejectionReason || '',
-						app_url: APP_URL
-					}
-				});
-			} catch (error) {
-				console.error('Notification failed for service', serviceId, error);
-			}
+			backgroundNotify(notifyClient({
+				session,
+				clientId: service.client_id,
+				serviceId,
+				category: 'schedule_change',
+				title: m.notification_request_rejected({}, { locale }),
+				message: m.notification_request_rejected_message({ reason: reasonText }, { locale }),
+				emailTemplate: 'request_rejected',
+				emailData: {
+					pickup_location: service.pickup_location,
+					delivery_location: service.delivery_location,
+					reason: rejectionReason || '',
+					app_url: APP_URL
+				}
+			}));
 		}
 
 		return { success: true };
@@ -363,26 +355,22 @@ export const actions: Actions = {
 					? suggestedTime
 					: (labels[suggestedTimeSlot] || suggestedTimeSlot);
 
-			try {
-				await notifyClient({
-					session,
-					clientId: service.client_id,
-					serviceId,
-					category: 'schedule_change',
-					title: m.notification_reschedule_proposal({}, { locale }),
-					message: m.notification_reschedule_proposal_message({ date: dateFormatted, slot: slotText }, { locale }),
-					emailTemplate: 'request_suggested',
-					emailData: {
-						pickup_location: service.pickup_location,
-						delivery_location: service.delivery_location,
-						requested_date: service.requested_date || '',
-						suggested_date: suggestedDate,
-						app_url: APP_URL
-					}
-				});
-			} catch (error) {
-				console.error('Notification failed for service', serviceId, error);
-			}
+			backgroundNotify(notifyClient({
+				session,
+				clientId: service.client_id,
+				serviceId,
+				category: 'schedule_change',
+				title: m.notification_reschedule_proposal({}, { locale }),
+				message: m.notification_reschedule_proposal_message({ date: dateFormatted, slot: slotText }, { locale }),
+				emailTemplate: 'request_suggested',
+				emailData: {
+					pickup_location: service.pickup_location,
+					delivery_location: service.delivery_location,
+					requested_date: service.requested_date || '',
+					suggested_date: suggestedDate,
+					app_url: APP_URL
+				}
+			}));
 		}
 
 		return { success: true };
@@ -442,25 +430,21 @@ export const actions: Actions = {
 			const svcData = serviceData as { pickup_location: string; delivery_location: string; scheduled_date: string | null } | null;
 			const locale = await getUserLocale(supabase, result.client_id);
 
-			try {
-				await notifyClient({
-					session,
-					clientId: result.client_id,
-					serviceId,
-					category: 'schedule_change',
-					title: m.notification_reschedule_approved({}, { locale }),
-					message: m.notification_reschedule_approved_message({}, { locale }),
-					emailTemplate: 'request_accepted',
-					emailData: {
-						pickup_location: svcData?.pickup_location || '',
-						delivery_location: svcData?.delivery_location || '',
-						scheduled_date: svcData?.scheduled_date || '',
-						app_url: APP_URL
-					}
-				});
-			} catch (error) {
-				console.error('Notification failed for service', serviceId, error);
-			}
+			backgroundNotify(notifyClient({
+				session,
+				clientId: result.client_id,
+				serviceId,
+				category: 'schedule_change',
+				title: m.notification_reschedule_approved({}, { locale }),
+				message: m.notification_reschedule_approved_message({}, { locale }),
+				emailTemplate: 'request_accepted',
+				emailData: {
+					pickup_location: svcData?.pickup_location || '',
+					delivery_location: svcData?.delivery_location || '',
+					scheduled_date: svcData?.scheduled_date || '',
+					app_url: APP_URL
+				}
+			}));
 		}
 
 		return { success: true };
@@ -554,11 +538,11 @@ export const actions: Actions = {
 		const successful = results.filter((r): r is Extract<typeof r, { success: true }> => r.success);
 		const failed = results.filter((r) => !r.success);
 
-		// Send notifications in chunks to avoid overwhelming the system
+		// Send notifications in background (fire-and-forget with chunked throttling)
 		if (successful.length > 0) {
-			for (let i = 0; i < successful.length; i += NOTIFICATION_CHUNK_SIZE) {
-				const chunk = successful.slice(i, i + NOTIFICATION_CHUNK_SIZE);
-				try {
+			backgroundNotify((async () => {
+				for (let i = 0; i < successful.length; i += NOTIFICATION_CHUNK_SIZE) {
+					const chunk = successful.slice(i, i + NOTIFICATION_CHUNK_SIZE);
 					await Promise.all(
 						chunk.map(async ({ id, clientId, pickup_location, delivery_location, scheduled_date }) => {
 							const locale = await getUserLocale(supabase, clientId);
@@ -579,10 +563,8 @@ export const actions: Actions = {
 							});
 						})
 					);
-				} catch (error) {
-					console.error('Batch notification failed for chunk', i, error);
 				}
-			}
+			})());
 		}
 
 		// Return honest response for partial failures
@@ -660,25 +642,21 @@ export const actions: Actions = {
 			const locale = await getUserLocale(supabase, result.client_id);
 			const reasonText = denialReason ? m.notification_reason_prefix({ reason: denialReason }, { locale }) : '';
 
-			try {
-				await notifyClient({
-					session,
-					clientId: result.client_id,
-					serviceId,
-					category: 'schedule_change',
-					title: m.notification_reschedule_denied({}, { locale }),
-					message: m.notification_reschedule_denied_message({ reason: reasonText }, { locale }),
-					emailTemplate: 'request_rejected',
-					emailData: {
-						pickup_location: svcData?.pickup_location || '',
-						delivery_location: svcData?.delivery_location || '',
-						reason: denialReason || '',
-						app_url: APP_URL
-					}
-				});
-			} catch (error) {
-				console.error('Notification failed for service', serviceId, error);
-			}
+			backgroundNotify(notifyClient({
+				session,
+				clientId: result.client_id,
+				serviceId,
+				category: 'schedule_change',
+				title: m.notification_reschedule_denied({}, { locale }),
+				message: m.notification_reschedule_denied_message({ reason: reasonText }, { locale }),
+				emailTemplate: 'request_rejected',
+				emailData: {
+					pickup_location: svcData?.pickup_location || '',
+					delivery_location: svcData?.delivery_location || '',
+					reason: denialReason || '',
+					app_url: APP_URL
+				}
+			}));
 		}
 
 		return { success: true };

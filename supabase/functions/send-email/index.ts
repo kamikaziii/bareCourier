@@ -529,32 +529,25 @@ function generateEmailHtml(
     case "client_invitation":
       return {
         subject: emailT("email_invitation_subject", locale, { courier_name: data.courier_name }),
-        html: `
-          <!DOCTYPE html>
-          <html>
-          <head>${baseStyles}</head>
-          <body>
-            <div class="container">
-              ${logoUrl ? `<div class="logo"><img src="${logoUrl}" alt="AS Estafetagem" /></div>` : ""}
-              <div class="header">
-                <h1>${emailT("email_invitation_title", locale)}</h1>
-              </div>
-              <div class="content">
-                <p>${emailT("email_invitation_intro", locale, {
-                  client_name: data.client_name,
-                  courier_name: data.courier_name
-                })}</p>
-                <p>${emailT("email_invitation_instructions", locale)}</p>
-                <a href="${data.action_link}" class="button">${emailT("email_invitation_button", locale)}</a>
-                <p class="small" style="font-size: 12px; color: #6b7280; margin-top: 16px;">${emailT("email_invitation_expiry", locale)}</p>
-              </div>
-              <div class="footer">
-                <p>${emailT("email_invitation_help", locale)}</p>
-              </div>
-            </div>
-          </body>
-          </html>
-        `,
+        html: wrapEmail({
+          logoUrl,
+          headerColor: colors.primary,
+          title: emailT("email_invitation_title", locale),
+          content: `
+            <p>${emailT("email_invitation_intro", locale, {
+              client_name: data.client_name,
+              courier_name: data.courier_name
+            })}</p>
+            <p>${emailT("email_invitation_instructions", locale)}</p>
+            <p class="small" style="font-size: 12px; color: #6b7280; margin-top: 16px;">${emailT("email_invitation_expiry", locale)}</p>
+          `,
+          button: {
+            text: emailT("email_invitation_button", locale),
+            href: data.action_link,
+            color: colors.primary,
+          },
+          footer: emailT("email_invitation_help", locale),
+        }),
       };
 
     default:

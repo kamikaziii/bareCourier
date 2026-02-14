@@ -1,4 +1,5 @@
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
+import { waitUntil } from '@vercel/functions';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
@@ -159,4 +160,13 @@ export async function notifyCourier(params: {
 		console.error('Notification error:', error);
 		return { success: false, error: String(error) };
 	}
+}
+
+/**
+ * Fire-and-forget a notification. Uses Vercel's waitUntil() to keep
+ * the serverless function alive until the notification completes,
+ * without blocking the response to the user.
+ */
+export function backgroundNotify(promise: Promise<unknown>): void {
+	waitUntil(promise);
 }

@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p3
 issue_id: "325"
 tags: [database, determinism, code-review]
@@ -32,6 +32,10 @@ The `courier_public_profile` view selects from profiles with `WHERE role = 'cour
 
 ### 2026-02-13 - Created from PR #21 Review
 **By:** Claude Code Review
+
+### 2026-02-13 - Closed after verification
+**By:** Claude Code (verification pass)
+**Reason:** App is designed for a single courier ("solo courier to manage pickups/deliveries"). With one courier row, LIMIT 1 is deterministic regardless of ORDER BY. Academic concern.
 
 ## Resources
 - PR: https://github.com/kamikaziii/bareCourier/pull/21

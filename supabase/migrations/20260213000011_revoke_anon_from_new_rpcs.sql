@@ -1,7 +1,7 @@
 -- Defense-in-depth: explicitly revoke anon execution from RPC functions
 -- created after the original REVOKE migration (20260121000043).
--- These functions already have internal auth.uid() checks and benefit from
--- ALTER DEFAULT PRIVILEGES, but explicit REVOKE adds a third protection layer.
+-- These functions already have internal auth.uid() checks, but explicit
+-- REVOKE prevents anon from even calling them, adding a second layer.
 
 DO $$ BEGIN
   REVOKE EXECUTE ON FUNCTION bulk_reschedule_services(uuid[], date, text, time, text, uuid) FROM anon;
