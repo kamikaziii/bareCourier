@@ -20,6 +20,14 @@ BEGIN
     RETURN NEW;
   END IF;
 
+  -- Column count safety check — if this fails, a column was
+  -- added/removed from notifications without updating this trigger.
+  IF (SELECT count(*) FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'notifications') != 12 THEN
+    RAISE EXCEPTION 'notifications table has % columns (expected 12) — update check_notification_update_fields trigger',
+      (SELECT count(*) FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'notifications');
+  END IF;
+
   -- For all other users, block modifications to protected fields
   IF NEW.email_id IS DISTINCT FROM OLD.email_id THEN
     RAISE EXCEPTION 'You are not allowed to modify email_id';
@@ -67,7 +75,10 @@ END;
 $$;
 
 COMMENT ON FUNCTION public.check_notification_update_fields()
-IS 'Restricts non-courier users to only updating read and dismissed_at on their notifications.';
+IS 'Restricts non-courier users to only updating read and dismissed_at on their notifications. '
+   'Column count assertion (12) ensures new columns fail loudly until this trigger is updated.';
+
+DROP TRIGGER IF EXISTS check_notification_update_fields ON public.notifications;
 
 CREATE TRIGGER check_notification_update_fields
   BEFORE UPDATE ON public.notifications

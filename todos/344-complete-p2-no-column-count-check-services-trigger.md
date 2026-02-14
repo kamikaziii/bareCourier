@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "344"
 tags: [security, database, triggers, code-review]
@@ -45,7 +45,7 @@ Switch the trigger from a denylist approach to an allowlist, where only explicit
 - **Risk**: Medium
 
 ## Recommended Action
-<!-- Filled during triage -->
+Option 1: Add column-count assertion to services trigger.
 
 ## Technical Details
 
@@ -65,3 +65,10 @@ Switch the trigger from a denylist approach to an allowlist, where only explicit
 ### 2026-02-14 - Discovered during PR #21 security review
 **By:** Claude Code Review
 **Actions:** Created todo from PR #21 code review findings.
+
+### 2026-02-14 - Fixed
+**By:** Claude Code
+**Actions:**
+- Added column-count assertion (54) in step 3 of services trigger (migration 000004)
+- Matches the pattern from profiles trigger (migration 000003)
+- Raises descriptive exception with actual vs expected count on mismatch

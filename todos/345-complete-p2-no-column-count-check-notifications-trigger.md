@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "345"
 tags: [security, database, triggers, code-review]
@@ -40,7 +40,7 @@ END IF;
 - **Risk**: Low
 
 ## Recommended Action
-<!-- Filled during triage -->
+Option 1: Add column-count assertion to notifications trigger.
 
 ## Technical Details
 
@@ -59,3 +59,10 @@ END IF;
 ### 2026-02-14 - Discovered during PR #21 security review
 **By:** Claude Code Review
 **Actions:** Created todo from PR #21 code review findings.
+
+### 2026-02-14 - Fixed
+**By:** Claude Code
+**Actions:**
+- Added column-count assertion (12) to notifications trigger (migration 000006)
+- Placed after courier bypass, before field checks
+- Raises descriptive exception with actual vs expected count on mismatch

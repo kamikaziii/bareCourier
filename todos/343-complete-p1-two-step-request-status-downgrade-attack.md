@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p1
 issue_id: "343"
 tags: [security, database, triggers, code-review]
@@ -53,7 +53,7 @@ Add a WITH CHECK policy that prevents clients from setting request_status to 'pe
 - **Risk**: Medium (RLS interactions can be subtle)
 
 ## Recommended Action
-<!-- Filled during triage -->
+Option 1: Add state-machine validation for client request_status transitions.
 
 ## Technical Details
 
@@ -74,3 +74,11 @@ Add a WITH CHECK policy that prevents clients from setting request_status to 'pe
 ### 2026-02-14 - Discovered during PR #21 security review
 **By:** Claude Code Review
 **Actions:** Created todo from PR #21 code review findings.
+
+### 2026-02-14 - Fixed
+**By:** Claude Code
+**Actions:**
+- Added state-machine validation in step 4 of services trigger (migration 000004)
+- Clients can only transition: suggested→accepted, suggested→declined
+- All other request_status changes by clients are now blocked with descriptive error
+- Updated section numbering (3→5 through 12→14) and comments to reflect new steps

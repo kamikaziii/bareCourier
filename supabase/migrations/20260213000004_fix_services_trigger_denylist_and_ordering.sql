@@ -13,7 +13,9 @@
 -- correct ordering (bypass BEFORE scheduling fields).
 --
 -- This migration rewrites the trigger with:
---   - All 55 columns accounted for (explicitly blocked or allowed)
+--   - All 54 columns accounted for (explicitly blocked or allowed)
+--   - Column count assertion (54) to detect schema drift
+--   - State-machine validation on client request_status transitions
 --   - Correct control flow: suggestion bypass BEFORE scheduling fields
 --   - Clear section comments for each group of fields
 
@@ -46,7 +48,33 @@ BEGIN
   -- ================================================================
 
   -- ----------------------------------------------------------------
-  -- 3. "Never modify" fields — clients can NEVER change these
+  -- 3. Column count safety check — if this fails, a column was
+  --    added/removed from services without updating this trigger.
+  --    Review the new column, add a check (to block) or to the
+  --    allowed list, then bump this number.
+  -- ----------------------------------------------------------------
+  IF (SELECT count(*) FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'services') != 54 THEN
+    RAISE EXCEPTION 'services table has % columns (expected 54) — update check_client_service_update_fields trigger',
+      (SELECT count(*) FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'services');
+  END IF;
+
+  -- ----------------------------------------------------------------
+  -- 4. State-machine validation — clients can only transition
+  --    request_status in allowed ways. This prevents the two-step
+  --    downgrade attack: accepted→pending then modifying fields.
+  -- ----------------------------------------------------------------
+  IF NEW.request_status IS DISTINCT FROM OLD.request_status THEN
+    -- Clients may only: suggested → accepted, suggested → declined
+    IF NOT (OLD.request_status = 'suggested'
+            AND NEW.request_status IN ('accepted', 'declined')) THEN
+      RAISE EXCEPTION 'Clients cannot change request_status from % to %',
+        OLD.request_status, NEW.request_status;
+    END IF;
+  END IF;
+
+  -- ----------------------------------------------------------------
+  -- 5. "Never modify" fields — clients can NEVER change these
   --    regardless of request_status
   -- ----------------------------------------------------------------
   IF NEW.id IS DISTINCT FROM OLD.id THEN
@@ -90,26 +118,27 @@ BEGIN
   END IF;
 
   -- ----------------------------------------------------------------
-  -- 4. Pending check — if service is pending, allow editing
+  -- 6. Pending check — if service is pending, allow editing
   --    locations, notes, coordinates, distance, urgency, etc.
+  --    (request_status is already validated in step 4)
   -- ----------------------------------------------------------------
   IF OLD.request_status = 'pending' THEN
     RETURN NEW;
   END IF;
 
   -- ----------------------------------------------------------------
-  -- 5. Suggestion bypass — allow scheduling field changes when
+  -- 7. Suggestion bypass — allow scheduling field changes when
   --    responding to a courier suggestion (suggested → accepted).
   --    This is CRITICAL for client_approve_reschedule() and
   --    client_deny_reschedule() RPCs to work.
-  --    MUST come BEFORE scheduling field checks (step 6).
+  --    MUST come BEFORE scheduling field checks (step 8).
   -- ----------------------------------------------------------------
   IF OLD.request_status = 'suggested' AND NEW.request_status = 'accepted' THEN
     RETURN NEW;
   END IF;
 
   -- ----------------------------------------------------------------
-  -- 6. Scheduling fields — blocked for non-pending,
+  -- 8. Scheduling fields — blocked for non-pending,
   --    non-suggestion-response updates
   -- ----------------------------------------------------------------
   IF NEW.scheduled_date IS DISTINCT FROM OLD.scheduled_date THEN
@@ -137,7 +166,7 @@ BEGIN
   END IF;
 
   -- ----------------------------------------------------------------
-  -- 7. Location/distance fields — blocked for non-pending
+  -- 9. Location/distance fields — blocked for non-pending
   -- ----------------------------------------------------------------
   IF NEW.pickup_location IS DISTINCT FROM OLD.pickup_location THEN
     RAISE EXCEPTION 'Clients cannot modify pickup_location on non-pending services';
@@ -162,7 +191,7 @@ BEGIN
   END IF;
 
   -- ----------------------------------------------------------------
-  -- 8. Service data fields — blocked for non-pending
+  -- 10. Service data fields — blocked for non-pending
   -- ----------------------------------------------------------------
   IF NEW.notes IS DISTINCT FROM OLD.notes THEN
     RAISE EXCEPTION 'Clients cannot modify notes on non-pending services';
@@ -193,7 +222,7 @@ BEGIN
   END IF;
 
   -- ----------------------------------------------------------------
-  -- 9. Audit/system fields — blocked for non-pending
+  -- 11. Audit/system fields — blocked for non-pending
   -- ----------------------------------------------------------------
   IF NEW.is_out_of_zone IS DISTINCT FROM OLD.is_out_of_zone THEN
     RAISE EXCEPTION 'Clients cannot modify is_out_of_zone on non-pending services';
@@ -232,7 +261,7 @@ BEGIN
   END IF;
 
   -- ----------------------------------------------------------------
-  -- 10. Reschedule fields — blocked for non-pending (set via RPCs)
+  -- 12. Reschedule fields — blocked for non-pending (set via RPCs)
   -- ----------------------------------------------------------------
   IF NEW.reschedule_count IS DISTINCT FROM OLD.reschedule_count THEN
     RAISE EXCEPTION 'Clients cannot modify reschedule_count on non-pending services';
@@ -271,8 +300,8 @@ BEGIN
   END IF;
 
   -- ----------------------------------------------------------------
-  -- 11. Implicitly ALLOWED fields (not checked above):
-  --   - request_status  (accept/decline suggestions)
+  -- 13. Implicitly ALLOWED fields (not checked above):
+  --   - request_status  (validated in step 4, not blocked)
   --   - deleted_at      (soft-delete/cancellation)
   --   - requested_date  (client's own schedule request)
   --   - requested_time  (client's own schedule request)
@@ -281,7 +310,7 @@ BEGIN
   -- ----------------------------------------------------------------
 
   -- ----------------------------------------------------------------
-  -- 12. All checks passed — allow the update
+  -- 14. All checks passed — allow the update
   -- ----------------------------------------------------------------
   RETURN NEW;
 END;
@@ -289,6 +318,9 @@ $$;
 
 COMMENT ON FUNCTION check_client_service_update_fields() IS
   'Restricts which fields clients can modify on services. '
+  'Column count assertion (54) ensures new columns fail loudly until this trigger is updated. '
+  'State-machine validation restricts client request_status transitions to only '
+  'suggested->accepted and suggested->declined, preventing the two-step downgrade attack. '
   'All 54 columns are accounted for: 10 are never-modify (id, client_id, status, '
   'delivered_at, calculated_price, price_breakdown, display_id, created_at, '
   'vat_rate_snapshot, prices_include_vat_snapshot). Pending services allow '
@@ -296,5 +328,5 @@ COMMENT ON FUNCTION check_client_service_update_fields() IS
   'client_approve_reschedule and client_deny_reschedule RPCs. For non-pending '
   'services, 38 additional fields are blocked across scheduling, location, '
   'service data, audit, and reschedule groups. 6 fields are always allowed: '
-  'request_status, deleted_at, requested_date/time/time_slot, updated_at. '
+  'request_status (validated), deleted_at, requested_date/time/time_slot, updated_at. '
   'Uses SECURITY DEFINER with empty search_path for security.';

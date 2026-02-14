@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "346"
 tags: [database, triggers, code-review]
@@ -34,7 +34,7 @@ DROP TRIGGER IF EXISTS check_notification_update_fields ON public.notifications;
 - **Risk**: Low
 
 ## Recommended Action
-<!-- Filled during triage -->
+Option 1: Add DROP TRIGGER IF EXISTS before CREATE TRIGGER.
 
 ## Technical Details
 
@@ -54,3 +54,9 @@ DROP TRIGGER IF EXISTS check_notification_update_fields ON public.notifications;
 ### 2026-02-14 - Discovered during PR #21 security review
 **By:** Claude Code Review
 **Actions:** Created todo from PR #21 code review findings.
+
+### 2026-02-14 - Fixed
+**By:** Claude Code
+**Actions:**
+- Added `DROP TRIGGER IF EXISTS check_notification_update_fields ON public.notifications;` before CREATE TRIGGER
+- Migration is now idempotent, consistent with other trigger migrations in the project
