@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "317"
 tags: [security, database, triggers, code-review]
@@ -74,6 +74,15 @@ Keep denylist but fix misleading comments and incorrect column names in comments
 - Downgraded from P1 to P2: future maintenance risk, not active vulnerability
 - Added dependency on #334 (email column bug must be fixed first)
 - Noted incorrect column names in comments (push_subscription/push_enabled vs push_notifications_enabled)
+
+## Resources
+### 2026-02-13 - Fixed with column count safety check
+**By:** Claude Code
+**Actions:**
+- Fixed all comments: "allowlist" → "denylist" throughout migration 000003
+- Added column count assertion (35) at top of trigger — fails loudly if schema changes
+- Fixed column name references: `push_subscription`/`push_enabled` → `push_notifications_enabled`
+- Updated COMMENT ON FUNCTION with accurate description
 
 ## Resources
 - PR: https://github.com/kamikaziii/bareCourier/pull/21

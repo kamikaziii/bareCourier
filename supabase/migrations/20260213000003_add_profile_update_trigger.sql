@@ -5,9 +5,11 @@
 --   UPDATE profiles SET role = 'courier' WHERE id = auth.uid()
 -- and gain full admin access, bypassing all courier-only guards.
 --
--- Solution: Add a BEFORE UPDATE trigger that uses an ALLOWLIST approach.
--- Only explicitly listed fields may be changed by clients. Any new column
--- added to profiles is blocked by default until explicitly allowed here.
+-- Solution: Add a BEFORE UPDATE trigger that uses a DENYLIST approach
+-- with a column-count safety check. Each blocked field is listed explicitly.
+-- A runtime assertion on column count ensures that any new column added to
+-- profiles will cause the trigger to fail loudly until the developer decides
+-- whether to block or allow it.
 
 CREATE OR REPLACE FUNCTION check_client_profile_update_fields()
 RETURNS TRIGGER
@@ -28,12 +30,23 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  -- For clients (or unknown roles), use an ALLOWLIST approach:
-  -- Reset any disallowed field back to OLD value, then check if
-  -- the client attempted to change it. This is safer than a denylist
-  -- because new columns are blocked by default.
+  -- For clients (or unknown roles), use a DENYLIST approach:
+  -- Each sensitive column is explicitly checked and blocked.
+  -- A column-count assertion ensures new columns can't slip through
+  -- unnoticed — if the profiles table schema changes, this trigger
+  -- will fail until updated.
   --
   -- Using IS DISTINCT FROM for NULL-safe comparisons.
+
+  -- ── Column count safety check ────────────────────────────────────
+  -- If this fails, a column was added/removed from profiles without
+  -- updating this trigger. Review the new column, add a check above
+  -- (to block it) or to the allowed list below, then bump this number.
+  IF (SELECT count(*) FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'profiles') != 35 THEN
+    RAISE EXCEPTION 'profiles table has % columns (expected 35) — update check_client_profile_update_fields trigger',
+      (SELECT count(*) FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'profiles');
+  END IF;
 
   -- ── Immutable / system fields ──────────────────────────────────────
   IF NEW.id IS DISTINCT FROM OLD.id THEN
@@ -135,8 +148,8 @@ BEGIN
     RAISE EXCEPTION 'Clients cannot modify label_tagline';
   END IF;
 
-  -- ── Client-modifiable fields (ALLOWLIST) ──────────────────────────
-  -- The following fields are implicitly allowed by NOT checking them above:
+  -- ── Client-modifiable fields ──────────────────────────────────────
+  -- The following fields are allowed by NOT blocking them above (12 fields):
   --   name, phone, locale, timezone
   --   default_pickup_location, default_pickup_lat, default_pickup_lng
   --   push_notifications_enabled, email_notifications_enabled
@@ -158,13 +171,14 @@ CREATE TRIGGER check_client_profile_update
 
 -- Add comments for documentation
 COMMENT ON FUNCTION check_client_profile_update_fields() IS
-  'Restricts which fields clients can modify on their own profile using an allowlist approach. '
-  'Clients may only update: name, phone, locale, timezone, default_pickup_location, default_pickup_lat, '
-  'default_pickup_lng, push_notifications_enabled, email_notifications_enabled, '
-  'notification_preferences, default_service_type_id, default_urgency_fee_id, updated_at. '
-  'All other fields (role, active, pricing, VAT, scheduling, branding, etc.) are blocked. '
-  'New columns added to profiles are blocked by default. Couriers skip all checks. '
-  'Uses SECURITY DEFINER with empty search_path for security.';
+  'Restricts which fields clients can modify on their own profile using a denylist '
+  'with a column-count safety check. Blocks 23 sensitive fields (role, active, pricing, '
+  'VAT, scheduling, warehouse, branding, etc.). Allows 12 fields: name, phone, locale, '
+  'timezone, default_pickup_location, default_pickup_lat, default_pickup_lng, '
+  'push_notifications_enabled, email_notifications_enabled, notification_preferences, '
+  'default_service_type_id, default_urgency_fee_id. '
+  'Column count assertion (35) ensures new columns fail loudly until this trigger is updated. '
+  'Couriers skip all checks. Uses SECURITY DEFINER with empty search_path for security.';
 
 COMMENT ON TRIGGER check_client_profile_update ON public.profiles IS
   'Enforces field-level update restrictions for clients on profiles. Prevents role escalation and admin field tampering.';
