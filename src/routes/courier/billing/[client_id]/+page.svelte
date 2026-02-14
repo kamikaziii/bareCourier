@@ -262,7 +262,6 @@
   }
 
   function handlePricingSubmit() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return async ({
       result,
       update,
@@ -280,7 +279,6 @@
   }
 
   function handleZonesFormSubmit() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return async ({
       result,
       update,
