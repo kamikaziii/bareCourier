@@ -1,7 +1,7 @@
 import { test as base, type Page } from '@playwright/test';
 
 export const COURIER = {
-	email: 'admin@example.com',
+	email: 'garridoinformaticasupport@gmail.com',
 	password: 'Test1234!'
 };
 

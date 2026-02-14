@@ -104,44 +104,6 @@ export type Database = {
           },
         ]
       }
-      client_addresses: {
-        Row: {
-          address: string
-          client_id: string
-          created_at: string | null
-          id: string
-          label: string
-          lat: number | null
-          lng: number | null
-        }
-        Insert: {
-          address: string
-          client_id: string
-          created_at?: string | null
-          id?: string
-          label: string
-          lat?: number | null
-          lng?: number | null
-        }
-        Update: {
-          address?: string
-          client_id?: string
-          created_at?: string | null
-          id?: string
-          label?: string
-          lat?: number | null
-          lng?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "client_addresses_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       client_pricing: {
         Row: {
           base_fee: number
