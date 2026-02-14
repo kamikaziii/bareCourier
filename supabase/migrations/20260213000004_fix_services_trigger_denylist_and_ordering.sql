@@ -65,9 +65,10 @@ BEGIN
   --    downgrade attack: accepted→pending then modifying fields.
   -- ----------------------------------------------------------------
   IF NEW.request_status IS DISTINCT FROM OLD.request_status THEN
-    -- Clients may only: suggested → accepted, suggested → declined
+    -- Clients may only: suggested → accepted
+    -- (both approve and deny RPCs set 'accepted'; deny reverts to original schedule)
     IF NOT (OLD.request_status = 'suggested'
-            AND NEW.request_status IN ('accepted', 'declined')) THEN
+            AND NEW.request_status = 'accepted') THEN
       RAISE EXCEPTION 'Clients cannot change request_status from % to %',
         OLD.request_status, NEW.request_status;
     END IF;
@@ -320,7 +321,7 @@ COMMENT ON FUNCTION check_client_service_update_fields() IS
   'Restricts which fields clients can modify on services. '
   'Column count assertion (54) ensures new columns fail loudly until this trigger is updated. '
   'State-machine validation restricts client request_status transitions to only '
-  'suggested->accepted and suggested->declined, preventing the two-step downgrade attack. '
+  'suggested->accepted (used by both approve and deny RPCs), preventing the two-step downgrade attack. '
   'All 54 columns are accounted for: 10 are never-modify (id, client_id, status, '
   'delivered_at, calculated_price, price_breakdown, display_id, created_at, '
   'vat_rate_snapshot, prices_include_vat_snapshot). Pending services allow '
