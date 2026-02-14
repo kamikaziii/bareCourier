@@ -423,6 +423,14 @@
                 {distanceKm}
                 {durationMinutes}
                 height="200px"
+                hideDirections
+                defaultCenter={data.profile.default_pickup_lat &&
+                data.profile.default_pickup_lng
+                  ? [
+                      data.profile.default_pickup_lng,
+                      data.profile.default_pickup_lat,
+                    ]
+                  : null}
               />
               {#if calculatingDistance}
                 <p class="text-sm text-muted-foreground">

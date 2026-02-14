@@ -3,7 +3,7 @@ import type { PageServerLoad, Actions } from './$types';
 import type { Service, ServiceStatusHistory, Profile, PastDueSettings, ServiceType } from '$lib/database.types';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 import * as m from '$lib/paraglide/messages.js';
-import { notifyCourier, getCourierLocale } from '$lib/services/notifications.js';
+import { notifyCourier, getCourierLocale, backgroundNotify } from '$lib/services/notifications.js';
 import { formatDate, dateFallback } from '$lib/utils/date-format.js';
 import { APP_URL } from '$lib/constants.js';
 
@@ -38,9 +38,8 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 
 	// Load courier's reschedule settings, price visibility, and label branding
 	const { data: courierSettingsData } = await supabase
-		.from('profiles')
+		.from('courier_public_profile')
 		.select('name, phone, past_due_settings, show_price_to_client, label_business_name, label_tagline')
-		.eq('role', 'courier')
 		.single();
 
 	const courierSettings = courierSettingsData as Pick<Profile, 'name' | 'phone' | 'past_due_settings' | 'show_price_to_client' | 'label_business_name' | 'label_tagline'> | null;
@@ -109,9 +108,8 @@ export const actions: Actions = {
 
 		// Get courier's reschedule settings
 		const { data: courierProfileData } = await supabase
-			.from('profiles')
+			.from('courier_public_profile')
 			.select('id, past_due_settings')
-			.eq('role', 'courier')
 			.single();
 
 		const courierProfile = courierProfileData as Pick<Profile, 'id' | 'past_due_settings'> | null;
@@ -178,8 +176,8 @@ export const actions: Actions = {
 			const clientName = (clientProfile as { name: string } | null)?.name || 'Cliente';
 			const locale = await getCourierLocale(supabase);
 
-			// Notify courier with email
-			await notifyCourier({
+			// Notify courier with email (fire-and-forget)
+			backgroundNotify(notifyCourier({
 				supabase,
 				session,
 				serviceId: params.id,
@@ -195,7 +193,7 @@ export const actions: Actions = {
 					suggested_date: formatDate(newDate, locale),  // New requested date
 					app_url: APP_URL
 				}
-			});
+			}));
 
 			return { success: true, needsApproval: true };
 		}
@@ -236,29 +234,25 @@ export const actions: Actions = {
 			return { success: false, error: result.error || 'Failed to approve' };
 		}
 
-		// Notify courier with email
+		// Notify courier with email (fire-and-forget)
 		const locale = await getCourierLocale(supabase);
-		try {
-			await notifyCourier({
-				supabase,
-				session,
-				serviceId: params.id,
-				category: 'schedule_change',
-				title: m.notification_reschedule_accepted({}, { locale }),
-				message: m.notification_client_accepted_reschedule_message({}, { locale }),
-				emailTemplate: 'suggestion_accepted',
-				emailData: {
-					client_name: service?.profiles?.name || 'Cliente',
-					pickup_location: service?.pickup_location || 'N/A',
-					delivery_location: service?.delivery_location || 'N/A',
-					new_date: formatDate(service?.suggested_date ?? null, locale),
-					service_id: params.id,
-					app_url: APP_URL
-				}
-			});
-		} catch (error) {
-			console.error('Notification failed for acceptReschedule', params.id, error);
-		}
+		backgroundNotify(notifyCourier({
+			supabase,
+			session,
+			serviceId: params.id,
+			category: 'schedule_change',
+			title: m.notification_reschedule_accepted({}, { locale }),
+			message: m.notification_client_accepted_reschedule_message({}, { locale }),
+			emailTemplate: 'suggestion_accepted',
+			emailData: {
+				client_name: service?.profiles?.name || 'Cliente',
+				pickup_location: service?.pickup_location || 'N/A',
+				delivery_location: service?.delivery_location || 'N/A',
+				new_date: formatDate(service?.suggested_date ?? null, locale),
+				service_id: params.id,
+				app_url: APP_URL
+			}
+		}));
 
 		return { success: true };
 	},
@@ -302,31 +296,27 @@ export const actions: Actions = {
 			return { success: false, error: result.error || 'Failed to decline' };
 		}
 
-		// Notify courier with email
+		// Notify courier with email (fire-and-forget)
 		const locale = await getCourierLocale(supabase);
 		const reasonText = reason ? m.notification_reason_prefix({ reason }, { locale }) : '';
-		try {
-			await notifyCourier({
-				supabase,
-				session,
-				serviceId: params.id,
-				category: 'schedule_change',
-				title: m.notification_reschedule_denied_client({}, { locale }),
-				message: m.notification_client_declined_proposal_message({ reason: reasonText }, { locale }),
-				emailTemplate: 'suggestion_declined',
-				emailData: {
-					client_name: service?.profiles?.name || 'Cliente',
-					pickup_location: service?.pickup_location || 'N/A',
-					delivery_location: service?.delivery_location || 'N/A',
-					original_date: formatDate(service?.scheduled_date ?? null, locale, dateFallback('not_scheduled', locale)),
-					reason: reason || dateFallback('not_provided', locale),
-					service_id: params.id,
-					app_url: APP_URL
-				}
-			});
-		} catch (error) {
-			console.error('Notification failed for declineReschedule', params.id, error);
-		}
+		backgroundNotify(notifyCourier({
+			supabase,
+			session,
+			serviceId: params.id,
+			category: 'schedule_change',
+			title: m.notification_reschedule_denied_client({}, { locale }),
+			message: m.notification_client_declined_proposal_message({ reason: reasonText }, { locale }),
+			emailTemplate: 'suggestion_declined',
+			emailData: {
+				client_name: service?.profiles?.name || 'Cliente',
+				pickup_location: service?.pickup_location || 'N/A',
+				delivery_location: service?.delivery_location || 'N/A',
+				original_date: formatDate(service?.scheduled_date ?? null, locale, dateFallback('not_scheduled', locale)),
+				reason: reason || dateFallback('not_provided', locale),
+				service_id: params.id,
+				app_url: APP_URL
+			}
+		}));
 
 		return { success: true };
 	}

@@ -18,8 +18,8 @@ const emailTranslations: Record<string, Record<SupportedLocale, string>> = {
 		en: 'Delivery:'
 	},
 	email_footer: {
-		'pt-PT': 'bareCourier - Gestão de Entregas',
-		en: 'bareCourier - Courier Management'
+		'pt-PT': 'AS Estafetagem - Gestão de Entregas',
+		en: 'AS Estafetagem - Courier Management'
 	},
 
 	// new_request template (courier receives when client creates request)
@@ -70,8 +70,8 @@ const emailTranslations: Record<string, Record<SupportedLocale, string>> = {
 		en: 'View My Services'
 	},
 	email_delivered_footer: {
-		'pt-PT': 'Obrigado por usar o bareCourier!',
-		en: 'Thank you for using bareCourier!'
+		'pt-PT': 'Obrigado por usar a AS Estafetagem!',
+		en: 'Thank you for using AS Estafetagem!'
 	},
 
 	// request_accepted template (client receives when courier accepts)
@@ -296,12 +296,12 @@ const emailTranslations: Record<string, Record<SupportedLocale, string>> = {
 
 	// client_invitation template (client receives when invited by courier)
 	email_invitation_subject: {
-		'pt-PT': '{courier_name} convidou-o para o bareCourier',
-		en: '{courier_name} invited you to bareCourier'
+		'pt-PT': '{courier_name} convidou-o para a AS Estafetagem',
+		en: '{courier_name} invited you to AS Estafetagem'
 	},
 	email_invitation_title: {
-		'pt-PT': 'Bem-vindo ao bareCourier!',
-		en: 'Welcome to bareCourier!'
+		'pt-PT': 'Bem-vindo à AS Estafetagem!',
+		en: 'Welcome to AS Estafetagem!'
 	},
 	email_invitation_intro: {
 		'pt-PT': 'Olá {client_name}, foi convidado por <strong>{courier_name}</strong> para criar a sua conta de cliente.',
@@ -326,16 +326,16 @@ const emailTranslations: Record<string, Record<SupportedLocale, string>> = {
 
 	// Default/fallback template
 	email_default_subject: {
-		'pt-PT': 'Notificação bareCourier',
-		en: 'bareCourier Notification'
+		'pt-PT': 'Notificação AS Estafetagem',
+		en: 'AS Estafetagem Notification'
 	},
 	email_default_title: {
 		'pt-PT': 'Notificação',
 		en: 'Notification'
 	},
 	email_default_message: {
-		'pt-PT': 'Tem uma nova notificação do bareCourier.',
-		en: 'You have a new notification from bareCourier.'
+		'pt-PT': 'Tem uma nova notificação da AS Estafetagem.',
+		en: 'You have a new notification from AS Estafetagem.'
 	}
 };
 

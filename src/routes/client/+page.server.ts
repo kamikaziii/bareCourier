@@ -1,7 +1,7 @@
 import type { Actions, PageServerLoad, RequestEvent } from './$types';
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import * as m from '$lib/paraglide/messages.js';
-import { notifyCourier, getCourierLocale, type AppLocale } from '$lib/services/notifications.js';
+import { notifyCourier, getCourierLocale, backgroundNotify, type AppLocale } from '$lib/services/notifications.js';
 import { formatDate, dateFallback } from '$lib/utils/date-format.js';
 import { APP_URL } from '$lib/constants.js';
 
@@ -170,7 +170,7 @@ function createBatchSuggestionHandler(config: BatchSuggestionConfig) {
 	};
 }
 
-async function sendBatchNotification(params: {
+function sendBatchNotification(params: {
 	supabase: SupabaseClient;
 	session: Session;
 	serviceId: string;
@@ -179,20 +179,16 @@ async function sendBatchNotification(params: {
 	emailTemplate: string;
 	emailData: Record<string, string>;
 }) {
-	try {
-		await notifyCourier({
-			supabase: params.supabase,
-			session: params.session,
-			serviceId: params.serviceId,
-			category: 'schedule_change',
-			title: params.title,
-			message: params.message,
-			emailTemplate: params.emailTemplate,
-			emailData: params.emailData
-		});
-	} catch (error) {
-		console.error(`Notification failed for batch operation (${params.emailTemplate})`, error);
-	}
+	backgroundNotify(notifyCourier({
+		supabase: params.supabase,
+		session: params.session,
+		serviceId: params.serviceId,
+		category: 'schedule_change',
+		title: params.title,
+		message: params.message,
+		emailTemplate: params.emailTemplate,
+		emailData: params.emailData
+	}));
 }
 
 // ============================================================================
@@ -300,28 +296,24 @@ export const actions: Actions = {
 		const locale = await getCourierLocale(supabase);
 		const formattedNewDate = formatDate(service.suggested_date, locale);
 
-		// Notify courier with email
-		try {
-			await notifyCourier({
-				supabase,
-				session,
-				serviceId,
-				category: 'schedule_change',
-				title: m.notification_suggestion_accepted({}, { locale }),
-				message: m.notification_suggestion_accepted_message({}, { locale }),
-				emailTemplate: 'suggestion_accepted',
-				emailData: {
-					client_name: service.profiles?.name || 'Cliente',
-					pickup_location: service.pickup_location,
-					delivery_location: service.delivery_location,
-					new_date: formattedNewDate,
-					service_id: serviceId,
-					app_url: APP_URL
-				}
-			});
-		} catch (error) {
-			console.error('Notification failed for service', serviceId, error);
-		}
+		// Notify courier with email (fire-and-forget)
+		backgroundNotify(notifyCourier({
+			supabase,
+			session,
+			serviceId,
+			category: 'schedule_change',
+			title: m.notification_suggestion_accepted({}, { locale }),
+			message: m.notification_suggestion_accepted_message({}, { locale }),
+			emailTemplate: 'suggestion_accepted',
+			emailData: {
+				client_name: service.profiles?.name || 'Cliente',
+				pickup_location: service.pickup_location,
+				delivery_location: service.delivery_location,
+				new_date: formattedNewDate,
+				service_id: serviceId,
+				app_url: APP_URL
+			}
+		}));
 
 		return { success: true };
 	},
@@ -381,29 +373,25 @@ export const actions: Actions = {
 		const locale = await getCourierLocale(supabase);
 		const formattedOriginalDate = formatDate(service.scheduled_date, locale, dateFallback('not_scheduled', locale));
 
-		// Notify courier with email
-		try {
-			await notifyCourier({
-				supabase,
-				session,
-				serviceId,
-				category: 'schedule_change',
-				title: m.notification_suggestion_declined({}, { locale }),
-				message: m.notification_suggestion_declined_message({}, { locale }),
-				emailTemplate: 'suggestion_declined',
-				emailData: {
-					client_name: service.profiles?.name || 'Cliente',
-					pickup_location: service.pickup_location,
-					delivery_location: service.delivery_location,
-					original_date: formattedOriginalDate,
-					reason: '',
-					service_id: serviceId,
-					app_url: APP_URL
-				}
-			});
-		} catch (error) {
-			console.error('Notification failed for service', serviceId, error);
-		}
+		// Notify courier with email (fire-and-forget)
+		backgroundNotify(notifyCourier({
+			supabase,
+			session,
+			serviceId,
+			category: 'schedule_change',
+			title: m.notification_suggestion_declined({}, { locale }),
+			message: m.notification_suggestion_declined_message({}, { locale }),
+			emailTemplate: 'suggestion_declined',
+			emailData: {
+				client_name: service.profiles?.name || 'Cliente',
+				pickup_location: service.pickup_location,
+				delivery_location: service.delivery_location,
+				original_date: formattedOriginalDate,
+				reason: '',
+				service_id: serviceId,
+				app_url: APP_URL
+			}
+		}));
 
 		return { success: true };
 	},
@@ -466,27 +454,23 @@ export const actions: Actions = {
 			return { success: false, error: 'Failed to cancel request' };
 		}
 
-		// Notify courier with email
+		// Notify courier with email (fire-and-forget)
 		const locale = await getCourierLocale(supabase);
-		try {
-			await notifyCourier({
-				supabase,
-				session,
-				serviceId,
-				category: 'new_request',
-				title: m.notification_request_cancelled({}, { locale }),
-				message: m.notification_request_cancelled_message({}, { locale }),
-				emailTemplate: 'request_cancelled',
-				emailData: {
-					client_name: service.profiles.name,
-					pickup_location: service.pickup_location,
-					delivery_location: service.delivery_location,
-					app_url: APP_URL
-				}
-			});
-		} catch (error) {
-			console.error('Notification failed for service', serviceId, error);
-		}
+		backgroundNotify(notifyCourier({
+			supabase,
+			session,
+			serviceId,
+			category: 'new_request',
+			title: m.notification_request_cancelled({}, { locale }),
+			message: m.notification_request_cancelled_message({}, { locale }),
+			emailTemplate: 'request_cancelled',
+			emailData: {
+				client_name: service.profiles.name,
+				pickup_location: service.pickup_location,
+				delivery_location: service.delivery_location,
+				app_url: APP_URL
+			}
+		}));
 
 		return { success: true };
 	}

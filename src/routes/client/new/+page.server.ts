@@ -13,7 +13,7 @@ import {
 } from '$lib/services/type-pricing.js';
 import { localizeHref } from '$lib/paraglide/runtime.js';
 import * as m from '$lib/paraglide/messages.js';
-import { notifyCourier, getCourierLocale } from '$lib/services/notifications.js';
+import { notifyCourier, getCourierLocale, backgroundNotify } from '$lib/services/notifications.js';
 import { formatDate, dateFallback } from '$lib/utils/date-format.js';
 import { APP_URL } from '$lib/constants.js';
 
@@ -115,10 +115,8 @@ export const actions: Actions = {
 
 		// Get courier's pricing mode
 		const { data: courierModeResult } = await supabase
-			.from('profiles')
+			.from('courier_public_profile')
 			.select('pricing_mode')
-			.eq('role', 'courier')
-			.limit(1)
 			.single();
 
 		const pricingMode = (courierModeResult?.pricing_mode as 'warehouse' | 'zone' | 'type') || 'warehouse';
@@ -246,27 +244,23 @@ export const actions: Actions = {
 		const locale = await getCourierLocale(supabase);
 		const formattedDate = formatDate(requested_date, locale, dateFallback('not_specified', locale));
 
-		try {
-			await notifyCourier({
-				supabase,
-				session,
-				serviceId: insertedService.id,
-				category: 'new_request',
-				title: m.notification_new_service_request({}, { locale }),
-				message: m.notification_new_service_request_message({}, { locale }),
-				emailTemplate: 'new_request',
-				emailData: {
-					client_name: userProfile?.name || 'Cliente',
-					pickup_location,
-					delivery_location,
-					requested_date: formattedDate,
-					notes: notes || '',
-					app_url: APP_URL
-				}
-			});
-		} catch (error) {
-			console.error('Notification failed for new service', insertedService.id, error);
-		}
+		backgroundNotify(notifyCourier({
+			supabase,
+			session,
+			serviceId: insertedService.id,
+			category: 'new_request',
+			title: m.notification_new_service_request({}, { locale }),
+			message: m.notification_new_service_request_message({}, { locale }),
+			emailTemplate: 'new_request',
+			emailData: {
+				client_name: userProfile?.name || 'Cliente',
+				pickup_location,
+				delivery_location,
+				requested_date: formattedDate,
+				notes: notes || '',
+				app_url: APP_URL
+			}
+		}));
 
 		redirect(303, localizeHref('/client'));
 	}

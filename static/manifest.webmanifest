@@ -1,7 +1,7 @@
 {
 	"id": "bare-courier",
-	"name": "bareCourier",
-	"short_name": "bareCourier",
+	"name": "AS Estafetagem",
+	"short_name": "AS Estafetagem",
 	"description": "Gestão de recolhas e entregas",
 	"lang": "pt-PT",
 	"dir": "ltr",
@@ -10,7 +10,7 @@
 	"display": "standalone",
 	"orientation": "portrait-primary",
 	"theme_color": "#FE6132",
-	"background_color": "#1a1a1a",
+	"background_color": "#ffffff",
 	"categories": ["business", "productivity"],
 	"icons": [
 		{

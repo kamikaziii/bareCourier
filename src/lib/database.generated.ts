@@ -72,6 +72,58 @@ export type Database = {
             foreignKeyName: "break_logs_courier_id_fkey"
             columns: ["courier_id"]
             isOneToOne: false
+            referencedRelation: "courier_public_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "break_logs_courier_id_fkey"
+            columns: ["courier_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_addresses: {
+        Row: {
+          address: string
+          client_id: string
+          created_at: string | null
+          id: string
+          label: string
+          lat: number | null
+          lng: number | null
+        }
+        Insert: {
+          address: string
+          client_id: string
+          created_at?: string | null
+          id?: string
+          label: string
+          lat?: number | null
+          lng?: number | null
+        }
+        Update: {
+          address?: string
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          label?: string
+          lat?: number | null
+          lng?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_addresses_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "courier_public_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_addresses_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -106,6 +158,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "client_pricing_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "courier_public_profile"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "client_pricing_client_id_fkey"
             columns: ["client_id"]
@@ -150,6 +209,13 @@ export type Database = {
           total_work_minutes?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "daily_reviews_courier_id_fkey"
+            columns: ["courier_id"]
+            isOneToOne: false
+            referencedRelation: "courier_public_profile"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "daily_reviews_courier_id_fkey"
             columns: ["courier_id"]
@@ -200,6 +266,13 @@ export type Database = {
           started_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "delivery_time_logs_courier_id_fkey"
+            columns: ["courier_id"]
+            isOneToOne: false
+            referencedRelation: "courier_public_profile"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "delivery_time_logs_courier_id_fkey"
             columns: ["courier_id"]
@@ -292,6 +365,13 @@ export type Database = {
             foreignKeyName: "notifications_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "courier_public_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -323,6 +403,13 @@ export type Database = {
           price?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "pricing_zones_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "courier_public_profile"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pricing_zones_client_id_fkey"
             columns: ["client_id"]
@@ -491,6 +578,13 @@ export type Database = {
             foreignKeyName: "push_subscriptions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "courier_public_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -574,7 +668,21 @@ export type Database = {
             foreignKeyName: "service_reschedule_history_approved_by_fkey"
             columns: ["approved_by"]
             isOneToOne: false
+            referencedRelation: "courier_public_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_reschedule_history_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_reschedule_history_initiated_by_fkey"
+            columns: ["initiated_by"]
+            isOneToOne: false
+            referencedRelation: "courier_public_profile"
             referencedColumns: ["id"]
           },
           {
@@ -622,6 +730,13 @@ export type Database = {
           service_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "service_status_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "courier_public_profile"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "service_status_history_changed_by_fkey"
             columns: ["changed_by"]
@@ -845,6 +960,13 @@ export type Database = {
             foreignKeyName: "services_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
+            referencedRelation: "courier_public_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "services_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -852,7 +974,21 @@ export type Database = {
             foreignKeyName: "services_last_rescheduled_by_fkey"
             columns: ["last_rescheduled_by"]
             isOneToOne: false
+            referencedRelation: "courier_public_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "services_last_rescheduled_by_fkey"
+            columns: ["last_rescheduled_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "services_pending_reschedule_requested_by_fkey"
+            columns: ["pending_reschedule_requested_by"]
+            isOneToOne: false
+            referencedRelation: "courier_public_profile"
             referencedColumns: ["id"]
           },
           {
@@ -913,13 +1049,52 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      courier_public_profile: {
+        Row: {
+          default_service_type_id: string | null
+          default_urgency_fee_id: string | null
+          id: string | null
+          label_business_name: string | null
+          label_tagline: string | null
+          locale: string | null
+          minimum_charge: number | null
+          name: string | null
+          out_of_zone_base: number | null
+          out_of_zone_per_km: number | null
+          past_due_settings: Json | null
+          phone: string | null
+          prices_include_vat: boolean | null
+          pricing_mode: string | null
+          round_distance: boolean | null
+          show_price_to_client: boolean | null
+          show_price_to_courier: boolean | null
+          time_slots: Json | null
+          time_specific_price: number | null
+          timezone: string | null
+          vat_enabled: boolean | null
+          vat_rate: number | null
+          working_days: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_default_service_type_id_fkey"
+            columns: ["default_service_type_id"]
+            isOneToOne: false
+            referencedRelation: "service_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_default_urgency_fee_id_fkey"
+            columns: ["default_urgency_fee_id"]
+            isOneToOne: false
+            referencedRelation: "urgency_fees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
-      approve_reschedule: {
-        Args: { p_approved_by: string; p_service_id: string }
-        Returns: Json
-      }
+      approve_reschedule: { Args: { p_service_id: string }; Returns: Json }
       bulk_recalculate_service_prices: {
         Args: {
           p_client_id: string
@@ -963,12 +1138,15 @@ export type Database = {
         Returns: Json
       }
       deny_reschedule: {
-        Args: {
-          p_denial_reason?: string
-          p_denied_by: string
-          p_service_id: string
-        }
+        Args: { p_denial_reason?: string; p_service_id: string }
         Returns: Json
+      }
+      get_courier_warehouse_coords: {
+        Args: never
+        Returns: {
+          warehouse_lat: number
+          warehouse_lng: number
+        }[]
       }
       get_notification_text: {
         Args: { key: string; locale: string; params?: Json }
@@ -983,18 +1161,31 @@ export type Database = {
         Args: { p_client_id: string; p_zones: Json }
         Returns: Json
       }
-      reschedule_service: {
-        Args: {
-          p_new_date: string
-          p_new_time?: string
-          p_new_time_slot: string
-          p_notification_message?: string
-          p_notification_title?: string
-          p_reason?: string
-          p_service_id: string
-        }
-        Returns: Json
-      }
+      reschedule_service:
+        | {
+            Args: {
+              p_new_date: string
+              p_new_time?: string
+              p_new_time_slot: string
+              p_notification_message?: string
+              p_notification_title?: string
+              p_reason?: string
+              p_service_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_new_date: string
+              p_new_time?: string
+              p_new_time_slot: string
+              p_notification_message?: string
+              p_notification_title?: string
+              p_reason?: string
+              p_service_id: string
+            }
+            Returns: Json
+          }
     }
     Enums: {
       [_ in never]: never

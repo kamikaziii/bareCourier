@@ -1,4 +1,5 @@
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
+import { waitUntil } from '@vercel/functions';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
@@ -13,9 +14,8 @@ export type NotificationResult =
  */
 async function getCourierId(supabase: SupabaseClient): Promise<string | null> {
 	const { data } = await supabase
-		.from('profiles')
+		.from('courier_public_profile')
 		.select('id')
-		.eq('role', 'courier')
 		.single();
 
 	return data?.id ?? null;
@@ -50,9 +50,8 @@ export async function getUserLocale(supabase: SupabaseClient, userId: string): P
  */
 export async function getCourierLocale(supabase: SupabaseClient): Promise<AppLocale> {
 	const { data } = await supabase
-		.from('profiles')
+		.from('courier_public_profile')
 		.select('locale')
-		.eq('role', 'courier')
 		.single();
 
 	const locale = data?.locale;
@@ -161,4 +160,13 @@ export async function notifyCourier(params: {
 		console.error('Notification error:', error);
 		return { success: false, error: String(error) };
 	}
+}
+
+/**
+ * Fire-and-forget a notification. Uses Vercel's waitUntil() to keep
+ * the serverless function alive until the notification completes,
+ * without blocking the response to the user.
+ */
+export function backgroundNotify(promise: Promise<unknown>): void {
+	waitUntil(promise);
 }

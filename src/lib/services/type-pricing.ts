@@ -67,10 +67,8 @@ export async function getTypePricingSettings(
 	supabase: SupabaseClient
 ): Promise<TypePricingSettings> {
 	const { data: profile } = await supabase
-		.from('profiles')
+		.from('courier_public_profile')
 		.select('time_specific_price, out_of_zone_base, out_of_zone_per_km')
-		.eq('role', 'courier')
-		.limit(1)
 		.single();
 
 	return {
@@ -281,10 +279,8 @@ export async function calculateTypedPrice(
  */
 export async function getDefaultServiceTypeId(supabase: SupabaseClient): Promise<string | null> {
 	const { data } = await supabase
-		.from('profiles')
+		.from('courier_public_profile')
 		.select('default_service_type_id')
-		.eq('role', 'courier')
-		.limit(1)
 		.single();
 
 	// If courier has a default set, use that

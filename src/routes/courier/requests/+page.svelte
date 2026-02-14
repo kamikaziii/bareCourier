@@ -214,14 +214,15 @@
   }
 
   async function handleSuggest() {
-    if (!selectedService || !suggestedDate || !suggestedTimeSlot) return;
+    if (!selectedService || !suggestedDate) return;
     if (suggestedTimeSlot === "specific" && !suggestedTime) return;
     loading = true;
 
     const formData = new FormData();
     formData.set("service_id", selectedService.id);
     formData.set("suggested_date", suggestedDate);
-    formData.set("suggested_time_slot", suggestedTimeSlot);
+    if (suggestedTimeSlot)
+      formData.set("suggested_time_slot", suggestedTimeSlot);
     if (suggestedTime) formData.set("suggested_time", suggestedTime);
 
     try {
@@ -793,7 +794,6 @@
         onclick={handleSuggest}
         disabled={loading ||
           !suggestedDate ||
-          !suggestedTimeSlot ||
           (suggestedTimeSlot === "specific" && !suggestedTime)}
       >
         {loading ? m.saving() : m.requests_confirm_suggest()}
