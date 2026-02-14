@@ -149,13 +149,12 @@ BEGIN
   END IF;
 
   -- ── Client-modifiable fields ──────────────────────────────────────
-  -- The following fields are allowed by NOT blocking them above (12 fields):
+  -- The following fields are allowed by NOT blocking them above (11 fields):
   --   name, phone, locale, timezone
   --   default_pickup_location, default_pickup_lat, default_pickup_lng
   --   push_notifications_enabled, email_notifications_enabled
   --   notification_preferences
   --   default_service_type_id, default_urgency_fee_id
-  --   updated_at (auto-managed)
 
   RETURN NEW;
 END;
@@ -172,8 +171,8 @@ CREATE TRIGGER check_client_profile_update
 -- Add comments for documentation
 COMMENT ON FUNCTION check_client_profile_update_fields() IS
   'Restricts which fields clients can modify on their own profile using a denylist '
-  'with a column-count safety check. Blocks 23 sensitive fields (role, active, pricing, '
-  'VAT, scheduling, warehouse, branding, etc.). Allows 12 fields: name, phone, locale, '
+  'with a column-count safety check. Blocks 24 sensitive fields (id, role, active, pricing, '
+  'VAT, scheduling, warehouse, branding, etc.). Allows 11 fields: name, phone, locale, '
   'timezone, default_pickup_location, default_pickup_lat, default_pickup_lng, '
   'push_notifications_enabled, email_notifications_enabled, notification_preferences, '
   'default_service_type_id, default_urgency_fee_id. '

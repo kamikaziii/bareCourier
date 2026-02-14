@@ -49,6 +49,10 @@ BEGIN
   -- 3. "Never modify" fields — clients can NEVER change these
   --    regardless of request_status
   -- ----------------------------------------------------------------
+  IF NEW.id IS DISTINCT FROM OLD.id THEN
+    RAISE EXCEPTION 'Clients cannot modify id';
+  END IF;
+
   IF NEW.client_id IS DISTINCT FROM OLD.client_id THEN
     RAISE EXCEPTION 'Clients cannot modify client_id';
   END IF;
@@ -285,12 +289,12 @@ $$;
 
 COMMENT ON FUNCTION check_client_service_update_fields() IS
   'Restricts which fields clients can modify on services. '
-  'All 55 columns are accounted for: 9 are never-modify (client_id, status, '
+  'All 54 columns are accounted for: 10 are never-modify (id, client_id, status, '
   'delivered_at, calculated_price, price_breakdown, display_id, created_at, '
   'vat_rate_snapshot, prices_include_vat_snapshot). Pending services allow '
   'full editing. The suggestion bypass (suggested->accepted) allows '
   'client_approve_reschedule and client_deny_reschedule RPCs. For non-pending '
-  'services, 40 additional fields are blocked across scheduling, location, '
+  'services, 38 additional fields are blocked across scheduling, location, '
   'service data, audit, and reschedule groups. 6 fields are always allowed: '
   'request_status, deleted_at, requested_date/time/time_slot, updated_at. '
   'Uses SECURITY DEFINER with empty search_path for security.';
