@@ -33,8 +33,6 @@ SELECT
   past_due_settings,
   out_of_zone_base,
   out_of_zone_per_km,
-  warehouse_lat,
-  warehouse_lng,
   default_urgency_fee_id,
   default_service_type_id,
   locale
@@ -42,8 +40,9 @@ FROM public.profiles
 WHERE role = 'courier'
 LIMIT 1;
 
--- 2. Grant SELECT on the view to authenticated users
+-- 2. Grant SELECT on the view to authenticated users, explicitly revoke from anon
 GRANT SELECT ON public.courier_public_profile TO authenticated;
+REVOKE ALL ON public.courier_public_profile FROM anon;
 
 -- 3. Tighten the profiles_select policy — remove the `OR (role = 'courier')` clause
 --    so clients can no longer read the courier's full profile row.
@@ -58,7 +57,28 @@ CREATE POLICY profiles_select ON public.profiles
 -- 4. Document the view's purpose
 COMMENT ON VIEW public.courier_public_profile IS
   'Read-only view exposing only the courier profile fields that clients need '
-  '(pricing, scheduling, VAT, branding, reschedule limits, locale). Exposes 25 of 35 '
-  'profile columns. Replaces the former open profiles_select policy clause. Hidden: '
-  'active, created_at, default_pickup_lat/lng/location, email/push_notifications_enabled, '
-  'notification_preferences, role, workload_settings.';
+  '(pricing, scheduling, VAT, branding, reschedule limits, locale). '
+  'Warehouse coordinates are excluded for privacy -- pricing uses '
+  'get_courier_warehouse_coords() RPC instead.';
+
+-- 5. Create SECURITY DEFINER function to fetch warehouse coordinates
+--    This bypasses RLS so both courier and client server-side code can use it.
+CREATE OR REPLACE FUNCTION public.get_courier_warehouse_coords()
+RETURNS TABLE(warehouse_lat double precision, warehouse_lng double precision)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT p.warehouse_lat, p.warehouse_lng
+  FROM public.profiles p
+  WHERE p.role = 'courier'
+  LIMIT 1;
+END;
+$$;
+
+-- 6. Lock down permissions: only authenticated users may call this
+REVOKE ALL ON FUNCTION public.get_courier_warehouse_coords() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.get_courier_warehouse_coords() FROM anon;
+GRANT EXECUTE ON FUNCTION public.get_courier_warehouse_coords() TO authenticated;

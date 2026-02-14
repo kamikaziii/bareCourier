@@ -9,14 +9,14 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE
-  _role text;
+  user_role text;
 BEGIN
-  SELECT role INTO _role
+  SELECT role INTO user_role
   FROM public.profiles
   WHERE id = (SELECT auth.uid());
 
   -- Couriers can update anything
-  IF _role = 'courier' THEN
+  IF user_role = 'courier' THEN
     RETURN NEW;
   END IF;
 
@@ -69,7 +69,7 @@ $$;
 COMMENT ON FUNCTION public.check_notification_update_fields()
 IS 'Restricts non-courier users to only updating read and dismissed_at on their notifications.';
 
-CREATE TRIGGER trg_check_notification_update_fields
+CREATE TRIGGER check_notification_update_fields
   BEFORE UPDATE ON public.notifications
   FOR EACH ROW
   EXECUTE FUNCTION public.check_notification_update_fields();

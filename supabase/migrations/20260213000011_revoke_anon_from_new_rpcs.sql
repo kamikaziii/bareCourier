@@ -22,3 +22,13 @@ DO $$ BEGIN
   REVOKE EXECUTE ON FUNCTION replace_distribution_zones(jsonb) FROM anon;
 EXCEPTION WHEN undefined_function THEN NULL;
 END; $$;
+
+DO $$ BEGIN
+  REVOKE EXECUTE ON FUNCTION approve_reschedule(uuid) FROM anon;
+EXCEPTION WHEN undefined_function THEN NULL;
+END; $$;
+
+DO $$ BEGIN
+  REVOKE EXECUTE ON FUNCTION deny_reschedule(uuid, text) FROM anon;
+EXCEPTION WHEN undefined_function THEN NULL;
+END; $$;

@@ -48,10 +48,6 @@ BEGIN
     RAISE EXCEPTION 'Clients cannot modify active';
   END IF;
 
-  IF NEW.email IS DISTINCT FROM OLD.email THEN
-    RAISE EXCEPTION 'Clients cannot modify email';
-  END IF;
-
   IF NEW.created_at IS DISTINCT FROM OLD.created_at THEN
     RAISE EXCEPTION 'Clients cannot modify created_at';
   END IF;
@@ -139,16 +135,11 @@ BEGIN
     RAISE EXCEPTION 'Clients cannot modify label_tagline';
   END IF;
 
-  -- ── System fields (courier-only) ──────────────────────────────────
-  IF NEW.timezone IS DISTINCT FROM OLD.timezone THEN
-    RAISE EXCEPTION 'Clients cannot modify timezone';
-  END IF;
-
   -- ── Client-modifiable fields (ALLOWLIST) ──────────────────────────
   -- The following fields are implicitly allowed by NOT checking them above:
-  --   name, phone, locale
+  --   name, phone, locale, timezone
   --   default_pickup_location, default_pickup_lat, default_pickup_lng
-  --   push_subscription, push_enabled, email_notifications_enabled
+  --   push_notifications_enabled, email_notifications_enabled
   --   notification_preferences
   --   default_service_type_id, default_urgency_fee_id
   --   updated_at (auto-managed)
@@ -168,8 +159,8 @@ CREATE TRIGGER check_client_profile_update
 -- Add comments for documentation
 COMMENT ON FUNCTION check_client_profile_update_fields() IS
   'Restricts which fields clients can modify on their own profile using an allowlist approach. '
-  'Clients may only update: name, phone, locale, default_pickup_location, default_pickup_lat, '
-  'default_pickup_lng, push_subscription, push_enabled, email_notifications_enabled, '
+  'Clients may only update: name, phone, locale, timezone, default_pickup_location, default_pickup_lat, '
+  'default_pickup_lng, push_notifications_enabled, email_notifications_enabled, '
   'notification_preferences, default_service_type_id, default_urgency_fee_id, updated_at. '
   'All other fields (role, active, pricing, VAT, scheduling, branding, etc.) are blocked. '
   'New columns added to profiles are blocked by default. Couriers skip all checks. '

@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p1
 issue_id: "316"
 tags: [security, rls, database, code-review]
@@ -43,9 +43,9 @@ REVOKE ALL ON FUNCTION public.deny_reschedule(uuid, text) FROM anon;
 - **Database Changes**: Yes - add REVOKE statements for correct function signatures
 
 ## Acceptance Criteria
-- [ ] `approve_reschedule(uuid)` is revoked from anon role
-- [ ] `deny_reschedule(uuid, text)` is revoked from anon role
-- [ ] Existing authenticated users can still call these functions
+- [x] `approve_reschedule(uuid)` is revoked from anon role
+- [x] `deny_reschedule(uuid, text)` is revoked from anon role
+- [x] Existing authenticated users can still call these functions
 
 ## Work Log
 
@@ -54,6 +54,12 @@ REVOKE ALL ON FUNCTION public.deny_reschedule(uuid, text) FROM anon;
 **Actions:**
 - Identified by security-sentinel agent during PR #21 review
 - Cross-confirmed by multiple review agents
+
+### 2026-02-13 - Fixed by folding into migration 000011
+**By:** Claude Code
+**Actions:**
+- Added REVOKE for `approve_reschedule(uuid)` and `deny_reschedule(uuid, text)` directly into migration 000011
+- Migration 000011 was unapplied, so fix was folded in-place instead of creating a corrective migration
 
 ## Resources
 - PR: https://github.com/kamikaziii/bareCourier/pull/21
